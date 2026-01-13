@@ -10,7 +10,8 @@ import {
   Loader2,
   File,
   Image as ImageIcon,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -126,6 +127,45 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const handleDownload = async (doc: ProjectDocument) => {
+    try {
+      // Get signed URL for download
+      const { data, error } = await supabase.storage
+        .from('project-documents')
+        .createSignedUrl(doc.file_url, 60); // 60 seconds validity
+
+      if (error) throw error;
+
+      // Create a temporary link and click it to download
+      const link = document.createElement('a');
+      link.href = data.signedUrl;
+      link.download = doc.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error downloading document:', error);
+      toast.error('Failed to download document');
+    }
+  };
+
+  const handleView = async (doc: ProjectDocument) => {
+    try {
+      // Get signed URL for viewing
+      const { data, error } = await supabase.storage
+        .from('project-documents')
+        .createSignedUrl(doc.file_url, 300); // 5 minutes validity
+
+      if (error) throw error;
+
+      // Open in new tab
+      window.open(data.signedUrl, '_blank');
+    } catch (error) {
+      console.error('Error viewing document:', error);
+      toast.error('Failed to view document');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -182,17 +222,25 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
                   <Button
                     variant="ghost"
                     size="icon"
-                    asChild
+                    onClick={() => handleView(doc)}
+                    title="View"
                   >
-                    <a href={doc.file_url} target="_blank" rel="noopener noreferrer" download>
-                      <Download className="w-4 h-4" />
-                    </a>
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDownload(doc)}
+                    title="Download"
+                  >
+                    <Download className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => handleDelete(doc)}
                     disabled={deletingId === doc.id}
+                    title="Delete"
                   >
                     {deletingId === doc.id ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
