@@ -95,6 +95,7 @@ export default function TradeDashboard() {
     };
 
     setProjects(prev => [newProject, ...prev]);
+    setSearchQuery('');
     setActiveTab('drafts'); // Switch to drafts tab to show the new job
     toast.success('Job created successfully!');
   };
