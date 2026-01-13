@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/StatusBadge';
+import { ImageDisplay } from '@/components/ImageUpload';
 import { 
   MessageSquarePlus, 
   AlertTriangle, 
@@ -78,6 +79,13 @@ export function ChangeRequestCard({
         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
           {request.description}
         </p>
+
+        {/* Image */}
+        {request.imageUrl && (
+          <div className="mb-4">
+            <ImageDisplay src={request.imageUrl} alt={request.title} className="max-w-sm" />
+          </div>
+        )}
 
         {request.reason && (
           <p className="text-xs text-muted-foreground italic mb-4">

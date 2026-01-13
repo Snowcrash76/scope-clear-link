@@ -25,6 +25,7 @@ export const mockProject: Project = {
       description: 'Supply and lay 40m² of natural sandstone pavers on compacted base. Includes edging and jointing.',
       category: 'included',
       acknowledged: true,
+      imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=300&fit=crop',
     },
     {
       id: 'scope_003',
@@ -105,6 +106,7 @@ export const mockProject: Project = {
       timeImpact: 2,
       status: 'pending',
       createdAt: new Date('2024-01-22'),
+      imageUrl: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&h=300&fit=crop',
     },
     {
       id: 'change_003',

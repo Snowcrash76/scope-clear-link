@@ -55,7 +55,7 @@ export default function ClientProjectView() {
     toast.info('Change declined. Your trade has been notified.');
   };
 
-  const handleRequestChange = (description: string) => {
+  const handleRequestChange = (description: string, imageUrl?: string) => {
     const newRequest = {
       id: `change_${Date.now()}`,
       type: 'client_request' as const,
@@ -65,6 +65,7 @@ export default function ClientProjectView() {
       timeImpact: 0,
       status: 'pending' as const,
       createdAt: new Date(),
+      imageUrl,
     };
     
     setProject(prev => ({
