@@ -174,7 +174,7 @@ export function useProjects() {
           name: data.name,
           client_name: data.clientName,
           client_email: data.clientEmail,
-          status: 'draft',
+          status: 'sent',
         })
         .select()
         .single();
@@ -227,10 +227,28 @@ export function useProjects() {
     }
   };
 
+  const updateProjectStatus = async (projectId: string, newStatus: 'draft' | 'sent' | 'in_progress' | 'completed') => {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq('id', projectId);
+
+      if (error) throw error;
+      await fetchProjects();
+      return true;
+    } catch (error) {
+      console.error('Error updating project status:', error);
+      toast.error('Failed to update project status');
+      return false;
+    }
+  };
+
   return {
     projects,
     loading,
     createProject,
+    updateProjectStatus,
     refetch: fetchProjects,
   };
 }

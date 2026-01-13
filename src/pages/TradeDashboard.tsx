@@ -30,7 +30,7 @@ import {
 export default function TradeDashboard() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { projects, loading, createProject } = useProjects();
+  const { projects, loading, createProject, updateProjectStatus } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
@@ -74,7 +74,7 @@ export default function TradeDashboard() {
     const projectId = await createProject(jobData);
     if (projectId) {
       setSearchQuery('');
-      setActiveTab('drafts');
+      setActiveTab('active');
       toast.success('Job created successfully!');
     }
   };
@@ -181,6 +181,7 @@ export default function TradeDashboard() {
                         key={project.id} 
                         project={project}
                         onViewProject={handleViewProject}
+                        onUpdateStatus={updateProjectStatus}
                       />
                     ))}
                   </div>
@@ -200,6 +201,7 @@ export default function TradeDashboard() {
                         key={project.id} 
                         project={project}
                         onViewProject={handleViewProject}
+                        onUpdateStatus={updateProjectStatus}
                       />
                     ))}
                   </div>
@@ -219,6 +221,7 @@ export default function TradeDashboard() {
                         key={project.id} 
                         project={project}
                         onViewProject={handleViewProject}
+                        onUpdateStatus={updateProjectStatus}
                       />
                     ))}
                   </div>
