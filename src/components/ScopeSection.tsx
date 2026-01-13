@@ -54,6 +54,9 @@ export function ScopeSection({
   
   const acknowledgedCount = items.filter(item => item.acknowledged).length;
   const allAcknowledged = acknowledgedCount === items.length;
+  
+  // Calculate subtotal for items with costs
+  const subtotal = items.reduce((sum, item) => sum + (item.cost || 0), 0);
 
   return (
     <Card className={cn(
@@ -151,6 +154,18 @@ export function ScopeSection({
               </div>
             </div>
           ))}
+          
+          {/* Category Subtotal */}
+          {subtotal > 0 && (
+            <div className="pt-3 mt-3 border-t border-dashed flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">
+                {category === 'included' ? 'Subtotal' : 'Category Total'}
+              </span>
+              <span className="font-semibold text-primary">
+                ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+          )}
         </div>
       )}
     </Card>
