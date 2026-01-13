@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ImageDisplay } from '@/components/ImageUpload';
+import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
@@ -253,8 +254,6 @@ export default function ProjectManage() {
               const config = categoryConfig[category];
               const Icon = config.icon;
 
-              if (items.length === 0) return null;
-
               return (
                 <Card key={category} className="overflow-hidden">
                   <div className={cn("px-4 py-3 border-b flex items-center gap-2", config.bgColor)}>
@@ -264,45 +263,65 @@ export default function ProjectManage() {
                       {items.length}
                     </Badge>
                   </div>
-                  <div className="divide-y">
-                    {items.map((item) => (
-                      <div 
-                        key={item.id}
-                        className="p-4 hover:bg-secondary/30 transition-colors cursor-pointer group"
-                        onClick={() => setEditingScopeItem(item)}
+                  {items.length === 0 ? (
+                    <div className="p-6 text-center">
+                      <p className="text-sm text-muted-foreground mb-3">No {config.label.toLowerCase()} items yet</p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => {
+                          setIsAddingScopeItem(true);
+                        }}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <h4 className="font-medium">{item.title}</h4>
-                              {item.acknowledged && (
-                                <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {item.description}
-                            </p>
-                            {item.imageUrl && (
-                              <div className="mt-3">
-                                <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-[200px]" />
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add {config.label} Item
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="divide-y">
+                      {items.map((item) => (
+                        <div 
+                          key={item.id}
+                          className="p-4 hover:bg-secondary/30 transition-colors cursor-pointer group"
+                          onClick={() => setEditingScopeItem(item)}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-medium">{item.title}</h4>
+                                {item.acknowledged && (
+                                  <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
+                                )}
                               </div>
-                            )}
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {item.description}
+                              </p>
+                              {item.imageUrls && item.imageUrls.length > 0 ? (
+                                <div className="mt-3">
+                                  <MultiImageDisplay paths={item.imageUrls} />
+                                </div>
+                              ) : item.imageUrl ? (
+                                <div className="mt-3">
+                                  <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-[200px]" />
+                                </div>
+                              ) : null}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingScopeItem(item);
+                              }}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingScopeItem(item);
-                            }}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </Card>
               );
             })}
