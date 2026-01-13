@@ -45,6 +45,7 @@ export function EditScopeItemModal({
   const [imageUrls, setImageUrls] = useState<string[]>(
     item?.imageUrls || (item?.imageUrl ? [item.imageUrl] : [])
   );
+  const [cost, setCost] = useState<string>(item?.cost?.toString() || '');
 
   const isEditing = !!item;
 
@@ -57,6 +58,7 @@ export function EditScopeItemModal({
         category,
         imageUrls,
         imageUrl: imageUrls[0], // Keep backwards compatibility
+        cost: cost ? parseFloat(cost) : undefined,
       });
       onOpenChange(false);
     }
@@ -76,6 +78,7 @@ export function EditScopeItemModal({
       setDescription(item?.description || '');
       setCategory(item?.category || 'included');
       setImageUrls(item?.imageUrls || (item?.imageUrl ? [item.imageUrl] : []));
+      setCost(item?.cost?.toString() || '');
     }
   }, [open, item]);
 
@@ -143,6 +146,23 @@ export function EditScopeItemModal({
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-[100px]"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="cost">Cost (optional)</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
+              <Input
+                id="cost"
+                type="number"
+                placeholder="0.00"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                className="pl-7"
+                min="0"
+                step="0.01"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

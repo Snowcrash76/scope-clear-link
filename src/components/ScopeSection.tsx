@@ -126,7 +126,14 @@ export function ScopeSection({
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-foreground">{item.title}</h4>
+                  <div className="flex items-start justify-between gap-2">
+                    <h4 className="font-medium text-foreground">{item.title}</h4>
+                    {item.cost !== undefined && item.cost > 0 && (
+                      <span className="text-sm font-medium text-primary whitespace-nowrap">
+                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                     {item.description}
                   </p>
