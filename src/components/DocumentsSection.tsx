@@ -149,20 +149,24 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
         }
       }
       
-      // Get signed URL for download
+      // Use Supabase download method to get the file as blob
       const { data, error } = await supabase.storage
         .from('project-documents')
-        .createSignedUrl(filePath, 60); // 60 seconds validity
+        .download(filePath);
 
       if (error) throw error;
 
-      // Create a temporary link and click it to download
+      // Create a blob URL and trigger download
+      const url = URL.createObjectURL(data);
       const link = document.createElement('a');
-      link.href = data.signedUrl;
+      link.href = url;
       link.download = doc.file_name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Download started');
     } catch (error) {
       console.error('Error downloading document:', error);
       toast.error('Failed to download document');
