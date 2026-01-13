@@ -185,6 +185,7 @@ export default function ClientProjectView() {
                   <ChangeRequestCard
                     key={request.id}
                     request={request}
+                    viewerRole="client"
                     onApprove={handleApproveChange}
                     onDecline={handleDeclineChange}
                   />

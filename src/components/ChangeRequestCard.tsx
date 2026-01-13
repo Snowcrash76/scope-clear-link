@@ -20,7 +20,7 @@ interface ChangeRequestCardProps {
   request: ChangeRequest;
   onApprove?: (id: string) => void;
   onDecline?: (id: string) => void;
-  isClientView?: boolean;
+  viewerRole: 'client' | 'trade';
 }
 
 const typeConfig = {
@@ -48,10 +48,21 @@ export function ChangeRequestCard({
   request, 
   onApprove, 
   onDecline,
-  isClientView = true 
+  viewerRole
 }: ChangeRequestCardProps) {
   const config = typeConfig[request.type];
   const Icon = config.icon;
+
+  // Determine if the current viewer can approve/decline this request
+  // Client approves trade-initiated requests (site_issue, substitution)
+  // Trade approves client-initiated requests (client_request)
+  const canApprove = request.status === 'pending' && (
+    (viewerRole === 'client' && request.type !== 'client_request') ||
+    (viewerRole === 'trade' && request.type === 'client_request')
+  );
+
+  // Check if this is awaiting the other party's response
+  const isAwaitingOtherParty = request.status === 'pending' && !canApprove;
 
   return (
     <Card className={cn(
@@ -127,8 +138,19 @@ export function ChangeRequestCard({
           {request.resolvedAt && ` • Resolved ${format(request.resolvedAt, 'MMM d, yyyy')}`}
         </p>
 
+        {/* Awaiting other party notice */}
+        {isAwaitingOtherParty && (
+          <div className="pt-3 border-t">
+            <p className="text-sm text-muted-foreground text-center">
+              {viewerRole === 'client' 
+                ? 'Your request is being reviewed by the trade'
+                : 'Awaiting client response'}
+            </p>
+          </div>
+        )}
+
         {/* Actions */}
-        {isClientView && request.status === 'pending' && (
+        {canApprove && (
           <div className="flex gap-3 pt-3 border-t">
             <Button 
               variant="approve" 
