@@ -5,16 +5,18 @@ import { ScopeSection } from '@/components/ScopeSection';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { RequestChangeButton } from '@/components/RequestChangeButton';
+import { ClientDocumentsSection } from '@/components/ClientDocumentsSection';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { useProject } from '@/hooks/useProject';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp, Loader2 } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, FileText, Loader2 } from 'lucide-react';
 
 export default function ClientProjectView() {
   const { id } = useParams();
   const {
     project,
+    documents,
     loading,
     acknowledgeScopeItem,
     createChangeRequest,
@@ -99,7 +101,7 @@ export default function ClientProjectView() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="scope" className="space-y-6">
-          <TabsList className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex">
+          <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex">
             <TabsTrigger value="scope" className="gap-2">
               <Package className="w-4 h-4 hidden sm:block" />
               Scope
@@ -113,6 +115,12 @@ export default function ClientProjectView() {
                 </span>
               )}
             </TabsTrigger>
+            {documents.length > 0 && (
+              <TabsTrigger value="documents" className="gap-2">
+                <FileText className="w-4 h-4 hidden sm:block" />
+                Docs
+              </TabsTrigger>
+            )}
             <TabsTrigger value="progress" className="gap-2">
               <TrendingUp className="w-4 h-4 hidden sm:block" />
               Progress
@@ -184,6 +192,13 @@ export default function ClientProjectView() {
               </div>
             )}
           </TabsContent>
+
+          {/* Documents Tab */}
+          {documents.length > 0 && (
+            <TabsContent value="documents" className="space-y-4 animate-fade-in">
+              <ClientDocumentsSection documents={documents} />
+            </TabsContent>
+          )}
 
           {/* Progress Tab */}
           <TabsContent value="progress" className="space-y-4 animate-fade-in">
