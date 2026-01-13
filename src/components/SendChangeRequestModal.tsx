@@ -19,21 +19,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChangeRequest } from '@/types/project';
-import { AlertTriangle, RefreshCw, MessageSquarePlus } from 'lucide-react';
+import { ChangeRequest, ScopeItem } from '@/types/project';
+import { AlertTriangle, RefreshCw, MessageSquarePlus, Package } from 'lucide-react';
 
 interface SendChangeRequestModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSend: (request: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => void;
+  scopeItems?: ScopeItem[];
 }
 
 export function SendChangeRequestModal({ 
   open, 
   onOpenChange, 
-  onSend 
+  onSend,
+  scopeItems = []
 }: SendChangeRequestModalProps) {
   const [type, setType] = useState<'site_issue' | 'substitution'>('site_issue');
+  const [selectedScopeItem, setSelectedScopeItem] = useState<string>('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [reason, setReason] = useState('');
@@ -43,6 +46,7 @@ export function SendChangeRequestModal({
 
   const resetForm = () => {
     setType('site_issue');
+    setSelectedScopeItem('');
     setTitle('');
     setDescription('');
     setReason('');
@@ -103,8 +107,32 @@ export function SendChangeRequestModal({
                   </div>
                 </SelectItem>
               </SelectContent>
-            </Select>
+          </Select>
           </div>
+
+          {scopeItems.length > 0 && (
+            <div className="space-y-2">
+              <Label>Related Scope Item (optional)</Label>
+              <Select value={selectedScopeItem} onValueChange={setSelectedScopeItem}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a scope item..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">None</span>
+                  </SelectItem>
+                  {scopeItems.map((item) => (
+                    <SelectItem key={item.id} value={item.id}>
+                      <div className="flex items-center gap-2">
+                        <Package className="w-4 h-4 text-muted-foreground" />
+                        <span className="truncate max-w-[250px]">{item.title}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
