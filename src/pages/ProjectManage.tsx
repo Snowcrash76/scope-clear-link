@@ -382,6 +382,7 @@ export default function ProjectManage() {
         open={isSendingChangeRequest}
         onOpenChange={setIsSendingChangeRequest}
         onSend={handleSendChangeRequest}
+        scopeItems={project.scopeItems}
       />
     </div>
   );
