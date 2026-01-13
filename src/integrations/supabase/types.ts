@@ -14,6 +14,59 @@ export type Database = {
   }
   public: {
     Tables: {
+      change_requests: {
+        Row: {
+          cost_impact: number | null
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          project_id: string
+          reason: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["change_request_status"]
+          time_impact: string | null
+          title: string
+          type: Database["public"]["Enums"]["change_request_type"]
+        }
+        Insert: {
+          cost_impact?: number | null
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          project_id: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["change_request_status"]
+          time_impact?: string | null
+          title: string
+          type?: Database["public"]["Enums"]["change_request_type"]
+        }
+        Update: {
+          cost_impact?: number | null
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          project_id?: string
+          reason?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["change_request_status"]
+          time_impact?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["change_request_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           business_name: string
@@ -47,6 +100,127 @@ export type Database = {
         }
         Relationships: []
       }
+      project_stages: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          stage_order: number
+          status: Database["public"]["Enums"]["stage_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          stage_order?: number
+          status?: Database["public"]["Enums"]["stage_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          stage_order?: number
+          status?: Database["public"]["Enums"]["stage_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_stages_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          client_email: string
+          client_name: string
+          created_at: string
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["project_status"]
+          total_value: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_email: string
+          client_name: string
+          created_at?: string
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["project_status"]
+          total_value?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_email?: string
+          client_name?: string
+          created_at?: string
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["project_status"]
+          total_value?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      scope_items: {
+        Row: {
+          acknowledged: boolean
+          category: Database["public"]["Enums"]["scope_category"]
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          project_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged?: boolean
+          category?: Database["public"]["Enums"]["scope_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          project_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged?: boolean
+          category?: Database["public"]["Enums"]["scope_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          project_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scope_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -55,7 +229,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      change_request_status: "pending" | "approved" | "declined"
+      change_request_type: "client_request" | "site_issue" | "substitution"
+      project_status: "draft" | "sent" | "in_progress" | "completed"
+      scope_category: "included" | "excluded" | "assumption"
+      stage_status: "upcoming" | "current" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -182,6 +360,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      change_request_status: ["pending", "approved", "declined"],
+      change_request_type: ["client_request", "site_issue", "substitution"],
+      project_status: ["draft", "sent", "in_progress", "completed"],
+      scope_category: ["included", "excluded", "assumption"],
+      stage_status: ["upcoming", "current", "completed"],
+    },
   },
 } as const

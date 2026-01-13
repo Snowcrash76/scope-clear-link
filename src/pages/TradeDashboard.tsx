@@ -7,15 +7,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from '@/components/ProjectCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { CreateJobModal } from '@/components/CreateJobModal';
-import { mockProjects } from '@/data/mockProjects';
-import { Project, ScopeItem } from '@/types/project';
+import { useProjects } from '@/hooks/useProjects';
+import { ScopeItem } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Plus, 
   Search, 
   Briefcase,
   ArrowLeft,
-  LogOut
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -29,7 +30,7 @@ import {
 export default function TradeDashboard() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const { projects, loading, createProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
@@ -64,45 +65,22 @@ export default function TradeDashboard() {
     return matchesSearch;
   });
 
-  const handleCreateJob = (jobData: {
+  const handleCreateJob = async (jobData: {
     name: string;
     clientName: string;
     clientEmail: string;
     scopeItems: Omit<ScopeItem, 'id' | 'acknowledged'>[];
   }) => {
-    const newProject: Project = {
-      id: `proj_${Date.now()}`,
-      name: jobData.name,
-      clientName: jobData.clientName,
-      clientEmail: jobData.clientEmail,
-      tradeName: 'Mike Thompson',
-      tradeBusinessName: 'Thompson Landscapes',
-      status: 'draft',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      currentStageIndex: 0,
-      scopeItems: jobData.scopeItems.map((item, index) => ({
-        ...item,
-        id: `scope_${Date.now()}_${index}`,
-        acknowledged: false,
-      })),
-      changeRequests: [],
-      stages: [
-        { id: 'stage_1', name: 'Preparation', description: 'Site preparation', status: 'upcoming' },
-        { id: 'stage_2', name: 'Construction', description: 'Main work', status: 'upcoming' },
-        { id: 'stage_3', name: 'Finishing', description: 'Final touches', status: 'upcoming' },
-      ],
-    };
-
-    setProjects(prev => [newProject, ...prev]);
-    setSearchQuery('');
-    setActiveTab('drafts'); // Switch to drafts tab to show the new job
-    toast.success('Job created successfully!');
+    const projectId = await createProject(jobData);
+    if (projectId) {
+      setSearchQuery('');
+      setActiveTab('drafts');
+      toast.success('Job created successfully!');
+    }
   };
 
   const handleViewProject = (id: string) => {
-    // In a real app, this would navigate to a detailed management view
-    toast.info('Opening project management view...');
+    navigate(`/manage/${id}`);
   };
 
   return (
@@ -189,63 +167,71 @@ export default function TradeDashboard() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="mt-0">
-            {filteredProjects.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProjects.map(project => (
-                  <ProjectCard 
-                    key={project.id} 
-                    project={project}
-                    onViewProject={handleViewProject}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <TabsContent value="active" className="mt-0">
+                {filteredProjects.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredProjects.map(project => (
+                      <ProjectCard 
+                        key={project.id} 
+                        project={project}
+                        onViewProject={handleViewProject}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    searchQuery={searchQuery}
+                    onCreateJob={() => setIsCreateModalOpen(true)}
                   />
-                ))}
-              </div>
-            ) : (
-              <EmptyState 
-                searchQuery={searchQuery}
-                onCreateJob={() => setIsCreateModalOpen(true)}
-              />
-            )}
-          </TabsContent>
+                )}
+              </TabsContent>
 
-          <TabsContent value="completed" className="mt-0">
-            {filteredProjects.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProjects.map(project => (
-                  <ProjectCard 
-                    key={project.id} 
-                    project={project}
-                    onViewProject={handleViewProject}
+              <TabsContent value="completed" className="mt-0">
+                {filteredProjects.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredProjects.map(project => (
+                      <ProjectCard 
+                        key={project.id} 
+                        project={project}
+                        onViewProject={handleViewProject}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    message="No completed projects yet"
+                    searchQuery={searchQuery}
                   />
-                ))}
-              </div>
-            ) : (
-              <EmptyState 
-                message="No completed projects yet"
-                searchQuery={searchQuery}
-              />
-            )}
-          </TabsContent>
+                )}
+              </TabsContent>
 
-          <TabsContent value="drafts" className="mt-0">
-            {filteredProjects.length > 0 ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredProjects.map(project => (
-                  <ProjectCard 
-                    key={project.id} 
-                    project={project}
-                    onViewProject={handleViewProject}
+              <TabsContent value="drafts" className="mt-0">
+                {filteredProjects.length > 0 ? (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredProjects.map(project => (
+                      <ProjectCard 
+                        key={project.id} 
+                        project={project}
+                        onViewProject={handleViewProject}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState 
+                    message="No draft jobs"
+                    searchQuery={searchQuery}
+                    onCreateJob={() => setIsCreateModalOpen(true)}
                   />
-                ))}
-              </div>
-            ) : (
-              <EmptyState 
-                message="No draft jobs"
-                searchQuery={searchQuery}
-                onCreateJob={() => setIsCreateModalOpen(true)}
-              />
-            )}
-          </TabsContent>
+                )}
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </main>
 
