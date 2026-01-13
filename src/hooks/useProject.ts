@@ -53,8 +53,18 @@ type DbProjectStage = {
   updated_at: string;
 };
 
+export interface ProjectDocument {
+  id: string;
+  file_name: string;
+  file_url: string;
+  file_type: string | null;
+  file_size: number | null;
+  created_at: string;
+}
+
 export function useProject(projectId: string | undefined) {
   const [project, setProject] = useState<Project | null>(null);
+  const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProject = useCallback(async () => {
@@ -79,17 +89,19 @@ export function useProject(projectId: string | undefined) {
         return;
       }
 
-      const [scopeRes, changeRes, stageRes, profileRes] = await Promise.all([
+      const [scopeRes, changeRes, stageRes, profileRes, docsRes] = await Promise.all([
         supabase.from('scope_items').select('*').eq('project_id', projectId),
         supabase.from('change_requests').select('*').eq('project_id', projectId),
         supabase.from('project_stages').select('*').eq('project_id', projectId).order('stage_order'),
         supabase.from('profiles').select('*').eq('user_id', (projectData as DbProject).user_id).maybeSingle(),
+        supabase.from('project_documents').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
       ]);
 
       const scopeItems = (scopeRes.data || []) as DbScopeItem[];
       const changeRequests = (changeRes.data || []) as DbChangeRequest[];
       const projectStages = (stageRes.data || []) as DbProjectStage[];
       const profile = profileRes.data;
+      const projectDocuments = (docsRes.data || []) as ProjectDocument[];
 
       const p = projectData as DbProject;
       const currentStageIndex = projectStages.findIndex(s => s.status === 'current');
@@ -135,6 +147,7 @@ export function useProject(projectId: string | undefined) {
       };
 
       setProject(mappedProject);
+      setDocuments(projectDocuments);
     } catch (error) {
       console.error('Error fetching project:', error);
       toast.error('Failed to load project');
@@ -334,6 +347,7 @@ export function useProject(projectId: string | undefined) {
 
   return {
     project,
+    documents,
     loading,
     refetch: fetchProject,
     saveScopeItem,
