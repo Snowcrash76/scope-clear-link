@@ -1,0 +1,242 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProjectCard } from '@/components/ProjectCard';
+import { DashboardStats } from '@/components/DashboardStats';
+import { CreateJobModal } from '@/components/CreateJobModal';
+import { mockProjects } from '@/data/mockProjects';
+import { Project, ScopeItem } from '@/types/project';
+import { 
+  Plus, 
+  Search, 
+  Briefcase,
+  ArrowLeft,
+  User
+} from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function TradeDashboard() {
+  const [projects, setProjects] = useState<Project[]>(mockProjects);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('active');
+
+  const filteredProjects = projects.filter(project => {
+    const matchesSearch = 
+      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      project.clientName.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (activeTab === 'active') {
+      return matchesSearch && (project.status === 'in_progress' || project.status === 'acknowledged' || project.status === 'sent');
+    } else if (activeTab === 'completed') {
+      return matchesSearch && project.status === 'completed';
+    } else if (activeTab === 'drafts') {
+      return matchesSearch && project.status === 'draft';
+    }
+    return matchesSearch;
+  });
+
+  const handleCreateJob = (jobData: {
+    name: string;
+    clientName: string;
+    clientEmail: string;
+    scopeItems: Omit<ScopeItem, 'id' | 'acknowledged'>[];
+  }) => {
+    const newProject: Project = {
+      id: `proj_${Date.now()}`,
+      name: jobData.name,
+      clientName: jobData.clientName,
+      clientEmail: jobData.clientEmail,
+      tradeName: 'Mike Thompson',
+      tradeBusinessName: 'Thompson Landscapes',
+      status: 'draft',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      currentStageIndex: 0,
+      scopeItems: jobData.scopeItems.map((item, index) => ({
+        ...item,
+        id: `scope_${Date.now()}_${index}`,
+        acknowledged: false,
+      })),
+      changeRequests: [],
+      stages: [
+        { id: 'stage_1', name: 'Preparation', description: 'Site preparation', status: 'upcoming' },
+        { id: 'stage_2', name: 'Construction', description: 'Main work', status: 'upcoming' },
+        { id: 'stage_3', name: 'Finishing', description: 'Final touches', status: 'upcoming' },
+      ],
+    };
+
+    setProjects(prev => [newProject, ...prev]);
+    toast.success('Job created successfully!');
+  };
+
+  const handleViewProject = (id: string) => {
+    // In a real app, this would navigate to a detailed management view
+    toast.info('Opening project management view...');
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <div>
+                <h1 className="font-heading text-xl sm:text-2xl font-bold">Dashboard</h1>
+                <p className="text-sm text-muted-foreground hidden sm:block">
+                  Thompson Landscapes
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="accent"
+                onClick={() => setIsCreateModalOpen(true)}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New Job</span>
+              </Button>
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
+                MT
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Stats */}
+        <div className="mb-8">
+          <DashboardStats projects={projects} />
+        </div>
+
+        {/* Search & Tabs */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search jobs or clients..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="mb-6">
+            <TabsTrigger value="active" className="gap-2">
+              <Briefcase className="w-4 h-4" />
+              Active
+              <Badge variant="secondary" className="ml-1">
+                {projects.filter(p => ['in_progress', 'acknowledged', 'sent'].includes(p.status)).length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger value="completed">
+              Completed
+            </TabsTrigger>
+            <TabsTrigger value="drafts">
+              Drafts
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active" className="mt-0">
+            {filteredProjects.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProjects.map(project => (
+                  <ProjectCard 
+                    key={project.id} 
+                    project={project}
+                    onViewProject={handleViewProject}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                searchQuery={searchQuery}
+                onCreateJob={() => setIsCreateModalOpen(true)}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="completed" className="mt-0">
+            {filteredProjects.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProjects.map(project => (
+                  <ProjectCard 
+                    key={project.id} 
+                    project={project}
+                    onViewProject={handleViewProject}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                message="No completed projects yet"
+                searchQuery={searchQuery}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="drafts" className="mt-0">
+            {filteredProjects.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProjects.map(project => (
+                  <ProjectCard 
+                    key={project.id} 
+                    project={project}
+                    onViewProject={handleViewProject}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyState 
+                message="No draft jobs"
+                searchQuery={searchQuery}
+                onCreateJob={() => setIsCreateModalOpen(true)}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
+      </main>
+
+      <CreateJobModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onCreateJob={handleCreateJob}
+      />
+    </div>
+  );
+}
+
+function EmptyState({ 
+  message = "No projects found",
+  searchQuery,
+  onCreateJob
+}: { 
+  message?: string;
+  searchQuery?: string;
+  onCreateJob?: () => void;
+}) {
+  return (
+    <div className="text-center py-12">
+      <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+      <p className="text-muted-foreground mb-4">
+        {searchQuery ? `No results for "${searchQuery}"` : message}
+      </p>
+      {onCreateJob && !searchQuery && (
+        <Button variant="outline" onClick={onCreateJob}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create your first job
+        </Button>
+      )}
+    </div>
+  );
+}
