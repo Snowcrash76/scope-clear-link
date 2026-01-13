@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,8 +9,8 @@ import { ImageDisplay } from '@/components/ImageUpload';
 import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { StageManager } from '@/components/StageManager';
-import { mockProjects } from '@/data/mockProjects';
-import { Project, ScopeItem, ChangeRequest } from '@/types/project';
+import { useProject } from '@/hooks/useProject';
+import { ScopeItem, ChangeRequest } from '@/types/project';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -26,8 +26,8 @@ import {
   Clock,
   DollarSign,
   CheckCircle2,
-  X,
-  Copy
+  Copy,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -37,19 +37,28 @@ export default function ProjectManage() {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  const [project, setProject] = useState<Project | null>(null);
+  const {
+    project,
+    loading,
+    saveScopeItem,
+    deleteScopeItem,
+    createChangeRequest,
+    updateStage,
+    updateProjectStatus,
+  } = useProject(id);
+
   const [activeTab, setActiveTab] = useState('scope');
   const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
 
-  useEffect(() => {
-    // In a real app, fetch from API
-    const found = mockProjects.find(p => p.id === id);
-    if (found) {
-      setProject({ ...found });
-    }
-  }, [id]);
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -70,104 +79,50 @@ export default function ProjectManage() {
     assumption: { icon: AlertTriangle, color: 'text-pending-foreground', bgColor: 'bg-pending/10', label: 'Assumption' },
   };
 
-  const handleSaveScopeItem = (itemData: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => {
-    setProject(prev => {
-      if (!prev) return prev;
-      
-      if (itemData.id) {
-        // Update existing
-        return {
-          ...prev,
-          scopeItems: prev.scopeItems.map(item =>
-            item.id === itemData.id
-              ? { ...item, ...itemData }
-              : item
-          ),
-          updatedAt: new Date(),
-        };
-      } else {
-        // Add new
-        const newItem: ScopeItem = {
-          id: `scope_${Date.now()}`,
-          title: itemData.title,
-          description: itemData.description,
-          category: itemData.category,
-          imageUrl: itemData.imageUrl,
-          acknowledged: false,
-        };
-        return {
-          ...prev,
-          scopeItems: [...prev.scopeItems, newItem],
-          updatedAt: new Date(),
-        };
+  const handleSaveScopeItem = async (itemData: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => {
+    const success = await saveScopeItem(itemData);
+    if (success) {
+      toast.success(itemData.id ? 'Scope item updated' : 'Scope item added');
+      setEditingScopeItem(undefined);
+      setIsAddingScopeItem(false);
+    }
+  };
+
+  const handleDeleteScopeItem = async (itemId: string) => {
+    const success = await deleteScopeItem(itemId);
+    if (success) {
+      toast.success('Scope item deleted');
+      setEditingScopeItem(undefined);
+    }
+  };
+
+  const handleSendChangeRequest = async (requestData: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => {
+    const success = await createChangeRequest(requestData);
+    if (success) {
+      toast.success('Change request sent to client');
+      setIsSendingChangeRequest(false);
+    }
+  };
+
+  const handleUpdateStage = async (stageId: string, status: 'upcoming' | 'current' | 'completed') => {
+    await updateStage(stageId, status);
+  };
+
+  const handleSetCurrentStage = async (index: number) => {
+    if (project.stages[index]) {
+      // Set all previous stages to completed, current to current, rest to upcoming
+      for (let i = 0; i < project.stages.length; i++) {
+        const newStatus = i < index ? 'completed' : i === index ? 'current' : 'upcoming';
+        await updateStage(project.stages[i].id, newStatus);
       }
-    });
-    toast.success(itemData.id ? 'Scope item updated' : 'Scope item added');
-    setEditingScopeItem(undefined);
-    setIsAddingScopeItem(false);
+    }
   };
 
-  const handleDeleteScopeItem = (itemId: string) => {
-    setProject(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        scopeItems: prev.scopeItems.filter(item => item.id !== itemId),
-        updatedAt: new Date(),
-      };
-    });
-    toast.success('Scope item deleted');
-  };
-
-  const handleSendChangeRequest = (requestData: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => {
-    const newRequest: ChangeRequest = {
-      id: `change_${Date.now()}`,
-      ...requestData,
-      status: 'pending',
-      createdAt: new Date(),
-    };
-    
-    setProject(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        changeRequests: [...prev.changeRequests, newRequest],
-        updatedAt: new Date(),
-      };
-    });
-    toast.success('Change request sent to client');
-  };
-
-  const handleUpdateStage = (stageId: string, status: 'upcoming' | 'current' | 'completed') => {
-    setProject(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        stages: prev.stages.map(stage =>
-          stage.id === stageId ? { ...stage, status } : stage
-        ),
-        updatedAt: new Date(),
-      };
-    });
-  };
-
-  const handleSetCurrentStage = (index: number) => {
-    setProject(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        currentStageIndex: index,
-        updatedAt: new Date(),
-      };
-    });
-  };
-
-  const handleSendToClient = () => {
-    setProject(prev => {
-      if (!prev) return prev;
-      return { ...prev, status: 'sent', updatedAt: new Date() };
-    });
-    toast.success('Project sent to client!');
+  const handleSendToClient = async () => {
+    const success = await updateProjectStatus('sent');
+    if (success) {
+      toast.success('Project sent to client!');
+    }
   };
 
   const handleCopyClientLink = () => {
@@ -466,10 +421,13 @@ function ChangeRequestItem({ request }: { request: ChangeRequest }) {
         <div className={cn(
           "flex items-center gap-1.5 px-2 py-1 rounded",
           request.timeImpact > 0 ? "bg-warning/10 text-warning-foreground" :
+          request.timeImpact < 0 ? "bg-approved/10 text-approved" :
           "bg-secondary text-muted-foreground"
         )}>
           <Clock className="w-3.5 h-3.5" />
-          {request.timeImpact === 0 ? 'No delay' : `+${request.timeImpact} day${request.timeImpact > 1 ? 's' : ''}`}
+          {request.timeImpact === 0 ? 'No delay' :
+           request.timeImpact > 0 ? `+${request.timeImpact} days` :
+           `${request.timeImpact} days`}
         </div>
         <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary text-muted-foreground">
           <Calendar className="w-3.5 h-3.5" />

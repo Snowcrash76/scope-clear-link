@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { mockProject } from '@/data/mockProject';
+import { useParams } from 'react-router-dom';
 import { ProjectHeader } from '@/components/ProjectHeader';
 import { ActionRequired } from '@/components/ActionRequired';
 import { ScopeSection } from '@/components/ScopeSection';
@@ -8,11 +7,38 @@ import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { RequestChangeButton } from '@/components/RequestChangeButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { useProject } from '@/hooks/useProject';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, Loader2 } from 'lucide-react';
 
 export default function ClientProjectView() {
-  const [project, setProject] = useState(mockProject);
+  const { id } = useParams();
+  const {
+    project,
+    loading,
+    acknowledgeScopeItem,
+    createChangeRequest,
+    updateChangeRequestStatus,
+  } = useProject(id);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Project Not Found</h1>
+          <p className="text-muted-foreground">This project link may be invalid or has been removed.</p>
+        </div>
+      </div>
+    );
+  }
 
   const includedItems = project.scopeItems.filter(item => item.category === 'included');
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
@@ -21,58 +47,43 @@ export default function ClientProjectView() {
   const pendingChanges = project.changeRequests.filter(req => req.status === 'pending');
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
 
-  const handleAcknowledge = (itemId: string) => {
-    setProject(prev => ({
-      ...prev,
-      scopeItems: prev.scopeItems.map(item =>
-        item.id === itemId ? { ...item, acknowledged: !item.acknowledged } : item
-      ),
-    }));
-    toast.success('Item acknowledged');
+  const handleAcknowledge = async (itemId: string) => {
+    const item = project.scopeItems.find(i => i.id === itemId);
+    if (item) {
+      const success = await acknowledgeScopeItem(itemId, !item.acknowledged);
+      if (success) {
+        toast.success(item.acknowledged ? 'Acknowledgement removed' : 'Item acknowledged');
+      }
+    }
   };
 
-  const handleApproveChange = (changeId: string) => {
-    setProject(prev => ({
-      ...prev,
-      changeRequests: prev.changeRequests.map(req =>
-        req.id === changeId 
-          ? { ...req, status: 'approved' as const, resolvedAt: new Date() } 
-          : req
-      ),
-    }));
-    toast.success('Change approved! Your trade has been notified.');
+  const handleApproveChange = async (changeId: string) => {
+    const success = await updateChangeRequestStatus(changeId, 'approved');
+    if (success) {
+      toast.success('Change approved! Your trade has been notified.');
+    }
   };
 
-  const handleDeclineChange = (changeId: string) => {
-    setProject(prev => ({
-      ...prev,
-      changeRequests: prev.changeRequests.map(req =>
-        req.id === changeId 
-          ? { ...req, status: 'declined' as const, resolvedAt: new Date() } 
-          : req
-      ),
-    }));
-    toast.info('Change declined. Your trade has been notified.');
+  const handleDeclineChange = async (changeId: string) => {
+    const success = await updateChangeRequestStatus(changeId, 'declined');
+    if (success) {
+      toast.info('Change declined. Your trade has been notified.');
+    }
   };
 
-  const handleRequestChange = (description: string, imageUrl?: string) => {
-    const newRequest = {
-      id: `change_${Date.now()}`,
-      type: 'client_request' as const,
+  const handleRequestChange = async (description: string, imageUrl?: string) => {
+    const success = await createChangeRequest({
+      type: 'client_request',
       title: 'New change request',
       description,
       costImpact: 0,
       timeImpact: 0,
-      status: 'pending' as const,
-      createdAt: new Date(),
       imageUrl,
-    };
+    });
     
-    setProject(prev => ({
-      ...prev,
-      changeRequests: [...prev.changeRequests, newRequest],
-    }));
-    toast.success('Change request sent! Your trade will review and respond.');
+    if (success) {
+      toast.success('Change request sent! Your trade will review and respond.');
+    }
   };
 
   return (
