@@ -9,7 +9,7 @@ interface DashboardStatsProps {
 
 export function DashboardStats({ projects }: DashboardStatsProps) {
   const activeProjects = projects.filter(p => 
-    p.status === 'in_progress' || p.status === 'acknowledged'
+    p.status === 'in_progress' || p.status === 'acknowledged' || p.status === 'sent'
   ).length;
   
   const pendingApprovals = projects.reduce((acc, p) => 
