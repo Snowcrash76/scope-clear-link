@@ -11,20 +11,96 @@ import {
   CheckCircle2, 
   Clock,
   ExternalLink,
-  MoreVertical
+  Send,
+  RotateCcw,
+  Loader2
 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface ProjectCardProps {
   project: Project;
   onViewProject?: (id: string) => void;
+  onUpdateStatus?: (id: string, status: 'draft' | 'sent' | 'in_progress' | 'completed') => Promise<boolean>;
 }
 
-export function ProjectCard({ project, onViewProject }: ProjectCardProps) {
+export function ProjectCard({ project, onViewProject, onUpdateStatus }: ProjectCardProps) {
+  const [isUpdating, setIsUpdating] = useState(false);
   const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending').length;
   const unacknowledgedItems = project.scopeItems.filter(si => !si.acknowledged).length;
   const needsAttention = pendingChanges > 0 || (project.status === 'sent' && unacknowledgedItems > 0);
+
+  const handleStatusAction = async () => {
+    if (!onUpdateStatus || isUpdating) return;
+    
+    setIsUpdating(true);
+    let newStatus: 'draft' | 'sent' | 'in_progress' | 'completed';
+    let successMessage: string;
+    
+    if (project.status === 'draft') {
+      newStatus = 'sent';
+      successMessage = 'Job is now active';
+    } else if (project.status === 'completed') {
+      newStatus = 'in_progress';
+      successMessage = 'Job reopened';
+    } else {
+      newStatus = 'completed';
+      successMessage = 'Job marked as complete';
+    }
+    
+    const success = await onUpdateStatus(project.id, newStatus);
+    if (success) {
+      toast.success(successMessage);
+    }
+    setIsUpdating(false);
+  };
+
+  const getActionButton = () => {
+    if (!onUpdateStatus) return null;
+    
+    if (project.status === 'draft') {
+      return (
+        <Button 
+          variant="default" 
+          size="sm" 
+          onClick={handleStatusAction}
+          disabled={isUpdating}
+          className="gap-1.5"
+        >
+          {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          Send
+        </Button>
+      );
+    } else if (project.status === 'completed') {
+      return (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleStatusAction}
+          disabled={isUpdating}
+          className="gap-1.5"
+        >
+          {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <RotateCcw className="w-4 h-4" />}
+          Reopen
+        </Button>
+      );
+    } else {
+      return (
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleStatusAction}
+          disabled={isUpdating}
+          className="gap-1.5"
+        >
+          {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          Complete
+        </Button>
+      );
+    }
+  };
   
   const statusConfig = {
     draft: { label: 'Draft', variant: 'secondary' as const },
@@ -91,6 +167,7 @@ export function ProjectCard({ project, onViewProject }: ProjectCardProps) {
 
         {/* Actions */}
         <div className="flex gap-2">
+          {getActionButton()}
           <Button 
             variant="outline" 
             size="sm" 
