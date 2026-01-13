@@ -4,7 +4,8 @@ export interface ScopeItem {
   description: string;
   category: 'included' | 'excluded' | 'assumption';
   acknowledged: boolean;
-  imageUrl?: string;
+  imageUrl?: string; // Deprecated, use imageUrls
+  imageUrls?: string[];
 }
 
 export interface ChangeRequest {
