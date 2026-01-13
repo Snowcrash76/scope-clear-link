@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { ScopeItem } from '@/types/project';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { ImageDisplay } from '@/components/ImageUpload';
 
 interface ScopeSectionProps {
@@ -130,11 +130,16 @@ export function ScopeSection({
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                     {item.description}
                   </p>
-                  {item.imageUrl && (
+                  {/* Show multiple images if available, otherwise fall back to single image */}
+                  {item.imageUrls && item.imageUrls.length > 0 ? (
+                    <div className="mt-3">
+                      <MultiImageDisplay paths={item.imageUrls} />
+                    </div>
+                  ) : item.imageUrl ? (
                     <div className="mt-3">
                       <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-xs" />
                     </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

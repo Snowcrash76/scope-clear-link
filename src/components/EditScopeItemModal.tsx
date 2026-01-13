@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ImageUpload } from '@/components/ImageUpload';
+import { MultiImageUpload } from '@/components/MultiImageUpload';
 import {
   Dialog,
   DialogContent,
@@ -42,7 +42,9 @@ export function EditScopeItemModal({
   const [category, setCategory] = useState<'included' | 'excluded' | 'assumption'>(
     item?.category || 'included'
   );
-  const [imageUrl, setImageUrl] = useState<string | undefined>(item?.imageUrl);
+  const [imageUrls, setImageUrls] = useState<string[]>(
+    item?.imageUrls || (item?.imageUrl ? [item.imageUrl] : [])
+  );
 
   const isEditing = !!item;
 
@@ -53,7 +55,8 @@ export function EditScopeItemModal({
         title: title.trim(),
         description: description.trim(),
         category,
-        imageUrl,
+        imageUrls,
+        imageUrl: imageUrls[0], // Keep backwards compatibility
       });
       onOpenChange(false);
     }
@@ -72,13 +75,13 @@ export function EditScopeItemModal({
       setTitle(item?.title || '');
       setDescription(item?.description || '');
       setCategory(item?.category || 'included');
-      setImageUrl(item?.imageUrl);
+      setImageUrls(item?.imageUrls || (item?.imageUrl ? [item.imageUrl] : []));
     }
   }, [open, item]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">
             {isEditing ? 'Edit Scope Item' : 'Add Scope Item'}
@@ -143,8 +146,12 @@ export function EditScopeItemModal({
           </div>
 
           <div className="space-y-2">
-            <Label>Photo (optional)</Label>
-            <ImageUpload value={imageUrl} onChange={setImageUrl} />
+            <Label>Photos (optional)</Label>
+            <MultiImageUpload 
+              value={imageUrls} 
+              onChange={setImageUrls}
+              maxImages={10}
+            />
           </div>
         </div>
 
