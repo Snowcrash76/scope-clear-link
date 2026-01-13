@@ -1,22 +1,69 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ImagePlus, X, Image as ImageIcon } from 'lucide-react';
+import { ImagePlus, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 interface ImageUploadProps {
   value?: string;
   onChange: (url: string | undefined) => void;
   className?: string;
+  bucket?: string;
+  folder?: string;
 }
 
-export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
+export function ImageUpload({ 
+  value, 
+  onChange, 
+  className,
+  bucket = 'scope-images',
+  folder = 'uploads'
+}: ImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const handleFileChange = (file: File | null) => {
+  const uploadToStorage = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) {
+        console.error('Upload error:', error);
+        toast.error('Failed to upload image');
+        return null;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from(bucket)
+        .getPublicUrl(data.path);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleFileChange = async (file: File | null) => {
     if (file && file.type.startsWith('image/')) {
-      const url = URL.createObjectURL(file);
-      onChange(url);
+      const url = await uploadToStorage(file);
+      if (url) {
+        onChange(url);
+      }
     }
   };
 
@@ -72,12 +119,13 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={() => inputRef.current?.click()}
+      onClick={() => !isUploading && inputRef.current?.click()}
       className={cn(
         "relative flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg cursor-pointer transition-all duration-200",
         isDragging 
           ? "border-primary bg-primary/5" 
           : "border-border hover:border-primary/50 hover:bg-secondary/50",
+        isUploading && "pointer-events-none opacity-60",
         className
       )}
     >
@@ -87,11 +135,23 @@ export function ImageUpload({ value, onChange, className }: ImageUploadProps) {
         accept="image/*"
         onChange={handleInputChange}
         className="hidden"
+        disabled={isUploading}
       />
-      <ImagePlus className="w-6 h-6 text-muted-foreground" />
-      <span className="text-sm text-muted-foreground text-center">
-        Click or drag to add photo
-      </span>
+      {isUploading ? (
+        <>
+          <Loader2 className="w-6 h-6 text-muted-foreground animate-spin" />
+          <span className="text-sm text-muted-foreground text-center">
+            Uploading...
+          </span>
+        </>
+      ) : (
+        <>
+          <ImagePlus className="w-6 h-6 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground text-center">
+            Click or drag to add photo
+          </span>
+        </>
+      )}
     </div>
   );
 }
