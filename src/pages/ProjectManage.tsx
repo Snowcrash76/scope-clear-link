@@ -13,6 +13,7 @@ import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { useProject } from '@/hooks/useProject';
+import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest } from '@/types/project';
 import { 
   ArrowLeft, 
@@ -50,6 +51,7 @@ export default function ProjectManage() {
     createChangeRequest,
     updateChangeRequest,
     deleteChangeRequest,
+    updateChangeRequestStatus,
     updateStage,
     updateProjectStatus,
   } = useProject(id);
@@ -128,6 +130,20 @@ export default function ProjectManage() {
     }
   };
 
+  const handleApproveClientRequest = async (requestId: string) => {
+    const success = await updateChangeRequestStatus(requestId, 'approved');
+    if (success) {
+      toast.success('Client request approved');
+    }
+  };
+
+  const handleDeclineClientRequest = async (requestId: string) => {
+    const success = await updateChangeRequestStatus(requestId, 'declined');
+    if (success) {
+      toast.info('Client request declined');
+    }
+  };
+
   const handleUpdateStage = async (stageId: string, status: 'upcoming' | 'current' | 'completed') => {
     await updateStage(stageId, status);
   };
@@ -155,7 +171,13 @@ export default function ProjectManage() {
     toast.success('Client link copied to clipboard');
   };
 
-  const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending');
+  // Separate pending changes into client requests (need trade approval) and trade requests (awaiting client)
+  const pendingClientRequests = project.changeRequests.filter(
+    cr => cr.status === 'pending' && cr.type === 'client_request'
+  );
+  const pendingTradeRequests = project.changeRequests.filter(
+    cr => cr.status === 'pending' && cr.type !== 'client_request'
+  );
   const resolvedChanges = project.changeRequests.filter(cr => cr.status !== 'pending');
 
   const groupedScopeItems = {
@@ -229,9 +251,9 @@ export default function ProjectManage() {
             </TabsTrigger>
             <TabsTrigger value="changes">
               Changes
-              {pendingChanges.length > 0 && (
+              {pendingClientRequests.length > 0 && (
                 <Badge variant="pending" className="ml-2">
-                  {pendingChanges.length}
+                  {pendingClientRequests.length}
                 </Badge>
               )}
             </TabsTrigger>
@@ -348,12 +370,29 @@ export default function ProjectManage() {
               </Button>
             </div>
 
-            {pendingChanges.length > 0 && (
+            {pendingClientRequests.length > 0 && (
               <div className="space-y-4">
                 <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                  Awaiting Client Response ({pendingChanges.length})
+                  Client Requests - Needs Your Response ({pendingClientRequests.length})
                 </h3>
-                {pendingChanges.map((request) => (
+                {pendingClientRequests.map((request) => (
+                  <ChangeRequestCard
+                    key={request.id}
+                    request={request}
+                    viewerRole="trade"
+                    onApprove={handleApproveClientRequest}
+                    onDecline={handleDeclineClientRequest}
+                  />
+                ))}
+              </div>
+            )}
+
+            {pendingTradeRequests.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                  Awaiting Client Response ({pendingTradeRequests.length})
+                </h3>
+                {pendingTradeRequests.map((request) => (
                   <ChangeRequestItem 
                     key={request.id} 
                     request={request} 
@@ -378,7 +417,7 @@ export default function ProjectManage() {
               </div>
             )}
 
-            {project.changeRequests.length === 0 && (
+            {project.changeRequests.length === 0 && pendingClientRequests.length === 0 && pendingTradeRequests.length === 0 && (
               <Card className="p-12 text-center">
                 <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">No change requests yet</p>
