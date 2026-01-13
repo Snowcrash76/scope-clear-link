@@ -9,6 +9,7 @@ import { ImageDisplay } from '@/components/ImageUpload';
 import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { StageManager } from '@/components/StageManager';
+import { DocumentsSection } from '@/components/DocumentsSection';
 import { useProject } from '@/hooks/useProject';
 import { ScopeItem, ChangeRequest } from '@/types/project';
 import { 
@@ -39,7 +40,9 @@ export default function ProjectManage() {
   
   const {
     project,
+    documents,
     loading,
+    refetch,
     saveScopeItem,
     deleteScopeItem,
     createChangeRequest,
@@ -212,6 +215,7 @@ export default function ProjectManage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="stages">Stages</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
 
           {/* Scope Tab */}
@@ -346,6 +350,15 @@ export default function ProjectManage() {
               currentStageIndex={project.currentStageIndex}
               onUpdateStage={handleUpdateStage}
               onSetCurrentStage={handleSetCurrentStage}
+            />
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="mt-0">
+            <DocumentsSection
+              projectId={project.id}
+              documents={documents}
+              onRefresh={refetch}
             />
           </TabsContent>
         </Tabs>
