@@ -6,6 +6,7 @@ export interface ScopeItem {
   acknowledged: boolean;
   imageUrl?: string; // Deprecated, use imageUrls
   imageUrls?: string[];
+  cost?: number;
 }
 
 export interface ChangeRequest {

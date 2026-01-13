@@ -24,6 +24,7 @@ type DbScopeItem = {
   acknowledged: boolean;
   image_url: string | null;
   image_urls: string[] | null;
+  cost: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -204,6 +205,7 @@ export function useProject(projectId: string | undefined) {
           acknowledged: s.acknowledged,
           imageUrl: s.image_url || undefined,
           imageUrls: s.image_urls || (s.image_url ? [s.image_url] : []),
+          cost: s.cost || undefined,
         })),
         changeRequests: changeRequestsWithSignedUrls.map(c => ({
           id: c.id,
@@ -254,6 +256,7 @@ export function useProject(projectId: string | undefined) {
             category: itemData.category,
             image_url: itemData.imageUrl || (itemData.imageUrls?.[0] ?? null),
             image_urls: itemData.imageUrls || [],
+            cost: itemData.cost ?? null,
           })
           .eq('id', itemData.id);
 
@@ -268,6 +271,7 @@ export function useProject(projectId: string | undefined) {
             category: itemData.category,
             image_url: itemData.imageUrl || (itemData.imageUrls?.[0] ?? null),
             image_urls: itemData.imageUrls || [],
+            cost: itemData.cost ?? null,
           });
 
         if (error) throw error;

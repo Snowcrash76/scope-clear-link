@@ -219,6 +219,7 @@ export type Database = {
         Row: {
           acknowledged: boolean
           category: Database["public"]["Enums"]["scope_category"]
+          cost: number | null
           created_at: string
           description: string | null
           id: string
@@ -231,6 +232,7 @@ export type Database = {
         Insert: {
           acknowledged?: boolean
           category?: Database["public"]["Enums"]["scope_category"]
+          cost?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -243,6 +245,7 @@ export type Database = {
         Update: {
           acknowledged?: boolean
           category?: Database["public"]["Enums"]["scope_category"]
+          cost?: number | null
           created_at?: string
           description?: string | null
           id?: string
