@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -9,20 +9,45 @@ import { DashboardStats } from '@/components/DashboardStats';
 import { CreateJobModal } from '@/components/CreateJobModal';
 import { mockProjects } from '@/data/mockProjects';
 import { Project, ScopeItem } from '@/types/project';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Plus, 
   Search, 
   Briefcase,
   ArrowLeft,
-  User
+  LogOut
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function TradeDashboard() {
+  const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [projects, setProjects] = useState<Project[]>(mockProjects);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+    toast.success('Signed out successfully');
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const filteredProjects = projects.filter(project => {
     const matchesSearch = 
@@ -91,7 +116,7 @@ export default function TradeDashboard() {
               <div>
                 <h1 className="font-heading text-xl sm:text-2xl font-bold">Dashboard</h1>
                 <p className="text-sm text-muted-foreground hidden sm:block">
-                  Thompson Landscapes
+                  {profile?.business_name || 'My Business'}
                 </p>
               </div>
             </div>
@@ -103,9 +128,24 @@ export default function TradeDashboard() {
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">New Job</span>
               </Button>
-              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium">
-                MT
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium hover:opacity-90 transition-opacity">
+                    {profile ? getInitials(profile.contact_name) : '??'}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <div className="px-2 py-1.5">
+                    <p className="font-medium text-sm">{profile?.contact_name}</p>
+                    <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

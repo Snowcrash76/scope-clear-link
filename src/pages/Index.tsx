@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   CheckCircle2, 
   Shield, 
@@ -15,6 +16,8 @@ import {
 } from 'lucide-react';
 
 export default function Index() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero */}
@@ -35,17 +38,33 @@ export default function Index() {
               accepted quotes into shared understanding.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="accent" asChild>
-                <Link to="/dashboard">
-                  Trade Dashboard
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/demo">
-                  Client Demo
-                </Link>
-              </Button>
+              {user ? (
+                <Button size="lg" variant="accent" asChild>
+                  <Link to="/dashboard">
+                    Go to Dashboard
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
+              ) : (
+                <>
+                  <Button size="lg" variant="accent" asChild>
+                    <Link to="/signup">
+                      Get Started Free
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Link>
+                  </Button>
+                  <Button size="lg" variant="outline" asChild>
+                    <Link to="/login">
+                      Sign In
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
+            <div className="mt-4">
+              <Link to="/demo" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Or view the client demo →
+              </Link>
             </div>
           </div>
         </div>
