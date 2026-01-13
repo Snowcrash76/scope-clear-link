@@ -31,7 +31,8 @@ import {
   DollarSign,
   CheckCircle2,
   Copy,
-  Loader2
+  Loader2,
+  Calculator
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -344,9 +345,35 @@ export default function ProjectManage() {
                       ))}
                     </div>
                   )}
-                </Card>
+              </Card>
               );
             })}
+
+            {/* Total Quote Summary for Trade View */}
+            {(() => {
+              const totalQuote = groupedScopeItems.included.reduce((sum, item) => sum + (item.cost || 0), 0);
+              if (totalQuote > 0) {
+                return (
+                  <Card className="p-4 bg-primary/5 border-primary/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Calculator className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-heading font-semibold">Total Quote Amount</h3>
+                          <p className="text-sm text-muted-foreground">Sum of all included items</p>
+                        </div>
+                      </div>
+                      <span className="text-xl font-bold text-primary">
+                        ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </Card>
+                );
+              }
+              return null;
+            })()}
 
             {project.scopeItems.length === 0 && (
               <Card className="p-12 text-center">
