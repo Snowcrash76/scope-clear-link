@@ -101,7 +101,71 @@ export function useProject(projectId: string | undefined) {
       const changeRequests = (changeRes.data || []) as DbChangeRequest[];
       const projectStages = (stageRes.data || []) as DbProjectStage[];
       const profile = profileRes.data;
-      const projectDocuments = (docsRes.data || []) as ProjectDocument[];
+      const rawDocuments = (docsRes.data || []) as ProjectDocument[];
+
+      // Generate signed URLs for documents (bucket is now private)
+      const projectDocuments = await Promise.all(
+        rawDocuments.map(async (doc) => {
+          // If it's a full URL (legacy), extract the path; otherwise use as-is
+          let filePath = doc.file_url;
+          if (doc.file_url.includes('/project-documents/')) {
+            filePath = doc.file_url.split('/project-documents/').pop() || doc.file_url;
+          }
+          
+          const { data: signedData } = await supabase.storage
+            .from('project-documents')
+            .createSignedUrl(filePath, 60 * 60 * 24); // 24 hours
+          
+          return {
+            ...doc,
+            file_url: signedData?.signedUrl || doc.file_url,
+          };
+        })
+      );
+
+      // Generate signed URLs for scope item images (bucket is now private)
+      const scopeItemsWithSignedUrls = await Promise.all(
+        scopeItems.map(async (item) => {
+          if (!item.image_url) return item;
+          
+          // If it's a full URL, extract the path
+          let imagePath = item.image_url;
+          if (item.image_url.includes('/scope-images/')) {
+            imagePath = item.image_url.split('/scope-images/').pop() || item.image_url;
+          }
+          
+          const { data: signedData } = await supabase.storage
+            .from('scope-images')
+            .createSignedUrl(imagePath, 60 * 60 * 24); // 24 hours
+          
+          return {
+            ...item,
+            image_url: signedData?.signedUrl || item.image_url,
+          };
+        })
+      );
+
+      // Generate signed URLs for change request images
+      const changeRequestsWithSignedUrls = await Promise.all(
+        changeRequests.map(async (cr) => {
+          if (!cr.image_url) return cr;
+          
+          // If it's a full URL, extract the path
+          let imagePath = cr.image_url;
+          if (cr.image_url.includes('/scope-images/')) {
+            imagePath = cr.image_url.split('/scope-images/').pop() || cr.image_url;
+          }
+          
+          const { data: signedData } = await supabase.storage
+            .from('scope-images')
+            .createSignedUrl(imagePath, 60 * 60 * 24); // 24 hours
+          
+          return {
+            ...cr,
+            image_url: signedData?.signedUrl || cr.image_url,
+          };
+        })
+      );
 
       const p = projectData as DbProject;
       const currentStageIndex = projectStages.findIndex(s => s.status === 'current');
@@ -117,7 +181,7 @@ export function useProject(projectId: string | undefined) {
         createdAt: new Date(p.created_at),
         updatedAt: new Date(p.updated_at),
         currentStageIndex: currentStageIndex >= 0 ? currentStageIndex : 0,
-        scopeItems: scopeItems.map(s => ({
+        scopeItems: scopeItemsWithSignedUrls.map(s => ({
           id: s.id,
           title: s.title,
           description: s.description || '',
@@ -125,7 +189,7 @@ export function useProject(projectId: string | undefined) {
           acknowledged: s.acknowledged,
           imageUrl: s.image_url || undefined,
         })),
-        changeRequests: changeRequests.map(c => ({
+        changeRequests: changeRequestsWithSignedUrls.map(c => ({
           id: c.id,
           type: c.type,
           title: c.title,

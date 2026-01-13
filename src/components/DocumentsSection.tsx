@@ -54,18 +54,14 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
 
         if (uploadError) throw uploadError;
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('project-documents')
-          .getPublicUrl(fileName);
-
-        // Save document record
+        // Store file path (not public URL) for private bucket
+        // Signed URLs will be generated when fetching documents
         const { error: dbError } = await supabase
           .from('project_documents')
           .insert({
             project_id: projectId,
             file_name: file.name,
-            file_url: urlData.publicUrl,
+            file_url: fileName, // Store path, not full URL
             file_type: file.type || null,
             file_size: file.size,
           });

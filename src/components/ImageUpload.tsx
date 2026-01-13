@@ -44,11 +44,18 @@ export function ImageUpload({
         return null;
       }
 
-      const { data: urlData } = supabase.storage
+      // Use signed URL for private bucket (24 hour expiry)
+      const { data: urlData, error: urlError } = await supabase.storage
         .from(bucket)
-        .getPublicUrl(data.path);
+        .createSignedUrl(data.path, 60 * 60 * 24); // 24 hours
 
-      return urlData.publicUrl;
+      if (urlError || !urlData?.signedUrl) {
+        console.error('Signed URL error:', urlError);
+        toast.error('Failed to generate image URL');
+        return null;
+      }
+
+      return urlData.signedUrl;
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Failed to upload image');
