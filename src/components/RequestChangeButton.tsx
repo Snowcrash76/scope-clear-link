@@ -2,23 +2,32 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { ImageUpload } from '@/components/ImageUpload';
 import { MessageSquarePlus, X, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface RequestChangeButtonProps {
-  onSubmit: (description: string) => void;
+  onSubmit: (description: string, imageUrl?: string) => void;
 }
 
 export function RequestChangeButton({ onSubmit }: RequestChangeButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | undefined>();
 
   const handleSubmit = () => {
     if (description.trim()) {
-      onSubmit(description);
+      onSubmit(description, imageUrl);
       setDescription('');
+      setImageUrl(undefined);
       setIsOpen(false);
     }
+  };
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setDescription('');
+    setImageUrl(undefined);
   };
 
   if (isOpen) {
@@ -27,7 +36,7 @@ export function RequestChangeButton({ onSubmit }: RequestChangeButtonProps) {
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-heading font-semibold">Request a Change</h3>
           <button 
-            onClick={() => setIsOpen(false)}
+            onClick={handleClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-5 h-5" />
@@ -42,8 +51,12 @@ export function RequestChangeButton({ onSubmit }: RequestChangeButtonProps) {
           onChange={(e) => setDescription(e.target.value)}
           className="mb-3 min-h-[100px]"
         />
+        <div className="mb-3">
+          <p className="text-sm text-muted-foreground mb-2">Add a photo (optional)</p>
+          <ImageUpload value={imageUrl} onChange={setImageUrl} />
+        </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="ghost" onClick={() => setIsOpen(false)}>
+          <Button variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
           <Button 

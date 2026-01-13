@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ImageDisplay } from '@/components/ImageUpload';
 
 interface ScopeSectionProps {
   title: string;
@@ -129,6 +130,11 @@ export function ScopeSection({
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                     {item.description}
                   </p>
+                  {item.imageUrl && (
+                    <div className="mt-3">
+                      <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-xs" />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
