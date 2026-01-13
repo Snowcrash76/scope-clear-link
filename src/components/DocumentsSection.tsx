@@ -87,12 +87,20 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
     setDeletingId(doc.id);
 
     try {
-      // Extract file path from URL
-      const urlParts = doc.file_url.split('/project-documents/');
-      if (urlParts.length > 1) {
-        const filePath = urlParts[1];
-        await supabase.storage.from('project-documents').remove([filePath]);
+      // Clean the file path - remove any URL parts if present
+      let filePath = doc.file_url;
+      
+      // If it's a full URL, extract just the path
+      if (filePath.includes('/project-documents/')) {
+        filePath = filePath.split('/project-documents/')[1];
+        // Remove any query parameters
+        if (filePath.includes('?')) {
+          filePath = filePath.split('?')[0];
+        }
       }
+      
+      // Delete from storage
+      await supabase.storage.from('project-documents').remove([filePath]);
 
       // Delete database record
       const { error } = await supabase
@@ -129,10 +137,22 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
 
   const handleDownload = async (doc: ProjectDocument) => {
     try {
+      // Clean the file path - remove any URL parts if present
+      let filePath = doc.file_url;
+      
+      // If it's a full URL, extract just the path
+      if (filePath.includes('/project-documents/')) {
+        filePath = filePath.split('/project-documents/')[1];
+        // Remove any query parameters
+        if (filePath.includes('?')) {
+          filePath = filePath.split('?')[0];
+        }
+      }
+      
       // Get signed URL for download
       const { data, error } = await supabase.storage
         .from('project-documents')
-        .createSignedUrl(doc.file_url, 60); // 60 seconds validity
+        .createSignedUrl(filePath, 60); // 60 seconds validity
 
       if (error) throw error;
 
@@ -151,12 +171,29 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
 
   const handleView = async (doc: ProjectDocument) => {
     try {
+      // Clean the file path - remove any URL parts if present
+      let filePath = doc.file_url;
+      
+      // If it's a full URL, extract just the path
+      if (filePath.includes('/project-documents/')) {
+        filePath = filePath.split('/project-documents/')[1];
+        // Remove any query parameters
+        if (filePath.includes('?')) {
+          filePath = filePath.split('?')[0];
+        }
+      }
+      
+      console.log('Viewing document with path:', filePath);
+      
       // Get signed URL for viewing
       const { data, error } = await supabase.storage
         .from('project-documents')
-        .createSignedUrl(doc.file_url, 300); // 5 minutes validity
+        .createSignedUrl(filePath, 300); // 5 minutes validity
 
-      if (error) throw error;
+      if (error) {
+        console.error('Signed URL error:', error);
+        throw error;
+      }
 
       // Open in new tab
       window.open(data.signedUrl, '_blank');
