@@ -1,0 +1,140 @@
+import { useState } from 'react';
+import { ScopeItem } from '@/types/project';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Check, CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+interface ScopeSectionProps {
+  title: string;
+  description: string;
+  category: 'included' | 'excluded' | 'assumption';
+  items: ScopeItem[];
+  onAcknowledge: (itemId: string) => void;
+  isClientView?: boolean;
+}
+
+const categoryConfig = {
+  included: {
+    icon: Package,
+    color: 'text-approved',
+    bgColor: 'bg-approved/5',
+    borderColor: 'border-approved/20',
+    badge: 'included' as const,
+  },
+  excluded: {
+    icon: Ban,
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/5',
+    borderColor: 'border-destructive/20',
+    badge: 'excluded' as const,
+  },
+  assumption: {
+    icon: AlertTriangle,
+    color: 'text-pending-foreground',
+    bgColor: 'bg-pending/5',
+    borderColor: 'border-pending/20',
+    badge: 'assumption' as const,
+  },
+};
+
+export function ScopeSection({ 
+  title, 
+  description, 
+  category, 
+  items, 
+  onAcknowledge,
+  isClientView = true 
+}: ScopeSectionProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const config = categoryConfig[category];
+  const Icon = config.icon;
+  
+  const acknowledgedCount = items.filter(item => item.acknowledged).length;
+  const allAcknowledged = acknowledgedCount === items.length;
+
+  return (
+    <Card className={cn(
+      "overflow-hidden border-2 transition-all duration-200",
+      config.borderColor,
+      isExpanded && config.bgColor
+    )}>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-secondary/50 transition-colors"
+      >
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-lg", config.bgColor)}>
+            <Icon className={cn("w-5 h-5", config.color)} />
+          </div>
+          <div className="text-left">
+            <h3 className="font-heading font-semibold text-lg">{title}</h3>
+            <p className="text-sm text-muted-foreground">{description}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {isClientView && (
+            <Badge variant={allAcknowledged ? 'success' : 'secondary'} className="hidden sm:flex">
+              {acknowledgedCount}/{items.length} acknowledged
+            </Badge>
+          )}
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {isExpanded && (
+        <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3 animate-fade-in">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className={cn(
+                "p-4 rounded-lg bg-card border transition-all duration-200",
+                item.acknowledged ? "border-approved/30" : "border-border"
+              )}
+            >
+              <div className="flex items-start gap-3">
+                {isClientView ? (
+                  <button
+                    onClick={() => onAcknowledge(item.id)}
+                    className={cn(
+                      "mt-0.5 flex-shrink-0 transition-colors",
+                      item.acknowledged ? "text-approved" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {item.acknowledged ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <Circle className="w-5 h-5" />
+                    )}
+                  </button>
+                ) : (
+                  <div className={cn(
+                    "mt-0.5 flex-shrink-0",
+                    item.acknowledged ? "text-approved" : "text-muted-foreground"
+                  )}>
+                    {item.acknowledged ? (
+                      <CheckCircle2 className="w-5 h-5" />
+                    ) : (
+                      <Circle className="w-5 h-5" />
+                    )}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-foreground">{item.title}</h4>
+                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
