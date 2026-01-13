@@ -95,9 +95,11 @@ export function ProjectCard({ project, onViewProject }: ProjectCardProps) {
             variant="outline" 
             size="sm" 
             className="flex-1"
-            onClick={() => onViewProject?.(project.id)}
+            asChild
           >
-            Manage
+            <Link to={`/manage/${project.id}`}>
+              Manage
+            </Link>
           </Button>
           <Button 
             variant="ghost" 
