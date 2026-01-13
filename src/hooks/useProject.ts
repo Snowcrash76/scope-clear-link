@@ -128,10 +128,17 @@ export function useProject(projectId: string | undefined) {
         scopeItems.map(async (item) => {
           if (!item.image_url) return item;
           
+          // Skip blob URLs and other non-storage URLs (legacy data)
+          if (item.image_url.startsWith('blob:') || !item.image_url.includes('supabase')) {
+            return { ...item, image_url: null }; // Clear invalid blob URLs
+          }
+          
           // If it's a full URL, extract the path
           let imagePath = item.image_url;
           if (item.image_url.includes('/scope-images/')) {
             imagePath = item.image_url.split('/scope-images/').pop() || item.image_url;
+            // Remove query params if present (from previous signed URLs)
+            imagePath = imagePath.split('?')[0];
           }
           
           const { data: signedData } = await supabase.storage
@@ -150,10 +157,17 @@ export function useProject(projectId: string | undefined) {
         changeRequests.map(async (cr) => {
           if (!cr.image_url) return cr;
           
+          // Skip blob URLs and other non-storage URLs (legacy data)
+          if (cr.image_url.startsWith('blob:') || !cr.image_url.includes('supabase')) {
+            return { ...cr, image_url: null }; // Clear invalid blob URLs
+          }
+          
           // If it's a full URL, extract the path
           let imagePath = cr.image_url;
           if (cr.image_url.includes('/scope-images/')) {
             imagePath = cr.image_url.split('/scope-images/').pop() || cr.image_url;
+            // Remove query params if present (from previous signed URLs)
+            imagePath = imagePath.split('?')[0];
           }
           
           const { data: signedData } = await supabase.storage
