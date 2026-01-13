@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/StatusBadge';
 import { ImageDisplay } from '@/components/ImageUpload';
 import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
+import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { useProject } from '@/hooks/useProject';
@@ -46,6 +47,8 @@ export default function ProjectManage() {
     saveScopeItem,
     deleteScopeItem,
     createChangeRequest,
+    updateChangeRequest,
+    deleteChangeRequest,
     updateStage,
     updateProjectStatus,
   } = useProject(id);
@@ -54,6 +57,7 @@ export default function ProjectManage() {
   const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
+  const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
 
   if (loading) {
     return (
@@ -104,6 +108,22 @@ export default function ProjectManage() {
     if (success) {
       toast.success('Change request sent to client');
       setIsSendingChangeRequest(false);
+    }
+  };
+
+  const handleUpdateChangeRequest = async (requestData: ChangeRequest) => {
+    const success = await updateChangeRequest(requestData);
+    if (success) {
+      toast.success('Change request updated');
+      setEditingChangeRequest(null);
+    }
+  };
+
+  const handleDeleteChangeRequest = async (requestId: string) => {
+    const success = await deleteChangeRequest(requestId);
+    if (success) {
+      toast.success('Change request deleted');
+      setEditingChangeRequest(null);
     }
   };
 
@@ -315,7 +335,11 @@ export default function ProjectManage() {
                   Awaiting Client Response ({pendingChanges.length})
                 </h3>
                 {pendingChanges.map((request) => (
-                  <ChangeRequestItem key={request.id} request={request} />
+                  <ChangeRequestItem 
+                    key={request.id} 
+                    request={request} 
+                    onEdit={() => setEditingChangeRequest(request)}
+                  />
                 ))}
               </div>
             )}
@@ -326,7 +350,11 @@ export default function ProjectManage() {
                   Resolved ({resolvedChanges.length})
                 </h3>
                 {resolvedChanges.map((request) => (
-                  <ChangeRequestItem key={request.id} request={request} />
+                  <ChangeRequestItem 
+                    key={request.id} 
+                    request={request} 
+                    onEdit={() => setEditingChangeRequest(request)}
+                  />
                 ))}
               </div>
             )}
@@ -384,11 +412,21 @@ export default function ProjectManage() {
         onSend={handleSendChangeRequest}
         scopeItems={project.scopeItems}
       />
+
+      <EditChangeRequestModal
+        open={!!editingChangeRequest}
+        onOpenChange={(open) => {
+          if (!open) setEditingChangeRequest(null);
+        }}
+        request={editingChangeRequest}
+        onSave={handleUpdateChangeRequest}
+        onDelete={handleDeleteChangeRequest}
+      />
     </div>
   );
 }
 
-function ChangeRequestItem({ request }: { request: ChangeRequest }) {
+function ChangeRequestItem({ request, onEdit }: { request: ChangeRequest; onEdit?: () => void }) {
   const typeConfig = {
     client_request: { icon: User, label: 'Client Request', color: 'text-primary' },
     site_issue: { icon: AlertTriangle, label: 'Site Issue', color: 'text-warning' },
@@ -400,7 +438,7 @@ function ChangeRequestItem({ request }: { request: ChangeRequest }) {
 
   return (
     <Card className={cn(
-      "p-4",
+      "p-4 group",
       request.status === 'pending' && "ring-2 ring-pending/30"
     )}>
       <div className="flex items-start justify-between gap-3 mb-3">
@@ -408,7 +446,19 @@ function ChangeRequestItem({ request }: { request: ChangeRequest }) {
           <Icon className={cn("w-4 h-4", config.color)} />
           <Badge variant="secondary" className="text-xs">{config.label}</Badge>
         </div>
-        <StatusBadge status={request.status} />
+        <div className="flex items-center gap-2">
+          {onEdit && (
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
+              onClick={onEdit}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          <StatusBadge status={request.status} />
+        </div>
       </div>
 
       <h4 className="font-medium mb-1">{request.title}</h4>

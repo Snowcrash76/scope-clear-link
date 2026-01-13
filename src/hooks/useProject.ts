@@ -337,6 +337,50 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
+  const updateChangeRequest = async (requestData: ChangeRequest) => {
+    try {
+      const { error } = await supabase
+        .from('change_requests')
+        .update({
+          type: requestData.type,
+          title: requestData.title,
+          description: requestData.description,
+          reason: requestData.reason,
+          cost_impact: requestData.costImpact,
+          time_impact: requestData.timeImpact?.toString(),
+          image_url: requestData.imageUrl,
+        })
+        .eq('id', requestData.id);
+
+      if (error) throw error;
+
+      await fetchProject();
+      return true;
+    } catch (error) {
+      console.error('Error updating change request:', error);
+      toast.error('Failed to update change request');
+      return false;
+    }
+  };
+
+  const deleteChangeRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('change_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      await fetchProject();
+      return true;
+    } catch (error) {
+      console.error('Error deleting change request:', error);
+      toast.error('Failed to delete change request');
+      return false;
+    }
+  };
+
   const updateChangeRequestStatus = async (requestId: string, status: 'approved' | 'declined') => {
     try {
       const { error } = await supabase
@@ -418,6 +462,8 @@ export function useProject(projectId: string | undefined) {
     deleteScopeItem,
     acknowledgeScopeItem,
     createChangeRequest,
+    updateChangeRequest,
+    deleteChangeRequest,
     updateChangeRequestStatus,
     updateStage,
     updateProjectStatus,
