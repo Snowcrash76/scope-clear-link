@@ -451,7 +451,7 @@ function ChangeRequestItem({ request, onEdit }: { request: ChangeRequest; onEdit
             <Button 
               variant="ghost" 
               size="icon"
-              className="opacity-0 group-hover:opacity-100 transition-opacity h-7 w-7"
+              className="h-7 w-7"
               onClick={onEdit}
             >
               <Pencil className="w-3.5 h-3.5" />
