@@ -253,19 +253,24 @@ export default function ClientProjectView() {
                       View Details
                     </Button>
                     <Button onClick={() => {
-                      downloadQuotePDF(
-                        activeQuote,
-                        {
-                          name: project.name,
-                          clientName: project.clientName,
-                          clientEmail: project.clientEmail,
-                          tradeBusinessName: project.tradeBusinessName,
-                          tradeName: project.tradeName,
-                        },
-                        project.scopeItems,
-                        project.changeRequests
-                      );
-                      toast.success('Quote PDF downloaded');
+                      try {
+                        downloadQuotePDF(
+                          activeQuote,
+                          {
+                            name: project.name,
+                            clientName: project.clientName,
+                            clientEmail: project.clientEmail,
+                            tradeBusinessName: project.tradeBusinessName,
+                            tradeName: project.tradeName,
+                          },
+                          project.scopeItems,
+                          project.changeRequests
+                        );
+                        toast.success('Quote PDF downloaded');
+                      } catch (error) {
+                        console.error('PDF download error:', error);
+                        toast.error('Failed to download PDF');
+                      }
                     }}>
                       <Download className="w-4 h-4 mr-2" />
                       Download PDF
