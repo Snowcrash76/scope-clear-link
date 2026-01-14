@@ -29,7 +29,7 @@ import {
 export default function TradeDashboard() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { projects, loading, createProject, updateProjectStatus, refetch } = useProjects();
+  const { projects, loading, createProject, updateProjectStatus, deleteProject, refetch } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
@@ -193,6 +193,7 @@ export default function TradeDashboard() {
                         project={project}
                         onViewProject={handleViewProject}
                         onUpdateStatus={updateProjectStatus}
+                        onDeleteProject={deleteProject}
                       />
                     ))}
                   </div>
@@ -213,6 +214,7 @@ export default function TradeDashboard() {
                         project={project}
                         onViewProject={handleViewProject}
                         onUpdateStatus={updateProjectStatus}
+                        onDeleteProject={deleteProject}
                       />
                     ))}
                   </div>
@@ -233,6 +235,7 @@ export default function TradeDashboard() {
                         project={project}
                         onViewProject={handleViewProject}
                         onUpdateStatus={updateProjectStatus}
+                        onDeleteProject={deleteProject}
                       />
                     ))}
                   </div>
