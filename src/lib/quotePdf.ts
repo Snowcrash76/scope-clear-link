@@ -48,7 +48,10 @@ export function generateQuotePDF(
   doc.setFont('helvetica', 'normal');
   doc.text(quote.quoteNumber, pageWidth - margin, 24, { align: 'right' });
   doc.setFontSize(10);
-  doc.text(`Created: ${format(quote.createdAt, 'dd MMM yyyy')}`, pageWidth - margin, 32, { align: 'right' });
+  
+  // Handle date formatting safely
+  const createdDate = quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt);
+  doc.text(`Created: ${format(createdDate, 'dd MMM yyyy')}`, pageWidth - margin, 32, { align: 'right' });
 
   yPos = 55;
 
@@ -95,7 +98,8 @@ export function generateQuotePDF(
     doc.setFontSize(10);
     doc.setTextColor(...mutedColor);
     yPos += 6;
-    doc.text(`Valid Until: ${format(quote.validUntil, 'dd MMM yyyy')}`, margin, yPos);
+    const validDate = quote.validUntil instanceof Date ? quote.validUntil : new Date(quote.validUntil);
+    doc.text(`Valid Until: ${format(validDate, 'dd MMM yyyy')}`, margin, yPos);
   }
 
   yPos += 15;
@@ -348,6 +352,11 @@ export function downloadQuotePDF(
   scopeItems: ScopeItem[],
   changeRequests: ChangeRequest[] = []
 ): void {
-  const doc = generateQuotePDF(quote, project, scopeItems, changeRequests);
-  doc.save(`${quote.quoteNumber}.pdf`);
+  try {
+    const doc = generateQuotePDF(quote, project, scopeItems, changeRequests);
+    doc.save(`${quote.quoteNumber}.pdf`);
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    throw error;
+  }
 }
