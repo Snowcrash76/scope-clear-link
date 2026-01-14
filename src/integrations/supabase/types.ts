@@ -70,6 +70,139 @@ export type Database = {
           },
         ]
       }
+      invoice_line_items: {
+        Row: {
+          change_request_id: string | null
+          created_at: string
+          description: string
+          id: string
+          invoice_id: string
+          quantity: number | null
+          scope_item_id: string | null
+          total: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          change_request_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          invoice_id: string
+          quantity?: number | null
+          scope_item_id?: string | null
+          total?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          change_request_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          invoice_id?: string
+          quantity?: number | null
+          scope_item_id?: string | null
+          total?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_change_request_id_fkey"
+            columns: ["change_request_id"]
+            isOneToOne: false
+            referencedRelation: "change_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_line_items_scope_item_id_fkey"
+            columns: ["scope_item_id"]
+            isOneToOne: false
+            referencedRelation: "scope_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoices: {
+        Row: {
+          amount_paid: number | null
+          created_at: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          notes: string | null
+          paid_at: string | null
+          project_id: string
+          quote_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subtotal: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          terms: string | null
+          total: number | null
+          type: Database["public"]["Enums"]["invoice_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount_paid?: number | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          notes?: string | null
+          paid_at?: string | null
+          project_id: string
+          quote_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          terms?: string | null
+          total?: number | null
+          type?: Database["public"]["Enums"]["invoice_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount_paid?: number | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          paid_at?: string | null
+          project_id?: string
+          quote_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          terms?: string | null
+          total?: number | null
+          type?: Database["public"]["Enums"]["invoice_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           business_name: string
@@ -184,6 +317,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          active_quote_id: string | null
           client_email: string
           client_name: string
           created_at: string
@@ -195,6 +329,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          active_quote_id?: string | null
           client_email: string
           client_name: string
           created_at?: string
@@ -206,6 +341,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          active_quote_id?: string | null
           client_email?: string
           client_name?: string
           created_at?: string
@@ -216,7 +352,80 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_active_quote_id_fkey"
+            columns: ["active_quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotes: {
+        Row: {
+          approved_at: string | null
+          client_comment: string | null
+          created_at: string
+          declined_at: string | null
+          id: string
+          notes: string | null
+          project_id: string
+          quote_number: string
+          status: Database["public"]["Enums"]["quote_status"]
+          subtotal: number | null
+          tax_amount: number | null
+          tax_rate: number | null
+          terms: string | null
+          total: number | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          client_comment?: string | null
+          created_at?: string
+          declined_at?: string | null
+          id?: string
+          notes?: string | null
+          project_id: string
+          quote_number: string
+          status?: Database["public"]["Enums"]["quote_status"]
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          terms?: string | null
+          total?: number | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          client_comment?: string | null
+          created_at?: string
+          declined_at?: string | null
+          id?: string
+          notes?: string | null
+          project_id?: string
+          quote_number?: string
+          status?: Database["public"]["Enums"]["quote_status"]
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_rate?: number | null
+          terms?: string | null
+          total?: number | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scope_items: {
         Row: {
@@ -278,7 +487,10 @@ export type Database = {
     Enums: {
       change_request_status: "pending" | "approved" | "declined"
       change_request_type: "client_request" | "site_issue" | "substitution"
+      invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
+      invoice_type: "staged" | "final"
       project_status: "draft" | "sent" | "in_progress" | "completed"
+      quote_status: "draft" | "sent" | "approved" | "declined" | "revised"
       scope_category: "included" | "excluded" | "assumption"
       stage_status: "upcoming" | "current" | "completed"
     }
@@ -410,7 +622,10 @@ export const Constants = {
     Enums: {
       change_request_status: ["pending", "approved", "declined"],
       change_request_type: ["client_request", "site_issue", "substitution"],
+      invoice_status: ["draft", "sent", "paid", "overdue", "cancelled"],
+      invoice_type: ["staged", "final"],
       project_status: ["draft", "sent", "in_progress", "completed"],
+      quote_status: ["draft", "sent", "approved", "declined", "revised"],
       scope_category: ["included", "excluded", "assumption"],
       stage_status: ["upcoming", "current", "completed"],
     },

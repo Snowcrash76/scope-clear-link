@@ -13,7 +13,11 @@ import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { ApprovalModal } from '@/components/ApprovalModal';
+import { QuoteSection } from '@/components/QuoteSection';
+import { InvoiceSection } from '@/components/InvoiceSection';
 import { useProject } from '@/hooks/useProject';
+import { useQuotes } from '@/hooks/useQuotes';
+import { useInvoices } from '@/hooks/useInvoices';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest } from '@/types/project';
 import { 
@@ -33,7 +37,9 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
-  Calculator
+  Calculator,
+  FileText,
+  Receipt
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -57,6 +63,23 @@ export default function ProjectManage() {
     updateStage,
     updateProjectStatus,
   } = useProject(id);
+
+  const {
+    activeQuote,
+    createQuote,
+    updateQuote,
+    sendQuote,
+    reviseQuote,
+  } = useQuotes(id);
+
+  const {
+    invoices,
+    createInvoice,
+    sendInvoice,
+    markAsPaid,
+    cancelInvoice,
+    deleteInvoice,
+  } = useInvoices(id);
 
   const [activeTab, setActiveTab] = useState('scope');
   const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
@@ -278,6 +301,19 @@ export default function ProjectManage() {
               {pendingClientRequests.length > 0 && (
                 <Badge variant="pending" className="ml-2">
                   {pendingClientRequests.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="quote">
+              <FileText className="w-4 h-4 mr-1 hidden sm:block" />
+              Quote
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
+              Invoices
+              {invoices.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {invoices.length}
                 </Badge>
               )}
             </TabsTrigger>
