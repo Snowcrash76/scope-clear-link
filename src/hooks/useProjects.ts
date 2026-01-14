@@ -24,6 +24,7 @@ type DbScopeItem = {
   category: 'included' | 'excluded' | 'assumption';
   acknowledged: boolean;
   image_url: string | null;
+  cost: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -53,6 +54,22 @@ type DbProjectStage = {
   created_at: string;
   updated_at: string;
 };
+
+interface QuoteLineItem {
+  title: string;
+  description: string;
+  cost: number;
+  category: 'included' | 'excluded' | 'assumption';
+  imageUrl?: string;
+}
+
+interface QuoteData {
+  lineItems: QuoteLineItem[];
+  taxRate: number;
+  validUntil: Date | null;
+  notes: string;
+  terms: string;
+}
 
 export function useProjects() {
   const { user } = useAuth();
@@ -120,6 +137,7 @@ export function useProjects() {
               category: s.category,
               acknowledged: s.acknowledged,
               imageUrl: s.image_url || undefined,
+              cost: s.cost || 0,
             })),
           changeRequests: changeRequests
             .filter(c => c.project_id === p.id)
@@ -154,11 +172,16 @@ export function useProjects() {
     }
   };
 
+  const generateQuoteNumber = () => {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    return `QT-${timestamp}`;
+  };
+
   const createProject = async (data: {
     name: string;
     clientName: string;
     clientEmail: string;
-    scopeItems: Omit<ScopeItem, 'id' | 'acknowledged'>[];
+    quoteData: QuoteData;
   }) => {
     if (!user) {
       toast.error('You must be logged in to create a project');
@@ -166,7 +189,14 @@ export function useProjects() {
     }
 
     try {
-      // Create project
+      // Calculate quote totals from line items
+      const subtotal = data.quoteData.lineItems
+        .filter(item => item.category === 'included')
+        .reduce((sum, item) => sum + (item.cost || 0), 0);
+      const taxAmount = subtotal * (data.quoteData.taxRate / 100);
+      const total = subtotal + taxAmount;
+
+      // Create project with draft status (quote first workflow)
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
         .insert({
@@ -174,24 +204,54 @@ export function useProjects() {
           name: data.name,
           client_name: data.clientName,
           client_email: data.clientEmail,
-          status: 'sent',
+          status: 'draft',
+          total_value: total,
         })
         .select()
         .single();
 
       if (projectError) throw projectError;
 
-      // Create scope items
-      if (data.scopeItems.length > 0) {
+      // Create the quote
+      const { data: quoteData, error: quoteError } = await supabase
+        .from('quotes')
+        .insert({
+          project_id: projectData.id,
+          quote_number: generateQuoteNumber(),
+          status: 'draft',
+          subtotal,
+          tax_rate: data.quoteData.taxRate,
+          tax_amount: taxAmount,
+          total,
+          valid_until: data.quoteData.validUntil?.toISOString().split('T')[0] || null,
+          notes: data.quoteData.notes || null,
+          terms: data.quoteData.terms || null,
+        })
+        .select()
+        .single();
+
+      if (quoteError) throw quoteError;
+
+      // Link quote to project
+      const { error: linkError } = await supabase
+        .from('projects')
+        .update({ active_quote_id: quoteData.id })
+        .eq('id', projectData.id);
+
+      if (linkError) throw linkError;
+
+      // Create scope items from quote line items
+      if (data.quoteData.lineItems.length > 0) {
         const { error: scopeError } = await supabase
           .from('scope_items')
           .insert(
-            data.scopeItems.map(item => ({
+            data.quoteData.lineItems.map(item => ({
               project_id: projectData.id,
               title: item.title,
-              description: item.description,
+              description: item.description || '',
               category: item.category,
-              image_url: item.imageUrl,
+              cost: item.category === 'included' ? item.cost : null,
+              image_url: item.imageUrl || null,
             }))
           );
 

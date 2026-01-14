@@ -8,7 +8,6 @@ import { ProjectCard } from '@/components/ProjectCard';
 import { DashboardStats } from '@/components/DashboardStats';
 import { CreateJobModal } from '@/components/CreateJobModal';
 import { useProjects } from '@/hooks/useProjects';
-import { ScopeItem } from '@/types/project';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Plus, 
@@ -69,13 +68,19 @@ export default function TradeDashboard() {
     name: string;
     clientName: string;
     clientEmail: string;
-    scopeItems: Omit<ScopeItem, 'id' | 'acknowledged'>[];
+    quoteData: {
+      lineItems: { title: string; description: string; cost: number; category: 'included' | 'excluded' | 'assumption'; imageUrl?: string }[];
+      taxRate: number;
+      validUntil: Date | null;
+      notes: string;
+      terms: string;
+    };
   }) => {
     const projectId = await createProject(jobData);
     if (projectId) {
-      setSearchQuery('');
-      setActiveTab('active');
-      toast.success('Job created successfully!');
+      toast.success('Job & quote created! Review and send to your client.');
+      // Navigate to project manage page with quote tab active
+      navigate(`/manage/${projectId}?tab=quote`);
     }
   };
 
