@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -48,6 +48,7 @@ import { toast } from 'sonner';
 export default function ProjectManage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   const {
     project,
@@ -81,7 +82,9 @@ export default function ProjectManage() {
     deleteInvoice,
   } = useInvoices(id);
 
-  const [activeTab, setActiveTab] = useState('scope');
+  // Check for tab query param (e.g., from job creation)
+  const initialTab = searchParams.get('tab') || 'scope';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
