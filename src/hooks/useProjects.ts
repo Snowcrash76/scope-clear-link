@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -85,7 +85,7 @@ export function useProjects() {
     }
   }, [user]);
 
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
       const { data: projectsData, error: projectsError } = await supabase
@@ -170,7 +170,7 @@ export function useProjects() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const generateQuoteNumber = () => {
     const timestamp = Date.now().toString(36).toUpperCase();
