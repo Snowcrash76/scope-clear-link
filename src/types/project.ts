@@ -31,6 +31,58 @@ export interface ProjectStage {
   status: 'upcoming' | 'current' | 'completed';
 }
 
+export interface Quote {
+  id: string;
+  projectId: string;
+  quoteNumber: string;
+  status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  validUntil?: Date;
+  notes?: string;
+  terms?: string;
+  clientComment?: string;
+  approvedAt?: Date;
+  declinedAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InvoiceLineItem {
+  id: string;
+  invoiceId: string;
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  scopeItemId?: string;
+  changeRequestId?: string;
+  createdAt: Date;
+}
+
+export interface Invoice {
+  id: string;
+  projectId: string;
+  quoteId?: string;
+  invoiceNumber: string;
+  type: 'staged' | 'final';
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  subtotal: number;
+  taxRate: number;
+  taxAmount: number;
+  total: number;
+  amountPaid: number;
+  dueDate?: Date;
+  paidAt?: Date;
+  notes?: string;
+  terms?: string;
+  lineItems: InvoiceLineItem[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -45,4 +97,5 @@ export interface Project {
   changeRequests: ChangeRequest[];
   stages: ProjectStage[];
   currentStageIndex: number;
+  activeQuoteId?: string;
 }
