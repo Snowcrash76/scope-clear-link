@@ -23,6 +23,7 @@ export type Database = {
           image_url: string | null
           project_id: string
           reason: string | null
+          resolution_comment: string | null
           resolved_at: string | null
           status: Database["public"]["Enums"]["change_request_status"]
           time_impact: string | null
@@ -37,6 +38,7 @@ export type Database = {
           image_url?: string | null
           project_id: string
           reason?: string | null
+          resolution_comment?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["change_request_status"]
           time_impact?: string | null
@@ -51,6 +53,7 @@ export type Database = {
           image_url?: string | null
           project_id?: string
           reason?: string | null
+          resolution_comment?: string | null
           resolved_at?: string | null
           status?: Database["public"]["Enums"]["change_request_status"]
           time_impact?: string | null

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { ProjectHeader } from '@/components/ProjectHeader';
 import { ActionRequired } from '@/components/ActionRequired';
@@ -6,6 +7,7 @@ import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { RequestChangeButton } from '@/components/RequestChangeButton';
 import { ClientDocumentsSection } from '@/components/ClientDocumentsSection';
+import { ApprovalModal } from '@/components/ApprovalModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { useProject } from '@/hooks/useProject';
@@ -59,20 +61,43 @@ export default function ClientProjectView() {
     }
   };
 
-  const handleApproveChange = async (changeId: string) => {
-    // Client approving trade's variation → notify trade
-    const success = await updateChangeRequestStatus(changeId, 'approved', 'trade');
-    if (success) {
-      toast.success('Change approved! Your trade has been notified.');
-    }
+  // Approval modal state
+  const [approvalModal, setApprovalModal] = useState<{
+    isOpen: boolean;
+    action: 'approve' | 'decline';
+    changeId: string;
+    title: string;
+  }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
+
+  const handleApproveChange = (changeId: string) => {
+    const change = project.changeRequests.find(c => c.id === changeId);
+    setApprovalModal({
+      isOpen: true,
+      action: 'approve',
+      changeId,
+      title: change?.title || 'Change Request',
+    });
   };
 
-  const handleDeclineChange = async (changeId: string) => {
-    // Client declining trade's variation → notify trade
-    const success = await updateChangeRequestStatus(changeId, 'declined', 'trade');
+  const handleDeclineChange = (changeId: string) => {
+    const change = project.changeRequests.find(c => c.id === changeId);
+    setApprovalModal({
+      isOpen: true,
+      action: 'decline',
+      changeId,
+      title: change?.title || 'Change Request',
+    });
+  };
+
+  const handleConfirmApproval = async (comment: string) => {
+    const { action, changeId } = approvalModal;
+    const success = await updateChangeRequestStatus(changeId, action === 'approve' ? 'approved' : 'declined', 'trade', comment);
     if (success) {
-      toast.info('Change declined. Your trade has been notified.');
+      toast.success(action === 'approve' 
+        ? 'Change approved! Your trade has been notified.' 
+        : 'Change declined. Your trade has been notified.');
     }
+    setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' });
   };
 
   const handleRequestChange = async (description: string, imageUrl?: string) => {
@@ -249,6 +274,15 @@ export default function ClientProjectView() {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Approval Modal */}
+      <ApprovalModal
+        isOpen={approvalModal.isOpen}
+        onClose={() => setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' })}
+        onConfirm={handleConfirmApproval}
+        action={approvalModal.action}
+        title={approvalModal.title}
+      />
 
       {/* Footer */}
       <footer className="border-t mt-12">

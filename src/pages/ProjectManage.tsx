@@ -12,6 +12,7 @@ import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
+import { ApprovalModal } from '@/components/ApprovalModal';
 import { useProject } from '@/hooks/useProject';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest } from '@/types/project';
@@ -62,6 +63,12 @@ export default function ProjectManage() {
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
   const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
+  const [approvalModal, setApprovalModal] = useState<{
+    isOpen: boolean;
+    action: 'approve' | 'decline';
+    changeId: string;
+    title: string;
+  }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
 
   if (loading) {
     return (
@@ -132,20 +139,33 @@ export default function ProjectManage() {
     }
   };
 
-  const handleApproveClientRequest = async (requestId: string) => {
-    // Trade approving client's request → notify client
-    const success = await updateChangeRequestStatus(requestId, 'approved', 'client');
-    if (success) {
-      toast.success('Client request approved');
-    }
+  const handleApproveClientRequest = (requestId: string) => {
+    const change = project.changeRequests.find(c => c.id === requestId);
+    setApprovalModal({
+      isOpen: true,
+      action: 'approve',
+      changeId: requestId,
+      title: change?.title || 'Client Request',
+    });
   };
 
-  const handleDeclineClientRequest = async (requestId: string) => {
-    // Trade declining client's request → notify client
-    const success = await updateChangeRequestStatus(requestId, 'declined', 'client');
+  const handleDeclineClientRequest = (requestId: string) => {
+    const change = project.changeRequests.find(c => c.id === requestId);
+    setApprovalModal({
+      isOpen: true,
+      action: 'decline',
+      changeId: requestId,
+      title: change?.title || 'Client Request',
+    });
+  };
+
+  const handleConfirmApproval = async (comment: string) => {
+    const { action, changeId } = approvalModal;
+    const success = await updateChangeRequestStatus(changeId, action === 'approve' ? 'approved' : 'declined', 'client', comment);
     if (success) {
-      toast.info('Client request declined');
+      toast.success(action === 'approve' ? 'Client request approved' : 'Client request declined');
     }
+    setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' });
   };
 
   const handleUpdateStage = async (stageId: string, status: 'upcoming' | 'current' | 'completed') => {
@@ -509,6 +529,14 @@ export default function ProjectManage() {
         request={editingChangeRequest}
         onSave={handleUpdateChangeRequest}
         onDelete={handleDeleteChangeRequest}
+      />
+
+      <ApprovalModal
+        isOpen={approvalModal.isOpen}
+        onClose={() => setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' })}
+        onConfirm={handleConfirmApproval}
+        action={approvalModal.action}
+        title={approvalModal.title}
       />
     </div>
   );

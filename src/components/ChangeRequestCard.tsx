@@ -132,11 +132,23 @@ export function ChangeRequestCard({
           </div>
         </div>
 
-        {/* Date */}
-        <p className="text-xs text-muted-foreground mb-4">
+        {/* Date and Resolution Comment */}
+        <p className="text-xs text-muted-foreground mb-2">
           Submitted {format(request.createdAt, 'MMM d, yyyy')}
           {request.resolvedAt && ` • Resolved ${format(request.resolvedAt, 'MMM d, yyyy')}`}
         </p>
+
+        {/* Resolution Comment */}
+        {request.resolutionComment && request.status !== 'pending' && (
+          <div className="mb-4 p-3 rounded-lg bg-secondary/50">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium">
+                {request.status === 'approved' ? 'Approval' : 'Decline'} comment:
+              </span>{' '}
+              {request.resolutionComment}
+            </p>
+          </div>
+        )}
 
         {/* Awaiting other party notice */}
         {isAwaitingOtherParty && (
