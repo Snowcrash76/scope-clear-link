@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,10 +29,15 @@ import {
 export default function TradeDashboard() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const { projects, loading, createProject, updateProjectStatus } = useProjects();
+  const { projects, loading, createProject, updateProjectStatus, refetch } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
+
+  // Refetch projects when dashboard mounts to ensure fresh data
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const handleSignOut = async () => {
     await signOut();
