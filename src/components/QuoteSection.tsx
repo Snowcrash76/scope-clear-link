@@ -17,7 +17,10 @@ import {
   Calendar,
   Edit,
   Eye,
+  Download,
 } from 'lucide-react';
+import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
@@ -32,6 +35,8 @@ interface QuoteSectionProps {
   quote: Quote | null;
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
+  clientName?: string;
+  clientEmail?: string;
   onCreateQuote: (data: {
     subtotal: number;
     taxRate: number;
@@ -55,6 +60,8 @@ export function QuoteSection({
   quote,
   scopeItems,
   changeRequests,
+  clientName = '',
+  clientEmail = '',
   onCreateQuote,
   onUpdateQuote,
   onSendQuote,
@@ -119,6 +126,13 @@ export function QuoteSection({
     if (!quote) return;
     await onReviseQuote(quote.id);
     setIsCreating(true);
+  };
+
+  const handleExportToXero = () => {
+    if (!quote) return;
+    const csv = exportQuoteToXeroCSV(quote, { clientName, clientEmail }, scopeItems, changeRequests);
+    downloadCSV(csv, `${quote.quoteNumber}-xero.csv`);
+    toast.success('Quote exported for Xero');
   };
 
   const statusConfig = {
@@ -413,9 +427,21 @@ export function QuoteSection({
               </>
             )}
             {quote!.status === 'sent' && (
-              <Button variant="outline" onClick={() => setIsEditing(true)}>
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Quote
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button variant="outline" onClick={handleExportToXero}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Export to Xero
+                </Button>
+              </>
+            )}
+            {quote!.status === 'approved' && (
+              <Button variant="outline" onClick={handleExportToXero}>
+                <Download className="w-4 h-4 mr-2" />
+                Export to Xero
               </Button>
             )}
             {(quote!.status === 'declined' || quote!.status === 'revised') && (
