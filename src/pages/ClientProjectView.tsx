@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 
 export default function ClientProjectView() {
@@ -135,17 +135,11 @@ export default function ClientProjectView() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="scope" className="space-y-6">
-          <TabsList className="w-full sm:w-auto grid grid-cols-5 sm:inline-flex">
+          <TabsList className="w-full sm:w-auto grid grid-cols-6 sm:inline-flex">
             <TabsTrigger value="scope" className="gap-2">
               <Package className="w-4 h-4 hidden sm:block" />
               Scope
             </TabsTrigger>
-            {activeQuote && activeQuote.status !== 'draft' && (
-              <TabsTrigger value="quote" className="gap-2">
-                <FileText className="w-4 h-4 hidden sm:block" />
-                Quote
-              </TabsTrigger>
-            )}
             <TabsTrigger value="changes" className="gap-2">
               <RefreshCw className="w-4 h-4 hidden sm:block" />
               Changes
@@ -155,15 +149,21 @@ export default function ClientProjectView() {
                 </span>
               )}
             </TabsTrigger>
-            {documents.length > 0 && (
-              <TabsTrigger value="documents" className="gap-2">
-                <FileText className="w-4 h-4 hidden sm:block" />
-                Docs
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="progress" className="gap-2">
+            <TabsTrigger value="quote" className="gap-2">
+              <FileText className="w-4 h-4 hidden sm:block" />
+              Quote
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="gap-2">
+              <Receipt className="w-4 h-4 hidden sm:block" />
+              Invoices
+            </TabsTrigger>
+            <TabsTrigger value="stages" className="gap-2">
               <TrendingUp className="w-4 h-4 hidden sm:block" />
-              Progress
+              Stages
+            </TabsTrigger>
+            <TabsTrigger value="documents" className="gap-2">
+              <FolderOpen className="w-4 h-4 hidden sm:block" />
+              Documents
             </TabsTrigger>
           </TabsList>
 
@@ -230,15 +230,15 @@ export default function ClientProjectView() {
           </TabsContent>
 
           {/* Quote Tab */}
-          {activeQuote && activeQuote.status !== 'draft' && (
-            <TabsContent value="quote" className="space-y-4 animate-fade-in">
-              <div>
-                <h2 className="font-heading text-xl font-bold">Quote Details</h2>
-                <p className="text-sm text-muted-foreground">
-                  Review and download your quote
-                </p>
-              </div>
+          <TabsContent value="quote" className="space-y-4 animate-fade-in">
+            <div>
+              <h2 className="font-heading text-xl font-bold">Quote Details</h2>
+              <p className="text-sm text-muted-foreground">
+                Review and download your quote
+              </p>
+            </div>
 
+            {activeQuote && activeQuote.status !== 'draft' ? (
               <Card className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -278,8 +278,13 @@ export default function ClientProjectView() {
                   </div>
                 </div>
               </Card>
-            </TabsContent>
-          )}
+            ) : (
+              <Card className="p-8 text-center">
+                <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No quote available yet.</p>
+              </Card>
+            )}
+          </TabsContent>
 
           {/* Changes Tab */}
           <TabsContent value="changes" className="space-y-4 animate-fade-in">
@@ -295,6 +300,7 @@ export default function ClientProjectView() {
 
             {project.changeRequests.length === 0 ? (
               <Card className="p-8 text-center">
+                <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No changes requested yet.</p>
               </Card>
             ) : (
@@ -312,17 +318,25 @@ export default function ClientProjectView() {
             )}
           </TabsContent>
 
-          {/* Documents Tab */}
-          {documents.length > 0 && (
-            <TabsContent value="documents" className="space-y-4 animate-fade-in">
-              <ClientDocumentsSection documents={documents} />
-            </TabsContent>
-          )}
-
-          {/* Progress Tab */}
-          <TabsContent value="progress" className="space-y-4 animate-fade-in">
+          {/* Invoices Tab */}
+          <TabsContent value="invoices" className="space-y-4 animate-fade-in">
             <div>
-              <h2 className="font-heading text-xl font-bold">Project Progress</h2>
+              <h2 className="font-heading text-xl font-bold">Invoices</h2>
+              <p className="text-sm text-muted-foreground">
+                View and track your project invoices
+              </p>
+            </div>
+
+            <Card className="p-8 text-center">
+              <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No invoices yet.</p>
+            </Card>
+          </TabsContent>
+
+          {/* Stages Tab */}
+          <TabsContent value="stages" className="space-y-4 animate-fade-in">
+            <div>
+              <h2 className="font-heading text-xl font-bold">Project Stages</h2>
               <p className="text-sm text-muted-foreground">
                 See where your project is at and what's coming next
               </p>
@@ -334,6 +348,25 @@ export default function ClientProjectView() {
                 currentStageIndex={project.currentStageIndex}
               />
             </Card>
+          </TabsContent>
+
+          {/* Documents Tab */}
+          <TabsContent value="documents" className="space-y-4 animate-fade-in">
+            <div>
+              <h2 className="font-heading text-xl font-bold">Documents</h2>
+              <p className="text-sm text-muted-foreground">
+                Project files and attachments
+              </p>
+            </div>
+
+            {documents.length > 0 ? (
+              <ClientDocumentsSection documents={documents} />
+            ) : (
+              <Card className="p-8 text-center">
+                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No documents uploaded yet.</p>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
       </main>
