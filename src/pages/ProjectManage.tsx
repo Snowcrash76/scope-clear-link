@@ -586,6 +586,18 @@ function ChangeRequestItem({ request, onEdit }: { request: ChangeRequest; onEdit
         </div>
       )}
 
+      {/* Resolution Comment */}
+      {request.resolutionComment && request.status !== 'pending' && (
+        <div className="mb-3 p-3 rounded-lg bg-secondary/50">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-medium">
+              {request.status === 'approved' ? 'Approval' : 'Decline'} comment:
+            </span>{' '}
+            {request.resolutionComment}
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-3 text-sm">
         <div className={cn(
           "flex items-center gap-1.5 px-2 py-1 rounded",
