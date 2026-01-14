@@ -3,6 +3,41 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Project, ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 
+// Helper function to send change notification emails
+const sendChangeNotification = async (
+  projectId: string,
+  changeRequestId: string,
+  notificationType: 'created' | 'approved' | 'declined',
+  recipientType: 'trade' | 'client',
+  changeTitle: string,
+  changeDescription: string,
+  costImpact?: number,
+  timeImpact?: string
+) => {
+  try {
+    const response = await supabase.functions.invoke('send-change-notification', {
+      body: {
+        projectId,
+        changeRequestId,
+        notificationType,
+        recipientType,
+        changeTitle,
+        changeDescription,
+        costImpact,
+        timeImpact,
+      },
+    });
+
+    if (response.error) {
+      console.error('Failed to send notification:', response.error);
+    } else {
+      console.log('Notification sent successfully');
+    }
+  } catch (error) {
+    console.error('Error sending notification:', error);
+  }
+};
+
 type DbProject = {
   id: string;
   user_id: string;
@@ -331,11 +366,14 @@ export function useProject(projectId: string | undefined) {
   };
 
   // Change request operations
-  const createChangeRequest = async (requestData: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => {
+  const createChangeRequest = async (
+    requestData: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>,
+    recipientType: 'trade' | 'client' = 'client'
+  ) => {
     if (!projectId) return false;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('change_requests')
         .insert({
           project_id: projectId,
@@ -346,9 +384,23 @@ export function useProject(projectId: string | undefined) {
           cost_impact: requestData.costImpact,
           time_impact: requestData.timeImpact?.toString(),
           image_url: requestData.imageUrl,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Send email notification to the recipient
+      await sendChangeNotification(
+        projectId,
+        data.id,
+        'created',
+        recipientType,
+        requestData.title,
+        requestData.description,
+        requestData.costImpact,
+        requestData.timeImpact?.toString()
+      );
 
       await fetchProject();
       return true;
@@ -403,7 +455,11 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
-  const updateChangeRequestStatus = async (requestId: string, status: 'approved' | 'declined') => {
+  const updateChangeRequestStatus = async (
+    requestId: string,
+    status: 'approved' | 'declined',
+    recipientType: 'trade' | 'client' = 'trade'
+  ) => {
     try {
       const { error } = await supabase
         .from('change_requests')
@@ -414,6 +470,23 @@ export function useProject(projectId: string | undefined) {
         .eq('id', requestId);
 
       if (error) throw error;
+
+      // Find the change request to get its details for the notification
+      const changeRequest = project?.changeRequests.find(cr => cr.id === requestId);
+      
+      if (changeRequest && projectId) {
+        // Send email notification to the original requester
+        await sendChangeNotification(
+          projectId,
+          requestId,
+          status,
+          recipientType,
+          changeRequest.title,
+          changeRequest.description,
+          changeRequest.costImpact,
+          changeRequest.timeImpact?.toString()
+        );
+      }
 
       setProject(prev => {
         if (!prev) return prev;
