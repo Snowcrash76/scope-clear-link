@@ -134,8 +134,16 @@ export default function ClientProjectView() {
         />
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="scope" className="space-y-6">
+        <Tabs defaultValue="quote" className="space-y-6">
           <TabsList className="w-full sm:w-auto grid grid-cols-6 sm:inline-flex">
+            <TabsTrigger value="quote" className="gap-2">
+              <FileText className="w-4 h-4 hidden sm:block" />
+              Quote
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="gap-2">
+              <Receipt className="w-4 h-4 hidden sm:block" />
+              Invoices
+            </TabsTrigger>
             <TabsTrigger value="scope" className="gap-2">
               <Package className="w-4 h-4 hidden sm:block" />
               Scope
@@ -148,14 +156,6 @@ export default function ClientProjectView() {
                   {pendingChanges.length}
                 </span>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="quote" className="gap-2">
-              <FileText className="w-4 h-4 hidden sm:block" />
-              Quote
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="gap-2">
-              <Receipt className="w-4 h-4 hidden sm:block" />
-              Invoices
             </TabsTrigger>
             <TabsTrigger value="stages" className="gap-2">
               <TrendingUp className="w-4 h-4 hidden sm:block" />
