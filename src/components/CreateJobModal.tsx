@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Plus, Trash2, Package, Ban, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Package, Ban, AlertTriangle, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScopeItem } from '@/types/project';
 
@@ -34,6 +34,7 @@ interface ScopeItemDraft {
   title: string;
   description: string;
   category: ScopeCategory;
+  cost: number;
   imageUrl?: string;
 }
 
@@ -48,6 +49,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
     title: '',
     description: '',
     category: 'included',
+    cost: 0,
     imageUrl: undefined,
   });
 
@@ -62,6 +64,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
       title: '',
       description: '',
       category: 'included',
+      cost: 0,
       imageUrl: undefined,
     });
   };
@@ -79,6 +82,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
         title: '',
         description: '',
         category: 'included',
+        cost: 0,
         imageUrl: undefined,
       });
     }
@@ -170,7 +174,14 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
                       >
                         <Icon className={cn("w-4 h-4 flex-shrink-0", config.color)} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{item.title}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm truncate">{item.title}</p>
+                            {item.cost > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-muted-foreground truncate">{item.description}</p>
                         </div>
                         <button
@@ -183,6 +194,27 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
                     );
                   })}
                 </div>
+                
+                {/* Quote Total Summary */}
+                {(() => {
+                  const total = scopeItems
+                    .filter(item => item.category === 'included')
+                    .reduce((sum, item) => sum + (item.cost || 0), 0);
+                  if (total > 0) {
+                    return (
+                      <div className="p-3 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="w-4 h-4 text-primary" />
+                          <span className="text-sm font-medium">Quote Total</span>
+                        </div>
+                        <span className="font-bold text-primary">
+                          ${total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
 
@@ -224,6 +256,22 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
                 onChange={(e) => setCurrentItem(prev => ({ ...prev, description: e.target.value }))}
                 className="min-h-[80px]"
               />
+
+              {/* Cost field for included items */}
+              {currentItem.category === 'included' && (
+                <div className="space-y-2">
+                  <Label className="text-sm text-muted-foreground flex items-center gap-1">
+                    <DollarSign className="w-3.5 h-3.5" />
+                    Cost (AUD)
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={currentItem.cost || ''}
+                    onChange={(e) => setCurrentItem(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Photo (optional)</Label>
