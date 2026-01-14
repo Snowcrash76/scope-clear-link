@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
+import { useInvoices } from '@/hooks/useInvoices';
 import { toast } from 'sonner';
 import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
@@ -29,7 +30,8 @@ export default function ClientProjectView() {
     updateChangeRequestStatus,
   } = useProject(id);
   
-  const { activeQuote } = useQuotes(id);
+  const { activeQuote, approveQuote, declineQuote, refetch: refetchQuotes } = useQuotes(id);
+  const { invoices, loading: invoicesLoading } = useInvoices(id);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   // Move useState to top before any conditional returns (React hooks rule)
@@ -39,6 +41,11 @@ export default function ClientProjectView() {
     changeId: string;
     title: string;
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
+  
+  const [quoteApprovalModal, setQuoteApprovalModal] = useState<{
+    isOpen: boolean;
+    action: 'approve' | 'decline';
+  }>({ isOpen: false, action: 'approve' });
 
   if (loading) {
     return (
@@ -119,6 +126,26 @@ export default function ClientProjectView() {
     if (success) {
       toast.success('Change request sent! Your trade will review and respond.');
     }
+  };
+
+  const handleQuoteApproval = async (comment: string) => {
+    const { action } = quoteApprovalModal;
+    if (!activeQuote) return;
+    
+    try {
+      if (action === 'approve') {
+        await approveQuote(activeQuote.id, comment);
+        toast.success('Quote approved! Your trade has been notified.');
+      } else {
+        await declineQuote(activeQuote.id, comment);
+        toast.success('Quote declined. Your trade has been notified.');
+      }
+      await refetchQuotes();
+    } catch (error) {
+      console.error('Quote approval error:', error);
+      toast.error(`Failed to ${action} quote`);
+    }
+    setQuoteApprovalModal({ isOpen: false, action: 'approve' });
   };
 
   return (
@@ -240,19 +267,46 @@ export default function ClientProjectView() {
 
             {activeQuote && activeQuote.status !== 'draft' ? (
               <Card className="p-6 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
-                    <h3 className="font-semibold text-lg">{activeQuote.quoteNumber}</h3>
-                    <p className="text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-lg">{activeQuote.quoteNumber}</h3>
+                      {activeQuote.status === 'sent' && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                          Awaiting Response
+                        </span>
+                      )}
+                      {activeQuote.status === 'approved' && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                          Approved
+                        </span>
+                      )}
+                      {activeQuote.status === 'declined' && (
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                          Declined
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">
                       Total: ${activeQuote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </p>
+                    {activeQuote.approvedAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Approved on {new Date(activeQuote.approvedAt).toLocaleDateString()}
+                      </p>
+                    )}
+                    {activeQuote.declinedAt && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Declined on {new Date(activeQuote.declinedAt).toLocaleDateString()}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => setIsQuoteModalOpen(true)}>
                       <Eye className="w-4 h-4 mr-2" />
                       View Details
                     </Button>
-                    <Button onClick={() => {
+                    <Button variant="outline" onClick={() => {
                       try {
                         downloadQuotePDF(
                           activeQuote,
@@ -277,6 +331,33 @@ export default function ClientProjectView() {
                     </Button>
                   </div>
                 </div>
+
+                {/* Approve/Decline Buttons for sent quotes */}
+                {activeQuote.status === 'sent' && (
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'decline' })}
+                    >
+                      Decline Quote
+                    </Button>
+                    <Button 
+                      className="flex-1"
+                      onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'approve' })}
+                    >
+                      Approve Quote
+                    </Button>
+                  </div>
+                )}
+
+                {/* Show client comment if exists */}
+                {activeQuote.clientComment && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground">Your comment:</p>
+                    <p className="text-sm mt-1">{activeQuote.clientComment}</p>
+                  </div>
+                )}
               </Card>
             ) : (
               <Card className="p-8 text-center">
@@ -327,10 +408,68 @@ export default function ClientProjectView() {
               </p>
             </div>
 
-            <Card className="p-8 text-center">
-              <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">No invoices yet.</p>
-            </Card>
+            {invoicesLoading ? (
+              <Card className="p-8 flex justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </Card>
+            ) : invoices.filter(inv => inv.status !== 'draft').length > 0 ? (
+              <div className="space-y-4">
+                {invoices.filter(inv => inv.status !== 'draft').map(invoice => (
+                  <Card key={invoice.id} className="p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{invoice.invoiceNumber}</h3>
+                          {invoice.status === 'sent' && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                              Sent
+                            </span>
+                          )}
+                          {invoice.status === 'paid' && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                              Paid
+                            </span>
+                          )}
+                          {invoice.status === 'overdue' && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+                              Overdue
+                            </span>
+                          )}
+                          {invoice.status === 'cancelled' && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
+                              Cancelled
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Total: ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        </p>
+                        {invoice.dueDate && (
+                          <p className="text-xs text-muted-foreground">
+                            Due: {new Date(invoice.dueDate).toLocaleDateString()}
+                          </p>
+                        )}
+                        {invoice.paidAt && (
+                          <p className="text-xs text-green-600 dark:text-green-400">
+                            Paid on {new Date(invoice.paidAt).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold">
+                          ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <Receipt className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No invoices yet.</p>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Stages Tab */}
@@ -371,13 +510,22 @@ export default function ClientProjectView() {
         </Tabs>
       </main>
 
-      {/* Approval Modal */}
+      {/* Change Request Approval Modal */}
       <ApprovalModal
         isOpen={approvalModal.isOpen}
         onClose={() => setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' })}
         onConfirm={handleConfirmApproval}
         action={approvalModal.action}
         title={approvalModal.title}
+      />
+
+      {/* Quote Approval Modal */}
+      <ApprovalModal
+        isOpen={quoteApprovalModal.isOpen}
+        onClose={() => setQuoteApprovalModal({ isOpen: false, action: 'approve' })}
+        onConfirm={handleQuoteApproval}
+        action={quoteApprovalModal.action}
+        title={activeQuote?.quoteNumber || 'Quote'}
       />
 
       {/* Quote View Modal */}
