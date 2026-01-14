@@ -6,10 +6,18 @@ import { cn } from '@/lib/utils';
 interface ActionRequiredProps {
   pendingChanges: ChangeRequest[];
   unacknowledgedItems: ScopeItem[];
+  viewerRole: 'client' | 'trade';
 }
 
-export function ActionRequired({ pendingChanges, unacknowledgedItems }: ActionRequiredProps) {
-  const hasActions = pendingChanges.length > 0 || unacknowledgedItems.length > 0;
+export function ActionRequired({ pendingChanges, unacknowledgedItems, viewerRole }: ActionRequiredProps) {
+  // Filter changes to only show ones that this viewer can approve
+  const changesAwaitingApproval = pendingChanges.filter(change => 
+    viewerRole === 'client' 
+      ? change.type !== 'client_request'  // Client approves trade variations (site_issue, substitution)
+      : change.type === 'client_request'   // Trade approves client requests
+  );
+  
+  const hasActions = changesAwaitingApproval.length > 0 || unacknowledgedItems.length > 0;
 
   if (!hasActions) {
     return (
@@ -36,9 +44,9 @@ export function ActionRequired({ pendingChanges, unacknowledgedItems }: ActionRe
         <div className="flex-1">
           <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            {pendingChanges.length > 0 && (
+            {changesAwaitingApproval.length > 0 && (
               <li>
-                • {pendingChanges.length} change{pendingChanges.length > 1 ? 's' : ''} awaiting your approval
+                • {changesAwaitingApproval.length} change{changesAwaitingApproval.length > 1 ? 's' : ''} awaiting your approval
               </li>
             )}
             {unacknowledgedItems.length > 0 && (
