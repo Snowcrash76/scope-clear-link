@@ -25,20 +25,28 @@ export default function ClientProjectView() {
     updateChangeRequestStatus,
   } = useProject(id);
 
+  // Move useState to top before any conditional returns (React hooks rule)
+  const [approvalModal, setApprovalModal] = useState<{
+    isOpen: boolean;
+    action: 'approve' | 'decline';
+    changeId: string;
+    title: string;
+  }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2">Project Not Found</h1>
-          <p className="text-muted-foreground">This project link may be invalid or has been removed.</p>
+          <h1 className="text-2xl font-bold text-foreground">Project Not Found</h1>
+          <p className="text-muted-foreground mt-2">The project you're looking for doesn't exist.</p>
         </div>
       </div>
     );
@@ -47,27 +55,17 @@ export default function ClientProjectView() {
   const includedItems = project.scopeItems.filter(item => item.category === 'included');
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
-  
-  const pendingChanges = project.changeRequests.filter(req => req.status === 'pending');
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
 
+  const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending');
+  const resolvedChanges = project.changeRequests.filter(cr => cr.status !== 'pending');
+
   const handleAcknowledge = async (itemId: string) => {
-    const item = project.scopeItems.find(i => i.id === itemId);
-    if (item) {
-      const success = await acknowledgeScopeItem(itemId, !item.acknowledged);
-      if (success) {
-        toast.success(item.acknowledged ? 'Acknowledgement removed' : 'Item acknowledged');
-      }
+    const success = await acknowledgeScopeItem(itemId, true);
+    if (success) {
+      toast.success('Item acknowledged');
     }
   };
-
-  // Approval modal state
-  const [approvalModal, setApprovalModal] = useState<{
-    isOpen: boolean;
-    action: 'approve' | 'decline';
-    changeId: string;
-    title: string;
-  }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
 
   const handleApproveChange = (changeId: string) => {
     const change = project.changeRequests.find(c => c.id === changeId);
