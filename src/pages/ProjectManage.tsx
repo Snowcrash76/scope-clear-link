@@ -515,6 +515,34 @@ export default function ProjectManage() {
             )}
           </TabsContent>
 
+          {/* Quote Tab */}
+          <TabsContent value="quote" className="mt-0">
+            <QuoteSection
+              scopeItems={project.scopeItems}
+              changeRequests={project.changeRequests}
+              quote={activeQuote}
+              onCreateQuote={createQuote}
+              onUpdateQuote={updateQuote}
+              onSendQuote={sendQuote}
+              onReviseQuote={reviseQuote}
+            />
+          </TabsContent>
+
+          {/* Invoices Tab */}
+          <TabsContent value="invoices" className="mt-0">
+            <InvoiceSection
+              invoices={invoices}
+              quote={activeQuote}
+              scopeItems={project.scopeItems}
+              changeRequests={project.changeRequests}
+              onCreateInvoice={createInvoice}
+              onSendInvoice={sendInvoice}
+              onMarkAsPaid={markAsPaid}
+              onCancelInvoice={cancelInvoice}
+              onDeleteInvoice={deleteInvoice}
+            />
+          </TabsContent>
+
           {/* Stages Tab */}
           <TabsContent value="stages" className="mt-0">
             <StageManager
