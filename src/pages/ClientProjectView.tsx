@@ -8,11 +8,15 @@ import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { RequestChangeButton } from '@/components/RequestChangeButton';
 import { ClientDocumentsSection } from '@/components/ClientDocumentsSection';
 import { ApprovalModal } from '@/components/ApprovalModal';
+import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useProject } from '@/hooks/useProject';
+import { useQuotes } from '@/hooks/useQuotes';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye } from 'lucide-react';
+import { downloadQuotePDF } from '@/lib/quotePdf';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -24,6 +28,9 @@ export default function ClientProjectView() {
     createChangeRequest,
     updateChangeRequestStatus,
   } = useProject(id);
+  
+  const { activeQuote } = useQuotes(id);
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
 
   // Move useState to top before any conditional returns (React hooks rule)
   const [approvalModal, setApprovalModal] = useState<{
@@ -128,11 +135,17 @@ export default function ClientProjectView() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="scope" className="space-y-6">
-          <TabsList className="w-full sm:w-auto grid grid-cols-4 sm:inline-flex">
+          <TabsList className="w-full sm:w-auto grid grid-cols-5 sm:inline-flex">
             <TabsTrigger value="scope" className="gap-2">
               <Package className="w-4 h-4 hidden sm:block" />
               Scope
             </TabsTrigger>
+            {activeQuote && activeQuote.status !== 'draft' && (
+              <TabsTrigger value="quote" className="gap-2">
+                <FileText className="w-4 h-4 hidden sm:block" />
+                Quote
+              </TabsTrigger>
+            )}
             <TabsTrigger value="changes" className="gap-2">
               <RefreshCw className="w-4 h-4 hidden sm:block" />
               Changes
@@ -216,6 +229,53 @@ export default function ClientProjectView() {
             })()}
           </TabsContent>
 
+          {/* Quote Tab */}
+          {activeQuote && activeQuote.status !== 'draft' && (
+            <TabsContent value="quote" className="space-y-4 animate-fade-in">
+              <div>
+                <h2 className="font-heading text-xl font-bold">Quote Details</h2>
+                <p className="text-sm text-muted-foreground">
+                  Review and download your quote
+                </p>
+              </div>
+
+              <Card className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{activeQuote.quoteNumber}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Total: ${activeQuote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsQuoteModalOpen(true)}>
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Details
+                    </Button>
+                    <Button onClick={() => {
+                      downloadQuotePDF(
+                        activeQuote,
+                        {
+                          name: project.name,
+                          clientName: project.clientName,
+                          clientEmail: project.clientEmail,
+                          tradeBusinessName: project.tradeBusinessName,
+                          tradeName: project.tradeName,
+                        },
+                        project.scopeItems,
+                        project.changeRequests
+                      );
+                      toast.success('Quote PDF downloaded');
+                    }}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download PDF
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </TabsContent>
+          )}
+
           {/* Changes Tab */}
           <TabsContent value="changes" className="space-y-4 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -281,6 +341,24 @@ export default function ClientProjectView() {
         action={approvalModal.action}
         title={approvalModal.title}
       />
+
+      {/* Quote View Modal */}
+      {activeQuote && (
+        <QuoteViewModal
+          isOpen={isQuoteModalOpen}
+          onClose={() => setIsQuoteModalOpen(false)}
+          quote={activeQuote}
+          scopeItems={project.scopeItems}
+          changeRequests={project.changeRequests}
+          projectInfo={{
+            name: project.name,
+            clientName: project.clientName,
+            clientEmail: project.clientEmail,
+            tradeBusinessName: project.tradeBusinessName,
+            tradeName: project.tradeName,
+          }}
+        />
+      )}
 
       {/* Footer */}
       <footer className="border-t mt-12">
