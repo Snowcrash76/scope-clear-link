@@ -204,7 +204,7 @@ export function useProjects() {
           name: data.name,
           client_name: data.clientName,
           client_email: data.clientEmail,
-          status: 'draft',
+          status: 'sent',
           total_value: total,
         })
         .select()
@@ -304,11 +304,59 @@ export function useProjects() {
     }
   };
 
+  const deleteProject = async (projectId: string) => {
+    try {
+      // First get invoice IDs for this project to delete line items
+      const { data: invoices } = await supabase
+        .from('invoices')
+        .select('id')
+        .eq('project_id', projectId);
+
+      const invoiceIds = invoices?.map(i => i.id) || [];
+
+      // Delete related records in correct order (respecting foreign keys)
+      if (invoiceIds.length > 0) {
+        await supabase.from('invoice_line_items').delete().in('invoice_id', invoiceIds);
+      }
+      
+      await Promise.all([
+        supabase.from('invoices').delete().eq('project_id', projectId),
+        supabase.from('quotes').delete().eq('project_id', projectId),
+        supabase.from('scope_items').delete().eq('project_id', projectId),
+        supabase.from('change_requests').delete().eq('project_id', projectId),
+        supabase.from('project_documents').delete().eq('project_id', projectId),
+        supabase.from('project_stages').delete().eq('project_id', projectId),
+      ]);
+
+      // Clear the active_quote_id reference before deleting project
+      await supabase
+        .from('projects')
+        .update({ active_quote_id: null })
+        .eq('id', projectId);
+
+      // Delete the project
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) throw error;
+      
+      await fetchProjects();
+      return true;
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast.error('Failed to delete project');
+      return false;
+    }
+  };
+
   return {
     projects,
     loading,
     createProject,
     updateProjectStatus,
+    deleteProject,
     refetch: fetchProjects,
   };
 }
