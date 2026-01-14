@@ -524,6 +524,8 @@ export default function ProjectManage() {
               scopeItems={project.scopeItems}
               changeRequests={project.changeRequests}
               quote={activeQuote}
+              clientName={project.clientName}
+              clientEmail={project.clientEmail}
               onCreateQuote={createQuote}
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}
@@ -538,6 +540,8 @@ export default function ProjectManage() {
               quote={activeQuote}
               scopeItems={project.scopeItems}
               changeRequests={project.changeRequests}
+              clientName={project.clientName}
+              clientEmail={project.clientEmail}
               onCreateInvoice={createInvoice}
               onSendInvoice={sendInvoice}
               onMarkAsPaid={markAsPaid}

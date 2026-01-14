@@ -18,7 +18,10 @@ import {
   Eye,
   Clock,
   CreditCard,
+  Download,
 } from 'lucide-react';
+import { exportInvoiceToXeroCSV, downloadCSV } from '@/lib/xeroExport';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
@@ -42,6 +45,8 @@ interface InvoiceSectionProps {
   quote: Quote | null;
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
+  clientName: string;
+  clientEmail: string;
   onCreateInvoice: (data: {
     type: 'staged' | 'final';
     quoteId?: string;
@@ -69,6 +74,8 @@ export function InvoiceSection({
   quote,
   scopeItems,
   changeRequests,
+  clientName,
+  clientEmail,
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
@@ -102,6 +109,12 @@ export function InvoiceSection({
     paid: { label: 'Paid', variant: 'success' as const, icon: CheckCircle2 },
     overdue: { label: 'Overdue', variant: 'destructive' as const, icon: Clock },
     cancelled: { label: 'Cancelled', variant: 'outline' as const, icon: XCircle },
+  };
+
+  const handleExportToXero = (invoice: Invoice) => {
+    const csv = exportInvoiceToXeroCSV(invoice, { clientName, clientEmail });
+    downloadCSV(csv, `${invoice.invoiceNumber}-xero.csv`);
+    toast.success('Invoice exported for Xero');
   };
 
   const handleCreateInvoice = async () => {
@@ -334,6 +347,16 @@ export function InvoiceSection({
                             onClick={() => onCancelInvoice(invoice.id)}
                           >
                             <XCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {(invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'overdue') && (
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleExportToXero(invoice)}
+                            title="Export to Xero CSV"
+                          >
+                            <Download className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
