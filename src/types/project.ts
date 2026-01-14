@@ -21,6 +21,7 @@ export interface ChangeRequest {
   createdAt: Date;
   resolvedAt?: Date;
   imageUrl?: string;
+  resolutionComment?: string;
 }
 
 export interface ProjectStage {

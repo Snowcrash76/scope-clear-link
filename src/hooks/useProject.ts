@@ -77,6 +77,7 @@ type DbChangeRequest = {
   image_url: string | null;
   created_at: string;
   resolved_at: string | null;
+  resolution_comment: string | null;
 };
 
 type DbProjectStage = {
@@ -254,6 +255,7 @@ export function useProject(projectId: string | undefined) {
           createdAt: new Date(c.created_at),
           resolvedAt: c.resolved_at ? new Date(c.resolved_at) : undefined,
           imageUrl: c.image_url || undefined,
+          resolutionComment: c.resolution_comment || undefined,
         })),
         stages: projectStages.map(s => ({
           id: s.id,
@@ -458,14 +460,16 @@ export function useProject(projectId: string | undefined) {
   const updateChangeRequestStatus = async (
     requestId: string,
     status: 'approved' | 'declined',
-    recipientType: 'trade' | 'client' = 'trade'
+    recipientType: 'trade' | 'client' = 'trade',
+    comment?: string
   ) => {
     try {
       const { error } = await supabase
         .from('change_requests')
         .update({ 
           status, 
-          resolved_at: new Date().toISOString() 
+          resolved_at: new Date().toISOString(),
+          resolution_comment: comment || null
         })
         .eq('id', requestId);
 
@@ -493,7 +497,7 @@ export function useProject(projectId: string | undefined) {
         return {
           ...prev,
           changeRequests: prev.changeRequests.map(req =>
-            req.id === requestId ? { ...req, status, resolvedAt: new Date() } : req
+            req.id === requestId ? { ...req, status, resolvedAt: new Date(), resolutionComment: comment } : req
           ),
         };
       });
