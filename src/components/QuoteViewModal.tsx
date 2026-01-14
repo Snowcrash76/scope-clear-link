@@ -63,7 +63,18 @@ export function QuoteViewModal({
   const StatusIcon = config.icon;
 
   const handleDownloadPDF = () => {
-    downloadQuotePDF(quote, projectInfo, scopeItems, changeRequests);
+    try {
+      downloadQuotePDF(quote, projectInfo, scopeItems, changeRequests);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+    }
+  };
+
+  // Safe date formatting
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    return format(d, 'dd MMM yyyy');
   };
 
   return (
@@ -78,7 +89,7 @@ export function QuoteViewModal({
               <div>
                 <DialogTitle className="text-xl">{quote.quoteNumber}</DialogTitle>
                 <p className="text-sm text-muted-foreground">
-                  Created {format(quote.createdAt, 'dd MMM yyyy')}
+                  Created {formatDate(quote.createdAt)}
                 </p>
               </div>
             </div>
@@ -107,7 +118,7 @@ export function QuoteViewModal({
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="w-4 h-4 text-muted-foreground" />
               <span className="text-muted-foreground">Valid until:</span>
-              <span className="font-medium">{format(quote.validUntil, 'dd MMM yyyy')}</span>
+              <span className="font-medium">{formatDate(quote.validUntil)}</span>
             </div>
           )}
 

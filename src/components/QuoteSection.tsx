@@ -139,13 +139,18 @@ export function QuoteSection({
 
   const handleDownloadPDF = () => {
     if (!quote) return;
-    downloadQuotePDF(
-      quote,
-      { name: projectName, clientName, clientEmail, tradeBusinessName, tradeName },
-      scopeItems,
-      changeRequests
-    );
-    toast.success('Quote PDF downloaded');
+    try {
+      downloadQuotePDF(
+        quote,
+        { name: projectName, clientName, clientEmail, tradeBusinessName, tradeName },
+        scopeItems,
+        changeRequests
+      );
+      toast.success('Quote PDF downloaded');
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error('Failed to download PDF');
+    }
   };
 
   const projectInfo = {
