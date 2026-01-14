@@ -37,7 +37,8 @@ export default function TradeDashboard() {
   // Refetch projects when dashboard mounts to ensure fresh data
   useEffect(() => {
     refetch();
-  }, [refetch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();
