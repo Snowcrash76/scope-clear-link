@@ -83,7 +83,7 @@ export default function ProjectManage() {
   } = useInvoices(id);
 
   // Check for tab query param (e.g., from job creation)
-  const initialTab = searchParams.get('tab') || 'scope';
+  const initialTab = searchParams.get('tab') || 'quote';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
@@ -293,6 +293,19 @@ export default function ProjectManage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
+            <TabsTrigger value="quote">
+              <FileText className="w-4 h-4 mr-1 hidden sm:block" />
+              Quote
+            </TabsTrigger>
+            <TabsTrigger value="invoices">
+              <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
+              Invoices
+              {invoices.length > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {invoices.length}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="scope">
               Scope
               <Badge variant="secondary" className="ml-2">
@@ -304,19 +317,6 @@ export default function ProjectManage() {
               {pendingClientRequests.length > 0 && (
                 <Badge variant="pending" className="ml-2">
                   {pendingClientRequests.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="quote">
-              <FileText className="w-4 h-4 mr-1 hidden sm:block" />
-              Quote
-            </TabsTrigger>
-            <TabsTrigger value="invoices">
-              <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
-              Invoices
-              {invoices.length > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  {invoices.length}
                 </Badge>
               )}
             </TabsTrigger>
