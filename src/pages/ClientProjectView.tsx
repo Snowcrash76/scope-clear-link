@@ -100,6 +100,7 @@ export default function ClientProjectView() {
         <ActionRequired 
           pendingChanges={pendingChanges}
           unacknowledgedItems={unacknowledgedItems}
+          viewerRole="client"
         />
 
         {/* Main Content Tabs */}
