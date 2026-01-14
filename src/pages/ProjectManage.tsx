@@ -108,7 +108,8 @@ export default function ProjectManage() {
   };
 
   const handleSendChangeRequest = async (requestData: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => {
-    const success = await createChangeRequest(requestData);
+    // Trade creating change request → notify client
+    const success = await createChangeRequest(requestData, 'client');
     if (success) {
       toast.success('Change request sent to client');
       setIsSendingChangeRequest(false);
@@ -132,14 +133,16 @@ export default function ProjectManage() {
   };
 
   const handleApproveClientRequest = async (requestId: string) => {
-    const success = await updateChangeRequestStatus(requestId, 'approved');
+    // Trade approving client's request → notify client
+    const success = await updateChangeRequestStatus(requestId, 'approved', 'client');
     if (success) {
       toast.success('Client request approved');
     }
   };
 
   const handleDeclineClientRequest = async (requestId: string) => {
-    const success = await updateChangeRequestStatus(requestId, 'declined');
+    // Trade declining client's request → notify client
+    const success = await updateChangeRequestStatus(requestId, 'declined', 'client');
     if (success) {
       toast.info('Client request declined');
     }

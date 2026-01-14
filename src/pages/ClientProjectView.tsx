@@ -60,20 +60,23 @@ export default function ClientProjectView() {
   };
 
   const handleApproveChange = async (changeId: string) => {
-    const success = await updateChangeRequestStatus(changeId, 'approved');
+    // Client approving trade's variation → notify trade
+    const success = await updateChangeRequestStatus(changeId, 'approved', 'trade');
     if (success) {
       toast.success('Change approved! Your trade has been notified.');
     }
   };
 
   const handleDeclineChange = async (changeId: string) => {
-    const success = await updateChangeRequestStatus(changeId, 'declined');
+    // Client declining trade's variation → notify trade
+    const success = await updateChangeRequestStatus(changeId, 'declined', 'trade');
     if (success) {
       toast.info('Change declined. Your trade has been notified.');
     }
   };
 
   const handleRequestChange = async (description: string, imageUrl?: string) => {
+    // Client creating change request → notify trade
     const success = await createChangeRequest({
       type: 'client_request',
       title: 'New change request',
@@ -81,7 +84,7 @@ export default function ClientProjectView() {
       costImpact: 0,
       timeImpact: 0,
       imageUrl,
-    });
+    }, 'trade');
     
     if (success) {
       toast.success('Change request sent! Your trade will review and respond.');
