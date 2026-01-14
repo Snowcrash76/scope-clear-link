@@ -526,6 +526,9 @@ export default function ProjectManage() {
               quote={activeQuote}
               clientName={project.clientName}
               clientEmail={project.clientEmail}
+              projectName={project.name}
+              tradeBusinessName={project.tradeBusinessName}
+              tradeName={project.tradeName}
               onCreateQuote={createQuote}
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}

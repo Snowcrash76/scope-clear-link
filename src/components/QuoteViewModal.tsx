@@ -1,0 +1,273 @@
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
+import { 
+  Download, 
+  Calendar, 
+  CheckCircle2, 
+  XCircle, 
+  Send, 
+  Edit, 
+  RefreshCw,
+  FileText,
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
+import { downloadQuotePDF } from '@/lib/quotePdf';
+
+interface QuoteViewModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  quote: Quote;
+  scopeItems: ScopeItem[];
+  changeRequests: ChangeRequest[];
+  projectInfo: {
+    name: string;
+    clientName: string;
+    clientEmail: string;
+    tradeBusinessName?: string;
+    tradeName?: string;
+  };
+}
+
+export function QuoteViewModal({
+  isOpen,
+  onClose,
+  quote,
+  scopeItems,
+  changeRequests,
+  projectInfo,
+}: QuoteViewModalProps) {
+  const includedItems = scopeItems.filter(item => item.category === 'included');
+  const excludedItems = scopeItems.filter(item => item.category === 'excluded');
+  const assumptionItems = scopeItems.filter(item => item.category === 'assumption');
+  const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
+
+  const statusConfig = {
+    draft: { label: 'Draft', variant: 'secondary' as const, icon: Edit },
+    sent: { label: 'Sent', variant: 'pending' as const, icon: Send },
+    approved: { label: 'Approved', variant: 'success' as const, icon: CheckCircle2 },
+    declined: { label: 'Declined', variant: 'destructive' as const, icon: XCircle },
+    revised: { label: 'Revised', variant: 'outline' as const, icon: RefreshCw },
+  };
+
+  const config = statusConfig[quote.status];
+  const StatusIcon = config.icon;
+
+  const handleDownloadPDF = () => {
+    downloadQuotePDF(quote, projectInfo, scopeItems, changeRequests);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <FileText className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">{quote.quoteNumber}</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Created {format(quote.createdAt, 'dd MMM yyyy')}
+                </p>
+              </div>
+            </div>
+            <Badge variant={config.variant} className="gap-1.5">
+              <StatusIcon className="w-3.5 h-3.5" />
+              {config.label}
+            </Badge>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-6 mt-4">
+          {/* Project & Client Info */}
+          <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Project</p>
+              <p className="font-medium">{projectInfo.name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Client</p>
+              <p className="font-medium">{projectInfo.clientName}</p>
+              <p className="text-sm text-muted-foreground">{projectInfo.clientEmail}</p>
+            </div>
+          </div>
+
+          {quote.validUntil && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Valid until:</span>
+              <span className="font-medium">{format(quote.validUntil, 'dd MMM yyyy')}</span>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Included Items */}
+          <div className="space-y-3">
+            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+              Included Items
+            </h4>
+            <div className="border rounded-lg divide-y">
+              {includedItems.map(item => (
+                <div key={item.id} className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-4">
+                      <p className="font-medium">{item.title}</p>
+                      {item.description && (
+                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                          {item.description}
+                        </p>
+                      )}
+                    </div>
+                    <span className="font-medium whitespace-nowrap">
+                      ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Approved Changes */}
+          {approvedChanges.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Approved Changes
+              </h4>
+              <div className="border rounded-lg divide-y border-approved/30 bg-approved/5">
+                {approvedChanges.map(change => (
+                  <div key={change.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="font-medium">{change.title}</p>
+                        {change.description && (
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {change.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "font-medium whitespace-nowrap",
+                        change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                      )}>
+                        {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Exclusions */}
+          {excludedItems.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Exclusions
+              </h4>
+              <div className="space-y-2">
+                {excludedItems.map(item => (
+                  <div key={item.id} className="p-3 rounded-lg bg-muted/30">
+                    <p className="font-medium text-sm">{item.title}</p>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Assumptions */}
+          {assumptionItems.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Assumptions
+              </h4>
+              <div className="space-y-2">
+                {assumptionItems.map(item => (
+                  <div key={item.id} className="p-3 rounded-lg bg-muted/30">
+                    <p className="font-medium text-sm">{item.title}</p>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Totals */}
+          <div className="space-y-2 p-4 rounded-lg bg-muted/50">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>${quote.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tax ({quote.taxRate}%)</span>
+              <span>${quote.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+            </div>
+            <Separator className="my-2" />
+            <div className="flex justify-between text-lg font-bold">
+              <span>Total</span>
+              <span className="text-primary">
+                ${quote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+          </div>
+
+          {/* Notes & Terms */}
+          {(quote.notes || quote.terms) && (
+            <div className="space-y-4">
+              {quote.notes && (
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                    Notes
+                  </h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-lg bg-muted/30">
+                    {quote.notes}
+                  </p>
+                </div>
+              )}
+              {quote.terms && (
+                <div>
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
+                    Terms & Conditions
+                  </h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-lg bg-muted/30">
+                    {quote.terms}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Download Button */}
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleDownloadPDF} className="gap-2">
+              <Download className="w-4 h-4" />
+              Download PDF
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -20,16 +20,11 @@ import {
   Download,
 } from 'lucide-react';
 import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
+import { downloadQuotePDF } from '@/lib/quotePdf';
+import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
 
 interface QuoteSectionProps {
   quote: Quote | null;
@@ -37,6 +32,9 @@ interface QuoteSectionProps {
   changeRequests: ChangeRequest[];
   clientName?: string;
   clientEmail?: string;
+  projectName?: string;
+  tradeBusinessName?: string;
+  tradeName?: string;
   onCreateQuote: (data: {
     subtotal: number;
     taxRate: number;
@@ -62,6 +60,9 @@ export function QuoteSection({
   changeRequests,
   clientName = '',
   clientEmail = '',
+  projectName = '',
+  tradeBusinessName = '',
+  tradeName = '',
   onCreateQuote,
   onUpdateQuote,
   onSendQuote,
@@ -70,6 +71,7 @@ export function QuoteSection({
 }: QuoteSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [notes, setNotes] = useState(quote?.notes ?? '');
   const [terms, setTerms] = useState(quote?.terms ?? '');
@@ -135,6 +137,25 @@ export function QuoteSection({
     toast.success('Quote exported for Xero');
   };
 
+  const handleDownloadPDF = () => {
+    if (!quote) return;
+    downloadQuotePDF(
+      quote,
+      { name: projectName, clientName, clientEmail, tradeBusinessName, tradeName },
+      scopeItems,
+      changeRequests
+    );
+    toast.success('Quote PDF downloaded');
+  };
+
+  const projectInfo = {
+    name: projectName,
+    clientName,
+    clientEmail,
+    tradeBusinessName,
+    tradeName,
+  };
+
   const statusConfig = {
     draft: { label: 'Draft', variant: 'secondary' as const, icon: Edit },
     sent: { label: 'Sent', variant: 'pending' as const, icon: Send },
@@ -177,11 +198,18 @@ export function QuoteSection({
           </h4>
           <div className="border rounded-lg divide-y">
             {includedItems.map(item => (
-              <div key={item.id} className="p-3 flex justify-between items-center">
-                <span className="text-sm">{item.title}</span>
-                <span className="font-medium">
-                  ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
+              <div key={item.id} className="p-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-4">
+                    <span className="text-sm font-medium">{item.title}</span>
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                    )}
+                  </div>
+                  <span className="font-medium whitespace-nowrap">
+                    ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             ))}
             {approvedChanges.length > 0 && (
@@ -192,14 +220,21 @@ export function QuoteSection({
                   </span>
                 </div>
                 {approvedChanges.map(change => (
-                  <div key={change.id} className="p-3 flex justify-between items-center bg-muted/30">
-                    <span className="text-sm">{change.title}</span>
-                    <span className={cn(
-                      "font-medium",
-                      change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                    )}>
-                      {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                    </span>
+                  <div key={change.id} className="p-3 bg-muted/30">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <span className="text-sm font-medium">{change.title}</span>
+                        {change.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{change.description}</p>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "font-medium whitespace-nowrap",
+                        change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                      )}>
+                        {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </>
@@ -330,11 +365,18 @@ export function QuoteSection({
           </h4>
           <div className="border rounded-lg divide-y">
             {includedItems.map(item => (
-              <div key={item.id} className="p-3 flex justify-between items-center">
-                <span className="text-sm">{item.title}</span>
-                <span className="font-medium">
-                  ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
+              <div key={item.id} className="p-3">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-4">
+                    <span className="text-sm font-medium">{item.title}</span>
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                    )}
+                  </div>
+                  <span className="font-medium whitespace-nowrap">
+                    ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             ))}
             {approvedChanges.length > 0 && (
@@ -345,14 +387,21 @@ export function QuoteSection({
                   </span>
                 </div>
                 {approvedChanges.map(change => (
-                  <div key={change.id} className="p-3 flex justify-between items-center bg-muted/30">
-                    <span className="text-sm">{change.title}</span>
-                    <span className={cn(
-                      "font-medium",
-                      change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                    )}>
-                      {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                    </span>
+                  <div key={change.id} className="p-3 bg-muted/30">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <span className="text-sm font-medium">{change.title}</span>
+                        {change.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{change.description}</p>
+                        )}
+                      </div>
+                      <span className={cn(
+                        "font-medium whitespace-nowrap",
+                        change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                      )}>
+                        {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </>
@@ -414,6 +463,16 @@ export function QuoteSection({
         {/* Actions (Trade View) */}
         {isTradeView && (
           <div className="mt-6 flex flex-wrap gap-3">
+            {/* View and Download buttons - always available */}
+            <Button variant="outline" onClick={() => setIsViewModalOpen(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              View Quote
+            </Button>
+            <Button variant="outline" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+            
             {quote!.status === 'draft' && (
               <>
                 <Button variant="outline" onClick={() => setIsEditing(true)}>
@@ -433,14 +492,14 @@ export function QuoteSection({
                   Edit Quote
                 </Button>
                 <Button variant="outline" onClick={handleExportToXero}>
-                  <Download className="w-4 h-4 mr-2" />
+                  <FileText className="w-4 h-4 mr-2" />
                   Export to Xero
                 </Button>
               </>
             )}
             {quote!.status === 'approved' && (
               <Button variant="outline" onClick={handleExportToXero}>
-                <Download className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-2" />
                 Export to Xero
               </Button>
             )}
@@ -452,7 +511,33 @@ export function QuoteSection({
             )}
           </div>
         )}
+
+        {/* Client View - View and Download buttons */}
+        {!isTradeView && (
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button variant="outline" onClick={() => setIsViewModalOpen(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              View Quote
+            </Button>
+            <Button variant="outline" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+          </div>
+        )}
       </Card>
+
+      {/* Quote View Modal */}
+      {quote && (
+        <QuoteViewModal
+          isOpen={isViewModalOpen}
+          onClose={() => setIsViewModalOpen(false)}
+          quote={quote}
+          scopeItems={scopeItems}
+          changeRequests={changeRequests}
+          projectInfo={projectInfo}
+        />
+      )}
     </div>
   );
 }
