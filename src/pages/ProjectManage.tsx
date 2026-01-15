@@ -63,6 +63,11 @@ export default function ProjectManage() {
     deleteChangeRequest,
     updateChangeRequestStatus,
     updateStage,
+    addStage,
+    editStage,
+    deleteStage,
+    reorderStages,
+    clearAllStages,
     updateProjectStatus,
   } = useProject(id);
 
@@ -575,6 +580,11 @@ export default function ProjectManage() {
               currentStageIndex={project.currentStageIndex}
               onUpdateStage={handleUpdateStage}
               onSetCurrentStage={handleSetCurrentStage}
+              onAddStage={addStage}
+              onEditStage={editStage}
+              onDeleteStage={deleteStage}
+              onReorderStages={reorderStages}
+              onClearAllStages={clearAllStages}
             />
           </TabsContent>
 

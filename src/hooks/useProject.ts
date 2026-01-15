@@ -528,6 +528,150 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
+  const addStage = async (stageData: { name: string; description: string }) => {
+    if (!projectId) return false;
+
+    try {
+      const stageOrder = project?.stages?.length || 0;
+      const status = stageOrder === 0 ? 'current' : 'upcoming';
+
+      const { error } = await supabase
+        .from('project_stages')
+        .insert({
+          project_id: projectId,
+          name: stageData.name,
+          description: stageData.description,
+          status,
+          stage_order: stageOrder,
+        });
+
+      if (error) throw error;
+
+      await fetchProject();
+      toast.success('Stage added');
+      return true;
+    } catch (error) {
+      console.error('Error adding stage:', error);
+      toast.error('Failed to add stage');
+      return false;
+    }
+  };
+
+  const editStage = async (stageId: string, data: { name: string; description: string }) => {
+    try {
+      const { error } = await supabase
+        .from('project_stages')
+        .update({ name: data.name, description: data.description })
+        .eq('id', stageId);
+
+      if (error) throw error;
+
+      await fetchProject();
+      toast.success('Stage updated');
+      return true;
+    } catch (error) {
+      console.error('Error editing stage:', error);
+      toast.error('Failed to update stage');
+      return false;
+    }
+  };
+
+  const deleteStage = async (stageId: string) => {
+    if (!projectId) return false;
+
+    try {
+      // Get the stage being deleted
+      const stageToDelete = project?.stages.find(s => s.id === stageId);
+      
+      const { error } = await supabase
+        .from('project_stages')
+        .delete()
+        .eq('id', stageId);
+
+      if (error) throw error;
+
+      // If deleted stage was current, make the previous or next stage current
+      if (stageToDelete?.status === 'current' && project?.stages) {
+        const remainingStages = project.stages.filter(s => s.id !== stageId);
+        if (remainingStages.length > 0) {
+          const firstUpcoming = remainingStages.find(s => s.status === 'upcoming');
+          const lastCompleted = [...remainingStages].reverse().find(s => s.status === 'completed');
+          const newCurrentId = firstUpcoming?.id || lastCompleted?.id || remainingStages[0].id;
+          
+          await supabase
+            .from('project_stages')
+            .update({ status: 'current' })
+            .eq('id', newCurrentId);
+        }
+      }
+
+      // Reorder remaining stages
+      const { data: remainingStages } = await supabase
+        .from('project_stages')
+        .select('id')
+        .eq('project_id', projectId)
+        .order('stage_order');
+
+      if (remainingStages) {
+        for (let i = 0; i < remainingStages.length; i++) {
+          await supabase
+            .from('project_stages')
+            .update({ stage_order: i })
+            .eq('id', remainingStages[i].id);
+        }
+      }
+
+      await fetchProject();
+      toast.success('Stage deleted');
+      return true;
+    } catch (error) {
+      console.error('Error deleting stage:', error);
+      toast.error('Failed to delete stage');
+      return false;
+    }
+  };
+
+  const reorderStages = async (stageIds: string[]) => {
+    try {
+      for (let i = 0; i < stageIds.length; i++) {
+        const { error } = await supabase
+          .from('project_stages')
+          .update({ stage_order: i })
+          .eq('id', stageIds[i]);
+
+        if (error) throw error;
+      }
+
+      await fetchProject();
+      return true;
+    } catch (error) {
+      console.error('Error reordering stages:', error);
+      toast.error('Failed to reorder stages');
+      return false;
+    }
+  };
+
+  const clearAllStages = async () => {
+    if (!projectId) return false;
+
+    try {
+      const { error } = await supabase
+        .from('project_stages')
+        .delete()
+        .eq('project_id', projectId);
+
+      if (error) throw error;
+
+      await fetchProject();
+      toast.success('All stages cleared');
+      return true;
+    } catch (error) {
+      console.error('Error clearing stages:', error);
+      toast.error('Failed to clear stages');
+      return false;
+    }
+  };
+
   // Project status operations
   const updateProjectStatus = async (status: Project['status']) => {
     if (!projectId) return false;
@@ -565,6 +709,11 @@ export function useProject(projectId: string | undefined) {
     deleteChangeRequest,
     updateChangeRequestStatus,
     updateStage,
+    addStage,
+    editStage,
+    deleteStage,
+    reorderStages,
+    clearAllStages,
     updateProjectStatus,
   };
 }
