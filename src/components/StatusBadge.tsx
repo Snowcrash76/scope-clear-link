@@ -1,17 +1,23 @@
 import { Badge } from '@/components/ui/badge';
-import { Check, Clock, X, AlertCircle } from 'lucide-react';
+import { Check, Clock, X, AlertCircle, Send } from 'lucide-react';
 
 interface StatusBadgeProps {
-  status: 'pending' | 'approved' | 'declined' | 'acknowledged';
+  status: 'pending' | 'awaiting_client' | 'approved' | 'declined' | 'acknowledged';
   size?: 'sm' | 'default';
+  viewerRole?: 'client' | 'trade';
 }
 
-export function StatusBadge({ status, size = 'default' }: StatusBadgeProps) {
+export function StatusBadge({ status, size = 'default', viewerRole }: StatusBadgeProps) {
   const config = {
     pending: {
       variant: 'pending' as const,
       icon: Clock,
-      label: 'Pending Approval',
+      label: 'Pending',
+    },
+    awaiting_client: {
+      variant: 'default' as const,
+      icon: Send,
+      label: viewerRole === 'client' ? 'Awaiting Your Approval' : 'Sent to Client',
     },
     approved: {
       variant: 'success' as const,

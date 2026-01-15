@@ -17,7 +17,7 @@ export interface ChangeRequest {
   reason?: string;
   costImpact: number;
   timeImpact: number; // days
-  status: 'pending' | 'approved' | 'declined';
+  status: 'pending' | 'awaiting_client' | 'approved' | 'declined';
   createdAt: Date;
   resolvedAt?: Date;
   imageUrl?: string;

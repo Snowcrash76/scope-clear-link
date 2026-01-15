@@ -542,7 +542,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      change_request_status: "pending" | "approved" | "declined"
+      change_request_status:
+        | "pending"
+        | "approved"
+        | "declined"
+        | "awaiting_client"
       change_request_type: "client_request" | "site_issue" | "substitution"
       invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
       invoice_type: "staged" | "final"
@@ -677,7 +681,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      change_request_status: ["pending", "approved", "declined"],
+      change_request_status: [
+        "pending",
+        "approved",
+        "declined",
+        "awaiting_client",
+      ],
       change_request_type: ["client_request", "site_issue", "substitution"],
       invoice_status: ["draft", "sent", "paid", "overdue", "cancelled"],
       invoice_type: ["staged", "final"],
