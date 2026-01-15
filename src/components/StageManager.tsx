@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ProjectStage } from '@/types/project';
+import { ProjectStage, Invoice, Quote } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { 
   CheckCircle2, 
   Circle, 
@@ -10,9 +11,10 @@ import {
   Plus, 
   Pencil, 
   Trash2,
-  GripVertical,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Receipt,
+  DollarSign
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { EditStageModal } from './EditStageModal';
@@ -30,18 +32,23 @@ import {
 interface StageManagerProps {
   stages: ProjectStage[];
   currentStageIndex: number;
+  invoices?: Invoice[];
+  quote?: Quote | null;
   onUpdateStage: (stageId: string, status: 'upcoming' | 'current' | 'completed') => void;
   onSetCurrentStage: (index: number) => void;
-  onAddStage?: (data: { name: string; description: string }) => Promise<boolean>;
-  onEditStage?: (stageId: string, data: { name: string; description: string }) => Promise<boolean>;
+  onAddStage?: (data: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => Promise<boolean>;
+  onEditStage?: (stageId: string, data: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => Promise<boolean>;
   onDeleteStage?: (stageId: string) => Promise<boolean>;
   onReorderStages?: (stageIds: string[]) => Promise<boolean>;
   onClearAllStages?: () => Promise<boolean>;
+  onGenerateStageInvoice?: (stage: ProjectStage, amount: number) => void;
 }
 
 export function StageManager({ 
   stages, 
   currentStageIndex,
+  invoices = [],
+  quote,
   onUpdateStage,
   onSetCurrentStage,
   onAddStage,
@@ -49,6 +56,7 @@ export function StageManager({
   onDeleteStage,
   onReorderStages,
   onClearAllStages,
+  onGenerateStageInvoice,
 }: StageManagerProps) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<ProjectStage | undefined>();
@@ -94,12 +102,31 @@ export function StageManager({
     setEditModalOpen(true);
   };
 
-  const handleSaveStage = async (data: { name: string; description: string }) => {
+  const handleSaveStage = async (data: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => {
     if (editingStage && onEditStage) {
       await onEditStage(editingStage.id, data);
     } else if (onAddStage) {
       await onAddStage(data);
     }
+  };
+
+  // Helper to get invoice for a stage
+  const getStageInvoice = (stageId: string) => {
+    return invoices.find(inv => inv.stageId === stageId);
+  };
+
+  // Helper to calculate stage billing amount
+  const getStageBillingAmount = (stage: ProjectStage) => {
+    if (stage.invoiceAmount) return stage.invoiceAmount;
+    if (stage.invoicePercentage && quote?.total) {
+      return (quote.total * stage.invoicePercentage) / 100;
+    }
+    return null;
+  };
+
+  // Check if stage has billing configured
+  const hasBilling = (stage: ProjectStage) => {
+    return !!(stage.invoiceAmount || stage.invoicePercentage);
   };
 
   const handleDeleteStage = async () => {
@@ -209,15 +236,52 @@ export function StageManager({
 
                 {/* Stage Info */}
                 <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "font-medium",
-                    stage.status === 'upcoming' && "text-muted-foreground"
-                  )}>
-                    {stage.name}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <p className={cn(
+                      "font-medium",
+                      stage.status === 'upcoming' && "text-muted-foreground"
+                    )}>
+                      {stage.name}
+                    </p>
+                    {/* Invoice Status Badge */}
+                    {(() => {
+                      const stageInvoice = getStageInvoice(stage.id);
+                      if (stageInvoice) {
+                        if (stageInvoice.status === 'paid') {
+                          return (
+                            <Badge variant="success" className="text-xs gap-1">
+                              <CheckCircle2 className="w-3 h-3" />
+                              Paid
+                            </Badge>
+                          );
+                        }
+                        return (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <Receipt className="w-3 h-3" />
+                            Invoiced
+                          </Badge>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
                   {stage.description && (
                     <p className="text-sm text-muted-foreground truncate">
                       {stage.description}
+                    </p>
+                  )}
+                  {/* Billing Info */}
+                  {hasBilling(stage) && (
+                    <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      Invoice: {stage.invoiceAmount 
+                        ? `$${stage.invoiceAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
+                        : `${stage.invoicePercentage}% of quote`}
+                      {stage.invoicePercentage && quote?.total && (
+                        <span className="text-muted-foreground/70">
+                          (${((quote.total * stage.invoicePercentage) / 100).toLocaleString('en-AU', { minimumFractionDigits: 2 })})
+                        </span>
+                      )}
                     </p>
                   )}
                 </div>
@@ -248,7 +312,22 @@ export function StageManager({
                 )}
 
                 {/* Status Actions */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 flex items-center gap-2">
+                  {/* Generate Invoice Button for completed stages with billing */}
+                  {stage.status === 'completed' && hasBilling(stage) && !getStageInvoice(stage.id) && onGenerateStageInvoice && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => {
+                        const amount = getStageBillingAmount(stage);
+                        if (amount) onGenerateStageInvoice(stage, amount);
+                      }}
+                    >
+                      <Receipt className="w-4 h-4 mr-1" />
+                      Invoice
+                    </Button>
+                  )}
+                  
                   {stage.status === 'current' && (
                     <Button 
                       size="sm" 

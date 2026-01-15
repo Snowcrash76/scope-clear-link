@@ -20,7 +20,7 @@ import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
-import { ScopeItem, ChangeRequest } from '@/types/project';
+import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -218,6 +218,28 @@ export default function ProjectManage() {
         const newStatus = i < index ? 'completed' : i === index ? 'current' : 'upcoming';
         await updateStage(project.stages[i].id, newStatus);
       }
+    }
+  };
+
+  const handleGenerateStageInvoice = async (stage: ProjectStage, amount: number) => {
+    // Navigate to invoices tab and create an invoice for this stage
+    setActiveTab('invoices');
+    
+    // Create invoice with stage details
+    const invoiceId = await createInvoice({
+      type: 'staged',
+      quoteId: activeQuote?.id,
+      stageId: stage.id,
+      taxRate: activeQuote?.taxRate ?? 10,
+      lineItems: [{
+        description: `Stage Payment: ${stage.name}`,
+        quantity: 1,
+        unitPrice: amount / (1 + (activeQuote?.taxRate ?? 10) / 100), // Remove tax for subtotal
+      }],
+    });
+
+    if (invoiceId) {
+      toast.success(`Invoice created for "${stage.name}"`);
     }
   };
 
@@ -578,6 +600,8 @@ export default function ProjectManage() {
             <StageManager
               stages={project.stages}
               currentStageIndex={project.currentStageIndex}
+              invoices={invoices}
+              quote={activeQuote}
               onUpdateStage={handleUpdateStage}
               onSetCurrentStage={handleSetCurrentStage}
               onAddStage={addStage}
@@ -585,6 +609,7 @@ export default function ProjectManage() {
               onDeleteStage={deleteStage}
               onReorderStages={reorderStages}
               onClearAllStages={clearAllStages}
+              onGenerateStageInvoice={handleGenerateStageInvoice}
             />
           </TabsContent>
 

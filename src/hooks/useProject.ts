@@ -87,6 +87,8 @@ type DbProjectStage = {
   description: string | null;
   status: 'upcoming' | 'current' | 'completed';
   stage_order: number;
+  invoice_amount: number | null;
+  invoice_percentage: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -262,6 +264,8 @@ export function useProject(projectId: string | undefined) {
           name: s.name,
           description: s.description || '',
           status: s.status,
+          invoiceAmount: s.invoice_amount || undefined,
+          invoicePercentage: s.invoice_percentage || undefined,
         })),
       };
 
@@ -528,7 +532,7 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
-  const addStage = async (stageData: { name: string; description: string }) => {
+  const addStage = async (stageData: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => {
     if (!projectId) return false;
 
     try {
@@ -543,6 +547,8 @@ export function useProject(projectId: string | undefined) {
           description: stageData.description,
           status,
           stage_order: stageOrder,
+          invoice_amount: stageData.invoiceAmount || null,
+          invoice_percentage: stageData.invoicePercentage || null,
         });
 
       if (error) throw error;
@@ -557,11 +563,16 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
-  const editStage = async (stageId: string, data: { name: string; description: string }) => {
+  const editStage = async (stageId: string, data: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => {
     try {
       const { error } = await supabase
         .from('project_stages')
-        .update({ name: data.name, description: data.description })
+        .update({ 
+          name: data.name, 
+          description: data.description,
+          invoice_amount: data.invoiceAmount || null,
+          invoice_percentage: data.invoicePercentage || null,
+        })
         .eq('id', stageId);
 
       if (error) throw error;
