@@ -1,15 +1,7 @@
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
+import autoTable from 'jspdf-autotable';
+import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { format } from 'date-fns';
-
-// Extend jsPDF with autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
 
 interface ProjectInfo {
   name: string;
@@ -23,7 +15,8 @@ export function generateQuotePDF(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
-  changeRequests: ChangeRequest[] = []
+  changeRequests: ChangeRequest[] = [],
+  quoteLineItems: QuoteLineItem[] = []
 ): jsPDF {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -31,9 +24,9 @@ export function generateQuotePDF(
   let yPos = 20;
 
   // Colors
-  const primaryColor = [41, 98, 255] as [number, number, number];
-  const textColor = [51, 51, 51] as [number, number, number];
-  const mutedColor = [107, 114, 128] as [number, number, number];
+  const primaryColor: [number, number, number] = [41, 98, 255];
+  const textColor: [number, number, number] = [51, 51, 51];
+  const mutedColor: [number, number, number] = [107, 114, 128];
 
   // Header
   doc.setFillColor(...primaryColor);
@@ -119,7 +112,7 @@ export function generateQuotePDF(
       `$${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Item', 'Description', 'Amount']],
       body: tableData,
@@ -144,7 +137,54 @@ export function generateQuotePDF(
       },
     });
 
-    yPos = doc.lastAutoTable.finalY + 10;
+    yPos = (doc as any).lastAutoTable.finalY + 10;
+  }
+
+  // Custom Quote Line Items
+  if (quoteLineItems.length > 0) {
+    if (yPos > 240) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    doc.setTextColor(...textColor);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Additional Items', margin, yPos);
+    yPos += 5;
+
+    const customData = quoteLineItems.map(item => [
+      item.title,
+      item.description || '',
+      `$${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
+    ]);
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Item', 'Description', 'Amount']],
+      body: customData,
+      margin: { left: margin, right: margin },
+      headStyles: {
+        fillColor: [99, 102, 241],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 10,
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: textColor,
+      },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 35, halign: 'right' },
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 10;
   }
 
   // Approved Changes
@@ -168,7 +208,7 @@ export function generateQuotePDF(
       `${change.costImpact >= 0 ? '+' : ''}$${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: yPos,
       head: [['Change', 'Description', 'Impact']],
       body: changeData,
@@ -190,7 +230,7 @@ export function generateQuotePDF(
       },
     });
 
-    yPos = doc.lastAutoTable.finalY + 10;
+    yPos = (doc as any).lastAutoTable.finalY + 10;
   }
 
   // Exclusions
@@ -350,13 +390,18 @@ export function downloadQuotePDF(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
-  changeRequests: ChangeRequest[] = []
+  changeRequests: ChangeRequest[] = [],
+  quoteLineItems: QuoteLineItem[] = []
 ): void {
   try {
-    const doc = generateQuotePDF(quote, project, scopeItems, changeRequests);
+    console.log('Starting PDF generation...', { quote, project, scopeItems, changeRequests, quoteLineItems });
+    const doc = generateQuotePDF(quote, project, scopeItems, changeRequests, quoteLineItems);
+    console.log('PDF generated successfully, saving...');
     doc.save(`${quote.quoteNumber}.pdf`);
+    console.log('PDF saved successfully');
   } catch (error) {
     console.error('Error generating PDF:', error);
+    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw error;
   }
 }

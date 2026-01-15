@@ -179,7 +179,8 @@ export function QuoteSection({
         quote,
         { name: projectName, clientName, clientEmail, tradeBusinessName, tradeName },
         scopeItems,
-        changeRequests
+        changeRequests,
+        quoteLineItems
       );
       toast.success('Quote PDF downloaded');
     } catch (error) {
