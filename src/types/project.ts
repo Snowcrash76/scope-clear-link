@@ -31,6 +31,17 @@ export interface ProjectStage {
   status: 'upcoming' | 'current' | 'completed';
 }
 
+export interface QuoteLineItem {
+  id: string;
+  quoteId: string;
+  title: string;
+  description?: string;
+  cost: number;
+  sortOrder: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Quote {
   id: string;
   projectId: string;

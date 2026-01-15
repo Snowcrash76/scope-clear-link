@@ -18,6 +18,7 @@ import { InvoiceSection } from '@/components/InvoiceSection';
 import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
+import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest } from '@/types/project';
 import { 
@@ -72,6 +73,13 @@ export default function ProjectManage() {
     sendQuote,
     reviseQuote,
   } = useQuotes(id);
+
+  const {
+    lineItems: quoteLineItems,
+    addLineItem,
+    updateLineItem,
+    deleteLineItem,
+  } = useQuoteLineItems(activeQuote?.id);
 
   const {
     invoices,
@@ -529,6 +537,10 @@ export default function ProjectManage() {
               projectName={project.name}
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
+              quoteLineItems={quoteLineItems}
+              onAddLineItem={addLineItem}
+              onUpdateLineItem={updateLineItem}
+              onDeleteLineItem={deleteLineItem}
               onCreateQuote={createQuote}
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}
