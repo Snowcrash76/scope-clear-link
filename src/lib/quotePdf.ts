@@ -3,12 +3,17 @@ import autoTable from 'jspdf-autotable';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { format } from 'date-fns';
 
-interface ProjectInfo {
+export interface ProjectInfo {
   name: string;
   clientName: string;
   clientEmail: string;
+  clientAddress?: string;
   tradeBusinessName?: string;
   tradeName?: string;
+  tradeAddress?: string;
+  tradePhone?: string;
+  abn?: string;
+  registeredAddress?: string;
 }
 
 export function generateQuotePDF(
@@ -20,220 +25,215 @@ export function generateQuotePDF(
 ): jsPDF {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
+  const margin = 15;
   let yPos = 20;
 
-  // Colors
-  const primaryColor: [number, number, number] = [41, 98, 255];
-  const textColor: [number, number, number] = [51, 51, 51];
-  const mutedColor: [number, number, number] = [107, 114, 128];
+  // Colors - Professional dark text
+  const textColor: [number, number, number] = [33, 33, 33];
+  const mutedColor: [number, number, number] = [100, 100, 100];
+  const lineColor: [number, number, number] = [200, 200, 200];
 
-  // Header
-  doc.setFillColor(...primaryColor);
-  doc.rect(0, 0, pageWidth, 40, 'F');
-
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(24);
-  doc.setFont('helvetica', 'bold');
-  doc.text('QUOTE', margin, 28);
-
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text(quote.quoteNumber, pageWidth - margin, 24, { align: 'right' });
-  doc.setFontSize(10);
-  
-  // Handle date formatting safely
-  const createdDate = quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt);
-  doc.text(`Created: ${format(createdDate, 'dd MMM yyyy')}`, pageWidth - margin, 32, { align: 'right' });
-
-  yPos = 55;
-
-  // Business & Client Info
+  // Title - Top Left
   doc.setTextColor(...textColor);
-  doc.setFontSize(10);
-
-  // From section
+  doc.setFontSize(28);
   doc.setFont('helvetica', 'bold');
-  doc.text('FROM', margin, yPos);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...mutedColor);
-  yPos += 6;
+  doc.text('QUOTE', margin, yPos + 8);
+
+  // Business Name - Top Right
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
   if (project.tradeBusinessName) {
-    doc.text(project.tradeBusinessName, margin, yPos);
-    yPos += 5;
+    doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
   }
-  if (project.tradeName) {
-    doc.text(project.tradeName, margin, yPos);
-    yPos += 5;
-  }
-
-  // To section (on the right)
-  let toYPos = 55;
-  doc.setTextColor(...textColor);
-  doc.setFont('helvetica', 'bold');
-  doc.text('TO', pageWidth / 2 + 10, toYPos);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
-  toYPos += 6;
-  doc.text(project.clientName, pageWidth / 2 + 10, toYPos);
-  toYPos += 5;
-  doc.text(project.clientEmail, pageWidth / 2 + 10, toYPos);
+  if (project.tradeAddress) {
+    yPos += 5;
+    doc.text(project.tradeAddress, pageWidth - margin, yPos, { align: 'right' });
+  }
+  if (project.tradePhone) {
+    yPos += 4;
+    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, yPos, { align: 'right' });
+  }
 
-  // Project name
-  yPos = Math.max(yPos, toYPos) + 10;
+  yPos = 45;
+
+  // Three column section
+  const col1X = margin;
+  const col2X = pageWidth / 3 + 10;
+  const col3X = (pageWidth * 2) / 3;
+
+  // Column 1: Client details
   doc.setTextColor(...textColor);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text(`Project: ${project.name}`, margin, yPos);
+  doc.setFontSize(10);
+  doc.text(project.clientName, col1X, yPos);
   
-  if (quote.validUntil) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...mutedColor);
+  if (project.clientAddress) {
+    const addressLines = doc.splitTextToSize(project.clientAddress, 55);
+    doc.text(addressLines, col1X, yPos + 5);
+  }
+
+  // Column 2: Quote details
+  let col2Y = yPos;
+  doc.setTextColor(...mutedColor);
+  doc.setFontSize(9);
+  
+  const createdDate = quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt);
+  doc.text('Date', col2X, col2Y);
+  doc.setTextColor(...textColor);
+  doc.text(format(createdDate, 'd MMM yyyy'), col2X + 30, col2Y);
+  
+  col2Y += 5;
+  doc.setTextColor(...mutedColor);
+  doc.text('Quote Number', col2X, col2Y);
+  doc.setTextColor(...textColor);
+  doc.text(quote.quoteNumber, col2X + 30, col2Y);
+  
+  if (project.abn) {
+    col2Y += 5;
     doc.setTextColor(...mutedColor);
-    yPos += 6;
-    const validDate = quote.validUntil instanceof Date ? quote.validUntil : new Date(quote.validUntil);
-    doc.text(`Valid Until: ${format(validDate, 'dd MMM yyyy')}`, margin, yPos);
+    doc.text('ABN', col2X, col2Y);
+    doc.setTextColor(...textColor);
+    doc.text(project.abn, col2X + 30, col2Y);
   }
 
-  yPos += 15;
+  // Column 3: Business contact
+  let col3Y = yPos;
+  doc.setTextColor(...textColor);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  if (project.tradeBusinessName) {
+    doc.text(project.tradeBusinessName, col3X, col3Y);
+    col3Y += 5;
+  }
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...mutedColor);
+  if (project.tradeAddress) {
+    const addrLines = doc.splitTextToSize(project.tradeAddress, 55);
+    doc.text(addrLines, col3X, col3Y);
+    col3Y += addrLines.length * 4;
+  }
+  if (project.tradePhone) {
+    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y);
+  }
 
-  // Included Items Table
+  yPos = 75;
+
+  // Horizontal line
+  doc.setDrawColor(...lineColor);
+  doc.setLineWidth(0.5);
+  doc.line(margin, yPos, pageWidth - margin, yPos);
+
+  yPos += 10;
+
+  // Combine all items into one table
+  const allItems: { description: string; details?: string; quantity: number; unitPrice: number; gst: string; amount: number }[] = [];
+
+  // Included Items
   const includedItems = scopeItems.filter(item => item.category === 'included');
-  if (includedItems.length > 0) {
-    doc.setTextColor(...textColor);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Included Items', margin, yPos);
-    yPos += 5;
-
-    const tableData = includedItems.map(item => [
-      item.title,
-      item.description || '',
-      `$${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
-    ]);
-
-    autoTable(doc, {
-      startY: yPos,
-      head: [['Item', 'Description', 'Amount']],
-      body: tableData,
-      margin: { left: margin, right: margin },
-      headStyles: {
-        fillColor: primaryColor,
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 10,
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: textColor,
-      },
-      columnStyles: {
-        0: { cellWidth: 50, fontStyle: 'bold' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 35, halign: 'right' },
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
+  includedItems.forEach(item => {
+    allItems.push({
+      description: item.title,
+      details: item.description,
+      quantity: 1,
+      unitPrice: item.cost || 0,
+      gst: '10%',
+      amount: item.cost || 0
     });
+  });
 
-    yPos = (doc as any).lastAutoTable.finalY + 10;
-  }
-
-  // Custom Quote Line Items
-  if (quoteLineItems.length > 0) {
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
-
-    doc.setTextColor(...textColor);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Additional Items', margin, yPos);
-    yPos += 5;
-
-    const customData = quoteLineItems.map(item => [
-      item.title,
-      item.description || '',
-      `$${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
-    ]);
-
-    autoTable(doc, {
-      startY: yPos,
-      head: [['Item', 'Description', 'Amount']],
-      body: customData,
-      margin: { left: margin, right: margin },
-      headStyles: {
-        fillColor: [99, 102, 241],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 10,
-      },
-      bodyStyles: {
-        fontSize: 9,
-        textColor: textColor,
-      },
-      columnStyles: {
-        0: { cellWidth: 50, fontStyle: 'bold' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 35, halign: 'right' },
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252],
-      },
+  // Quote Line Items
+  quoteLineItems.forEach(item => {
+    allItems.push({
+      description: item.title,
+      details: item.description,
+      quantity: 1,
+      unitPrice: item.cost,
+      gst: '10%',
+      amount: item.cost
     });
-
-    yPos = (doc as any).lastAutoTable.finalY + 10;
-  }
+  });
 
   // Approved Changes
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
-  if (approvedChanges.length > 0) {
-    // Check if we need a new page
-    if (yPos > 240) {
-      doc.addPage();
-      yPos = 20;
-    }
+  approvedChanges.forEach(change => {
+    allItems.push({
+      description: `Variation: ${change.title}`,
+      details: change.description,
+      quantity: 1,
+      unitPrice: change.costImpact,
+      gst: '10%',
+      amount: change.costImpact
+    });
+  });
 
-    doc.setTextColor(...textColor);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Approved Changes', margin, yPos);
-    yPos += 5;
-
-    const changeData = approvedChanges.map(change => [
-      change.title,
-      change.description,
-      `${change.costImpact >= 0 ? '+' : ''}$${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
-    ]);
+  // Main items table
+  if (allItems.length > 0) {
+    const tableData = allItems.map(item => {
+      let descriptionText = item.description;
+      if (item.details) {
+        descriptionText += `\n${item.details}`;
+      }
+      return [
+        descriptionText,
+        item.quantity.toFixed(2),
+        item.unitPrice.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+        item.gst,
+        item.amount.toLocaleString('en-AU', { minimumFractionDigits: 2 })
+      ];
+    });
 
     autoTable(doc, {
       startY: yPos,
-      head: [['Change', 'Description', 'Impact']],
-      body: changeData,
+      head: [['Description', 'Quantity', 'Unit Price', 'GST', 'Amount AUD']],
+      body: tableData,
       margin: { left: margin, right: margin },
       headStyles: {
-        fillColor: [16, 185, 129],
-        textColor: [255, 255, 255],
+        fillColor: [255, 255, 255],
+        textColor: textColor,
         fontStyle: 'bold',
-        fontSize: 10,
+        fontSize: 9,
+        cellPadding: 4,
       },
       bodyStyles: {
         fontSize: 9,
         textColor: textColor,
+        cellPadding: 4,
       },
       columnStyles: {
-        0: { cellWidth: 50, fontStyle: 'bold' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 35, halign: 'right' },
+        0: { cellWidth: 'auto' },
+        1: { cellWidth: 22, halign: 'right' },
+        2: { cellWidth: 28, halign: 'right' },
+        3: { cellWidth: 18, halign: 'right' },
+        4: { cellWidth: 30, halign: 'right' },
+      },
+      didDrawPage: (data) => {
+        // Draw header underline
+        doc.setDrawColor(...lineColor);
+        doc.setLineWidth(0.5);
+        const headerY = data.table.head?.[0]?.cells?.[0]?.y ?? 0;
+        if (headerY > 0) {
+          doc.line(margin, headerY + 8, pageWidth - margin, headerY + 8);
+        }
+      },
+      didParseCell: (data) => {
+        // Add underline under header row
+        if (data.section === 'head') {
+          data.cell.styles.lineWidth = { bottom: 0.5 };
+          data.cell.styles.lineColor = lineColor;
+        }
       },
     });
 
-    yPos = (doc as any).lastAutoTable.finalY + 10;
+    yPos = (doc as any).lastAutoTable.finalY + 5;
   }
 
-  // Exclusions
+  // Exclusions section
   const excludedItems = scopeItems.filter(item => item.category === 'excluded');
   if (excludedItems.length > 0) {
     if (yPos > 240) {
@@ -241,9 +241,10 @@ export function generateQuotePDF(
       yPos = 20;
     }
 
+    yPos += 10;
     doc.setTextColor(...textColor);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.text('Exclusions', margin, yPos);
     yPos += 7;
 
@@ -269,10 +270,9 @@ export function generateQuotePDF(
       }
       yPos += 5;
     });
-    yPos += 5;
   }
 
-  // Assumptions
+  // Assumptions section
   const assumptionItems = scopeItems.filter(item => item.category === 'assumption');
   if (assumptionItems.length > 0) {
     if (yPos > 240) {
@@ -280,9 +280,10 @@ export function generateQuotePDF(
       yPos = 20;
     }
 
+    yPos += 5;
     doc.setTextColor(...textColor);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.text('Assumptions', margin, yPos);
     yPos += 7;
 
@@ -307,43 +308,41 @@ export function generateQuotePDF(
       }
       yPos += 5;
     });
-    yPos += 5;
   }
 
-  // Totals Section
+  // Totals Section - Right aligned
   if (yPos > 220) {
     doc.addPage();
     yPos = 20;
   }
 
-  // Draw totals box
-  const totalsBoxY = yPos;
-  const totalsBoxHeight = 50;
-  doc.setDrawColor(229, 231, 235);
-  doc.setFillColor(249, 250, 251);
-  doc.roundedRect(pageWidth - margin - 90, totalsBoxY, 90, totalsBoxHeight, 3, 3, 'FD');
+  yPos += 15;
+  const totalsX = pageWidth - margin - 60;
+  const totalsValueX = pageWidth - margin;
 
   doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
-  doc.text('Subtotal:', pageWidth - margin - 85, totalsBoxY + 12);
+  doc.text('Subtotal', totalsX, yPos, { align: 'right' });
   doc.setTextColor(...textColor);
-  doc.text(`$${quote.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, pageWidth - margin - 5, totalsBoxY + 12, { align: 'right' });
+  doc.text(`$${quote.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
+  yPos += 7;
   doc.setTextColor(...mutedColor);
-  doc.text(`Tax (${quote.taxRate}%):`, pageWidth - margin - 85, totalsBoxY + 24);
+  doc.text('TOTAL GST 10%', totalsX, yPos, { align: 'right' });
   doc.setTextColor(...textColor);
-  doc.text(`$${quote.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, pageWidth - margin - 5, totalsBoxY + 24, { align: 'right' });
+  doc.text(`$${quote.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
+  yPos += 9;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.setTextColor(...primaryColor);
-  doc.text('TOTAL:', pageWidth - margin - 85, totalsBoxY + 40);
-  doc.text(`$${quote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, pageWidth - margin - 5, totalsBoxY + 40, { align: 'right' });
-
-  yPos = totalsBoxY + totalsBoxHeight + 15;
+  doc.setTextColor(...textColor);
+  doc.text('TOTAL AUD', totalsX, yPos, { align: 'right' });
+  doc.text(`$${quote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
   // Notes
   if (quote.notes) {
+    yPos += 20;
     if (yPos > 240) {
       doc.addPage();
       yPos = 20;
@@ -351,7 +350,7 @@ export function generateQuotePDF(
 
     doc.setTextColor(...textColor);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.text('Notes', margin, yPos);
     yPos += 6;
 
@@ -360,11 +359,12 @@ export function generateQuotePDF(
     doc.setTextColor(...mutedColor);
     const notesLines = doc.splitTextToSize(quote.notes, pageWidth - margin * 2);
     doc.text(notesLines, margin, yPos);
-    yPos += notesLines.length * 4 + 10;
+    yPos += notesLines.length * 4 + 5;
   }
 
   // Terms & Conditions
   if (quote.terms) {
+    yPos += 5;
     if (yPos > 220) {
       doc.addPage();
       yPos = 20;
@@ -372,7 +372,7 @@ export function generateQuotePDF(
 
     doc.setTextColor(...textColor);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.text('Terms & Conditions', margin, yPos);
     yPos += 6;
 
@@ -381,6 +381,23 @@ export function generateQuotePDF(
     doc.setTextColor(...mutedColor);
     const termsLines = doc.splitTextToSize(quote.terms, pageWidth - margin * 2);
     doc.text(termsLines, margin, yPos);
+    yPos += termsLines.length * 4;
+  }
+
+  // Footer with ABN
+  const pageHeight = doc.internal.pageSize.getHeight();
+  if (project.abn || project.registeredAddress) {
+    doc.setFontSize(8);
+    doc.setTextColor(...mutedColor);
+    doc.setFont('helvetica', 'normal');
+    let footerText = '';
+    if (project.abn) {
+      footerText += `ABN: ${project.abn}`;
+    }
+    if (project.registeredAddress) {
+      footerText += footerText ? `. Registered Office: ${project.registeredAddress}` : `Registered Office: ${project.registeredAddress}`;
+    }
+    doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
   }
 
   return doc;
