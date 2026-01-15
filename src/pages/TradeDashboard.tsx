@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from '@/components/ProjectCard';
+import { ProjectCardSkeletonGrid } from '@/components/ProjectCardSkeleton';
 import { DashboardStats } from '@/components/DashboardStats';
 import { CreateJobModal } from '@/components/CreateJobModal';
 import { useProjects } from '@/hooks/useProjects';
@@ -179,9 +180,7 @@ export default function TradeDashboard() {
           </TabsList>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
+            <ProjectCardSkeletonGrid />
           ) : (
             <>
               <TabsContent value="active" className="mt-0">
