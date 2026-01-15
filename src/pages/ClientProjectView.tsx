@@ -9,6 +9,7 @@ import { RequestChangeButton } from '@/components/RequestChangeButton';
 import { ClientDocumentsSection } from '@/components/ClientDocumentsSection';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import { QuoteViewModal } from '@/components/QuoteViewModal';
+import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,8 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { toast } from 'sonner';
 import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
+import { downloadInvoicePDF } from '@/lib/invoicePdf';
+import { Invoice } from '@/types/project';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -33,6 +36,7 @@ export default function ClientProjectView() {
   const { activeQuote, approveQuote, declineQuote, refetch: refetchQuotes } = useQuotes(id);
   const { invoices, loading: invoicesLoading } = useInvoices(id);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
 
   // Move useState to top before any conditional returns (React hooks rule)
   const [approvalModal, setApprovalModal] = useState<{
@@ -455,10 +459,42 @@ export default function ClientProjectView() {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <span className="text-lg font-bold">
                           ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                         </span>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setViewingInvoice(invoice)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              try {
+                                downloadInvoicePDF(invoice, {
+                                  name: project.name,
+                                  clientName: project.clientName,
+                                  clientEmail: project.clientEmail,
+                                  tradeBusinessName: project.tradeBusinessName,
+                                  tradeName: project.tradeName,
+                                });
+                                toast.success('Invoice PDF downloaded');
+                              } catch (error) {
+                                console.error('PDF download error:', error);
+                                toast.error('Failed to download PDF');
+                              }
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -470,6 +506,20 @@ export default function ClientProjectView() {
                 <p className="text-muted-foreground">No invoices yet.</p>
               </Card>
             )}
+
+            {/* Invoice View Modal */}
+            <InvoiceViewModal
+              isOpen={!!viewingInvoice}
+              onClose={() => setViewingInvoice(null)}
+              invoice={viewingInvoice}
+              project={{
+                name: project.name,
+                clientName: project.clientName,
+                clientEmail: project.clientEmail,
+                tradeBusinessName: project.tradeBusinessName,
+                tradeName: project.tradeName,
+              }}
+            />
           </TabsContent>
 
           {/* Stages Tab */}

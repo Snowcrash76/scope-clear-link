@@ -555,8 +555,11 @@ export default function ProjectManage() {
               quote={activeQuote}
               scopeItems={project.scopeItems}
               changeRequests={project.changeRequests}
+              projectName={project.name}
               clientName={project.clientName}
               clientEmail={project.clientEmail}
+              tradeBusinessName={project.tradeBusinessName}
+              tradeName={project.tradeName}
               onCreateInvoice={createInvoice}
               onSendInvoice={sendInvoice}
               onMarkAsPaid={markAsPaid}
