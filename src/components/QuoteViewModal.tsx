@@ -51,6 +51,13 @@ export function QuoteViewModal({
   const assumptionItems = scopeItems.filter(item => item.category === 'assumption');
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
 
+  // Calculate live totals from current data
+  const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
+  const subtotal = scopeSubtotal + changesImpact;
+  const taxAmount = subtotal * (quote.taxRate / 100);
+  const total = subtotal + taxAmount;
+
   const statusConfig = {
     draft: { label: 'Draft', variant: 'secondary' as const, icon: Edit },
     sent: { label: 'Sent', variant: 'pending' as const, icon: Send },
@@ -225,21 +232,21 @@ export function QuoteViewModal({
 
           <Separator />
 
-          {/* Totals */}
+          {/* Totals - Always use live calculated values */}
           <div className="space-y-2 p-4 rounded-lg bg-muted/50">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${quote.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+              <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tax ({quote.taxRate}%)</span>
-              <span>${quote.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+              <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between text-lg font-bold">
               <span>Total</span>
               <span className="text-primary">
-                ${quote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                ${total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
               </span>
             </div>
           </div>

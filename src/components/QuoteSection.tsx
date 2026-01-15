@@ -674,20 +674,20 @@ export function QuoteSection({
           </div>
         </div>
 
-        {/* Totals */}
+        {/* Totals - Always use live calculated values */}
         <div className="space-y-2 border-t pt-4">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Subtotal</span>
-            <span>${quote!.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+            <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Tax ({quote!.taxRate}%)</span>
-            <span>${quote!.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+            <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
             <span>Total</span>
             <span className="text-primary">
-              ${quote!.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+              ${total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
             </span>
           </div>
         </div>
