@@ -362,6 +362,47 @@ export type Database = {
           },
         ]
       }
+      quote_line_items: {
+        Row: {
+          cost: number
+          created_at: string
+          description: string | null
+          id: string
+          quote_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          quote_id: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          quote_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_line_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quotes: {
         Row: {
           approved_at: string | null

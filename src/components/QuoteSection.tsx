@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
+import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { 
   FileText, 
   Send, 
@@ -13,11 +13,12 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
-  DollarSign,
   Calendar,
   Edit,
   Eye,
   Download,
+  Trash2,
+  Lock,
 } from 'lucide-react';
 import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
@@ -35,6 +36,11 @@ interface QuoteSectionProps {
   projectName?: string;
   tradeBusinessName?: string;
   tradeName?: string;
+  // Quote line items (custom items added directly to quote)
+  quoteLineItems?: QuoteLineItem[];
+  onAddLineItem?: (item: { title: string; description?: string; cost: number }) => Promise<string | null>;
+  onUpdateLineItem?: (itemId: string, data: Partial<{ title: string; description: string; cost: number }>) => Promise<boolean>;
+  onDeleteLineItem?: (itemId: string) => Promise<boolean>;
   onCreateQuote: (data: {
     subtotal: number;
     taxRate: number;
@@ -63,6 +69,10 @@ export function QuoteSection({
   projectName = '',
   tradeBusinessName = '',
   tradeName = '',
+  quoteLineItems = [],
+  onAddLineItem,
+  onUpdateLineItem,
+  onDeleteLineItem,
   onCreateQuote,
   onUpdateQuote,
   onSendQuote,
@@ -79,6 +89,28 @@ export function QuoteSection({
     quote?.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : ''
   );
   const [isSaving, setIsSaving] = useState(false);
+  
+  // New line item form state
+  const [isAddingItem, setIsAddingItem] = useState(false);
+  const [newItemTitle, setNewItemTitle] = useState('');
+  const [newItemDescription, setNewItemDescription] = useState('');
+  const [newItemCost, setNewItemCost] = useState('');
+  
+  // Editing existing line item
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editItemTitle, setEditItemTitle] = useState('');
+  const [editItemDescription, setEditItemDescription] = useState('');
+  const [editItemCost, setEditItemCost] = useState('');
+
+  // Sync state when quote prop changes (fix for editing not working)
+  useEffect(() => {
+    if (quote) {
+      setTaxRate(quote.taxRate ?? 10);
+      setNotes(quote.notes ?? '');
+      setTerms(quote.terms ?? '');
+      setValidUntil(quote.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : '');
+    }
+  }, [quote]);
 
   // Calculate totals from scope items
   const includedItems = scopeItems.filter(item => item.category === 'included');
@@ -88,7 +120,10 @@ export function QuoteSection({
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
   
-  const subtotal = scopeSubtotal + changesImpact;
+  // Add custom quote line items
+  const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  
+  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxAmount = subtotal * (taxRate / 100);
   const total = subtotal + taxAmount;
 
@@ -153,6 +188,56 @@ export function QuoteSection({
     }
   };
 
+  const handleAddLineItem = async () => {
+    if (!onAddLineItem || !newItemTitle.trim()) return;
+    
+    const cost = parseFloat(newItemCost) || 0;
+    const result = await onAddLineItem({
+      title: newItemTitle.trim(),
+      description: newItemDescription.trim() || undefined,
+      cost,
+    });
+    
+    if (result) {
+      setNewItemTitle('');
+      setNewItemDescription('');
+      setNewItemCost('');
+      setIsAddingItem(false);
+      toast.success('Line item added');
+    }
+  };
+
+  const handleStartEditItem = (item: QuoteLineItem) => {
+    setEditingItemId(item.id);
+    setEditItemTitle(item.title);
+    setEditItemDescription(item.description || '');
+    setEditItemCost(item.cost.toString());
+  };
+
+  const handleSaveEditItem = async () => {
+    if (!onUpdateLineItem || !editingItemId || !editItemTitle.trim()) return;
+    
+    const success = await onUpdateLineItem(editingItemId, {
+      title: editItemTitle.trim(),
+      description: editItemDescription.trim(),
+      cost: parseFloat(editItemCost) || 0,
+    });
+    
+    if (success) {
+      setEditingItemId(null);
+      toast.success('Line item updated');
+    }
+  };
+
+  const handleDeleteItem = async (itemId: string) => {
+    if (!onDeleteLineItem) return;
+    
+    const success = await onDeleteLineItem(itemId);
+    if (success) {
+      toast.success('Line item deleted');
+    }
+  };
+
   const projectInfo = {
     name: projectName,
     clientName,
@@ -198,34 +283,62 @@ export function QuoteSection({
 
         {/* Line Items Preview */}
         <div className="space-y-3">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-            Line Items (from Scope)
-          </h4>
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+              Line Items
+            </h4>
+            {isEditing && onAddLineItem && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsAddingItem(true)}
+                disabled={isAddingItem}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Add Item
+              </Button>
+            )}
+          </div>
+          
           <div className="border rounded-lg divide-y">
-            {includedItems.map(item => (
-              <div key={item.id} className="p-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 pr-4">
-                    <span className="text-sm font-medium">{item.title}</span>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                    )}
-                  </div>
-                  <span className="font-medium whitespace-nowrap">
-                    ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+            {/* Scope Items (read-only) */}
+            {includedItems.length > 0 && (
+              <>
+                <div className="p-3 bg-muted/50">
+                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5" />
+                    From Scope (read-only)
                   </span>
                 </div>
-              </div>
-            ))}
+                {includedItems.map(item => (
+                  <div key={item.id} className="p-3 bg-muted/20">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <span className="text-sm font-medium">{item.title}</span>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        )}
+                      </div>
+                      <span className="font-medium whitespace-nowrap">
+                        ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            
+            {/* Approved Changes (read-only) */}
             {approvedChanges.length > 0 && (
               <>
                 <div className="p-3 bg-muted/50">
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Approved Changes
+                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5" />
+                    Approved Changes (read-only)
                   </span>
                 </div>
                 {approvedChanges.map(change => (
-                  <div key={change.id} className="p-3 bg-muted/30">
+                  <div key={change.id} className="p-3 bg-muted/20">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
                         <span className="text-sm font-medium">{change.title}</span>
@@ -243,6 +356,128 @@ export function QuoteSection({
                   </div>
                 ))}
               </>
+            )}
+
+            {/* Custom Quote Line Items (editable) */}
+            {(quoteLineItems.length > 0 || isAddingItem) && (
+              <>
+                <div className="p-3 bg-primary/5">
+                  <span className="text-sm font-medium text-primary">
+                    Custom Line Items
+                  </span>
+                </div>
+                {quoteLineItems.map(item => (
+                  <div key={item.id} className="p-3">
+                    {editingItemId === item.id ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <Input
+                            placeholder="Item title"
+                            value={editItemTitle}
+                            onChange={(e) => setEditItemTitle(e.target.value)}
+                            className="sm:col-span-2"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="Cost"
+                            value={editItemCost}
+                            onChange={(e) => setEditItemCost(e.target.value)}
+                          />
+                        </div>
+                        <Textarea
+                          placeholder="Description (optional)"
+                          value={editItemDescription}
+                          onChange={(e) => setEditItemDescription(e.target.value)}
+                          rows={2}
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleSaveEditItem}>Save</Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingItemId(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <span className="text-sm font-medium">{item.title}</span>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium whitespace-nowrap">
+                            ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                          </span>
+                          {isEditing && (
+                            <>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8"
+                                onClick={() => handleStartEditItem(item)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => handleDeleteItem(item.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                
+                {/* Add new item form */}
+                {isAddingItem && (
+                  <div className="p-3 space-y-3 bg-secondary/30">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <Input
+                        placeholder="Item title"
+                        value={newItemTitle}
+                        onChange={(e) => setNewItemTitle(e.target.value)}
+                        className="sm:col-span-2"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Cost"
+                        value={newItemCost}
+                        onChange={(e) => setNewItemCost(e.target.value)}
+                      />
+                    </div>
+                    <Textarea
+                      placeholder="Description (optional)"
+                      value={newItemDescription}
+                      onChange={(e) => setNewItemDescription(e.target.value)}
+                      rows={2}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={handleAddLineItem} disabled={!newItemTitle.trim()}>
+                        Add Item
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        setIsAddingItem(false);
+                        setNewItemTitle('');
+                        setNewItemDescription('');
+                        setNewItemCost('');
+                      }}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            
+            {includedItems.length === 0 && approvedChanges.length === 0 && quoteLineItems.length === 0 && !isAddingItem && (
+              <div className="p-6 text-center">
+                <p className="text-sm text-muted-foreground">No line items yet. Add scope items or custom line items.</p>
+              </div>
             )}
           </div>
         </div>
@@ -405,6 +640,30 @@ export function QuoteSection({
                         change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                       )}>
                         {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
+            {quoteLineItems.length > 0 && (
+              <>
+                <div className="p-3 bg-primary/5">
+                  <span className="text-sm font-medium text-primary">
+                    Custom Line Items
+                  </span>
+                </div>
+                {quoteLineItems.map(item => (
+                  <div key={item.id} className="p-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <span className="text-sm font-medium">{item.title}</span>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        )}
+                      </div>
+                      <span className="font-medium whitespace-nowrap">
+                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
