@@ -21,6 +21,8 @@ import {
   Download,
 } from 'lucide-react';
 import { exportInvoiceToXeroCSV, downloadCSV } from '@/lib/xeroExport';
+import { downloadInvoicePDF } from '@/lib/invoicePdf';
+import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -45,8 +47,11 @@ interface InvoiceSectionProps {
   quote: Quote | null;
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
+  projectName: string;
   clientName: string;
   clientEmail: string;
+  tradeBusinessName?: string;
+  tradeName?: string;
   onCreateInvoice: (data: {
     type: 'staged' | 'final';
     quoteId?: string;
@@ -74,8 +79,11 @@ export function InvoiceSection({
   quote,
   scopeItems,
   changeRequests,
+  projectName,
   clientName,
   clientEmail,
+  tradeBusinessName,
+  tradeName,
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
@@ -84,6 +92,7 @@ export function InvoiceSection({
   isTradeView = true,
 }: InvoiceSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
+  const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
   const [invoiceType, setInvoiceType] = useState<'staged' | 'final'>('staged');
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
@@ -111,10 +120,28 @@ export function InvoiceSection({
     cancelled: { label: 'Cancelled', variant: 'outline' as const, icon: XCircle },
   };
 
+  const projectInfo = {
+    name: projectName,
+    clientName,
+    clientEmail,
+    tradeBusinessName,
+    tradeName,
+  };
+
   const handleExportToXero = (invoice: Invoice) => {
     const csv = exportInvoiceToXeroCSV(invoice, { clientName, clientEmail });
     downloadCSV(csv, `${invoice.invoiceNumber}-xero.csv`);
     toast.success('Invoice exported for Xero');
+  };
+
+  const handleDownloadPDF = (invoice: Invoice) => {
+    try {
+      downloadInvoicePDF(invoice, projectInfo);
+      toast.success('Invoice PDF downloaded');
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error('Failed to download PDF');
+    }
   };
 
   const handleCreateInvoice = async () => {
@@ -311,56 +338,77 @@ export function InvoiceSection({
                       )}
                     </div>
                     
-                    {isTradeView && (
-                      <div className="flex gap-2">
-                        {invoice.status === 'draft' && (
-                          <>
+                    <div className="flex gap-2">
+                      {/* View and Download buttons for all views */}
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => setViewingInvoice(invoice)}
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => handleDownloadPDF(invoice)}
+                        title="Download PDF"
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      
+                      {/* Trade-only actions */}
+                      {isTradeView && (
+                        <>
+                          {invoice.status === 'draft' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => onSendInvoice(invoice.id)}
+                              >
+                                <Send className="w-4 h-4" />
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => onDeleteInvoice(invoice.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          )}
+                          {invoice.status === 'sent' && (
                             <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => onSendInvoice(invoice.id)}
+                              size="sm"
+                              onClick={() => onMarkAsPaid(invoice.id)}
                             >
-                              <Send className="w-4 h-4" />
+                              <CreditCard className="w-4 h-4 mr-1" />
+                              Mark Paid
                             </Button>
+                          )}
+                          {(invoice.status === 'sent' || invoice.status === 'overdue') && (
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => onDeleteInvoice(invoice.id)}
+                              onClick={() => onCancelInvoice(invoice.id)}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              <XCircle className="w-4 h-4" />
                             </Button>
-                          </>
-                        )}
-                        {invoice.status === 'sent' && (
-                          <Button 
-                            size="sm"
-                            onClick={() => onMarkAsPaid(invoice.id)}
-                          >
-                            <CreditCard className="w-4 h-4 mr-1" />
-                            Mark Paid
-                          </Button>
-                        )}
-                        {(invoice.status === 'sent' || invoice.status === 'overdue') && (
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={() => onCancelInvoice(invoice.id)}
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                        )}
-                        {(invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'overdue') && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleExportToXero(invoice)}
-                            title="Export to Xero CSV"
-                          >
-                            <Download className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    )}
+                          )}
+                          {(invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'overdue') && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleExportToXero(invoice)}
+                              title="Export to Xero CSV"
+                            >
+                              <Download className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -471,6 +519,14 @@ export function InvoiceSection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Invoice View Modal */}
+      <InvoiceViewModal
+        isOpen={!!viewingInvoice}
+        onClose={() => setViewingInvoice(null)}
+        invoice={viewingInvoice}
+        project={projectInfo}
+      />
     </div>
   );
 }
