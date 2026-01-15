@@ -29,6 +29,8 @@ export interface ProjectStage {
   name: string;
   description: string;
   status: 'upcoming' | 'current' | 'completed';
+  invoiceAmount?: number;
+  invoicePercentage?: number;
 }
 
 export interface QuoteLineItem {
@@ -77,6 +79,7 @@ export interface Invoice {
   id: string;
   projectId: string;
   quoteId?: string;
+  stageId?: string;
   invoiceNumber: string;
   type: 'staged' | 'final';
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';

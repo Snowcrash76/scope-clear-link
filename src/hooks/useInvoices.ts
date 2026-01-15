@@ -7,6 +7,7 @@ type DbInvoice = {
   id: string;
   project_id: string;
   quote_id: string | null;
+  stage_id: string | null;
   invoice_number: string;
   type: 'staged' | 'final';
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
@@ -74,6 +75,7 @@ export function useInvoices(projectId: string | undefined) {
         id: inv.id,
         projectId: inv.project_id,
         quoteId: inv.quote_id || undefined,
+        stageId: inv.stage_id || undefined,
         invoiceNumber: inv.invoice_number,
         type: inv.type,
         status: inv.status,
@@ -125,6 +127,7 @@ export function useInvoices(projectId: string | undefined) {
   const createInvoice = async (invoiceData: {
     type: 'staged' | 'final';
     quoteId?: string;
+    stageId?: string;
     taxRate: number;
     dueDate?: Date;
     notes?: string;
@@ -150,6 +153,7 @@ export function useInvoices(projectId: string | undefined) {
         .insert({
           project_id: projectId,
           quote_id: invoiceData.quoteId,
+          stage_id: invoiceData.stageId,
           invoice_number: generateInvoiceNumber(),
           type: invoiceData.type,
           subtotal,

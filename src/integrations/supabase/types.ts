@@ -139,6 +139,7 @@ export type Database = {
           paid_at: string | null
           project_id: string
           quote_id: string | null
+          stage_id: string | null
           status: Database["public"]["Enums"]["invoice_status"]
           subtotal: number | null
           tax_amount: number | null
@@ -158,6 +159,7 @@ export type Database = {
           paid_at?: string | null
           project_id: string
           quote_id?: string | null
+          stage_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number | null
           tax_amount?: number | null
@@ -177,6 +179,7 @@ export type Database = {
           paid_at?: string | null
           project_id?: string
           quote_id?: string | null
+          stage_id?: string | null
           status?: Database["public"]["Enums"]["invoice_status"]
           subtotal?: number | null
           tax_amount?: number | null
@@ -199,6 +202,13 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "project_stages"
             referencedColumns: ["id"]
           },
         ]
@@ -279,6 +289,8 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          invoice_amount: number | null
+          invoice_percentage: number | null
           name: string
           project_id: string
           stage_order: number
@@ -289,6 +301,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          invoice_amount?: number | null
+          invoice_percentage?: number | null
           name: string
           project_id: string
           stage_order?: number
@@ -299,6 +313,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          invoice_amount?: number | null
+          invoice_percentage?: number | null
           name?: string
           project_id?: string
           stage_order?: number
