@@ -75,8 +75,8 @@ export default function ClientProjectView() {
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
 
-  const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending');
-  const resolvedChanges = project.changeRequests.filter(cr => cr.status !== 'pending');
+  const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
+  const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
 
   const handleAcknowledge = async (itemId: string) => {
     const success = await acknowledgeScopeItem(itemId, true);

@@ -10,6 +10,7 @@ import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
+import { RespondToClientModal } from '@/components/RespondToClientModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { ApprovalModal } from '@/components/ApprovalModal';
@@ -62,6 +63,7 @@ export default function ProjectManage() {
     updateChangeRequest,
     deleteChangeRequest,
     updateChangeRequestStatus,
+    respondToClientRequest,
     updateStage,
     addStage,
     editStage,
@@ -102,6 +104,7 @@ export default function ProjectManage() {
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
   const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
+  const [respondingToRequest, setRespondingToRequest] = useState<ChangeRequest | null>(null);
   const [approvalModal, setApprovalModal] = useState<{
     isOpen: boolean;
     action: 'approve' | 'decline';
@@ -178,24 +181,27 @@ export default function ProjectManage() {
     }
   };
 
-  const handleApproveClientRequest = (requestId: string) => {
-    const change = project.changeRequests.find(c => c.id === requestId);
-    setApprovalModal({
-      isOpen: true,
-      action: 'approve',
-      changeId: requestId,
-      title: change?.title || 'Client Request',
-    });
+  const handleRespondToClient = (requestId: string) => {
+    const request = project.changeRequests.find(c => c.id === requestId);
+    if (request) {
+      setRespondingToRequest(request);
+    }
   };
 
-  const handleDeclineClientRequest = (requestId: string) => {
-    const change = project.changeRequests.find(c => c.id === requestId);
-    setApprovalModal({
-      isOpen: true,
-      action: 'decline',
-      changeId: requestId,
-      title: change?.title || 'Client Request',
-    });
+  const handleSubmitResponse = async (data: {
+    title: string;
+    description: string;
+    costImpact: number;
+    timeImpact: number;
+    reason?: string;
+    imageUrl?: string;
+  }) => {
+    if (!respondingToRequest) return;
+    const success = await respondToClientRequest(respondingToRequest.id, data);
+    if (success) {
+      toast.success('Response sent to client for approval');
+      setRespondingToRequest(null);
+    }
   };
 
   const handleConfirmApproval = async (comment: string) => {
@@ -256,14 +262,14 @@ export default function ProjectManage() {
     toast.success('Client link copied to clipboard');
   };
 
-  // Separate pending changes into client requests (need trade approval) and trade requests (awaiting client)
+  // Separate pending changes into client requests (need trade response) and trade requests (awaiting client)
   const pendingClientRequests = project.changeRequests.filter(
     cr => cr.status === 'pending' && cr.type === 'client_request'
   );
   const pendingTradeRequests = project.changeRequests.filter(
-    cr => cr.status === 'pending' && cr.type !== 'client_request'
+    cr => (cr.status === 'pending' && cr.type !== 'client_request') || cr.status === 'awaiting_client'
   );
-  const resolvedChanges = project.changeRequests.filter(cr => cr.status !== 'pending');
+  const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
 
   const groupedScopeItems = {
     included: project.scopeItems.filter(item => item.category === 'included'),
@@ -504,12 +510,19 @@ export default function ProjectManage() {
                     key={request.id}
                     request={request}
                     viewerRole="trade"
-                    onApprove={handleApproveClientRequest}
-                    onDecline={handleDeclineClientRequest}
+                    onRespond={handleRespondToClient}
                   />
                 ))}
               </div>
             )}
+
+            {/* Respond to Client Modal */}
+            <RespondToClientModal
+              isOpen={!!respondingToRequest}
+              onClose={() => setRespondingToRequest(null)}
+              request={respondingToRequest}
+              onSubmit={handleSubmitResponse}
+            />
 
             {pendingTradeRequests.length > 0 && (
               <div className="space-y-4">

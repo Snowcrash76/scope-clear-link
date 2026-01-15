@@ -513,6 +513,60 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
+  // Trade responds to a client request with cost/time details
+  const respondToClientRequest = async (
+    requestId: string,
+    responseData: {
+      title: string;
+      description: string;
+      costImpact: number;
+      timeImpact: number;
+      reason?: string;
+      imageUrl?: string;
+    }
+  ) => {
+    try {
+      const { error } = await supabase
+        .from('change_requests')
+        .update({
+          title: responseData.title,
+          description: responseData.description,
+          cost_impact: responseData.costImpact,
+          time_impact: responseData.timeImpact.toString(),
+          reason: responseData.reason || null,
+          image_url: responseData.imageUrl || null,
+          status: 'awaiting_client',
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // Find the change request to get its details for the notification
+      const changeRequest = project?.changeRequests.find(cr => cr.id === requestId);
+      
+      if (changeRequest && projectId) {
+        // Send notification to client about the response
+        await sendChangeNotification(
+          projectId,
+          requestId,
+          'created', // Using 'created' to indicate new info available
+          'client',
+          responseData.title,
+          responseData.description,
+          responseData.costImpact,
+          responseData.timeImpact.toString()
+        );
+      }
+
+      await fetchProject();
+      return true;
+    } catch (error) {
+      console.error('Error responding to client request:', error);
+      toast.error('Failed to send response to client');
+      return false;
+    }
+  };
+
   // Stage operations
   const updateStage = async (stageId: string, status: 'upcoming' | 'current' | 'completed') => {
     try {
@@ -719,6 +773,7 @@ export function useProject(projectId: string | undefined) {
     updateChangeRequest,
     deleteChangeRequest,
     updateChangeRequestStatus,
+    respondToClientRequest,
     updateStage,
     addStage,
     editStage,
