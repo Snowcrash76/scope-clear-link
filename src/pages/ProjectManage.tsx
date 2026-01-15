@@ -432,17 +432,24 @@ export default function ProjectManage() {
                                 </div>
                               ) : null}
                             </div>
-                            <Button 
-                              variant="ghost" 
-                              size="icon"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingScopeItem(item);
-                              }}
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-3">
+                              {item.cost != null && item.cost > 0 && (
+                                <span className="text-primary font-medium whitespace-nowrap">
+                                  ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              )}
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEditingScopeItem(item);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -454,23 +461,56 @@ export default function ProjectManage() {
 
             {/* Total Quote Summary for Trade View */}
             {(() => {
-              const totalQuote = groupedScopeItems.included.reduce((sum, item) => sum + (item.cost || 0), 0);
-              if (totalQuote > 0) {
+              const scopeTotal = groupedScopeItems.included.reduce((sum, item) => sum + (item.cost || 0), 0);
+              const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
+              const changesTotal = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
+              const totalQuote = scopeTotal + changesTotal;
+              
+              if (scopeTotal > 0 || approvedChanges.length > 0) {
                 return (
                   <Card className="p-4 bg-primary/5 border-primary/20">
-                    <div className="flex items-center justify-between">
+                    <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">
                           <Calculator className="w-5 h-5 text-primary" />
                         </div>
-                        <div>
-                          <h3 className="font-heading font-semibold">Total Quote Amount</h3>
-                          <p className="text-sm text-muted-foreground">Sum of all included items</p>
+                        <h3 className="font-heading font-semibold">Quote Summary</h3>
+                      </div>
+                      
+                      <div className="space-y-2 pl-12">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Scope Items</span>
+                          <span>${scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        </div>
+                        
+                        {approvedChanges.length > 0 && (
+                          <>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Approved Changes ({approvedChanges.length})</span>
+                              <span className={changesTotal >= 0 ? 'text-approved' : 'text-destructive'}>
+                                {changesTotal >= 0 ? '+' : ''}${changesTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              {approvedChanges.map(cr => (
+                                <div key={cr.id} className="flex justify-between">
+                                  <span className="truncate mr-2">• {cr.title}</span>
+                                  <span className={cr.costImpact >= 0 ? 'text-approved' : 'text-destructive'}>
+                                    {cr.costImpact >= 0 ? '+' : ''}${cr.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        
+                        <div className="flex justify-between pt-2 border-t">
+                          <span className="font-semibold">Total Quote Amount</span>
+                          <span className="text-xl font-bold text-primary">
+                            ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
                       </div>
-                      <span className="text-xl font-bold text-primary">
-                        ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
                     </div>
                   </Card>
                 );
