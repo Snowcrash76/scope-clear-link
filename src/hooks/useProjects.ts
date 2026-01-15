@@ -258,24 +258,7 @@ export function useProjects() {
         if (scopeError) throw scopeError;
       }
 
-      // Create default stages
-      const defaultStages: Array<{
-        project_id: string;
-        name: string;
-        description: string;
-        status: 'upcoming' | 'current' | 'completed';
-        stage_order: number;
-      }> = [
-        { project_id: projectData.id, name: 'Preparation', description: 'Site preparation', status: 'current', stage_order: 0 },
-        { project_id: projectData.id, name: 'Construction', description: 'Main work', status: 'upcoming', stage_order: 1 },
-        { project_id: projectData.id, name: 'Finishing', description: 'Final touches', status: 'upcoming', stage_order: 2 },
-      ];
-
-      const { error: stagesError } = await supabase
-        .from('project_stages')
-        .insert(defaultStages);
-
-      if (stagesError) throw stagesError;
+      // No default stages - trades can add custom stages as needed
 
       // Refresh projects
       await fetchProjects();
