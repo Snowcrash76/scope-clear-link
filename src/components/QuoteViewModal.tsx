@@ -144,9 +144,9 @@ export function QuoteViewModal({
                 <div key={item.id} className="p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-4">
-                      <p className="font-medium">{item.title}</p>
+                      <p className="text-base font-semibold text-foreground">{item.title}</p>
                       {item.description && (
-                        <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                        <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
                           {item.description}
                         </p>
                       )}
@@ -171,9 +171,9 @@ export function QuoteViewModal({
                   <div key={change.id} className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <p className="font-medium">{change.title}</p>
+                        <p className="text-base font-semibold text-foreground">{change.title}</p>
                         {change.description && (
-                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
                             {change.description}
                           </p>
                         )}
@@ -202,9 +202,9 @@ export function QuoteViewModal({
                   <div key={item.id} className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <p className="font-medium">{item.title}</p>
+                        <p className="text-base font-semibold text-foreground">{item.title}</p>
                         {item.description && (
-                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
                             {item.description}
                           </p>
                         )}
@@ -228,9 +228,9 @@ export function QuoteViewModal({
               <div className="space-y-2">
                 {excludedItems.map(item => (
                   <div key={item.id} className="p-3 rounded-lg bg-muted/30">
-                    <p className="font-medium text-sm">{item.title}</p>
+                    <p className="text-base font-semibold text-foreground">{item.title}</p>
                     {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                      <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
                         {item.description}
                       </p>
                     )}
