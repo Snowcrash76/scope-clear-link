@@ -166,37 +166,39 @@ export default function ClientProjectView() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="quote" className="space-y-6">
-          <TabsList className="w-full sm:w-auto grid grid-cols-6 sm:inline-flex">
-            <TabsTrigger value="quote" className="gap-2">
-              <FileText className="w-4 h-4 hidden sm:block" />
-              Quote
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="gap-2">
-              <Receipt className="w-4 h-4 hidden sm:block" />
-              Invoices
-            </TabsTrigger>
-            <TabsTrigger value="scope" className="gap-2">
-              <Package className="w-4 h-4 hidden sm:block" />
-              Scope
-            </TabsTrigger>
-            <TabsTrigger value="changes" className="gap-2">
-              <RefreshCw className="w-4 h-4 hidden sm:block" />
-              Changes
-              {pendingChanges.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
-                  {pendingChanges.length}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="stages" className="gap-2">
-              <TrendingUp className="w-4 h-4 hidden sm:block" />
-              Stages
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="gap-2">
-              <FolderOpen className="w-4 h-4 hidden sm:block" />
-              Documents
-            </TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="w-max sm:w-auto inline-flex">
+              <TabsTrigger value="quote" className="gap-2">
+                <FileText className="w-4 h-4 hidden sm:block" />
+                Quote
+              </TabsTrigger>
+              <TabsTrigger value="invoices" className="gap-2">
+                <Receipt className="w-4 h-4 hidden sm:block" />
+                Invoices
+              </TabsTrigger>
+              <TabsTrigger value="scope" className="gap-2">
+                <Package className="w-4 h-4 hidden sm:block" />
+                Scope
+              </TabsTrigger>
+              <TabsTrigger value="changes" className="gap-2">
+                <RefreshCw className="w-4 h-4 hidden sm:block" />
+                Changes
+                {pendingChanges.length > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
+                    {pendingChanges.length}
+                  </span>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="stages" className="gap-2">
+                <TrendingUp className="w-4 h-4 hidden sm:block" />
+                Stages
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="gap-2">
+                <FolderOpen className="w-4 h-4 hidden sm:block" />
+                Documents
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Scope Tab */}
           <TabsContent value="scope" className="space-y-4 animate-fade-in">
