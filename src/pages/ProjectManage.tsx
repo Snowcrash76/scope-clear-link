@@ -354,37 +354,39 @@ export default function ProjectManage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="quote">
-              <FileText className="w-4 h-4 mr-1 hidden sm:block" />
-              Quote
-            </TabsTrigger>
-            <TabsTrigger value="invoices">
-              <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
-              Invoices
-              {invoices.length > 0 && (
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
+            <TabsList className="w-max sm:w-auto inline-flex">
+              <TabsTrigger value="quote">
+                <FileText className="w-4 h-4 mr-1 hidden sm:block" />
+                Quote
+              </TabsTrigger>
+              <TabsTrigger value="invoices">
+                <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
+                Invoices
+                {invoices.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {invoices.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="scope">
+                Scope
                 <Badge variant="secondary" className="ml-2">
-                  {invoices.length}
+                  {project.scopeItems.length}
                 </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="scope">
-              Scope
-              <Badge variant="secondary" className="ml-2">
-                {project.scopeItems.length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="changes">
-              Changes
-              {pendingClientRequests.length > 0 && (
-                <Badge variant="pending" className="ml-2">
-                  {pendingClientRequests.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="stages">Stages</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-          </TabsList>
+              </TabsTrigger>
+              <TabsTrigger value="changes">
+                Changes
+                {pendingClientRequests.length > 0 && (
+                  <Badge variant="pending" className="ml-2">
+                    {pendingClientRequests.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="stages">Stages</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Scope Tab */}
           <TabsContent value="scope" className="mt-0 space-y-6">
