@@ -112,15 +112,7 @@ export function ClientDocumentsSection({ documents }: ClientDocumentsSectionProp
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="font-heading text-xl font-bold">Documents</h2>
-        <p className="text-sm text-muted-foreground">
-          Plans, specifications, and project files shared by your trade
-        </p>
-      </div>
-
-      <Card className="divide-y">
+    <Card className="divide-y">
         {documents.map((doc) => {
           const FileIcon = getFileIcon(doc.file_type);
           return (
@@ -170,7 +162,6 @@ export function ClientDocumentsSection({ documents }: ClientDocumentsSectionProp
             </div>
           );
         })}
-      </Card>
-    </div>
+    </Card>
   );
 }
