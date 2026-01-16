@@ -536,42 +536,54 @@ export default function ProjectManage() {
                         </div>
                       )}
                       
-                      {/* Quote Summary integrated into Included section */}
+                      {/* Contract Summary integrated into Included section */}
                       {category === 'included' && (scopeTotal > 0 || approvedChanges.length > 0) && (
                         <div className="border-t bg-primary/5 p-4">
+                          <h4 className="text-sm font-bold text-foreground uppercase tracking-wide mb-3">Contract Summary</h4>
                           <div className="space-y-2">
+                            {/* Original Contract */}
                             <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Scope Items</span>
-                              <span>${scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              <span className="text-foreground font-medium">Original Contract</span>
+                              <span className="font-semibold tabular-nums">${scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             
+                            {/* Approved Changes Summary Line */}
                             {approvedChanges.length > 0 && (
-                              <>
+                              <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">Approved Changes ({approvedChanges.length})</span>
-                                  <span className={changesTotal >= 0 ? 'text-approved' : 'text-destructive'}>
-                                    {changesTotal >= 0 ? '+' : ''}${changesTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  <span className="text-foreground font-medium">Approved Changes ({approvedChanges.length})</span>
+                                  <span className={cn(
+                                    "font-semibold tabular-nums",
+                                    changesTotal >= 0 ? 'text-approved' : 'text-destructive'
+                                  )}>
+                                    {changesTotal >= 0 ? '+' : ''}${Math.abs(changesTotal).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
                                 </div>
-                                <div className="text-xs text-muted-foreground space-y-1 pl-2">
+                                
+                                {/* Individual Changes Breakdown */}
+                                <div className="pl-4 border-l-2 border-muted space-y-1.5">
                                   {approvedChanges.map(cr => (
-                                    <div key={cr.id} className="flex justify-between">
-                                      <span className="truncate mr-2">• {cr.title}</span>
-                                      <span className={cr.costImpact >= 0 ? 'text-approved' : 'text-destructive'}>
-                                        {cr.costImpact >= 0 ? '+' : ''}${cr.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    <div key={cr.id} className="flex justify-between text-xs">
+                                      <span className="text-muted-foreground truncate mr-3 flex-1">{cr.title}</span>
+                                      <span className={cn(
+                                        "font-medium tabular-nums whitespace-nowrap",
+                                        cr.costImpact >= 0 ? 'text-approved' : 'text-destructive'
+                                      )}>
+                                        {cr.costImpact >= 0 ? '+' : ''}${Math.abs(cr.costImpact).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                       </span>
                                     </div>
                                   ))}
                                 </div>
-                              </>
+                              </div>
                             )}
                             
-                            <div className="flex justify-between pt-2 border-t border-primary/20">
+                            {/* Revised Contract Total */}
+                            <div className="flex justify-between pt-3 mt-2 border-t border-primary/20">
                               <span className="font-semibold flex items-center gap-2">
                                 <Calculator className="w-4 h-4 text-primary" />
-                                Total Quote Amount
+                                {approvedChanges.length > 0 ? 'Revised Contract Total' : 'Contract Total'}
                               </span>
-                              <span className="text-lg font-bold text-primary">
+                              <span className="text-lg font-bold text-primary tabular-nums">
                                 ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
