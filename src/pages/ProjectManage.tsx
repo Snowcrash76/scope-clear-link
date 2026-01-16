@@ -22,6 +22,7 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -259,7 +260,9 @@ export default function ProjectManage() {
   const handleCopyClientLink = () => {
     const link = `${window.location.origin}/project/${project.id}`;
     navigator.clipboard.writeText(link);
-    toast.success('Client link copied to clipboard');
+    toast.success('Client page link copied!', {
+      description: 'Share with your client for full transparency.'
+    });
   };
 
   // Separate pending changes into client requests (need trade response) and trade requests (awaiting client)
@@ -311,21 +314,39 @@ export default function ProjectManage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleCopyClientLink}>
-                <Copy className="w-4 h-4" />
-                <span className="hidden sm:inline ml-2">Copy Link</span>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={handleCopyClientLink}>
+                      <Copy className="w-4 h-4" />
+                      <span className="hidden sm:inline ml-2">Share with Client</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy link to your client's live job page</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {project.status === 'draft' && (
                 <Button variant="accent" size="sm" onClick={handleSendToClient}>
                   <Send className="w-4 h-4" />
                   <span className="hidden sm:inline ml-2">Send to Client</span>
                 </Button>
               )}
-              <Button variant="ghost" size="icon" asChild>
-                <Link to={`/project/${project.id}`} target="_blank">
-                  <ExternalLink className="w-4 h-4" />
-                </Link>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" asChild>
+                      <Link to={`/project/${project.id}`} target="_blank">
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Preview Client Page</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </div>
