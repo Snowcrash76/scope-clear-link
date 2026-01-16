@@ -7,6 +7,12 @@ import { cn } from '@/lib/utils';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { ImageDisplay } from '@/components/ImageUpload';
 
+interface ApprovedChange {
+  id: string;
+  title: string;
+  costImpact: number;
+}
+
 interface ScopeSectionProps {
   title: string;
   description: string;
@@ -16,6 +22,7 @@ interface ScopeSectionProps {
   isClientView?: boolean;
   showTotal?: boolean;
   totalAmount?: number;
+  approvedChanges?: ApprovedChange[];
 }
 
 const categoryConfig = {
@@ -50,7 +57,8 @@ export function ScopeSection({
   onAcknowledge,
   isClientView = true,
   showTotal = false,
-  totalAmount = 0
+  totalAmount = 0,
+  approvedChanges = []
 }: ScopeSectionProps) {
   // Included section starts expanded, others start collapsed
   const [isExpanded, setIsExpanded] = useState(category === 'included');
@@ -201,9 +209,41 @@ export function ScopeSection({
             </div>
           )}
 
-          {/* Integrated Total Quote Summary */}
-          {showTotal && totalAmount > 0 && (
-            <div className="pt-4 mt-4 border-t-2 border-primary/20">
+          {/* Integrated Total Quote Summary with Approved Changes */}
+          {showTotal && (
+            <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-3">
+              {/* Scope Items Subtotal */}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Scope Items</span>
+                <span className="font-medium">
+                  ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              {/* Approved Changes */}
+              {approvedChanges.length > 0 && (
+                <>
+                  <div className="space-y-2">
+                    <span className="text-sm text-muted-foreground">Approved Changes:</span>
+                    {approvedChanges.map((change) => (
+                      <div key={change.id} className="flex items-center justify-between text-sm pl-3">
+                        <span className="text-muted-foreground">• {change.title}</span>
+                        <span className={change.costImpact >= 0 ? "font-medium text-approved" : "font-medium text-destructive"}>
+                          {change.costImpact >= 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between text-sm border-t border-dashed pt-2">
+                    <span className="text-muted-foreground">Approved Changes Total</span>
+                    <span className="font-medium text-approved">
+                      +${approvedChanges.reduce((sum, c) => sum + c.costImpact, 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </>
+              )}
+
+              {/* Total Quote Amount */}
               <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
@@ -211,7 +251,9 @@ export function ScopeSection({
                   </div>
                   <div>
                     <span className="font-heading font-semibold">Total Quote Amount</span>
-                    <p className="text-xs text-muted-foreground">Sum of all included items</p>
+                    <p className="text-xs text-muted-foreground">
+                      {approvedChanges.length > 0 ? 'Scope items + approved changes' : 'Sum of all included items'}
+                    </p>
                   </div>
                 </div>
                 <span className="text-xl sm:text-2xl font-bold text-primary">
