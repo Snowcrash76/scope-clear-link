@@ -35,11 +35,6 @@ export default function TradeDashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
 
-  // Refetch projects when dashboard mounts to ensure fresh data
-  useEffect(() => {
-    refetch();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleSignOut = async () => {
     await signOut();
