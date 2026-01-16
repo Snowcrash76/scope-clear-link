@@ -13,14 +13,17 @@ import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
+import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { toast } from 'sonner';
 import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice } from '@/types/project';
+import { cn } from '@/lib/utils';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -35,6 +38,7 @@ export default function ClientProjectView() {
   
   const { activeQuote, approveQuote, declineQuote, refetch: refetchQuotes } = useQuotes(id);
   const { invoices, loading: invoicesLoading } = useInvoices(id);
+  const { lineItems: quoteLineItems } = useQuoteLineItems(activeQuote?.id);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
 
@@ -79,10 +83,14 @@ export default function ClientProjectView() {
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
   const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
 
-  // Calculate totals including approved changes
-  const scopeTotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
-  const changesTotal = approvedChanges.reduce((sum, cr) => sum + (cr.costImpact || 0), 0);
-  const totalQuote = scopeTotal + changesTotal;
+  // Calculate live totals from current data
+  const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const changesImpact = approvedChanges.reduce((sum, cr) => sum + (cr.costImpact || 0), 0);
+  const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
+  const taxRate = activeQuote?.taxRate || 0;
+  const taxAmount = subtotal * (taxRate / 100);
+  const liveTotal = subtotal + taxAmount;
 
   const handleAcknowledge = async (itemId: string) => {
     const success = await acknowledgeScopeItem(itemId, true);
@@ -224,7 +232,7 @@ export default function ClientProjectView() {
               items={includedItems}
               onAcknowledge={handleAcknowledge}
               showTotal={true}
-              totalAmount={totalQuote}
+              totalAmount={liveTotal}
               approvedChanges={approvedChanges.map(cr => ({
                 id: cr.id,
                 title: cr.title,
@@ -259,7 +267,8 @@ export default function ClientProjectView() {
             </div>
 
             {activeQuote && activeQuote.status !== 'draft' ? (
-              <Card className="p-6 space-y-4">
+              <Card className="p-6 space-y-6">
+                {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
@@ -280,9 +289,6 @@ export default function ClientProjectView() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Total: ${activeQuote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                    </p>
                     {activeQuote.approvedAt && (
                       <p className="text-xs text-muted-foreground mt-1">
                         Approved on {new Date(activeQuote.approvedAt).toLocaleDateString()}
@@ -311,7 +317,8 @@ export default function ClientProjectView() {
                             tradeName: project.tradeName,
                           },
                           project.scopeItems,
-                          project.changeRequests
+                          project.changeRequests,
+                          quoteLineItems
                         );
                         toast.success('Quote PDF downloaded');
                       } catch (error) {
@@ -322,6 +329,101 @@ export default function ClientProjectView() {
                       <Download className="w-4 h-4 mr-2" />
                       Download PDF
                     </Button>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Line Items Breakdown */}
+                <div className="space-y-4">
+                  {/* Included Scope Items */}
+                  {includedItems.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Included Items</h4>
+                      <div className="border rounded-lg divide-y">
+                        {includedItems.map(item => (
+                          <div key={item.id} className="p-3 flex justify-between items-start">
+                            <div className="flex-1 pr-4">
+                              <p className="font-medium text-sm">{item.title}</p>
+                              {item.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                              )}
+                            </div>
+                            <span className="font-medium text-sm whitespace-nowrap">
+                              ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Approved Changes */}
+                  {approvedChanges.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Approved Changes</h4>
+                      <div className="border rounded-lg divide-y border-approved/30 bg-approved/5">
+                        {approvedChanges.map(change => (
+                          <div key={change.id} className="p-3 flex justify-between items-start">
+                            <div className="flex-1 pr-4">
+                              <p className="font-medium text-sm">{change.title}</p>
+                              {change.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{change.description}</p>
+                              )}
+                            </div>
+                            <span className={cn(
+                              "font-medium text-sm whitespace-nowrap",
+                              (change.costImpact || 0) > 0 ? "text-approved" : (change.costImpact || 0) < 0 ? "text-destructive" : ""
+                            )}>
+                              {(change.costImpact || 0) > 0 ? '+' : ''}${(change.costImpact || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Custom Quote Line Items */}
+                  {quoteLineItems.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Additional Items</h4>
+                      <div className="border rounded-lg divide-y">
+                        {quoteLineItems.map(item => (
+                          <div key={item.id} className="p-3 flex justify-between items-start">
+                            <div className="flex-1 pr-4">
+                              <p className="font-medium text-sm">{item.title}</p>
+                              {item.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                              )}
+                            </div>
+                            <span className="font-medium text-sm whitespace-nowrap">
+                              ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Totals */}
+                <div className="space-y-2 p-4 rounded-lg bg-muted/50">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
+                    <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>Total</span>
+                    <span className="text-primary">
+                      ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </span>
                   </div>
                 </div>
 
@@ -575,6 +677,7 @@ export default function ClientProjectView() {
           quote={activeQuote}
           scopeItems={project.scopeItems}
           changeRequests={project.changeRequests}
+          quoteLineItems={quoteLineItems}
           projectInfo={{
             name: project.name,
             clientName: project.clientName,

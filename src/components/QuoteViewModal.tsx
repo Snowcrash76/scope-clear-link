@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
+import { QuoteLineItem } from '@/hooks/useQuoteLineItems';
 import { 
   Download, 
   Calendar, 
@@ -29,6 +29,7 @@ interface QuoteViewModalProps {
   quote: Quote;
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
+  quoteLineItems?: QuoteLineItem[];
   projectInfo: {
     name: string;
     clientName: string;
@@ -44,6 +45,7 @@ export function QuoteViewModal({
   quote,
   scopeItems,
   changeRequests,
+  quoteLineItems = [],
   projectInfo,
 }: QuoteViewModalProps) {
   const includedItems = scopeItems.filter(item => item.category === 'included');
@@ -51,10 +53,11 @@ export function QuoteViewModal({
   const assumptionItems = scopeItems.filter(item => item.category === 'assumption');
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
 
-  // Calculate live totals from current data
+  // Calculate live totals from current data (including custom line items)
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
-  const subtotal = scopeSubtotal + changesImpact;
+  const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxAmount = subtotal * (quote.taxRate / 100);
   const total = subtotal + taxAmount;
 
@@ -71,7 +74,7 @@ export function QuoteViewModal({
 
   const handleDownloadPDF = () => {
     try {
-      downloadQuotePDF(quote, projectInfo, scopeItems, changeRequests);
+      downloadQuotePDF(quote, projectInfo, scopeItems, changeRequests, quoteLineItems);
     } catch (error) {
       console.error('Failed to download PDF:', error);
     }
@@ -180,6 +183,34 @@ export function QuoteViewModal({
                         change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                       )}>
                         {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Custom Quote Line Items */}
+          {quoteLineItems.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Additional Items
+              </h4>
+              <div className="border rounded-lg divide-y">
+                {quoteLineItems.map(item => (
+                  <div key={item.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="font-medium">{item.title}</p>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-medium whitespace-nowrap">
+                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
