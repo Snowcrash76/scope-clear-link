@@ -209,54 +209,68 @@ export function ScopeSection({
             </div>
           )}
 
-          {/* Integrated Total Quote Summary with Approved Changes */}
+          {/* Contract Summary */}
           {showTotal && (
             <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-3">
-              {/* Scope Items Subtotal */}
+              <h4 className="text-sm font-bold text-foreground uppercase tracking-wide mb-3">Contract Summary</h4>
+              
+              {/* Original Contract */}
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Scope Items</span>
-                <span className="font-medium">
+                <span className="text-foreground font-medium">Original Contract</span>
+                <span className="font-semibold tabular-nums text-right">
                   ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
-              {/* Approved Changes */}
+              {/* Approved Changes Summary Line */}
               {approvedChanges.length > 0 && (
-                <>
-                  <div className="space-y-2">
-                    <span className="text-sm text-muted-foreground">Approved Changes:</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-foreground font-medium">
+                      Approved Changes ({approvedChanges.length})
+                    </span>
+                    <span className={cn(
+                      "font-semibold tabular-nums text-right",
+                      approvedChanges.reduce((sum, c) => sum + c.costImpact, 0) >= 0 ? "text-approved" : "text-destructive"
+                    )}>
+                      {approvedChanges.reduce((sum, c) => sum + c.costImpact, 0) >= 0 ? '+' : ''}
+                      ${Math.abs(approvedChanges.reduce((sum, c) => sum + c.costImpact, 0)).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  {/* Individual Changes Breakdown */}
+                  <div className="pl-4 border-l-2 border-muted space-y-1.5">
                     {approvedChanges.map((change) => (
-                      <div key={change.id} className="flex items-center justify-between text-sm pl-3">
-                        <span className="text-muted-foreground">• {change.title}</span>
-                        <span className={change.costImpact >= 0 ? "font-medium text-approved" : "font-medium text-destructive"}>
-                          {change.costImpact >= 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <div key={change.id} className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground truncate mr-3 flex-1">{change.title}</span>
+                        <span className={cn(
+                          "font-medium tabular-nums text-right whitespace-nowrap",
+                          change.costImpact >= 0 ? "text-approved" : "text-destructive"
+                        )}>
+                          {change.costImpact >= 0 ? '+' : ''}${Math.abs(change.costImpact).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between text-sm border-t border-dashed pt-2">
-                    <span className="text-muted-foreground">Approved Changes Total</span>
-                    <span className="font-medium text-approved">
-                      +${approvedChanges.reduce((sum, c) => sum + c.costImpact, 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </>
+                </div>
               )}
 
-              {/* Total Quote Amount */}
-              <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5">
+              {/* Revised Contract Total */}
+              <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 mt-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
                     <Calculator className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <span className="font-heading font-semibold">Total Quote Amount</span>
+                    <span className="font-heading font-semibold">
+                      {approvedChanges.length > 0 ? 'Revised Contract Total' : 'Contract Total'}
+                    </span>
                     <p className="text-xs text-muted-foreground">
-                      {approvedChanges.length > 0 ? 'Scope items + approved changes' : 'Sum of all included items'}
+                      {approvedChanges.length > 0 ? 'Original + approved changes' : 'Sum of all included items'}
                     </p>
                   </div>
                 </div>
-                <span className="text-xl sm:text-2xl font-bold text-primary">
+                <span className="text-xl sm:text-2xl font-bold text-primary tabular-nums">
                   ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
