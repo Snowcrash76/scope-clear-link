@@ -42,7 +42,9 @@ import {
   Loader2,
   Calculator,
   FileText,
-  Receipt
+  Receipt,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -112,6 +114,11 @@ export default function ProjectManage() {
     changeId: string;
     title: string;
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    included: true,
+    excluded: false,
+    assumption: false,
+  });
 
   if (loading) {
     return (
@@ -135,9 +142,13 @@ export default function ProjectManage() {
   }
 
   const categoryConfig = {
-    included: { icon: Package, color: 'text-approved', bgColor: 'bg-approved/10', label: 'Included' },
-    excluded: { icon: Ban, color: 'text-destructive', bgColor: 'bg-destructive/10', label: 'Excluded' },
-    assumption: { icon: AlertTriangle, color: 'text-pending-foreground', bgColor: 'bg-pending/10', label: 'Assumption' },
+    included: { icon: Package, color: 'text-approved', bgColor: 'bg-approved/10', label: 'Included', subtle: false },
+    excluded: { icon: Ban, color: 'text-muted-foreground', bgColor: 'bg-muted/30', label: 'Excluded', subtle: true },
+    assumption: { icon: AlertTriangle, color: 'text-muted-foreground', bgColor: 'bg-muted/30', label: 'Assumption', subtle: true },
+  };
+
+  const toggleSection = (category: string) => {
+    setExpandedSections(prev => ({ ...prev, [category]: !prev[category] }));
   };
 
   const handleSaveScopeItem = async (itemData: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => {
@@ -398,148 +409,155 @@ export default function ProjectManage() {
               </Button>
             </div>
 
-            {(['included', 'excluded', 'assumption'] as const).map((category) => {
+          {(['included', 'excluded', 'assumption'] as const).map((category) => {
               const items = groupedScopeItems[category];
               const config = categoryConfig[category];
               const Icon = config.icon;
-
-              return (
-                <Card key={category} className="overflow-hidden">
-                  <div className={cn("px-4 py-3 border-b flex items-center gap-2", config.bgColor)}>
-                    <Icon className={cn("w-5 h-5", config.color)} />
-                    <h3 className="font-heading font-semibold">{config.label}</h3>
-                    <Badge variant="secondary" className="ml-auto">
-                      {items.length}
-                    </Badge>
-                  </div>
-                  {items.length === 0 ? (
-                    <div className="p-6 text-center">
-                      <p className="text-sm text-muted-foreground mb-3">No {config.label.toLowerCase()} items yet</p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setIsAddingScopeItem(true);
-                        }}
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add {config.label} Item
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="divide-y">
-                      {items.map((item) => (
-                        <div 
-                          key={item.id}
-                          className="p-4 hover:bg-secondary/30 transition-colors cursor-pointer group"
-                          onClick={() => setEditingScopeItem(item)}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <h4 className="font-medium">{item.title}</h4>
-                                {item.acknowledged && (
-                                  <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground mt-1">
-                                {item.description}
-                              </p>
-                              {item.imageUrls && item.imageUrls.length > 0 ? (
-                                <div className="mt-3">
-                                  <MultiImageDisplay paths={item.imageUrls} />
-                                </div>
-                              ) : item.imageUrl ? (
-                                <div className="mt-3">
-                                  <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-[200px]" />
-                                </div>
-                              ) : null}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {item.cost != null && item.cost > 0 && (
-                                <span className="text-primary font-medium whitespace-nowrap">
-                                  ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              )}
-                              <Button 
-                                variant="ghost" 
-                                size="icon"
-                                className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingScopeItem(item);
-                                }}
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </Card>
-              );
-            })}
-
-            {/* Total Quote Summary for Trade View */}
-            {(() => {
+              const isExpanded = expandedSections[category];
+              
+              // Calculate totals for included section
               const scopeTotal = groupedScopeItems.included.reduce((sum, item) => sum + (item.cost || 0), 0);
               const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
               const changesTotal = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
               const totalQuote = scopeTotal + changesTotal;
-              
-              if (scopeTotal > 0 || approvedChanges.length > 0) {
-                return (
-                  <Card className="p-4 bg-primary/5 border-primary/20">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Calculator className="w-5 h-5 text-primary" />
+
+              return (
+                <Card key={category} className={cn("overflow-hidden", config.subtle && "border-border")}>
+                  <div 
+                    className={cn(
+                      "px-4 py-3 border-b flex items-center gap-2 cursor-pointer select-none transition-colors hover:bg-secondary/30",
+                      config.bgColor
+                    )}
+                    onClick={() => toggleSection(category)}
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                    )}
+                    <Icon className={cn("w-5 h-5", config.color)} />
+                    <h3 className={cn("font-heading font-semibold", config.subtle && "text-muted-foreground")}>{config.label}</h3>
+                    <Badge variant="secondary" className="ml-auto">
+                      {items.length}
+                    </Badge>
+                  </div>
+                  
+                  {isExpanded && (
+                    <>
+                      {items.length === 0 ? (
+                        <div className="p-6 text-center">
+                          <p className="text-sm text-muted-foreground mb-3">No {config.label.toLowerCase()} items yet</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setIsAddingScopeItem(true);
+                            }}
+                          >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add {config.label} Item
+                          </Button>
                         </div>
-                        <h3 className="font-heading font-semibold">Quote Summary</h3>
-                      </div>
-                      
-                      <div className="space-y-2 pl-12">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Scope Items</span>
-                          <span>${scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                        </div>
-                        
-                        {approvedChanges.length > 0 && (
-                          <>
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">Approved Changes ({approvedChanges.length})</span>
-                              <span className={changesTotal >= 0 ? 'text-approved' : 'text-destructive'}>
-                                {changesTotal >= 0 ? '+' : ''}${changesTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
+                      ) : (
+                        <div className="divide-y">
+                          {items.map((item) => (
+                            <div 
+                              key={item.id}
+                              className="p-4 hover:bg-secondary/30 transition-colors cursor-pointer group"
+                              onClick={() => setEditingScopeItem(item)}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium">{item.title}</h4>
+                                    {item.acknowledged && (
+                                      <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
+                                    )}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {item.description}
+                                  </p>
+                                  {item.imageUrls && item.imageUrls.length > 0 ? (
+                                    <div className="mt-3">
+                                      <MultiImageDisplay paths={item.imageUrls} />
+                                    </div>
+                                  ) : item.imageUrl ? (
+                                    <div className="mt-3">
+                                      <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-[200px]" />
+                                    </div>
+                                  ) : null}
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  {item.cost != null && item.cost > 0 && (
+                                    <span className="text-primary font-medium whitespace-nowrap">
+                                      ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                  )}
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingScopeItem(item);
+                                    }}
+                                  >
+                                    <Pencil className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground space-y-1">
-                              {approvedChanges.map(cr => (
-                                <div key={cr.id} className="flex justify-between">
-                                  <span className="truncate mr-2">• {cr.title}</span>
-                                  <span className={cr.costImpact >= 0 ? 'text-approved' : 'text-destructive'}>
-                                    {cr.costImpact >= 0 ? '+' : ''}${cr.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Quote Summary integrated into Included section */}
+                      {category === 'included' && (scopeTotal > 0 || approvedChanges.length > 0) && (
+                        <div className="border-t bg-primary/5 p-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Scope Items</span>
+                              <span>${scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                            
+                            {approvedChanges.length > 0 && (
+                              <>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Approved Changes ({approvedChanges.length})</span>
+                                  <span className={changesTotal >= 0 ? 'text-approved' : 'text-destructive'}>
+                                    {changesTotal >= 0 ? '+' : ''}${changesTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
                                 </div>
-                              ))}
+                                <div className="text-xs text-muted-foreground space-y-1 pl-2">
+                                  {approvedChanges.map(cr => (
+                                    <div key={cr.id} className="flex justify-between">
+                                      <span className="truncate mr-2">• {cr.title}</span>
+                                      <span className={cr.costImpact >= 0 ? 'text-approved' : 'text-destructive'}>
+                                        {cr.costImpact >= 0 ? '+' : ''}${cr.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+                            
+                            <div className="flex justify-between pt-2 border-t border-primary/20">
+                              <span className="font-semibold flex items-center gap-2">
+                                <Calculator className="w-4 h-4 text-primary" />
+                                Total Quote Amount
+                              </span>
+                              <span className="text-lg font-bold text-primary">
+                                ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
                             </div>
-                          </>
-                        )}
-                        
-                        <div className="flex justify-between pt-2 border-t">
-                          <span className="font-semibold">Total Quote Amount</span>
-                          <span className="text-xl font-bold text-primary">
-                            ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              }
-              return null;
-            })()}
+                      )}
+                    </>
+                  )}
+              </Card>
+              );
+            })}
 
             {project.scopeItems.length === 0 && (
               <Card className="p-12 text-center">
