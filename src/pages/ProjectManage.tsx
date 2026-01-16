@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,6 +23,7 @@ import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
   ExternalLink, 
@@ -119,6 +120,26 @@ export default function ProjectManage() {
     excluded: false,
     assumption: false,
   });
+  const [defaultTerms, setDefaultTerms] = useState<string>('');
+
+  // Fetch user's default terms
+  useEffect(() => {
+    const fetchDefaultTerms = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('default_terms')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.default_terms) {
+        setDefaultTerms(profile.default_terms);
+      }
+    };
+    fetchDefaultTerms();
+  }, []);
 
   if (loading) {
     return (
@@ -681,6 +702,7 @@ export default function ProjectManage() {
               clientEmail={project.clientEmail}
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
+              defaultTerms={defaultTerms}
               onCreateInvoice={createInvoice}
               onSendInvoice={sendInvoice}
               onMarkAsPaid={markAsPaid}
