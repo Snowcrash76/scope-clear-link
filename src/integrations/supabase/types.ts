@@ -249,6 +249,7 @@ export type Database = {
       project_documents: {
         Row: {
           created_at: string
+          display_name: string | null
           file_name: string
           file_size: number | null
           file_type: string | null
@@ -258,6 +259,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           file_name: string
           file_size?: number | null
           file_type?: string | null
@@ -267,6 +269,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           file_name?: string
           file_size?: number | null
           file_type?: string | null

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,15 +11,19 @@ import {
   File,
   Image as ImageIcon,
   FileSpreadsheet,
-  Eye
+  Eye,
+  Pencil
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { DocumentUploadModal } from './DocumentUploadModal';
+import { EditDocumentModal } from './EditDocumentModal';
 
 interface ProjectDocument {
   id: string;
   file_name: string;
+  display_name: string | null;
   file_url: string;
   file_type: string | null;
   file_size: number | null;
@@ -33,55 +37,9 @@ interface DocumentsSectionProps {
 }
 
 export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsSectionProps) {
-  const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    setIsUploading(true);
-
-    try {
-      for (const file of Array.from(files)) {
-        // Upload file to storage
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${projectId}/${Date.now()}-${file.name}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('project-documents')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        // Store file path (not public URL) for private bucket
-        // Signed URLs will be generated when fetching documents
-        const { error: dbError } = await supabase
-          .from('project_documents')
-          .insert({
-            project_id: projectId,
-            file_name: file.name,
-            file_url: fileName, // Store path, not full URL
-            file_type: file.type || null,
-            file_size: file.size,
-          });
-
-        if (dbError) throw dbError;
-      }
-
-      toast.success(`${files.length} document${files.length > 1 ? 's' : ''} uploaded`);
-      onRefresh();
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      toast.error('Failed to upload document');
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [editingDocument, setEditingDocument] = useState<ProjectDocument | null>(null);
 
   const handleDelete = async (doc: ProjectDocument) => {
     setDeletingId(doc.id);
@@ -207,37 +165,23 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
     }
   };
 
+  const displayName = (doc: ProjectDocument) => doc.display_name || doc.file_name;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-heading text-lg font-semibold">Documents</h2>
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.dxf"
-            onChange={handleUpload}
-            className="hidden"
-          />
-          <Button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Upload className="w-4 h-4 mr-2" />
-            )}
-            Upload
-          </Button>
-        </div>
+        <Button onClick={() => setUploadModalOpen(true)}>
+          <Upload className="w-4 h-4 mr-2" />
+          Upload
+        </Button>
       </div>
 
       {documents.length > 0 ? (
         <Card className="divide-y">
           {documents.map((doc) => {
             const FileIcon = getFileIcon(doc.file_type);
+            const hasCustomName = doc.display_name && doc.display_name !== doc.file_name;
             return (
               <div 
                 key={doc.id}
@@ -252,14 +196,25 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
                   <FileIcon className="w-5 h-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{doc.file_name}</p>
+                  <p className="font-medium truncate">{displayName(doc)}</p>
                   <p className="text-sm text-muted-foreground">
+                    {hasCustomName && (
+                      <span className="text-xs">{doc.file_name} • </span>
+                    )}
                     {formatFileSize(doc.file_size)}
                     {doc.file_size && ' • '}
                     {format(new Date(doc.created_at), 'MMM d, yyyy')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setEditingDocument(doc)}
+                    title="Edit display name"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -303,14 +258,27 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
           </p>
           <Button 
             variant="outline" 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
+            onClick={() => setUploadModalOpen(true)}
           >
             <Upload className="w-4 h-4 mr-2" />
             Upload First Document
           </Button>
         </Card>
       )}
+
+      <DocumentUploadModal
+        projectId={projectId}
+        open={uploadModalOpen}
+        onOpenChange={setUploadModalOpen}
+        onUploadComplete={onRefresh}
+      />
+
+      <EditDocumentModal
+        document={editingDocument}
+        open={!!editingDocument}
+        onOpenChange={(open) => !open && setEditingDocument(null)}
+        onSave={onRefresh}
+      />
     </div>
   );
 }
