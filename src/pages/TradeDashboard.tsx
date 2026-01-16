@@ -4,19 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { ProjectCard } from '@/components/ProjectCard';
 import { ProjectCardSkeletonGrid } from '@/components/ProjectCardSkeleton';
 import { DashboardStats } from '@/components/DashboardStats';
 import { CreateJobModal } from '@/components/CreateJobModal';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Plus, 
   Search, 
   Briefcase,
   ArrowLeft,
   LogOut,
-  Loader2
+  Loader2,
+  Settings,
+  FileText,
+  Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -26,14 +32,65 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function TradeDashboard() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const navigate = useNavigate();
   const { projects, loading, createProject, updateProjectStatus, deleteProject, refetch } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [defaultTerms, setDefaultTerms] = useState('');
+  const [editingTerms, setEditingTerms] = useState('');
+  const [savingTerms, setSavingTerms] = useState(false);
+
+  // Fetch default terms from profile
+  useEffect(() => {
+    const fetchDefaultTerms = async () => {
+      if (!user?.id) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('default_terms')
+        .eq('user_id', user.id)
+        .single();
+      if (data?.default_terms) {
+        setDefaultTerms(data.default_terms);
+        setEditingTerms(data.default_terms);
+      }
+    };
+    fetchDefaultTerms();
+  }, [user?.id]);
+
+  const handleSaveDefaultTerms = async () => {
+    if (!user?.id) return;
+    setSavingTerms(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ default_terms: editingTerms })
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setDefaultTerms(editingTerms);
+      toast.success('Default terms saved');
+      setIsSettingsOpen(false);
+    } catch (error) {
+      console.error('Error saving terms:', error);
+      toast.error('Failed to save terms');
+    } finally {
+      setSavingTerms(false);
+    }
+  };
 
 
   const handleSignOut = async () => {
@@ -126,7 +183,14 @@ export default function TradeDashboard() {
                     <p className="font-medium text-sm">{profile?.contact_name}</p>
                     <p className="text-xs text-muted-foreground">{profile?.email}</p>
                   </div>
-                  <DropdownMenuSeparator />
+                <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    setEditingTerms(defaultTerms);
+                    setIsSettingsOpen(true);
+                  }}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Quote Settings
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
@@ -250,7 +314,53 @@ export default function TradeDashboard() {
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         onCreateJob={handleCreateJob}
+        defaultTerms={defaultTerms}
       />
+
+      {/* Settings Modal */}
+      <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-primary" />
+              Quote Settings
+            </DialogTitle>
+            <DialogDescription>
+              Set your default terms and conditions for new quotes.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="defaultTerms">Default Terms & Conditions</Label>
+              <Textarea
+                id="defaultTerms"
+                placeholder="Payment terms, warranty, etc."
+                value={editingTerms}
+                onChange={(e) => setEditingTerms(e.target.value)}
+                className="min-h-[150px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                This will be pre-filled on all new quotes you create.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveDefaultTerms} disabled={savingTerms}>
+              {savingTerms ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
