@@ -121,24 +121,28 @@ export default function ProjectManage() {
     assumption: false,
   });
   const [defaultTerms, setDefaultTerms] = useState<string>('');
+  const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
 
-  // Fetch user's default terms
+  // Fetch user's default terms and payment instructions
   useEffect(() => {
-    const fetchDefaultTerms = async () => {
+    const fetchDefaults = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('default_terms')
+        .select('default_terms, default_payment_instructions')
         .eq('user_id', user.id)
         .single();
 
       if (profile?.default_terms) {
         setDefaultTerms(profile.default_terms);
       }
+      if (profile?.default_payment_instructions) {
+        setDefaultPaymentInstructions(profile.default_payment_instructions);
+      }
     };
-    fetchDefaultTerms();
+    fetchDefaults();
   }, []);
 
   if (loading) {
@@ -703,6 +707,7 @@ export default function ProjectManage() {
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
               defaultTerms={defaultTerms}
+              defaultPaymentInstructions={defaultPaymentInstructions}
               onCreateInvoice={createInvoice}
               onSendInvoice={sendInvoice}
               onMarkAsPaid={markAsPaid}

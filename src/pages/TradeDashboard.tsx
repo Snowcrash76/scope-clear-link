@@ -51,42 +51,52 @@ export default function TradeDashboard() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [defaultTerms, setDefaultTerms] = useState('');
   const [editingTerms, setEditingTerms] = useState('');
+  const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState('');
+  const [editingPaymentInstructions, setEditingPaymentInstructions] = useState('');
   const [savingTerms, setSavingTerms] = useState(false);
 
-  // Fetch default terms from profile
+  // Fetch default terms and payment instructions from profile
   useEffect(() => {
-    const fetchDefaultTerms = async () => {
+    const fetchDefaults = async () => {
       if (!user?.id) return;
       const { data } = await supabase
         .from('profiles')
-        .select('default_terms')
+        .select('default_terms, default_payment_instructions')
         .eq('user_id', user.id)
         .single();
       if (data?.default_terms) {
         setDefaultTerms(data.default_terms);
         setEditingTerms(data.default_terms);
       }
+      if (data?.default_payment_instructions) {
+        setDefaultPaymentInstructions(data.default_payment_instructions);
+        setEditingPaymentInstructions(data.default_payment_instructions);
+      }
     };
-    fetchDefaultTerms();
+    fetchDefaults();
   }, [user?.id]);
 
-  const handleSaveDefaultTerms = async () => {
+  const handleSaveSettings = async () => {
     if (!user?.id) return;
     setSavingTerms(true);
     try {
       const { error } = await supabase
         .from('profiles')
-        .update({ default_terms: editingTerms })
+        .update({ 
+          default_terms: editingTerms,
+          default_payment_instructions: editingPaymentInstructions,
+        })
         .eq('user_id', user.id);
       
       if (error) throw error;
       
       setDefaultTerms(editingTerms);
-      toast.success('Default terms saved');
+      setDefaultPaymentInstructions(editingPaymentInstructions);
+      toast.success('Settings saved');
       setIsSettingsOpen(false);
     } catch (error) {
-      console.error('Error saving terms:', error);
-      toast.error('Failed to save terms');
+      console.error('Error saving settings:', error);
+      toast.error('Failed to save settings');
     } finally {
       setSavingTerms(false);
     }
@@ -338,10 +348,24 @@ export default function TradeDashboard() {
                 placeholder="Payment terms, warranty, etc."
                 value={editingTerms}
                 onChange={(e) => setEditingTerms(e.target.value)}
-                className="min-h-[150px]"
+                className="min-h-[120px]"
               />
               <p className="text-xs text-muted-foreground">
-                This will be pre-filled on all new quotes and invoices you create.
+                Pre-filled on all new quotes.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="defaultPaymentInstructions">Default Payment Instructions</Label>
+              <Textarea
+                id="defaultPaymentInstructions"
+                placeholder="Bank: ANZ&#10;BSB: 123-456&#10;Account: 12345678&#10;Reference: Invoice number"
+                value={editingPaymentInstructions}
+                onChange={(e) => setEditingPaymentInstructions(e.target.value)}
+                className="min-h-[120px]"
+              />
+              <p className="text-xs text-muted-foreground">
+                Pre-filled on all new invoices. Include bank details and payment reference.
               </p>
             </div>
           </div>
@@ -350,7 +374,7 @@ export default function TradeDashboard() {
             <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveDefaultTerms} disabled={savingTerms}>
+            <Button onClick={handleSaveSettings} disabled={savingTerms}>
               {savingTerms ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (

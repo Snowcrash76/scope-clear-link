@@ -218,6 +218,7 @@ export type Database = {
           business_name: string
           contact_name: string
           created_at: string
+          default_payment_instructions: string | null
           default_terms: string | null
           email: string
           id: string
@@ -229,6 +230,7 @@ export type Database = {
           business_name: string
           contact_name: string
           created_at?: string
+          default_payment_instructions?: string | null
           default_terms?: string | null
           email: string
           id?: string
@@ -240,6 +242,7 @@ export type Database = {
           business_name?: string
           contact_name?: string
           created_at?: string
+          default_payment_instructions?: string | null
           default_terms?: string | null
           email?: string
           id?: string

@@ -53,6 +53,7 @@ interface InvoiceSectionProps {
   tradeBusinessName?: string;
   tradeName?: string;
   defaultTerms?: string;
+  defaultPaymentInstructions?: string;
   onCreateInvoice: (data: {
     type: 'staged' | 'final';
     quoteId?: string;
@@ -86,6 +87,7 @@ export function InvoiceSection({
   tradeBusinessName,
   tradeName,
   defaultTerms,
+  defaultPaymentInstructions,
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
@@ -98,7 +100,7 @@ export function InvoiceSection({
   const [invoiceType, setInvoiceType] = useState<'staged' | 'final'>('staged');
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(defaultPaymentInstructions || '');
   const [terms, setTerms] = useState(defaultTerms || '');
   const [percentage, setPercentage] = useState(50);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
@@ -496,16 +498,19 @@ export function InvoiceSection({
               />
             </div>
 
-            {/* Notes */}
+            {/* Payment Instructions */}
             <div className="space-y-2">
-              <Label htmlFor="invoiceNotes">Notes</Label>
+              <Label htmlFor="invoiceNotes">Payment Instructions</Label>
               <Textarea
                 id="invoiceNotes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Payment instructions, bank details, etc..."
-                rows={3}
+                placeholder="Bank: ANZ&#10;BSB: 123-456&#10;Account: 12345678&#10;Reference: Invoice number"
+                rows={4}
               />
+              <p className="text-xs text-muted-foreground">
+                Include bank details and payment reference for your client.
+              </p>
             </div>
 
             {/* Terms & Conditions */}

@@ -341,7 +341,7 @@ export default function ClientProjectView() {
                   {/* Included Scope Items */}
                   {includedItems.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Included Items</h4>
+                      <h4 className="text-base font-bold text-foreground uppercase tracking-wide">Included Items</h4>
                       <div className="border rounded-lg divide-y">
                         {includedItems.map(item => (
                           <div key={item.id} className="p-3 flex justify-between items-start">
@@ -363,7 +363,7 @@ export default function ClientProjectView() {
                   {/* Approved Changes */}
                   {approvedChanges.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Approved Changes</h4>
+                      <h4 className="text-base font-bold text-foreground uppercase tracking-wide">Approved Changes</h4>
                       <div className="border rounded-lg divide-y border-approved/30 bg-approved/5">
                         {approvedChanges.map(change => (
                           <div key={change.id} className="p-3 flex justify-between items-start">
@@ -388,7 +388,7 @@ export default function ClientProjectView() {
                   {/* Custom Quote Line Items */}
                   {quoteLineItems.length > 0 && (
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Additional Items</h4>
+                      <h4 className="text-base font-bold text-foreground uppercase tracking-wide">Additional Items</h4>
                       <div className="border rounded-lg divide-y">
                         {quoteLineItems.map(item => (
                           <div key={item.id} className="p-3 flex justify-between items-start">
