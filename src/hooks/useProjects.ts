@@ -76,22 +76,19 @@ export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      fetchProjects();
-    } else {
+  const fetchProjects = useCallback(async () => {
+    if (!user?.id) {
       setProjects([]);
       setLoading(false);
+      return;
     }
-  }, [user]);
 
-  const fetchProjects = useCallback(async () => {
     try {
       setLoading(true);
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
@@ -170,7 +167,11 @@ export function useProjects() {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
 
   const generateQuoteNumber = () => {
     const timestamp = Date.now().toString(36).toUpperCase();
