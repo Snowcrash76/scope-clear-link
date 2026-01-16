@@ -341,7 +341,7 @@ export default function TradeDashboard() {
                 className="min-h-[150px]"
               />
               <p className="text-xs text-muted-foreground">
-                This will be pre-filled on all new quotes you create.
+                This will be pre-filled on all new quotes and invoices you create.
               </p>
             </div>
           </div>

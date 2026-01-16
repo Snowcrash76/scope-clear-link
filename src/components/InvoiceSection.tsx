@@ -52,6 +52,7 @@ interface InvoiceSectionProps {
   clientEmail: string;
   tradeBusinessName?: string;
   tradeName?: string;
+  defaultTerms?: string;
   onCreateInvoice: (data: {
     type: 'staged' | 'final';
     quoteId?: string;
@@ -84,6 +85,7 @@ export function InvoiceSection({
   clientEmail,
   tradeBusinessName,
   tradeName,
+  defaultTerms,
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
@@ -97,6 +99,7 @@ export function InvoiceSection({
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState('');
+  const [terms, setTerms] = useState(defaultTerms || '');
   const [percentage, setPercentage] = useState(50);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [customDescription, setCustomDescription] = useState('');
@@ -206,6 +209,7 @@ export function InvoiceSection({
       taxRate,
       dueDate: dueDate ? new Date(dueDate) : undefined,
       notes: notes || undefined,
+      terms: terms || undefined,
       lineItems,
     });
 
@@ -215,6 +219,7 @@ export function InvoiceSection({
     setCustomDescription('');
     setCustomAmount('');
     setNotes('');
+    setTerms(defaultTerms || '');
     setDueDate('');
   };
 
@@ -500,6 +505,18 @@ export function InvoiceSection({
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Payment instructions, bank details, etc..."
                 rows={3}
+              />
+            </div>
+
+            {/* Terms & Conditions */}
+            <div className="space-y-2">
+              <Label htmlFor="invoiceTerms">Terms & Conditions</Label>
+              <Textarea
+                id="invoiceTerms"
+                value={terms}
+                onChange={(e) => setTerms(e.target.value)}
+                placeholder="Payment terms, warranty information..."
+                rows={4}
               />
             </div>
           </div>
