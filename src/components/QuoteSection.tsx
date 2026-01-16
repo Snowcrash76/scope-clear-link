@@ -601,7 +601,7 @@ export function QuoteSection({
 
         {/* Line Items */}
         <div className="space-y-3 mb-6">
-          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+          <h4 className="font-bold text-base text-foreground uppercase tracking-wide">
             Line Items
           </h4>
           <div className="border rounded-lg divide-y">
@@ -623,7 +623,7 @@ export function QuoteSection({
             {approvedChanges.length > 0 && (
               <>
                 <div className="p-3 bg-muted/50">
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="text-base font-bold text-foreground uppercase tracking-wide">
                     Approved Changes
                   </span>
                 </div>
@@ -650,7 +650,7 @@ export function QuoteSection({
             {quoteLineItems.length > 0 && (
               <>
                 <div className="p-3 bg-primary/5">
-                  <span className="text-sm font-medium text-primary">
+                  <span className="text-base font-bold text-primary uppercase tracking-wide">
                     Custom Line Items
                   </span>
                 </div>
