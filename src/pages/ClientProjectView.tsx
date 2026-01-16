@@ -77,6 +77,12 @@ export default function ClientProjectView() {
 
   const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
+  const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
+
+  // Calculate totals including approved changes
+  const scopeTotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const changesTotal = approvedChanges.reduce((sum, cr) => sum + (cr.costImpact || 0), 0);
+  const totalQuote = scopeTotal + changesTotal;
 
   const handleAcknowledge = async (itemId: string) => {
     const success = await acknowledgeScopeItem(itemId, true);
@@ -218,7 +224,12 @@ export default function ClientProjectView() {
               items={includedItems}
               onAcknowledge={handleAcknowledge}
               showTotal={true}
-              totalAmount={includedItems.reduce((sum, item) => sum + (item.cost || 0), 0)}
+              totalAmount={totalQuote}
+              approvedChanges={approvedChanges.map(cr => ({
+                id: cr.id,
+                title: cr.title,
+                costImpact: cr.costImpact || 0
+              }))}
             />
 
             <ScopeSection
