@@ -301,6 +301,15 @@ export function InvoiceSection({
             
             return (
               <Card key={invoice.id} className="p-4">
+                {/* Prominent heading from first line item */}
+                {invoice.lineItems.length > 0 && (
+                  <div className="mb-4 pb-3 border-b">
+                    <h3 className="text-lg font-semibold text-primary border-l-4 border-primary pl-3">
+                      {invoice.lineItems[0].description}
+                    </h3>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded-lg bg-secondary">
@@ -331,6 +340,7 @@ export function InvoiceSection({
                       <p className="text-lg font-bold">
                         ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </p>
+                      <p className="text-xs text-muted-foreground">inc. GST</p>
                       {invoice.amountPaid > 0 && invoice.amountPaid < invoice.total && (
                         <p className="text-sm text-muted-foreground">
                           Paid: ${invoice.amountPaid.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
@@ -412,21 +422,6 @@ export function InvoiceSection({
                   </div>
                 </div>
 
-                {/* Line Items */}
-                {invoice.lineItems.length > 0 && (
-                  <div className="mt-4 border-t pt-4">
-                    <div className="space-y-2">
-                      {invoice.lineItems.map(item => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {item.description} {item.quantity > 1 && `(x${item.quantity})`}
-                          </span>
-                          <span>${item.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </Card>
             );
           })}
