@@ -166,8 +166,8 @@ export default function ClientProjectView() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="quote" className="space-y-6">
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="w-max sm:w-auto inline-flex">
+          <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="w-max sm:w-auto inline-flex flex-nowrap justify-start">
               <TabsTrigger value="quote" className="gap-2">
                 <FileText className="w-4 h-4 hidden sm:block" />
                 Quote

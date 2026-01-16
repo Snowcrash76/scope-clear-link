@@ -354,8 +354,8 @@ export default function ProjectManage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
-            <TabsList className="w-max sm:w-auto inline-flex">
+          <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
+            <TabsList className="w-max sm:w-auto inline-flex flex-nowrap justify-start">
               <TabsTrigger value="quote">
                 <FileText className="w-4 h-4 mr-1 hidden sm:block" />
                 Quote
