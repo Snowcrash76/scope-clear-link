@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 interface ProjectDocument {
   id: string;
   file_name: string;
+  display_name: string | null;
   file_url: string;
   file_type: string | null;
   file_size: number | null;
@@ -136,7 +137,7 @@ export function ClientDocumentsSection({ documents }: ClientDocumentsSectionProp
                 <FileIcon className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{doc.file_name}</p>
+                <p className="font-medium truncate">{doc.display_name || doc.file_name}</p>
                 <p className="text-sm text-muted-foreground">
                   {formatFileSize(doc.file_size)}
                   {doc.file_size && ' • '}

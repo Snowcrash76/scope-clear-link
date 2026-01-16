@@ -96,6 +96,7 @@ type DbProjectStage = {
 export interface ProjectDocument {
   id: string;
   file_name: string;
+  display_name: string | null;
   file_url: string;
   file_type: string | null;
   file_size: number | null;
