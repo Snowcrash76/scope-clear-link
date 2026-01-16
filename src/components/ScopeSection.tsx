@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScopeItem } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { ImageDisplay } from '@/components/ImageUpload';
@@ -14,6 +14,8 @@ interface ScopeSectionProps {
   items: ScopeItem[];
   onAcknowledge: (itemId: string) => void;
   isClientView?: boolean;
+  showTotal?: boolean;
+  totalAmount?: number;
 }
 
 const categoryConfig = {
@@ -26,16 +28,16 @@ const categoryConfig = {
   },
   excluded: {
     icon: Ban,
-    color: 'text-destructive',
-    bgColor: 'bg-destructive/5',
-    borderColor: 'border-destructive/20',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border',
     badge: 'excluded' as const,
   },
   assumption: {
     icon: AlertTriangle,
-    color: 'text-pending-foreground',
-    bgColor: 'bg-pending/5',
-    borderColor: 'border-pending/20',
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted/30',
+    borderColor: 'border-border',
     badge: 'assumption' as const,
   },
 };
@@ -46,9 +48,12 @@ export function ScopeSection({
   category, 
   items, 
   onAcknowledge,
-  isClientView = true 
+  isClientView = true,
+  showTotal = false,
+  totalAmount = 0
 }: ScopeSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  // Included section starts expanded, others start collapsed
+  const [isExpanded, setIsExpanded] = useState(category === 'included');
   const config = categoryConfig[category];
   const Icon = config.icon;
   
@@ -58,41 +63,70 @@ export function ScopeSection({
   // Calculate subtotal for items with costs
   const subtotal = items.reduce((sum, item) => sum + (item.cost || 0), 0);
 
+  const isSubtle = category !== 'included';
+
   return (
     <Card className={cn(
-      "overflow-hidden border-2 transition-all duration-200",
+      "overflow-hidden transition-all duration-200",
+      isSubtle ? "border" : "border-2",
       config.borderColor,
-      isExpanded && config.bgColor
+      isExpanded && !isSubtle && config.bgColor
     )}>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full p-4 sm:p-5 flex items-center justify-between hover:bg-secondary/50 transition-colors"
+        className={cn(
+          "w-full p-4 sm:p-5 flex items-center justify-between transition-colors",
+          isSubtle ? "hover:bg-muted/50" : "hover:bg-secondary/50"
+        )}
       >
         <div className="flex items-center gap-3">
-          <div className={cn("p-2 rounded-lg", config.bgColor)}>
-            <Icon className={cn("w-5 h-5", config.color)} />
+          <div className={cn(
+            "rounded-lg",
+            isSubtle ? "p-1.5" : "p-2",
+            isSubtle ? "bg-muted" : config.bgColor
+          )}>
+            <Icon className={cn(
+              isSubtle ? "w-4 h-4" : "w-5 h-5",
+              config.color
+            )} />
           </div>
           <div className="text-left">
-            <h3 className="font-heading font-semibold text-lg">{title}</h3>
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <h3 className={cn(
+              "font-heading font-semibold",
+              isSubtle ? "text-base text-muted-foreground" : "text-lg"
+            )}>{title}</h3>
+            {!isSubtle && (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">
-          {isClientView && (
+          {isSubtle && !isExpanded && (
+            <Badge variant="secondary" className="text-xs">
+              {items.length} item{items.length !== 1 ? 's' : ''}
+            </Badge>
+          )}
+          {!isSubtle && isClientView && (
             <Badge variant={allAcknowledged ? 'success' : 'secondary'} className="hidden sm:flex">
               {acknowledgedCount}/{items.length} acknowledged
             </Badge>
           )}
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-muted-foreground" />
+            <ChevronUp className={cn("text-muted-foreground", isSubtle ? "w-4 h-4" : "w-5 h-5")} />
           ) : (
-            <ChevronDown className="w-5 h-5 text-muted-foreground" />
+            <ChevronDown className={cn("text-muted-foreground", isSubtle ? "w-4 h-4" : "w-5 h-5")} />
           )}
         </div>
       </button>
 
       {isExpanded && (
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3 animate-fade-in">
+          {!isSubtle && isClientView && (
+            <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
+          )}
+          {isSubtle && (
+            <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
+          )}
           {items.map((item) => (
             <div
               key={item.id}
@@ -155,8 +189,8 @@ export function ScopeSection({
             </div>
           ))}
           
-          {/* Category Subtotal */}
-          {subtotal > 0 && (
+          {/* Category Subtotal for non-included or when not showing total */}
+          {subtotal > 0 && !showTotal && (
             <div className="pt-3 mt-3 border-t border-dashed flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
                 {category === 'included' ? 'Subtotal' : 'Category Total'}
@@ -164,6 +198,26 @@ export function ScopeSection({
               <span className="font-semibold text-primary">
                 ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
+            </div>
+          )}
+
+          {/* Integrated Total Quote Summary */}
+          {showTotal && totalAmount > 0 && (
+            <div className="pt-4 mt-4 border-t-2 border-primary/20">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <Calculator className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <span className="font-heading font-semibold">Total Quote Amount</span>
+                    <p className="text-xs text-muted-foreground">Sum of all included items</p>
+                  </div>
+                </div>
+                <span className="text-xl sm:text-2xl font-bold text-primary">
+                  ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
             </div>
           )}
         </div>
