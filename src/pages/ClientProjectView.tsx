@@ -346,9 +346,9 @@ export default function ClientProjectView() {
                         {includedItems.map(item => (
                           <div key={item.id} className="p-3 flex justify-between items-start">
                             <div className="flex-1 pr-4">
-                              <p className="font-medium text-sm">{item.title}</p>
+                              <p className="text-base font-semibold text-foreground">{item.title}</p>
                               {item.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                                <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{item.description}</p>
                               )}
                             </div>
                             <span className="font-medium text-sm whitespace-nowrap">
@@ -368,9 +368,9 @@ export default function ClientProjectView() {
                         {approvedChanges.map(change => (
                           <div key={change.id} className="p-3 flex justify-between items-start">
                             <div className="flex-1 pr-4">
-                              <p className="font-medium text-sm">{change.title}</p>
+                              <p className="text-base font-semibold text-foreground">{change.title}</p>
                               {change.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{change.description}</p>
+                                <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{change.description}</p>
                               )}
                             </div>
                             <span className={cn(
@@ -393,9 +393,9 @@ export default function ClientProjectView() {
                         {quoteLineItems.map(item => (
                           <div key={item.id} className="p-3 flex justify-between items-start">
                             <div className="flex-1 pr-4">
-                              <p className="font-medium text-sm">{item.title}</p>
+                              <p className="text-base font-semibold text-foreground">{item.title}</p>
                               {item.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                                <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{item.description}</p>
                               )}
                             </div>
                             <span className="font-medium text-sm whitespace-nowrap">

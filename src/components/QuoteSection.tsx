@@ -609,9 +609,9 @@ export function QuoteSection({
               <div key={item.id} className="p-3">
                 <div className="flex justify-between items-start">
                   <div className="flex-1 pr-4">
-                    <span className="text-sm font-medium">{item.title}</span>
+                    <span className="text-base font-semibold text-foreground">{item.title}</span>
                     {item.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
                     )}
                   </div>
                   <span className="font-medium whitespace-nowrap">
@@ -631,9 +631,9 @@ export function QuoteSection({
                   <div key={change.id} className="p-3 bg-muted/30">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <span className="text-sm font-medium">{change.title}</span>
+                        <span className="text-base font-semibold text-foreground">{change.title}</span>
                         {change.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{change.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1.5">{change.description}</p>
                         )}
                       </div>
                       <span className={cn(
@@ -658,9 +658,9 @@ export function QuoteSection({
                   <div key={item.id} className="p-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-base font-semibold text-foreground">{item.title}</span>
                         {item.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                          <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
                         )}
                       </div>
                       <span className="font-medium whitespace-nowrap">
