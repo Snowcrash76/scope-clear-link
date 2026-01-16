@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   User, 
   Calendar, 
@@ -203,15 +204,24 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
               Manage
             </Link>
           </Button>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            asChild
-          >
-            <Link to={`/project/${project.id}`} target="_blank">
-              <ExternalLink className="w-4 h-4" />
-            </Link>
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  asChild
+                >
+                  <Link to={`/project/${project.id}`} target="_blank">
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Preview Client Page</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           {project.status === 'draft' && onDeleteProject && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
