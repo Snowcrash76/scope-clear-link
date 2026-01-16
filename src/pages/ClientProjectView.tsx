@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { format } from 'date-fns';
 import { ProjectHeader } from '@/components/ProjectHeader';
 import { ActionRequired } from '@/components/ActionRequired';
 import { ScopeSection } from '@/components/ScopeSection';
@@ -14,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -509,87 +511,95 @@ export default function ClientProjectView() {
               </Card>
             ) : invoices.filter(inv => inv.status !== 'draft').length > 0 ? (
               <div className="space-y-4">
-                {invoices.filter(inv => inv.status !== 'draft').map(invoice => (
-                  <Card key={invoice.id} className="p-4 sm:p-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{invoice.invoiceNumber}</h3>
-                          {invoice.status === 'sent' && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                              Sent
-                            </span>
-                          )}
-                          {invoice.status === 'paid' && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
-                              Paid
-                            </span>
-                          )}
-                          {invoice.status === 'overdue' && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
-                              Overdue
-                            </span>
-                          )}
-                          {invoice.status === 'cancelled' && (
-                            <span className="px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-300">
-                              Cancelled
-                            </span>
-                          )}
+                {invoices.filter(inv => inv.status !== 'draft').map(invoice => {
+                  const firstLineItem = invoice.lineItems?.[0];
+                  return (
+                    <Card key={invoice.id} className="p-4 sm:p-6">
+                      {/* Prominent heading from first line item */}
+                      {firstLineItem && (
+                        <div className="mb-4 pb-3 border-b">
+                          <h3 className="text-lg font-semibold text-primary border-l-4 border-primary pl-3">
+                            {firstLineItem.description}
+                          </h3>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          Total: ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                        </p>
-                        {invoice.dueDate && (
-                          <p className="text-xs text-muted-foreground">
-                            Due: {new Date(invoice.dueDate).toLocaleDateString()}
+                      )}
+                      
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 bg-secondary rounded-full shrink-0">
+                            <FileText className="h-4 w-4 text-secondary-foreground" />
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium">{invoice.invoiceNumber}</span>
+                              <Badge variant={
+                                invoice.status === 'paid' ? 'default' :
+                                invoice.status === 'overdue' ? 'destructive' :
+                                invoice.status === 'sent' ? 'secondary' : 'outline'
+                              }>
+                                {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                              </Badge>
+                              <Badge variant="outline">
+                                {invoice.type === 'staged' ? 'Progress' : 'Final'}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Created {format(new Date(invoice.createdAt), 'dd MMM yyyy')}
+                              {invoice.dueDate && (
+                                <> • Due {format(new Date(invoice.dueDate), 'dd MMM yyyy')}</>
+                              )}
+                            </p>
+                            {invoice.paidAt && (
+                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                Paid on {format(new Date(invoice.paidAt), 'dd MMM yyyy')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="text-right shrink-0">
+                          <p className="text-xl font-bold">
+                            ${(invoice.total || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                           </p>
-                        )}
-                        {invoice.paidAt && (
-                          <p className="text-xs text-green-600 dark:text-green-400">
-                            Paid on {new Date(invoice.paidAt).toLocaleDateString()}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold">
-                          ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                        </span>
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => setViewingInvoice(invoice)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              try {
-                                downloadInvoicePDF(invoice, {
-                                  name: project.name,
-                                  clientName: project.clientName,
-                                  clientEmail: project.clientEmail,
-                                  tradeBusinessName: project.tradeBusinessName,
-                                  tradeName: project.tradeName,
-                                });
-                                toast.success('Invoice PDF downloaded');
-                              } catch (error) {
-                                console.error('PDF download error:', error);
-                                toast.error('Failed to download PDF');
-                              }
-                            }}
-                          >
-                            <Download className="w-4 h-4 mr-2" />
-                            Download
-                          </Button>
+                          <p className="text-xs text-muted-foreground">inc. GST</p>
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
+                      
+                      <div className="flex gap-2 mt-4 pt-3 border-t">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => setViewingInvoice(invoice)}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          View
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => {
+                            try {
+                              downloadInvoicePDF(invoice, {
+                                name: project.name,
+                                clientName: project.clientName,
+                                clientEmail: project.clientEmail,
+                                tradeBusinessName: project.tradeBusinessName,
+                                tradeName: project.tradeName,
+                              });
+                              toast.success('Invoice PDF downloaded');
+                            } catch (error) {
+                              console.error('PDF download error:', error);
+                              toast.error('Failed to download PDF');
+                            }
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
               <Card className="p-8 text-center">
