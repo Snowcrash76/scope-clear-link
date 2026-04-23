@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ChangeRequest } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +23,9 @@ interface ChangeRequestCardProps {
   onDecline?: (id: string) => void;
   onRespond?: (id: string) => void;
   viewerRole: 'client' | 'trade';
+  // Parent-controlled optimistic state — immune to local re-renders
+  isApprovedOptimistically?: boolean;
+  isDeclinedOptimistically?: boolean;
 }
 
 const typeConfig = {
@@ -52,14 +54,18 @@ export function ChangeRequestCard({
   onApprove, 
   onDecline,
   onRespond,
-  viewerRole
+  viewerRole,
+  isApprovedOptimistically = false,
+  isDeclinedOptimistically = false,
 }: ChangeRequestCardProps) {
   const config = typeConfig[request.type];
   const Icon = config.icon;
 
-  // Optimistic decision state — immediately reflects the client's choice
-  // before the server round-trip and refetch complete.
-  const [optimisticDecision, setOptimisticDecision] = useState<'approved' | 'declined' | null>(null);
+  const optimisticDecision = isApprovedOptimistically
+    ? 'approved'
+    : isDeclinedOptimistically
+    ? 'declined'
+    : null;
 
   // Trade can respond to pending client requests (adds costs and sends back)
   const canTradeRespond = viewerRole === 'trade' && 
@@ -76,13 +82,8 @@ export function ChangeRequestCard({
     request.type !== 'client_request' && 
     request.status === 'pending';
 
-  // Combined: can approve if either condition is met (and no optimistic decision yet)
+  // Hide approve/decline buttons once the client has made a decision
   const canApprove = (canClientApproveClientRequest || canClientApproveTradeRequest) && !optimisticDecision;
-
-  // Show the optimistic banner when the client has just tapped Approve/Decline
-  // (before the server confirms and the card re-renders with the new status).
-  const showOptimisticApproved = optimisticDecision === 'approved';
-  const showOptimisticDeclined = optimisticDecision === 'declined';
 
   // Check if this is awaiting the other party's response
   const isAwaitingOtherParty = !optimisticDecision && (
@@ -91,21 +92,11 @@ export function ChangeRequestCard({
     (viewerRole === 'trade' && request.status === 'awaiting_client')
   );
 
-  const handleApprove = (id: string) => {
-    setOptimisticDecision('approved');
-    onApprove?.(id);
-  };
-
-  const handleDecline = (id: string) => {
-    setOptimisticDecision('declined');
-    onDecline?.(id);
-  };
-
   return (
     <Card className={cn(
       "overflow-hidden transition-all duration-200",
       request.status === 'pending' && !optimisticDecision && "ring-2 ring-pending/50",
-      showOptimisticApproved && "ring-2 ring-approved/40"
+      isApprovedOptimistically && "ring-2 ring-approved/40"
     )}>
       <div className="p-4 sm:p-5">
         {/* Header */}
@@ -124,13 +115,13 @@ export function ChangeRequestCard({
           {!optimisticDecision && (
             <StatusBadge status={request.status} viewerRole={viewerRole} />
           )}
-          {showOptimisticApproved && (
+          {isApprovedOptimistically && (
             <Badge variant="success" className="gap-1.5">
               <CheckCircle2 className="w-3.5 h-3.5" />
               Approved
             </Badge>
           )}
-          {showOptimisticDeclined && (
+          {isDeclinedOptimistically && (
             <Badge variant="destructive" className="gap-1.5">
               <X className="w-3.5 h-3.5" />
               Declined
@@ -184,14 +175,14 @@ export function ChangeRequestCard({
           </div>
         </div>
 
-        {/* Date and Resolution Comment */}
+        {/* Date */}
         <p className="text-xs text-muted-foreground mb-2">
           Submitted {format(request.createdAt, 'MMM d, yyyy')}
           {request.resolvedAt && ` • Resolved ${format(request.resolvedAt, 'MMM d, yyyy')}`}
         </p>
 
         {/* Resolution Comment */}
-        {request.resolutionComment && request.status !== 'pending' && (
+        {request.resolutionComment && request.status !== 'pending' && !optimisticDecision && (
           <div className="mb-4 p-3 rounded-lg bg-secondary/50">
             <p className="text-sm text-muted-foreground">
               <span className="font-medium">
@@ -202,8 +193,8 @@ export function ChangeRequestCard({
           </div>
         )}
 
-        {/* Optimistic confirmation banner after client approves */}
-        {showOptimisticApproved && (
+        {/* Optimistic confirmation after client approves */}
+        {isApprovedOptimistically && (
           <div className="pt-3 border-t">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 text-approved">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
@@ -214,8 +205,8 @@ export function ChangeRequestCard({
           </div>
         )}
 
-        {/* Optimistic confirmation banner after client declines */}
-        {showOptimisticDeclined && (
+        {/* Optimistic confirmation after client declines */}
+        {isDeclinedOptimistically && (
           <div className="pt-3 border-t">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
               <X className="w-4 h-4 flex-shrink-0" />
@@ -252,13 +243,13 @@ export function ChangeRequestCard({
           </div>
         )}
 
-        {/* Client can approve/decline */}
+        {/* Client approve/decline — hidden once a decision is made */}
         {canApprove && (
           <div className="flex gap-3 pt-3 border-t">
             <Button 
               variant="approve" 
               className="flex-1"
-              onClick={() => handleApprove(request.id)}
+              onClick={() => onApprove?.(request.id)}
               data-testid={`button-approve-variation-${request.id}`}
             >
               <Check className="w-4 h-4" />
@@ -266,7 +257,7 @@ export function ChangeRequestCard({
             </Button>
             <Button 
               variant="decline"
-              onClick={() => handleDecline(request.id)}
+              onClick={() => onDecline?.(request.id)}
               data-testid={`button-decline-variation-${request.id}`}
             >
               <X className="w-4 h-4" />

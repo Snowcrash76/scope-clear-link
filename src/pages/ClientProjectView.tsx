@@ -45,6 +45,12 @@ export default function ClientProjectView() {
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
 
   // Move useState to top before any conditional returns (React hooks rule)
+  // Tracks IDs that the client has already approved/declined optimistically
+  // (before the server round-trip completes). Stored in the parent so it
+  // survives any child re-renders or reconciliations.
+  const [optimisticApprovedIds, setOptimisticApprovedIds] = useState<Set<string>>(new Set());
+  const [optimisticDeclinedIds, setOptimisticDeclinedIds] = useState<Set<string>>(new Set());
+
   const [approvalModal, setApprovalModal] = useState<{
     isOpen: boolean;
     action: 'approve' | 'decline';
@@ -101,13 +107,12 @@ export default function ClientProjectView() {
     }
   };
 
+  // Approve without a confirmation modal — optimistically hide the button
+  // immediately and fire the update in the background.
   const handleApproveChange = (changeId: string) => {
-    const change = project.changeRequests.find(c => c.id === changeId);
-    setApprovalModal({
-      isOpen: true,
-      action: 'approve',
-      changeId,
-      title: change?.title || 'Variation',
+    setOptimisticApprovedIds(prev => new Set(prev).add(changeId));
+    updateChangeRequestStatus(changeId, 'approved', 'trade').then(success => {
+      if (success) toast.success('Variation approved — your trade has been notified.');
     });
   };
 
@@ -121,15 +126,13 @@ export default function ClientProjectView() {
     });
   };
 
-  const handleConfirmApproval = async (comment: string) => {
-    const { action, changeId } = approvalModal;
-    const success = await updateChangeRequestStatus(changeId, action === 'approve' ? 'approved' : 'declined', 'trade', comment);
-    if (success) {
-      toast.success(action === 'approve' 
-        ? 'Variation approved! Your trade has been notified.' 
-        : 'Variation declined. Your trade has been notified.');
-    }
-    setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' });
+  // Only used for decline confirmations now (approve is direct).
+  const handleConfirmDecline = async (comment: string) => {
+    const { changeId } = approvalModal;
+    setOptimisticDeclinedIds(prev => new Set(prev).add(changeId));
+    setApprovalModal({ isOpen: false, action: 'decline', changeId: '', title: '' });
+    const success = await updateChangeRequestStatus(changeId, 'declined', 'trade', comment);
+    if (success) toast.success('Variation declined — your trade has been notified.');
   };
 
   const handleRequestChange = async (description: string, imageUrl?: string) => {
@@ -490,6 +493,8 @@ export default function ClientProjectView() {
                     viewerRole="client"
                     onApprove={handleApproveChange}
                     onDecline={handleDeclineChange}
+                    isApprovedOptimistically={optimisticApprovedIds.has(request.id)}
+                    isDeclinedOptimistically={optimisticDeclinedIds.has(request.id)}
                   />
                 ))}
               </div>
@@ -665,7 +670,7 @@ export default function ClientProjectView() {
       <ApprovalModal
         isOpen={approvalModal.isOpen}
         onClose={() => setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' })}
-        onConfirm={handleConfirmApproval}
+        onConfirm={handleConfirmDecline}
         action={approvalModal.action}
         title={approvalModal.title}
       />
