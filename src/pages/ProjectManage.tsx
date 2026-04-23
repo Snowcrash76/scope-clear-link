@@ -381,10 +381,19 @@ export default function ProjectManage() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link to={`/project/${project.id}`} target="_blank">
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        window.open(
+                          `${window.location.origin}/project/${project.id}`,
+                          '_blank',
+                          'noopener,noreferrer'
+                        )
+                      }
+                      data-testid="button-preview-client-page"
+                    >
+                      <ExternalLink className="w-4 h-4" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
