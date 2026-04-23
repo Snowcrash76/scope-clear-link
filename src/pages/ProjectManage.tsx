@@ -55,7 +55,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getClientProjectUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -303,7 +303,7 @@ export default function ProjectManage() {
   };
 
   const handleCopyClientLink = () => {
-    const link = `${window.location.origin}/project/${project.id}`;
+    const link = getClientProjectUrl(project.id);
     navigator.clipboard.writeText(link);
     toast.success('Client page link copied!', {
       description: 'Share with your client for full transparency.'
@@ -311,7 +311,7 @@ export default function ProjectManage() {
   };
 
   const handleSendInvite = () => {
-    const link = `${window.location.origin}/project/${project.id}`;
+    const link = getClientProjectUrl(project.id);
     navigator.clipboard.writeText(link);
     toast.success('Invite sent', {
       description: `${project.clientName} has been invited to ${project.name}.`,
@@ -384,9 +384,26 @@ export default function ProjectManage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      onClick={handleCopyClientLink}
+                      data-testid="button-copy-client-link"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy preview link</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={() =>
                         window.open(
-                          `${window.location.origin}/project/${project.id}`,
+                          getClientProjectUrl(project.id),
                           '_blank',
                           'noopener,noreferrer'
                         )
