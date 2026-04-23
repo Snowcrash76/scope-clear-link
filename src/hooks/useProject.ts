@@ -485,27 +485,37 @@ export function useProject(projectId: string | undefined) {
 
       // When a change is approved, fold it into the agreed scope and active quote
       // so the project's scope of work and quote total stay in sync with reality.
+      // This requires the user to be authenticated (project owner) — unauthenticated
+      // client approvals skip this step silently; the trade's next open will be correct.
       if (status === 'approved' && changeRequest && projectId) {
-        try {
-          await applyApprovedChangeToScopeAndQuote(projectId, changeRequest);
-        } catch (applyError) {
-          console.error('Error applying approved change to scope/quote:', applyError);
-          toast.error('Approved, but failed to update scope/quote automatically');
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          try {
+            await applyApprovedChangeToScopeAndQuote(projectId, changeRequest);
+          } catch (applyError) {
+            console.error('Error applying approved change to scope/quote:', applyError);
+            toast.error('Approved, but failed to update scope/quote automatically');
+          }
         }
       }
 
       if (changeRequest && projectId) {
-        // Send email notification to the original requester
-        await sendChangeNotification(
-          projectId,
-          requestId,
-          status,
-          recipientType,
-          changeRequest.title,
-          changeRequest.description,
-          changeRequest.costImpact,
-          changeRequest.timeImpact?.toString()
-        );
+        // Send email notification — wrap so a delivery failure doesn't block
+        // the approval from completing successfully from the user's point of view.
+        try {
+          await sendChangeNotification(
+            projectId,
+            requestId,
+            status,
+            recipientType,
+            changeRequest.title,
+            changeRequest.description,
+            changeRequest.costImpact,
+            changeRequest.timeImpact?.toString()
+          );
+        } catch (notifyError) {
+          console.warn('Notification failed (non-blocking):', notifyError);
+        }
       }
 
       // Refetch so scope items, change requests and totals all stay consistent
@@ -546,7 +556,7 @@ export function useProject(projectId: string | undefined) {
         category: 'included',
         image_url: changeRequest.imageUrl || null,
         image_urls: changeRequest.imageUrl ? [changeRequest.imageUrl] : [],
-        cost: cost || null,
+        cost: cost > 0 ? cost : null,
       });
     if (scopeErr) throw scopeErr;
 
