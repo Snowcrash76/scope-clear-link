@@ -74,10 +74,11 @@ export default function TradeDashboard() {
     defaultTerms: '',
     defaultPaymentInstructions: '',
   });
-  const [logoStoragePath, setLogoStoragePath] = useState<string>('');
-  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>('');
-  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
-  const [pendingLogoPreview, setPendingLogoPreview] = useState<string>('');
+  // logoDataUrl holds the current saved base64 logo (or empty string)
+  const [logoDataUrl, setLogoDataUrl] = useState<string>('');
+  // pendingLogoDataUrl holds a newly selected logo not yet saved
+  const [pendingLogoDataUrl, setPendingLogoDataUrl] = useState<string>('');
+  const [removeLogo, setRemoveLogo] = useState(false);
 
   const loadSettings = async () => {
     if (!user?.id) return;
@@ -98,16 +99,9 @@ export default function TradeDashboard() {
       defaultTerms: data.default_terms || '',
       defaultPaymentInstructions: data.default_payment_instructions || '',
     });
-    const logoPath = (data as any).logo_url || '';
-    setLogoStoragePath(logoPath);
-    if (logoPath) {
-      const { data: signedData } = await supabase.storage
-        .from('scope-images')
-        .createSignedUrl(logoPath, 3600);
-      if (signedData?.signedUrl) setLogoPreviewUrl(signedData.signedUrl);
-    } else {
-      setLogoPreviewUrl('');
-    }
+    const stored = (data as any).logo_url || '';
+    // Support both legacy storage paths (no data: prefix) and new base64 data URLs
+    setLogoDataUrl(stored.startsWith('data:') ? stored : '');
   };
 
   useEffect(() => {
@@ -121,20 +115,22 @@ export default function TradeDashboard() {
       toast.error('Please select an image file');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo must be under 2 MB');
+    if (file.size > 1 * 1024 * 1024) {
+      toast.error('Logo must be under 1 MB');
       return;
     }
-    setPendingLogoFile(file);
-    const objectUrl = URL.createObjectURL(file);
-    setPendingLogoPreview(objectUrl);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPendingLogoDataUrl(reader.result as string);
+      setRemoveLogo(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleRemoveLogo = () => {
-    setPendingLogoFile(null);
-    setPendingLogoPreview('');
-    setLogoStoragePath('');
-    setLogoPreviewUrl('');
+    setPendingLogoDataUrl('');
+    setRemoveLogo(true);
+    setLogoDataUrl('');
     if (logoInputRef.current) logoInputRef.current.value = '';
   };
 
@@ -142,19 +138,7 @@ export default function TradeDashboard() {
     if (!user?.id) return;
     setSaving(true);
     try {
-      let newLogoPath = logoStoragePath;
-
-      if (pendingLogoFile) {
-        const ext = pendingLogoFile.name.split('.').pop() || 'png';
-        const uploadPath = `logos/${user.id}/logo.${ext}`;
-        const { error: uploadError } = await supabase.storage
-          .from('scope-images')
-          .upload(uploadPath, pendingLogoFile, { upsert: true });
-        if (uploadError) throw uploadError;
-        newLogoPath = uploadPath;
-      } else if (!logoPreviewUrl && !pendingLogoPreview) {
-        newLogoPath = '';
-      }
+      const newLogoUrl = removeLogo ? null : (pendingLogoDataUrl || logoDataUrl || null);
 
       const { error } = await supabase
         .from('profiles')
@@ -167,15 +151,15 @@ export default function TradeDashboard() {
           website: settingsForm.website || null,
           default_terms: settingsForm.defaultTerms || null,
           default_payment_instructions: settingsForm.defaultPaymentInstructions || null,
-          logo_url: newLogoPath || null,
+          logo_url: newLogoUrl,
         } as any)
         .eq('user_id', user.id);
 
       if (error) throw error;
 
       toast.success('Settings saved');
-      setPendingLogoFile(null);
-      setPendingLogoPreview('');
+      setPendingLogoDataUrl('');
+      setRemoveLogo(false);
       setIsSettingsOpen(false);
       await loadSettings();
     } catch (error) {
@@ -428,10 +412,10 @@ export default function TradeDashboard() {
                 Business Logo
               </h3>
               <div className="flex items-start gap-4">
-                {(pendingLogoPreview || logoPreviewUrl) ? (
+                {(pendingLogoDataUrl || logoDataUrl) ? (
                   <div className="relative">
                     <img
-                      src={pendingLogoPreview || logoPreviewUrl}
+                      src={pendingLogoDataUrl || logoDataUrl}
                       alt="Business logo"
                       className="h-20 max-w-[160px] object-contain rounded border bg-muted/30 p-1"
                     />
@@ -458,10 +442,10 @@ export default function TradeDashboard() {
                     onClick={() => logoInputRef.current?.click()}
                   >
                     <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
-                    {pendingLogoPreview || logoPreviewUrl ? 'Change logo' : 'Choose file'}
+                    {pendingLogoDataUrl || logoDataUrl ? 'Change logo' : 'Choose file'}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    PNG or JPG, max 2 MB. Appears on quotes and invoices.
+                    PNG or JPG, max 1 MB. Appears on quotes and invoices.
                   </p>
                   <input
                     ref={logoInputRef}

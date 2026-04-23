@@ -158,13 +158,9 @@ export default function ProjectManage() {
         setDefaultPaymentInstructions(profile.default_payment_instructions);
       }
 
-      let logoUrl = '';
-      if ((profile as any)?.logo_url) {
-        const { data: signedData } = await supabase.storage
-          .from('scope-images')
-          .createSignedUrl((profile as any).logo_url, 60 * 60);
-        if (signedData?.signedUrl) logoUrl = signedData.signedUrl;
-      }
+      // logo_url is stored as a base64 data URL directly in the profile
+      const storedLogo = (profile as any)?.logo_url || '';
+      const logoUrl = storedLogo.startsWith('data:') ? storedLogo : '';
 
       setTradeProfileInfo({
         address: (profile as any)?.business_address || '',

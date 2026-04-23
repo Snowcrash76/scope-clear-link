@@ -28,15 +28,21 @@ interface LoadedLogo {
 
 async function loadLogoForPDF(url: string): Promise<LoadedLogo | null> {
   try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    const base64 = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
+    let base64 = url;
+
+    // If it's not already a data URL, fetch and convert
+    if (!url.startsWith('data:')) {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+
     const { naturalW, naturalH } = await new Promise<{ naturalW: number; naturalH: number }>((resolve) => {
       const img = new Image();
       img.onload = () => resolve({ naturalW: img.naturalWidth, naturalH: img.naturalHeight });
