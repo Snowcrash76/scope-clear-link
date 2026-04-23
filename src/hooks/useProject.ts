@@ -482,7 +482,18 @@ export function useProject(projectId: string | undefined) {
 
       // Find the change request to get its details for the notification
       const changeRequest = project?.changeRequests.find(cr => cr.id === requestId);
-      
+
+      // When a change is approved, fold it into the agreed scope and active quote
+      // so the project's scope of work and quote total stay in sync with reality.
+      if (status === 'approved' && changeRequest && projectId) {
+        try {
+          await applyApprovedChangeToScopeAndQuote(projectId, changeRequest);
+        } catch (applyError) {
+          console.error('Error applying approved change to scope/quote:', applyError);
+          toast.error('Approved, but failed to update scope/quote automatically');
+        }
+      }
+
       if (changeRequest && projectId) {
         // Send email notification to the original requester
         await sendChangeNotification(
@@ -497,21 +508,108 @@ export function useProject(projectId: string | undefined) {
         );
       }
 
-      setProject(prev => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          changeRequests: prev.changeRequests.map(req =>
-            req.id === requestId ? { ...req, status, resolvedAt: new Date(), resolutionComment: comment } : req
-          ),
-        };
-      });
+      // Refetch so scope items, change requests and totals all stay consistent
+      await fetchProject();
       return true;
     } catch (error) {
       console.error('Error updating change request:', error);
       toast.error('Failed to update change request');
       return false;
     }
+  };
+
+  // Adds the approved change as a new included scope item and a new quote
+  // line item on the project's active quote, then recalculates the quote totals.
+  const applyApprovedChangeToScopeAndQuote = async (
+    pid: string,
+    changeRequest: ChangeRequest
+  ) => {
+    const cost = Number(changeRequest.costImpact) || 0;
+    const titlePrefix = 'Change: ';
+    const scopeTitle = `${titlePrefix}${changeRequest.title}`;
+    const descriptionParts = [changeRequest.description];
+    if (changeRequest.timeImpact) {
+      descriptionParts.push(`Time impact: ${changeRequest.timeImpact} day(s).`);
+    }
+    if (changeRequest.reason) {
+      descriptionParts.push(`Reason: ${changeRequest.reason}`);
+    }
+    const scopeDescription = descriptionParts.filter(Boolean).join('\n\n');
+
+    // 1. Add an "included" scope item so the agreed scope reflects the change
+    const { error: scopeErr } = await supabase
+      .from('scope_items')
+      .insert({
+        project_id: pid,
+        title: scopeTitle,
+        description: scopeDescription,
+        category: 'included',
+        image_url: changeRequest.imageUrl || null,
+        image_urls: changeRequest.imageUrl ? [changeRequest.imageUrl] : [],
+        cost: cost || null,
+      });
+    if (scopeErr) throw scopeErr;
+
+    // 2. Find the active quote for this project (if any) and append a line item
+    const { data: projectRow, error: projectErr } = await supabase
+      .from('projects')
+      .select('active_quote_id')
+      .eq('id', pid)
+      .single();
+    if (projectErr) throw projectErr;
+    const activeQuoteId: string | null = projectRow?.active_quote_id || null;
+    if (!activeQuoteId) return;
+
+    const { data: existingItems, error: itemsErr } = await supabase
+      .from('quote_line_items')
+      .select('sort_order')
+      .eq('quote_id', activeQuoteId)
+      .order('sort_order', { ascending: false })
+      .limit(1);
+    if (itemsErr) throw itemsErr;
+    const nextSortOrder = (existingItems?.[0]?.sort_order ?? -1) + 1;
+
+    const { error: lineErr } = await supabase
+      .from('quote_line_items')
+      .insert({
+        quote_id: activeQuoteId,
+        title: scopeTitle,
+        description: changeRequest.description || null,
+        cost,
+        sort_order: nextSortOrder,
+      });
+    if (lineErr) throw lineErr;
+
+    // 3. Recalculate quote totals from the full set of line items
+    const { data: quoteRow, error: quoteErr } = await supabase
+      .from('quotes')
+      .select('tax_rate')
+      .eq('id', activeQuoteId)
+      .single();
+    if (quoteErr) throw quoteErr;
+    const taxRate = Number(quoteRow?.tax_rate) || 0;
+
+    const { data: allItems, error: allItemsErr } = await supabase
+      .from('quote_line_items')
+      .select('cost')
+      .eq('quote_id', activeQuoteId);
+    if (allItemsErr) throw allItemsErr;
+    const newSubtotal = (allItems || []).reduce(
+      (sum, it: { cost: number | null }) => sum + (Number(it.cost) || 0),
+      0
+    );
+    const newTaxAmount = newSubtotal * (taxRate / 100);
+    const newTotal = newSubtotal + newTaxAmount;
+
+    const { error: updateQuoteErr } = await supabase
+      .from('quotes')
+      .update({
+        subtotal: newSubtotal,
+        tax_amount: newTaxAmount,
+        total: newTotal,
+      })
+      .eq('id', activeQuoteId);
+    if (updateQuoteErr) throw updateQuoteErr;
   };
 
   // Trade responds to a client request with cost/time details
