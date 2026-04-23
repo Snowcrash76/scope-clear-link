@@ -668,23 +668,7 @@ export default function ProjectManage() {
               </Card>
             )}
 
-            {pendingClientRequests.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                  Client Requests - Needs Your Response ({pendingClientRequests.length})
-                </h3>
-                {pendingClientRequests.map((request) => (
-                  <ChangeRequestCard
-                    key={request.id}
-                    request={request}
-                    viewerRole="trade"
-                    onRespond={handleRespondToClient}
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Respond to Client Modal */}
+            {/* Respond to Client Modal — always present, controlled by state */}
             <RespondToClientModal
               isOpen={!!respondingToRequest}
               onClose={() => setRespondingToRequest(null)}
@@ -692,46 +676,7 @@ export default function ProjectManage() {
               onSubmit={handleSubmitResponse}
             />
 
-            {pendingTradeRequests.length > 0 && (
-              <div className="space-y-4">
-                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                  Awaiting Client Response ({pendingTradeRequests.length})
-                </h3>
-                {pendingTradeRequests.map((request) => (
-                  <ChangeRequestItem 
-                    key={request.id} 
-                    request={request} 
-                    onEdit={() => setEditingChangeRequest(request)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {resolvedChanges.length > 0 && (
-              <div className="space-y-4">
-                {recentlyResolvedChanges.length > 0 && (
-                  <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 border border-approved/20">
-                    <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
-                    <p className="text-sm text-approved font-medium">
-                      {recentlyResolvedChanges.length} variation{recentlyResolvedChanges.length > 1 ? 's' : ''} resolved in the last 72 hours — both parties have been notified by email.
-                    </p>
-                  </div>
-                )}
-                <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-                  Resolved ({resolvedChanges.length})
-                </h3>
-                {resolvedChanges.map((request) => (
-                  <ChangeRequestItem 
-                    key={request.id} 
-                    request={request} 
-                    onEdit={() => setEditingChangeRequest(request)}
-                    isNew={recentlyResolvedChanges.some(r => r.id === request.id)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {project.changeRequests.length === 0 && pendingClientRequests.length === 0 && pendingTradeRequests.length === 0 && (
+            {project.changeRequests.length === 0 ? (
               <Card className="p-12 text-center">
                 <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-4">No variations yet</p>
@@ -740,6 +685,77 @@ export default function ProjectManage() {
                   Send First Variation
                 </Button>
               </Card>
+            ) : (
+              <div className="space-y-8">
+                {/* AWAITING RESPONSE — everything not yet approved */}
+                {(pendingClientRequests.length > 0 || pendingTradeRequests.length > 0 || resolvedChanges.filter(cr => cr.status === 'declined').length > 0) && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-semibold text-base">Awaiting Response</h3>
+                      <span className="text-xs font-medium bg-pending/15 text-pending-foreground px-2 py-0.5 rounded-full">
+                        {pendingClientRequests.length + pendingTradeRequests.length + resolvedChanges.filter(cr => cr.status === 'declined').length}
+                      </span>
+                    </div>
+
+                    {/* Client requests needing trade response */}
+                    {pendingClientRequests.map((request) => (
+                      <ChangeRequestCard
+                        key={request.id}
+                        request={request}
+                        viewerRole="trade"
+                        onRespond={handleRespondToClient}
+                      />
+                    ))}
+
+                    {/* Trade requests awaiting client */}
+                    {pendingTradeRequests.map((request) => (
+                      <ChangeRequestItem
+                        key={request.id}
+                        request={request}
+                        onEdit={() => setEditingChangeRequest(request)}
+                      />
+                    ))}
+
+                    {/* Declined — need renegotiation */}
+                    {resolvedChanges.filter(cr => cr.status === 'declined').map((request) => (
+                      <ChangeRequestItem
+                        key={request.id}
+                        request={request}
+                        onEdit={() => setEditingChangeRequest(request)}
+                        isNew={recentlyResolvedChanges.some(r => r.id === request.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* APPROVED */}
+                {resolvedChanges.filter(cr => cr.status === 'approved').length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-semibold text-base">Approved</h3>
+                      <span className="text-xs font-medium bg-approved/15 text-approved px-2 py-0.5 rounded-full">
+                        {resolvedChanges.filter(cr => cr.status === 'approved').length}
+                      </span>
+                    </div>
+                    {recentlyResolvedChanges.filter(cr => cr.status === 'approved').length > 0 && (
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 border border-approved/20">
+                        <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
+                        <p className="text-sm text-approved font-medium">
+                          {recentlyResolvedChanges.filter(cr => cr.status === 'approved').length} variation{recentlyResolvedChanges.filter(cr => cr.status === 'approved').length > 1 ? 's' : ''} approved in the last 72 hours — both parties notified by email.
+                        </p>
+                      </div>
+                    )}
+                    {resolvedChanges.filter(cr => cr.status === 'approved').map((request) => (
+                      <ChangeRequestItem
+                        key={request.id}
+                        request={request}
+                        onEdit={() => setEditingChangeRequest(request)}
+                        isNew={recentlyResolvedChanges.some(r => r.id === request.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </TabsContent>
 
@@ -969,10 +985,10 @@ function ChangeRequestItem({ request, onEdit, isNew }: { request: ChangeRequest;
         </div>
       )}
 
-      {/* Client's resolution comment */}
-      {request.resolutionComment && request.status !== 'pending' && (
-        <div className="mb-3 p-3 rounded-lg bg-secondary/50">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+      {/* Client's comment on this variation */}
+      {request.resolutionComment && request.status !== 'pending' && request.status !== 'awaiting_client' && (
+        <div className="mb-3 p-3 rounded-lg bg-secondary/60 border border-border/50">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
             Client's comment
           </p>
           <p className="text-sm">{request.resolutionComment}</p>

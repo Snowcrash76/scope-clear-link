@@ -524,22 +524,58 @@ export default function ClientProjectView() {
                 <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No changes requested yet.</p>
               </Card>
-            ) : (
-              <div className="space-y-4">
-                {project.changeRequests.map(request => (
-                  <ChangeRequestCard
-                    key={request.id}
-                    request={request}
-                    viewerRole="client"
-                    onApprove={handleApproveChange}
-                    onDecline={handleDeclineChange}
-                    isApprovedOptimistically={optimisticApprovedIds.has(request.id)}
-                    isDeclinedOptimistically={optimisticDeclinedIds.has(request.id)}
-                    optimisticComment={optimisticDeclinedComments.get(request.id)}
-                  />
-                ))}
-              </div>
-            )}
+            ) : (() => {
+              // Split into two sections
+              const awaitingChanges = project.changeRequests.filter(
+                cr => !optimisticApprovedIds.has(cr.id) && !optimisticDeclinedIds.has(cr.id)
+                  ? cr.status !== 'approved'
+                  : optimisticApprovedIds.has(cr.id) ? false : true
+              );
+              const approvedChanges = project.changeRequests.filter(
+                cr => optimisticApprovedIds.has(cr.id) || cr.status === 'approved'
+              );
+
+              const renderCard = (request: typeof project.changeRequests[0]) => (
+                <ChangeRequestCard
+                  key={request.id}
+                  request={request}
+                  viewerRole="client"
+                  onApprove={handleApproveChange}
+                  onDecline={handleDeclineChange}
+                  isApprovedOptimistically={optimisticApprovedIds.has(request.id)}
+                  isDeclinedOptimistically={optimisticDeclinedIds.has(request.id)}
+                  optimisticComment={optimisticDeclinedComments.get(request.id)}
+                />
+              );
+
+              return (
+                <div className="space-y-8">
+                  {awaitingChanges.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-heading font-semibold text-base">Awaiting Response</h3>
+                        <span className="text-xs font-medium bg-pending/15 text-pending-foreground px-2 py-0.5 rounded-full">
+                          {awaitingChanges.length}
+                        </span>
+                      </div>
+                      {awaitingChanges.map(renderCard)}
+                    </div>
+                  )}
+
+                  {approvedChanges.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-heading font-semibold text-base">Approved</h3>
+                        <span className="text-xs font-medium bg-approved/15 text-approved px-2 py-0.5 rounded-full">
+                          {approvedChanges.length}
+                        </span>
+                      </div>
+                      {approvedChanges.map(renderCard)}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* Invoices Tab */}

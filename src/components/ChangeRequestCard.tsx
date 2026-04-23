@@ -200,15 +200,13 @@ export function ChangeRequestCard({
           {request.resolvedAt && ` • Resolved ${format(request.resolvedAt, 'MMM d, yyyy')}`}
         </p>
 
-        {/* Resolution Comment */}
-        {request.resolutionComment && request.status !== 'pending' && !optimisticDecision && (
-          <div className="mb-4 p-3 rounded-lg bg-secondary/50">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium">
-                {request.status === 'approved' ? 'Approval' : 'Decline'} comment:
-              </span>{' '}
-              {request.resolutionComment}
+        {/* Client's comment on this variation */}
+        {request.resolutionComment && request.status !== 'pending' && request.status !== 'awaiting_client' && !optimisticDecision && (
+          <div className="mb-4 p-3 rounded-lg bg-secondary/60 border border-border/50">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+              Client's comment
             </p>
+            <p className="text-sm">{request.resolutionComment}</p>
           </div>
         )}
 
