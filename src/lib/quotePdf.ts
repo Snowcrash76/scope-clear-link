@@ -99,12 +99,12 @@ export function generateQuotePDF(
     doc.text(project.tradeWebsite, pageWidth - margin, rightColY, { align: 'right' });
   }
 
-  yPos = 45;
+  // Push yPos below the tallest header element (logo block or title)
+  yPos = Math.max(45, rightColY + 6);
 
-  // Three column section
+  // Two column section (client details + quote meta)
   const col1X = margin;
-  const col2X = pageWidth / 3 + 10;
-  const col3X = (pageWidth * 2) / 3;
+  const col2X = pageWidth / 2;
 
   // Column 1: Client details
   doc.setTextColor(...textColor);
@@ -116,7 +116,7 @@ export function generateQuotePDF(
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
   if (project.clientAddress) {
-    const addressLines = doc.splitTextToSize(project.clientAddress, 55);
+    const addressLines = doc.splitTextToSize(project.clientAddress, 80);
     doc.text(addressLines, col1X, yPos + 5);
   }
 
@@ -128,43 +128,23 @@ export function generateQuotePDF(
   const createdDate = quote.createdAt instanceof Date ? quote.createdAt : new Date(quote.createdAt);
   doc.text('Date', col2X, col2Y);
   doc.setTextColor(...textColor);
-  doc.text(format(createdDate, 'd MMM yyyy'), col2X + 30, col2Y);
+  doc.text(format(createdDate, 'd MMM yyyy'), col2X + 35, col2Y);
   
   col2Y += 5;
   doc.setTextColor(...mutedColor);
   doc.text('Quote Number', col2X, col2Y);
   doc.setTextColor(...textColor);
-  doc.text(quote.quoteNumber, col2X + 30, col2Y);
+  doc.text(quote.quoteNumber, col2X + 35, col2Y);
   
   if (project.abn) {
     col2Y += 5;
     doc.setTextColor(...mutedColor);
     doc.text('ABN', col2X, col2Y);
     doc.setTextColor(...textColor);
-    doc.text(project.abn, col2X + 30, col2Y);
+    doc.text(project.abn, col2X + 35, col2Y);
   }
 
-  // Column 3: Business contact
-  let col3Y = yPos;
-  doc.setTextColor(...textColor);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  if (project.tradeBusinessName) {
-    doc.text(project.tradeBusinessName, col3X, col3Y);
-    col3Y += 5;
-  }
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...mutedColor);
-  if (project.tradeAddress) {
-    const addrLines = doc.splitTextToSize(project.tradeAddress, 55);
-    doc.text(addrLines, col3X, col3Y);
-    col3Y += addrLines.length * 4;
-  }
-  if (project.tradePhone) {
-    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y);
-  }
-
-  yPos = 75;
+  yPos = Math.max(75, rightColY + 15);
 
   // Horizontal line
   doc.setDrawColor(...lineColor);
