@@ -30,7 +30,6 @@ interface QuoteLineItem {
 interface CreateJobModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultTerms?: string;
   onCreateJob: (job: {
     name: string;
     clientName: string;
@@ -45,9 +44,7 @@ interface CreateJobModalProps {
   }) => void;
 }
 
-const DEFAULT_TERMS = 'Payment terms: 50% deposit required to commence work. Balance due on completion.';
-
-export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultTerms }: CreateJobModalProps) {
+export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobModalProps) {
   const [step, setStep] = useState(1);
   
   // Step 1: Job Details
@@ -68,7 +65,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultTerms }
   const [taxRate, setTaxRate] = useState(10); // Default 10% GST
   const [validUntil, setValidUntil] = useState<Date | undefined>(addDays(new Date(), 30));
   const [notes, setNotes] = useState('');
-  const [terms, setTerms] = useState(defaultTerms || DEFAULT_TERMS);
+  const [terms, setTerms] = useState('');
 
   const resetForm = () => {
     setStep(1);
@@ -87,7 +84,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultTerms }
     setTaxRate(10);
     setValidUntil(addDays(new Date(), 30));
     setNotes('');
-    setTerms(defaultTerms || DEFAULT_TERMS);
+    setTerms('');
   };
 
   const handleClose = () => {

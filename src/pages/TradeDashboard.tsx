@@ -324,7 +324,6 @@ export default function TradeDashboard() {
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         onCreateJob={handleCreateJob}
-        defaultTerms={defaultTerms}
       />
 
       {/* Settings Modal */}
@@ -333,16 +332,16 @@ export default function TradeDashboard() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-primary" />
-              Quote Settings
+              Invoice Settings
             </DialogTitle>
             <DialogDescription>
-              Set your default terms and conditions for new quotes.
+              Set your default terms and payment instructions for new invoices.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="defaultTerms">Default Terms & Conditions</Label>
+              <Label htmlFor="defaultTerms">Default Invoice Terms & Conditions</Label>
               <Textarea
                 id="defaultTerms"
                 placeholder="Payment terms, warranty, etc."
@@ -351,7 +350,7 @@ export default function TradeDashboard() {
                 className="min-h-[120px]"
               />
               <p className="text-xs text-muted-foreground">
-                Pre-filled on all new quotes.
+                Pre-filled on all new invoices.
               </p>
             </div>
             
