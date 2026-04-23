@@ -9,6 +9,10 @@ interface Profile {
   contact_name: string;
   email: string;
   phone: string | null;
+  logo_url: string | null;
+  business_address: string | null;
+  abn: string | null;
+  website: string | null;
 }
 
 interface AuthContextType {

@@ -36,6 +36,11 @@ interface QuoteSectionProps {
   projectName?: string;
   tradeBusinessName?: string;
   tradeName?: string;
+  tradeAddress?: string;
+  tradePhone?: string;
+  tradeWebsite?: string;
+  tradeAbn?: string;
+  logoUrl?: string;
   // Quote line items (custom items added directly to quote)
   quoteLineItems?: QuoteLineItem[];
   onAddLineItem?: (item: { title: string; description?: string; cost: number }) => Promise<string | null>;
@@ -69,6 +74,11 @@ export function QuoteSection({
   projectName = '',
   tradeBusinessName = '',
   tradeName = '',
+  tradeAddress = '',
+  tradePhone = '',
+  tradeWebsite = '',
+  tradeAbn = '',
+  logoUrl = '',
   quoteLineItems = [],
   onAddLineItem,
   onUpdateLineItem,
@@ -245,6 +255,11 @@ export function QuoteSection({
     clientEmail,
     tradeBusinessName,
     tradeName,
+    tradeAddress: tradeAddress || undefined,
+    tradePhone: tradePhone || undefined,
+    tradeWebsite: tradeWebsite || undefined,
+    abn: tradeAbn || undefined,
+    logoUrl: logoUrl || undefined,
   };
 
   const statusConfig = {

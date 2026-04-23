@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 import { ProjectCard } from '@/components/ProjectCard';
 import { ProjectCardSkeletonGrid } from '@/components/ProjectCardSkeleton';
 import { DashboardStats } from '@/components/DashboardStats';
@@ -22,7 +23,16 @@ import {
   Loader2,
   Settings,
   FileText,
-  Save
+  Save,
+  UploadCloud,
+  X,
+  Building2,
+  Phone,
+  Globe,
+  Hash,
+  MapPin,
+  User,
+  Mail
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -49,56 +59,130 @@ export default function TradeDashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [defaultTerms, setDefaultTerms] = useState('');
-  const [editingTerms, setEditingTerms] = useState('');
-  const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState('');
-  const [editingPaymentInstructions, setEditingPaymentInstructions] = useState('');
-  const [savingTerms, setSavingTerms] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch default terms and payment instructions from profile
+  // Settings form state
+  const [settingsForm, setSettingsForm] = useState({
+    businessName: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    businessAddress: '',
+    abn: '',
+    website: '',
+    defaultTerms: '',
+    defaultPaymentInstructions: '',
+  });
+  const [logoStoragePath, setLogoStoragePath] = useState<string>('');
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string>('');
+  const [pendingLogoFile, setPendingLogoFile] = useState<File | null>(null);
+  const [pendingLogoPreview, setPendingLogoPreview] = useState<string>('');
+
+  const loadSettings = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from('profiles')
+      .select('business_name, contact_name, email, phone, business_address, abn, website, default_terms, default_payment_instructions, logo_url')
+      .eq('user_id', user.id)
+      .single();
+    if (!data) return;
+    setSettingsForm({
+      businessName: data.business_name || '',
+      contactName: data.contact_name || '',
+      email: data.email || '',
+      phone: data.phone || '',
+      businessAddress: (data as any).business_address || '',
+      abn: (data as any).abn || '',
+      website: (data as any).website || '',
+      defaultTerms: data.default_terms || '',
+      defaultPaymentInstructions: data.default_payment_instructions || '',
+    });
+    const logoPath = (data as any).logo_url || '';
+    setLogoStoragePath(logoPath);
+    if (logoPath) {
+      const { data: signedData } = await supabase.storage
+        .from('scope-images')
+        .createSignedUrl(logoPath, 3600);
+      if (signedData?.signedUrl) setLogoPreviewUrl(signedData.signedUrl);
+    } else {
+      setLogoPreviewUrl('');
+    }
+  };
+
   useEffect(() => {
-    const fetchDefaults = async () => {
-      if (!user?.id) return;
-      const { data } = await supabase
-        .from('profiles')
-        .select('default_terms, default_payment_instructions')
-        .eq('user_id', user.id)
-        .single();
-      if (data?.default_terms) {
-        setDefaultTerms(data.default_terms);
-        setEditingTerms(data.default_terms);
-      }
-      if (data?.default_payment_instructions) {
-        setDefaultPaymentInstructions(data.default_payment_instructions);
-        setEditingPaymentInstructions(data.default_payment_instructions);
-      }
-    };
-    fetchDefaults();
+    loadSettings();
   }, [user?.id]);
+
+  const handleLogoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be under 2 MB');
+      return;
+    }
+    setPendingLogoFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPendingLogoPreview(objectUrl);
+  };
+
+  const handleRemoveLogo = () => {
+    setPendingLogoFile(null);
+    setPendingLogoPreview('');
+    setLogoStoragePath('');
+    setLogoPreviewUrl('');
+    if (logoInputRef.current) logoInputRef.current.value = '';
+  };
 
   const handleSaveSettings = async () => {
     if (!user?.id) return;
-    setSavingTerms(true);
+    setSaving(true);
     try {
+      let newLogoPath = logoStoragePath;
+
+      if (pendingLogoFile) {
+        const ext = pendingLogoFile.name.split('.').pop() || 'png';
+        const uploadPath = `logos/${user.id}/logo.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('scope-images')
+          .upload(uploadPath, pendingLogoFile, { upsert: true });
+        if (uploadError) throw uploadError;
+        newLogoPath = uploadPath;
+      } else if (!logoPreviewUrl && !pendingLogoPreview) {
+        newLogoPath = '';
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({ 
-          default_terms: editingTerms,
-          default_payment_instructions: editingPaymentInstructions,
-        })
+        .update({
+          business_name: settingsForm.businessName,
+          contact_name: settingsForm.contactName,
+          phone: settingsForm.phone || null,
+          business_address: settingsForm.businessAddress || null,
+          abn: settingsForm.abn || null,
+          website: settingsForm.website || null,
+          default_terms: settingsForm.defaultTerms || null,
+          default_payment_instructions: settingsForm.defaultPaymentInstructions || null,
+          logo_url: newLogoPath || null,
+        } as any)
         .eq('user_id', user.id);
-      
+
       if (error) throw error;
-      
-      setDefaultTerms(editingTerms);
-      setDefaultPaymentInstructions(editingPaymentInstructions);
+
       toast.success('Settings saved');
+      setPendingLogoFile(null);
+      setPendingLogoPreview('');
       setIsSettingsOpen(false);
+      await loadSettings();
     } catch (error) {
       console.error('Error saving settings:', error);
       toast.error('Failed to save settings');
     } finally {
-      setSavingTerms(false);
+      setSaving(false);
     }
   };
 
@@ -194,12 +278,9 @@ export default function TradeDashboard() {
                     <p className="text-xs text-muted-foreground">{profile?.email}</p>
                   </div>
                 <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {
-                    setEditingTerms(defaultTerms);
-                    setIsSettingsOpen(true);
-                  }}>
+                  <DropdownMenuItem onClick={() => setIsSettingsOpen(true)}>
                     <Settings className="w-4 h-4 mr-2" />
-                    Quote Settings
+                    Business Settings
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
                     <LogOut className="w-4 h-4 mr-2" />
@@ -328,53 +409,198 @@ export default function TradeDashboard() {
 
       {/* Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              Invoice Settings
+              <Settings className="w-5 h-5 text-primary" />
+              Business Settings
             </DialogTitle>
             <DialogDescription>
-              Set your default terms and payment instructions for new invoices.
+              Customise your brand and default content for quotes and invoices.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="defaultTerms">Default Invoice Terms & Conditions</Label>
-              <Textarea
-                id="defaultTerms"
-                placeholder="Payment terms, warranty, etc."
-                value={editingTerms}
-                onChange={(e) => setEditingTerms(e.target.value)}
-                className="min-h-[120px]"
-              />
-              <p className="text-xs text-muted-foreground">
-                Pre-filled on all new invoices.
-              </p>
+          <div className="space-y-6 py-2">
+            {/* Logo */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" />
+                Business Logo
+              </h3>
+              <div className="flex items-start gap-4">
+                {(pendingLogoPreview || logoPreviewUrl) ? (
+                  <div className="relative">
+                    <img
+                      src={pendingLogoPreview || logoPreviewUrl}
+                      alt="Business logo"
+                      className="h-20 max-w-[160px] object-contain rounded border bg-muted/30 p-1"
+                    />
+                    <button
+                      onClick={handleRemoveLogo}
+                      className="absolute -top-2 -right-2 rounded-full bg-destructive text-destructive-foreground w-5 h-5 flex items-center justify-center hover:opacity-90"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    className="h-20 w-40 rounded border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/50 hover:bg-muted/30 transition-colors"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <UploadCloud className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Upload logo</span>
+                  </div>
+                )}
+                <div className="flex-1 space-y-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => logoInputRef.current?.click()}
+                  >
+                    <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
+                    {pendingLogoPreview || logoPreviewUrl ? 'Change logo' : 'Choose file'}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    PNG or JPG, max 2 MB. Appears on quotes and invoices.
+                  </p>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                    className="hidden"
+                    onChange={handleLogoFileChange}
+                  />
+                </div>
+              </div>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="defaultPaymentInstructions">Default Payment Instructions</Label>
-              <Textarea
-                id="defaultPaymentInstructions"
-                placeholder="Bank: ANZ&#10;BSB: 123-456&#10;Account: 12345678&#10;Reference: Invoice number"
-                value={editingPaymentInstructions}
-                onChange={(e) => setEditingPaymentInstructions(e.target.value)}
-                className="min-h-[120px]"
-              />
-              <p className="text-xs text-muted-foreground">
-                Pre-filled on all new invoices. Include bank details and payment reference.
-              </p>
+
+            <Separator />
+
+            {/* Business Info */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <User className="w-4 h-4 text-primary" />
+                Business Details
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="businessName" className="text-xs flex items-center gap-1">
+                    <Building2 className="w-3 h-3" /> Business Name
+                  </Label>
+                  <Input
+                    id="businessName"
+                    value={settingsForm.businessName}
+                    onChange={(e) => setSettingsForm(f => ({ ...f, businessName: e.target.value }))}
+                    placeholder="Acme Electrical"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="contactName" className="text-xs flex items-center gap-1">
+                    <User className="w-3 h-3" /> Contact Name
+                  </Label>
+                  <Input
+                    id="contactName"
+                    value={settingsForm.contactName}
+                    onChange={(e) => setSettingsForm(f => ({ ...f, contactName: e.target.value }))}
+                    placeholder="Jane Smith"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="settingsPhone" className="text-xs flex items-center gap-1">
+                    <Phone className="w-3 h-3" /> Phone
+                  </Label>
+                  <Input
+                    id="settingsPhone"
+                    value={settingsForm.phone}
+                    onChange={(e) => setSettingsForm(f => ({ ...f, phone: e.target.value }))}
+                    placeholder="0400 000 000"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="settingsEmail" className="text-xs flex items-center gap-1">
+                    <Mail className="w-3 h-3" /> Email
+                  </Label>
+                  <Input
+                    id="settingsEmail"
+                    value={settingsForm.email}
+                    disabled
+                    className="opacity-60"
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="settingsAbn" className="text-xs flex items-center gap-1">
+                    <Hash className="w-3 h-3" /> ABN
+                  </Label>
+                  <Input
+                    id="settingsAbn"
+                    value={settingsForm.abn}
+                    onChange={(e) => setSettingsForm(f => ({ ...f, abn: e.target.value }))}
+                    placeholder="12 345 678 901"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="settingsWebsite" className="text-xs flex items-center gap-1">
+                    <Globe className="w-3 h-3" /> Website
+                  </Label>
+                  <Input
+                    id="settingsWebsite"
+                    value={settingsForm.website}
+                    onChange={(e) => setSettingsForm(f => ({ ...f, website: e.target.value }))}
+                    placeholder="www.mycompany.com.au"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="settingsAddress" className="text-xs flex items-center gap-1">
+                  <MapPin className="w-3 h-3" /> Business Address
+                </Label>
+                <Input
+                  id="settingsAddress"
+                  value={settingsForm.businessAddress}
+                  onChange={(e) => setSettingsForm(f => ({ ...f, businessAddress: e.target.value }))}
+                  placeholder="123 Main St, Sydney NSW 2000"
+                />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Quote/Invoice Defaults */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                Quote & Invoice Defaults
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="defaultTerms" className="text-xs">Default Terms & Conditions</Label>
+                <Textarea
+                  id="defaultTerms"
+                  placeholder="Payment is due within 14 days..."
+                  value={settingsForm.defaultTerms}
+                  onChange={(e) => setSettingsForm(f => ({ ...f, defaultTerms: e.target.value }))}
+                  className="min-h-[100px] text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="defaultPaymentInstructions" className="text-xs">Default Payment Instructions</Label>
+                <Textarea
+                  id="defaultPaymentInstructions"
+                  placeholder="Bank: ANZ&#10;BSB: 123-456&#10;Account: 12345678"
+                  value={settingsForm.defaultPaymentInstructions}
+                  onChange={(e) => setSettingsForm(f => ({ ...f, defaultPaymentInstructions: e.target.value }))}
+                  className="min-h-[100px] text-sm"
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="pt-2">
             <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveSettings} disabled={savingTerms}>
-              {savingTerms ? (
+            <Button onClick={handleSaveSettings} disabled={saving} data-testid="button-save-settings">
+              {saving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
                 <Save className="w-4 h-4 mr-2" />

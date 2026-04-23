@@ -12,8 +12,26 @@ export interface ProjectInfo {
   tradeName?: string;
   tradeAddress?: string;
   tradePhone?: string;
+  tradeWebsite?: string;
   abn?: string;
   registeredAddress?: string;
+  logoBase64?: string;
+}
+
+async function loadImageAsBase64(url: string): Promise<string | null> {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
 }
 
 export function generateQuotePDF(
@@ -39,22 +57,46 @@ export function generateQuotePDF(
   doc.setFont('helvetica', 'bold');
   doc.text('QUOTE', margin, yPos + 8);
 
-  // Business Name - Top Right
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  if (project.tradeBusinessName) {
-    doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
+  // Logo or Business Name - Top Right
+  let rightColY = yPos;
+  if (project.logoBase64) {
+    try {
+      const logoMaxW = 45;
+      const logoMaxH = 20;
+      doc.addImage(project.logoBase64, pageWidth - margin - logoMaxW, rightColY - 2, logoMaxW, logoMaxH);
+      rightColY += logoMaxH + 2;
+    } catch {
+      // fallback to text if image fails
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      if (project.tradeBusinessName) {
+        doc.setTextColor(...textColor);
+        doc.text(project.tradeBusinessName, pageWidth - margin, rightColY, { align: 'right' });
+        rightColY += 6;
+      }
+    }
+  } else {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    if (project.tradeBusinessName) {
+      doc.setTextColor(...textColor);
+      doc.text(project.tradeBusinessName, pageWidth - margin, rightColY, { align: 'right' });
+      rightColY += 6;
+    }
   }
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
   if (project.tradeAddress) {
-    yPos += 5;
-    doc.text(project.tradeAddress, pageWidth - margin, yPos, { align: 'right' });
+    doc.text(project.tradeAddress, pageWidth - margin, rightColY, { align: 'right' });
+    rightColY += 4;
   }
   if (project.tradePhone) {
-    yPos += 4;
-    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, yPos, { align: 'right' });
+    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, rightColY, { align: 'right' });
+    rightColY += 4;
+  }
+  if (project.tradeWebsite) {
+    doc.text(project.tradeWebsite, pageWidth - margin, rightColY, { align: 'right' });
   }
 
   yPos = 45;
@@ -403,22 +445,25 @@ export function generateQuotePDF(
   return doc;
 }
 
-export function downloadQuotePDF(
+export async function downloadQuotePDF(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
   changeRequests: ChangeRequest[] = [],
-  quoteLineItems: QuoteLineItem[] = []
-): void {
+  quoteLineItems: QuoteLineItem[] = [],
+  logoUrl?: string
+): Promise<void> {
   try {
-    console.log('Starting PDF generation...', { quote, project, scopeItems, changeRequests, quoteLineItems });
-    const doc = generateQuotePDF(quote, project, scopeItems, changeRequests, quoteLineItems);
-    console.log('PDF generated successfully, saving...');
+    let logoBase64: string | undefined;
+    if (logoUrl) {
+      const result = await loadImageAsBase64(logoUrl);
+      if (result) logoBase64 = result;
+    }
+    const projectWithLogo = logoBase64 ? { ...project, logoBase64 } : project;
+    const doc = generateQuotePDF(quote, projectWithLogo, scopeItems, changeRequests, quoteLineItems);
     doc.save(`${quote.quoteNumber}.pdf`);
-    console.log('PDF saved successfully');
   } catch (error) {
     console.error('Error generating PDF:', error);
-    console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     throw error;
   }
 }

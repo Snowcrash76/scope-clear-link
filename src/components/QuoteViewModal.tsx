@@ -36,6 +36,11 @@ interface QuoteViewModalProps {
     clientEmail: string;
     tradeBusinessName?: string;
     tradeName?: string;
+    tradeAddress?: string;
+    tradePhone?: string;
+    tradeWebsite?: string;
+    abn?: string;
+    logoUrl?: string;
   };
 }
 
@@ -72,9 +77,10 @@ export function QuoteViewModal({
   const config = statusConfig[quote.status];
   const StatusIcon = config.icon;
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     try {
-      downloadQuotePDF(quote, projectInfo, scopeItems, changeRequests, quoteLineItems);
+      const { logoUrl, ...restInfo } = projectInfo;
+      await downloadQuotePDF(quote, restInfo, scopeItems, changeRequests, quoteLineItems, logoUrl);
     } catch (error) {
       console.error('Failed to download PDF:', error);
     }

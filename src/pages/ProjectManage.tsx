@@ -131,8 +131,15 @@ export default function ProjectManage() {
   });
   const [defaultTerms, setDefaultTerms] = useState<string>('');
   const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
+  const [tradeProfileInfo, setTradeProfileInfo] = useState<{
+    address: string;
+    phone: string;
+    website: string;
+    abn: string;
+    logoUrl: string;
+  }>({ address: '', phone: '', website: '', abn: '', logoUrl: '' });
 
-  // Fetch user's default terms and payment instructions
+  // Fetch user's profile defaults
   useEffect(() => {
     const fetchDefaults = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -140,7 +147,7 @@ export default function ProjectManage() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('default_terms, default_payment_instructions')
+        .select('default_terms, default_payment_instructions, phone, business_address, abn, website, logo_url')
         .eq('user_id', user.id)
         .single();
 
@@ -150,6 +157,22 @@ export default function ProjectManage() {
       if (profile?.default_payment_instructions) {
         setDefaultPaymentInstructions(profile.default_payment_instructions);
       }
+
+      let logoUrl = '';
+      if ((profile as any)?.logo_url) {
+        const { data: signedData } = await supabase.storage
+          .from('scope-images')
+          .createSignedUrl((profile as any).logo_url, 60 * 60);
+        if (signedData?.signedUrl) logoUrl = signedData.signedUrl;
+      }
+
+      setTradeProfileInfo({
+        address: (profile as any)?.business_address || '',
+        phone: profile?.phone || '',
+        website: (profile as any)?.website || '',
+        abn: (profile as any)?.abn || '',
+        logoUrl,
+      });
     };
     fetchDefaults();
   }, []);
@@ -770,6 +793,11 @@ export default function ProjectManage() {
               projectName={project.name}
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
+              tradeAddress={tradeProfileInfo.address}
+              tradePhone={tradeProfileInfo.phone}
+              tradeWebsite={tradeProfileInfo.website}
+              tradeAbn={tradeProfileInfo.abn}
+              logoUrl={tradeProfileInfo.logoUrl}
               quoteLineItems={quoteLineItems}
               onAddLineItem={addLineItem}
               onUpdateLineItem={updateLineItem}

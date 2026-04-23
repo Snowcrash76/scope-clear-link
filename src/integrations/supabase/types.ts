@@ -225,6 +225,10 @@ export type Database = {
           phone: string | null
           updated_at: string
           user_id: string
+          logo_url: string | null
+          business_address: string | null
+          abn: string | null
+          website: string | null
         }
         Insert: {
           business_name: string
@@ -237,6 +241,10 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id: string
+          logo_url?: string | null
+          business_address?: string | null
+          abn?: string | null
+          website?: string | null
         }
         Update: {
           business_name?: string
@@ -249,6 +257,10 @@ export type Database = {
           phone?: string | null
           updated_at?: string
           user_id?: string
+          logo_url?: string | null
+          business_address?: string | null
+          abn?: string | null
+          website?: string | null
         }
         Relationships: []
       }
