@@ -95,6 +95,7 @@ export default function ClientProjectView() {
     tradePhone: project.tradePhone,
     tradeWebsite: project.tradeWebsite,
     abn: project.tradeAbn,
+    logoUrl: project.tradeLogoUrl,
   };
 
   const includedItems = project.scopeItems.filter(item => item.category === 'included');

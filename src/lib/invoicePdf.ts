@@ -12,11 +12,48 @@ export interface ProjectInfo {
   tradeName?: string;
   tradeAddress?: string;
   tradePhone?: string;
+  tradeWebsite?: string;
   abn?: string;
   registeredAddress?: string;
   bsb?: string;
   accountNumber?: string;
   accountName?: string;
+  logoUrl?: string;
+  logoBase64?: string;
+  logoNaturalW?: number;
+  logoNaturalH?: number;
+}
+
+interface LoadedLogo {
+  base64: string;
+  naturalW: number;
+  naturalH: number;
+}
+
+async function loadLogoForPDF(url: string): Promise<LoadedLogo | null> {
+  try {
+    let base64 = url;
+    if (!url.startsWith('data:')) {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+      const blob = await response.blob();
+      base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    }
+    const { naturalW, naturalH } = await new Promise<{ naturalW: number; naturalH: number }>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ naturalW: img.naturalWidth, naturalH: img.naturalHeight });
+      img.onerror = () => resolve({ naturalW: 0, naturalH: 0 });
+      img.src = base64;
+    });
+    return { base64, naturalW, naturalH };
+  } catch {
+    return null;
+  }
 }
 
 export function generateInvoicePDF(
@@ -40,42 +77,76 @@ export function generateInvoicePDF(
   doc.setFont('helvetica', 'bold');
   doc.text('TAX INVOICE', margin, yPos + 8);
 
-  // Business Name - Top Right
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  if (project.tradeBusinessName) {
-    doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
+  // Logo or Business Name - Top Right
+  let rightColY = yPos;
+  if (project.logoBase64) {
+    try {
+      const logoMaxW = 55;
+      const logoMaxH = 25;
+      let renderW = logoMaxW;
+      let renderH = logoMaxH;
+      if (project.logoNaturalW && project.logoNaturalH && project.logoNaturalH > 0) {
+        const aspect = project.logoNaturalW / project.logoNaturalH;
+        renderH = renderW / aspect;
+        if (renderH > logoMaxH) {
+          renderH = logoMaxH;
+          renderW = renderH * aspect;
+        }
+      }
+      doc.addImage(project.logoBase64, pageWidth - margin - renderW, rightColY - 2, renderW, renderH);
+      rightColY += renderH + 3;
+    } catch {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      if (project.tradeBusinessName) {
+        doc.setTextColor(...textColor);
+        doc.text(project.tradeBusinessName, pageWidth - margin, rightColY, { align: 'right' });
+        rightColY += 6;
+      }
+    }
+  } else {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    if (project.tradeBusinessName) {
+      doc.setTextColor(...textColor);
+      doc.text(project.tradeBusinessName, pageWidth - margin, rightColY, { align: 'right' });
+      rightColY += 6;
+    }
   }
+
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
   if (project.tradeAddress) {
-    yPos += 5;
-    doc.text(project.tradeAddress, pageWidth - margin, yPos, { align: 'right' });
+    doc.text(project.tradeAddress, pageWidth - margin, rightColY, { align: 'right' });
+    rightColY += 4;
   }
   if (project.tradePhone) {
-    yPos += 4;
-    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, yPos, { align: 'right' });
+    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, rightColY, { align: 'right' });
+    rightColY += 4;
+  }
+  if (project.tradeWebsite) {
+    doc.text(project.tradeWebsite, pageWidth - margin, rightColY, { align: 'right' });
+    rightColY += 4;
   }
 
-  yPos = 45;
+  yPos = Math.max(45, rightColY + 4);
 
-  // Three column section
+  // Two column section
   const col1X = margin;
-  const col2X = pageWidth / 3 + 10;
-  const col3X = (pageWidth * 2) / 3;
+  const col2X = pageWidth / 2 + 5;
 
   // Column 1: Client details
   doc.setTextColor(...textColor);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.text(project.clientName, col1X, yPos);
-  
+
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
   if (project.clientAddress) {
-    const addressLines = doc.splitTextToSize(project.clientAddress, 55);
+    const addressLines = doc.splitTextToSize(project.clientAddress, 70);
     doc.text(addressLines, col1X, yPos + 5);
   }
 
@@ -83,53 +154,33 @@ export function generateInvoicePDF(
   let col2Y = yPos;
   doc.setTextColor(...mutedColor);
   doc.setFontSize(9);
-  
+
   const createdDate = invoice.createdAt instanceof Date ? invoice.createdAt : new Date(invoice.createdAt);
   doc.text('Invoice Date', col2X, col2Y);
   doc.setTextColor(...textColor);
-  doc.text(format(createdDate, 'd MMM yyyy'), col2X + 30, col2Y);
-  
+  doc.text(format(createdDate, 'd MMM yyyy'), col2X + 35, col2Y);
+
   col2Y += 5;
   doc.setTextColor(...mutedColor);
   doc.text('Invoice Number', col2X, col2Y);
   doc.setTextColor(...textColor);
-  doc.text(invoice.invoiceNumber, col2X + 30, col2Y);
-  
+  doc.text(invoice.invoiceNumber, col2X + 35, col2Y);
+
   col2Y += 5;
   doc.setTextColor(...mutedColor);
   doc.text('Reference', col2X, col2Y);
   doc.setTextColor(...textColor);
-  doc.text(project.name, col2X + 30, col2Y);
+  doc.text(project.name, col2X + 35, col2Y);
 
   if (project.abn) {
     col2Y += 5;
     doc.setTextColor(...mutedColor);
     doc.text('ABN', col2X, col2Y);
     doc.setTextColor(...textColor);
-    doc.text(project.abn, col2X + 30, col2Y);
+    doc.text(project.abn, col2X + 35, col2Y);
   }
 
-  // Column 3: Business contact
-  let col3Y = yPos;
-  doc.setTextColor(...textColor);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(9);
-  if (project.tradeBusinessName) {
-    doc.text(project.tradeBusinessName, col3X, col3Y);
-    col3Y += 5;
-  }
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...mutedColor);
-  if (project.tradeAddress) {
-    const addrLines = doc.splitTextToSize(project.tradeAddress, 55);
-    doc.text(addrLines, col3X, col3Y);
-    col3Y += addrLines.length * 4;
-  }
-  if (project.tradePhone) {
-    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y);
-  }
-
-  yPos = 80;
+  yPos = Math.max(yPos + 30, col2Y + 10);
 
   // Horizontal line
   doc.setDrawColor(...lineColor);
@@ -340,12 +391,24 @@ export function generateInvoicePDF(
   return doc;
 }
 
-export function downloadInvoicePDF(
+export async function downloadInvoicePDF(
   invoice: Invoice,
   project: ProjectInfo
-): void {
+): Promise<void> {
   try {
-    const doc = generateInvoicePDF(invoice, project);
+    let enriched = { ...project };
+    if (project.logoUrl) {
+      const loaded = await loadLogoForPDF(project.logoUrl);
+      if (loaded) {
+        enriched = {
+          ...enriched,
+          logoBase64: loaded.base64,
+          logoNaturalW: loaded.naturalW,
+          logoNaturalH: loaded.naturalH,
+        };
+      }
+    }
+    const doc = generateInvoicePDF(invoice, enriched);
     doc.save(`${invoice.invoiceNumber}.pdf`);
   } catch (error) {
     console.error('Error generating invoice PDF:', error);

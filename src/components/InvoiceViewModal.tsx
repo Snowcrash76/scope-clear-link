@@ -19,6 +19,11 @@ interface ProjectInfo {
   clientEmail: string;
   tradeBusinessName?: string;
   tradeName?: string;
+  tradeAddress?: string;
+  tradePhone?: string;
+  tradeWebsite?: string;
+  abn?: string;
+  logoUrl?: string;
 }
 
 interface InvoiceViewModalProps {
@@ -42,9 +47,9 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
   const config = statusConfig[invoice.status];
   const StatusIcon = config.icon;
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     try {
-      downloadInvoicePDF(invoice, project);
+      await downloadInvoicePDF(invoice, project);
       toast.success('Invoice PDF downloaded');
     } catch (error) {
       console.error('PDF download error:', error);

@@ -52,6 +52,11 @@ interface InvoiceSectionProps {
   clientEmail: string;
   tradeBusinessName?: string;
   tradeName?: string;
+  tradeAddress?: string;
+  tradePhone?: string;
+  tradeWebsite?: string;
+  tradeAbn?: string;
+  logoUrl?: string;
   defaultTerms?: string;
   defaultPaymentInstructions?: string;
   onCreateInvoice: (data: {
@@ -86,6 +91,11 @@ export function InvoiceSection({
   clientEmail,
   tradeBusinessName,
   tradeName,
+  tradeAddress,
+  tradePhone,
+  tradeWebsite,
+  tradeAbn,
+  logoUrl,
   defaultTerms,
   defaultPaymentInstructions,
   onCreateInvoice,
@@ -131,6 +141,11 @@ export function InvoiceSection({
     clientEmail,
     tradeBusinessName,
     tradeName,
+    tradeAddress,
+    tradePhone,
+    tradeWebsite,
+    abn: tradeAbn,
+    logoUrl,
   };
 
   const handleExportToXero = (invoice: Invoice) => {
@@ -139,9 +154,9 @@ export function InvoiceSection({
     toast.success('Invoice exported for Xero');
   };
 
-  const handleDownloadPDF = (invoice: Invoice) => {
+  const handleDownloadPDF = async (invoice: Invoice) => {
     try {
-      downloadInvoicePDF(invoice, projectInfo);
+      await downloadInvoicePDF(invoice, projectInfo);
       toast.success('Invoice PDF downloaded');
     } catch (error) {
       console.error('PDF download error:', error);
