@@ -172,7 +172,14 @@ export function ScopeSection({
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <h4 className="font-medium text-foreground">{item.title}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-medium text-foreground">{item.title}</h4>
+                      {item.title.startsWith('Variation: ') && (
+                        <Badge variant="secondary" className="text-xs" data-testid={`badge-variation-scope-${item.id}`}>
+                          Variation
+                        </Badge>
+                      )}
+                    </div>
                     {item.cost !== undefined && item.cost > 0 && (
                       <span className="text-sm font-medium text-primary whitespace-nowrap">
                         ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -227,7 +234,7 @@ export function ScopeSection({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-foreground font-medium">
-                      Approved Changes ({approvedChanges.length})
+                      Approved Variations ({approvedChanges.length})
                     </span>
                     <span className={cn(
                       "font-semibold tabular-nums text-right",

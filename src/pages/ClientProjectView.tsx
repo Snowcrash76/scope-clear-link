@@ -107,7 +107,7 @@ export default function ClientProjectView() {
       isOpen: true,
       action: 'approve',
       changeId,
-      title: change?.title || 'Change Request',
+      title: change?.title || 'Variation',
     });
   };
 
@@ -117,7 +117,7 @@ export default function ClientProjectView() {
       isOpen: true,
       action: 'decline',
       changeId,
-      title: change?.title || 'Change Request',
+      title: change?.title || 'Variation',
     });
   };
 
@@ -126,8 +126,8 @@ export default function ClientProjectView() {
     const success = await updateChangeRequestStatus(changeId, action === 'approve' ? 'approved' : 'declined', 'trade', comment);
     if (success) {
       toast.success(action === 'approve' 
-        ? 'Change approved! Your trade has been notified.' 
-        : 'Change declined. Your trade has been notified.');
+        ? 'Variation approved! Your trade has been notified.' 
+        : 'Variation declined. Your trade has been notified.');
     }
     setApprovalModal({ isOpen: false, action: 'approve', changeId: '', title: '' });
   };
@@ -136,7 +136,7 @@ export default function ClientProjectView() {
     // Client creating change request → notify trade
     const success = await createChangeRequest({
       type: 'client_request',
-      title: 'New change request',
+      title: 'New variation',
       description,
       costImpact: 0,
       timeImpact: 0,
@@ -144,7 +144,7 @@ export default function ClientProjectView() {
     }, 'trade');
     
     if (success) {
-      toast.success('Change request sent! Your trade will review and respond.');
+      toast.success('Variation sent! Your trade will review and respond.');
     }
   };
 
@@ -196,9 +196,9 @@ export default function ClientProjectView() {
                 <Package className="w-4 h-4 hidden sm:block" />
                 Scope
               </TabsTrigger>
-              <TabsTrigger value="changes" className="gap-2">
+              <TabsTrigger value="changes" className="gap-2" data-testid="tab-variations">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
-                Changes
+                Variations
                 {pendingChanges.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
                     {pendingChanges.length}

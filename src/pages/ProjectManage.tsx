@@ -206,7 +206,7 @@ export default function ProjectManage() {
     // Trade creating change request → notify client
     const success = await createChangeRequest(requestData, 'client');
     if (success) {
-      toast.success('Change request sent to client');
+      toast.success('Variation sent to client');
       setIsSendingChangeRequest(false);
     }
   };
@@ -214,7 +214,7 @@ export default function ProjectManage() {
   const handleUpdateChangeRequest = async (requestData: ChangeRequest) => {
     const success = await updateChangeRequest(requestData);
     if (success) {
-      toast.success('Change request updated');
+      toast.success('Variation updated');
       setEditingChangeRequest(null);
     }
   };
@@ -222,7 +222,7 @@ export default function ProjectManage() {
   const handleDeleteChangeRequest = async (requestId: string) => {
     const success = await deleteChangeRequest(requestId);
     if (success) {
-      toast.success('Change request deleted');
+      toast.success('Variation deleted');
       setEditingChangeRequest(null);
     }
   };
@@ -447,7 +447,7 @@ export default function ProjectManage() {
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="changes">
-                Changes
+                Variations
                 {pendingClientRequests.length > 0 && (
                   <Badge variant="pending" className="ml-2">
                     {pendingClientRequests.length}
@@ -586,7 +586,7 @@ export default function ProjectManage() {
                             {approvedChanges.length > 0 && (
                               <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
-                                  <span className="text-foreground font-medium">Approved Changes ({approvedChanges.length})</span>
+                                  <span className="text-foreground font-medium">Approved Variations ({approvedChanges.length})</span>
                                   <span className={cn(
                                     "font-semibold tabular-nums",
                                     changesTotal >= 0 ? 'text-approved' : 'text-destructive'
@@ -646,10 +646,10 @@ export default function ProjectManage() {
           {/* Changes Tab */}
           <TabsContent value="changes" className="mt-0 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-heading text-lg font-semibold">Change Requests</h2>
+              <h2 className="font-heading text-lg font-semibold">Variations</h2>
               <Button onClick={() => setIsSendingChangeRequest(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Send Change Request
+                Send Variation
               </Button>
             </div>
 
@@ -710,10 +710,10 @@ export default function ProjectManage() {
             {project.changeRequests.length === 0 && pendingClientRequests.length === 0 && pendingTradeRequests.length === 0 && (
               <Card className="p-12 text-center">
                 <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">No change requests yet</p>
+                <p className="text-muted-foreground mb-4">No variations yet</p>
                 <Button onClick={() => setIsSendingChangeRequest(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Send First Change Request
+                  Send First Variation
                 </Button>
               </Card>
             )}
@@ -839,7 +839,7 @@ export default function ProjectManage() {
               Invite Client to Project
             </DialogTitle>
             <DialogDescription>
-              We'll send your client a private link to their live project page where they can review the scope, approve changes and follow progress.
+              We'll send your client a private link to their live project page where they can review the scope, approve variations and follow progress.
             </DialogDescription>
           </DialogHeader>
 
@@ -869,7 +869,7 @@ export default function ProjectManage() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              They'll receive an invitation to view <span className="font-medium text-foreground">{project.name}</span>, approve the scope of work, raise change requests and track progress in real time.
+              They'll receive an invitation to view <span className="font-medium text-foreground">{project.name}</span>, approve the scope of work, raise variations and track progress in real time.
             </p>
           </div>
 

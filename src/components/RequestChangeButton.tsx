@@ -34,7 +34,7 @@ export function RequestChangeButton({ onSubmit }: RequestChangeButtonProps) {
     return (
       <Card className="p-4 border-2 border-primary/20 animate-scale-in">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="font-heading font-semibold">Request a Change</h3>
+          <h3 className="font-heading font-semibold">Request a Variation</h3>
           <button 
             onClick={handleClose}
             className="text-muted-foreground hover:text-foreground transition-colors"
@@ -43,10 +43,10 @@ export function RequestChangeButton({ onSubmit }: RequestChangeButtonProps) {
           </button>
         </div>
         <p className="text-sm text-muted-foreground mb-3">
-          What would you like to change or add? Your trade will review and respond with any cost or time impacts.
+          What would you like to vary or add? Your trade will review and respond with any cost or time impacts.
         </p>
         <Textarea
-          placeholder="Describe what you'd like to change..."
+          placeholder="Describe the variation you'd like..."
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="mb-3 min-h-[100px]"
@@ -79,7 +79,7 @@ export function RequestChangeButton({ onSubmit }: RequestChangeButtonProps) {
       className="w-full sm:w-auto"
     >
       <MessageSquarePlus className="w-4 h-4" />
-      Request a Change
+      Request a Variation
     </Button>
   );
 }

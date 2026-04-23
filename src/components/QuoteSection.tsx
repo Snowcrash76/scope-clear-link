@@ -335,7 +335,7 @@ export function QuoteSection({
                 <div className="p-3 bg-muted/50">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Lock className="w-3.5 h-3.5" />
-                    Approved Changes (read-only)
+                    Approved Variations (read-only)
                   </span>
                 </div>
                 {approvedChanges.map(change => (
@@ -624,7 +624,7 @@ export function QuoteSection({
               <>
                 <div className="p-3 bg-muted/50">
                   <span className="text-base font-bold text-foreground uppercase tracking-wide">
-                    Approved Changes
+                    Approved Variations
                   </span>
                 </div>
                 {approvedChanges.map(change => (
@@ -658,7 +658,14 @@ export function QuoteSection({
                   <div key={item.id} className="p-3">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <span className="text-base font-semibold text-foreground">{item.title}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-base font-semibold text-foreground">{item.title}</span>
+                          {item.title.startsWith('Variation: ') && (
+                            <Badge variant="secondary" className="text-xs" data-testid={`badge-variation-quote-${item.id}`}>
+                              Variation
+                            </Badge>
+                          )}
+                        </div>
                         {item.description && (
                           <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
                         )}

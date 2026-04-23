@@ -184,7 +184,7 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>
               {pendingChanges > 0 
-                ? `${pendingChanges} change${pendingChanges > 1 ? 's' : ''} awaiting approval`
+                ? `${pendingChanges} variation${pendingChanges > 1 ? 's' : ''} awaiting approval`
                 : `${unacknowledgedItems} item${unacknowledgedItems > 1 ? 's' : ''} to acknowledge`
               }
             </span>

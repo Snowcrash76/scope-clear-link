@@ -103,9 +103,9 @@ export function EditChangeRequestModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Edit Change Request</DialogTitle>
+          <DialogTitle className="font-heading">Edit Variation</DialogTitle>
           <DialogDescription>
-            Update the details of this change request.
+            Update the details of this variation.
           </DialogDescription>
         </DialogHeader>
 

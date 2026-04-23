@@ -525,7 +525,7 @@ export function useProject(projectId: string | undefined) {
     changeRequest: ChangeRequest
   ) => {
     const cost = Number(changeRequest.costImpact) || 0;
-    const titlePrefix = 'Change: ';
+    const titlePrefix = 'Variation: ';
     const scopeTitle = `${titlePrefix}${changeRequest.title}`;
     const descriptionParts = [changeRequest.description];
     if (changeRequest.timeImpact) {
