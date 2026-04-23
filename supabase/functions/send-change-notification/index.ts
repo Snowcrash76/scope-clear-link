@@ -15,6 +15,10 @@ interface NotificationRequest {
   changeDescription: string;
   costImpact?: number;
   timeImpact?: string;
+  // If provided, the edge function will also update the change request status
+  // in the DB using the service role key (bypasses RLS for unauthenticated clients)
+  updateStatus?: "approved" | "declined";
+  resolutionComment?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -41,7 +45,25 @@ const handler = async (req: Request): Promise<Response> => {
       changeDescription,
       costImpact,
       timeImpact,
+      updateStatus,
+      resolutionComment,
     }: NotificationRequest = await req.json();
+
+    // If requested, update the change request status server-side (bypasses RLS)
+    if (updateStatus) {
+      const { error: updateError } = await supabase
+        .from("change_requests")
+        .update({
+          status: updateStatus,
+          resolved_at: new Date().toISOString(),
+          resolution_comment: resolutionComment || null,
+        })
+        .eq("id", changeRequestId);
+
+      if (updateError) {
+        throw new Error(`Failed to update change request status: ${updateError.message}`);
+      }
+    }
 
     // Fetch project details
     const { data: project, error: projectError } = await supabase
@@ -70,13 +92,11 @@ const handler = async (req: Request): Promise<Response> => {
     const baseUrl = Deno.env.get("SITE_URL") || "https://scope-clear-link.lovable.app";
 
     if (recipientType === "client") {
-      // Sending to client
       recipientEmail = project.client_email;
       recipientName = project.client_name;
       senderName = profile?.business_name || "Your Trade";
       projectUrl = `${baseUrl}/project/${projectId}`;
     } else {
-      // Sending to trade
       recipientEmail = profile?.email;
       recipientName = profile?.contact_name || "Trade";
       senderName = project.client_name;
@@ -130,6 +150,17 @@ const handler = async (req: Request): Promise<Response> => {
       `;
     }
 
+    // Build resolution comment section
+    let commentHtml = "";
+    if (resolutionComment && notificationType !== "created") {
+      commentHtml = `
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; margin: 16px 0; border-left: 4px solid #6b7280;">
+          <h4 style="margin: 0 0 8px 0; color: #374151;">Comment</h4>
+          <p style="margin: 0; color: #6b7280;">${resolutionComment}</p>
+        </div>
+      `;
+    }
+
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -153,6 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
             </div>
             
             ${impactHtml}
+            ${commentHtml}
             
             <div style="text-align: center; margin-top: 32px;">
               <a href="${projectUrl}" style="display: inline-block; background: #3b82f6; color: white; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">${actionText}</a>
