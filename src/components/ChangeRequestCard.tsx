@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChangeRequest } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,8 @@ import {
   DollarSign, 
   Clock,
   Check,
-  X
+  X,
+  CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -55,6 +57,10 @@ export function ChangeRequestCard({
   const config = typeConfig[request.type];
   const Icon = config.icon;
 
+  // Optimistic decision state — immediately reflects the client's choice
+  // before the server round-trip and refetch complete.
+  const [optimisticDecision, setOptimisticDecision] = useState<'approved' | 'declined' | null>(null);
+
   // Trade can respond to pending client requests (adds costs and sends back)
   const canTradeRespond = viewerRole === 'trade' && 
     request.type === 'client_request' && 
@@ -70,20 +76,36 @@ export function ChangeRequestCard({
     request.type !== 'client_request' && 
     request.status === 'pending';
 
-  // Combined: can approve if either condition is met
-  const canApprove = canClientApproveClientRequest || canClientApproveTradeRequest;
+  // Combined: can approve if either condition is met (and no optimistic decision yet)
+  const canApprove = (canClientApproveClientRequest || canClientApproveTradeRequest) && !optimisticDecision;
+
+  // Show the optimistic banner when the client has just tapped Approve/Decline
+  // (before the server confirms and the card re-renders with the new status).
+  const showOptimisticApproved = optimisticDecision === 'approved';
+  const showOptimisticDeclined = optimisticDecision === 'declined';
 
   // Check if this is awaiting the other party's response
-  const isAwaitingOtherParty = (
+  const isAwaitingOtherParty = !optimisticDecision && (
     (viewerRole === 'client' && request.type === 'client_request' && request.status === 'pending') ||
     (viewerRole === 'trade' && request.type !== 'client_request' && request.status === 'pending') ||
     (viewerRole === 'trade' && request.status === 'awaiting_client')
   );
 
+  const handleApprove = (id: string) => {
+    setOptimisticDecision('approved');
+    onApprove?.(id);
+  };
+
+  const handleDecline = (id: string) => {
+    setOptimisticDecision('declined');
+    onDecline?.(id);
+  };
+
   return (
     <Card className={cn(
       "overflow-hidden transition-all duration-200",
-      request.status === 'pending' && "ring-2 ring-pending/50"
+      request.status === 'pending' && !optimisticDecision && "ring-2 ring-pending/50",
+      showOptimisticApproved && "ring-2 ring-approved/40"
     )}>
       <div className="p-4 sm:p-5">
         {/* Header */}
@@ -99,7 +121,21 @@ export function ChangeRequestCard({
               <h3 className="font-heading font-semibold">{request.title}</h3>
             </div>
           </div>
-          <StatusBadge status={request.status} viewerRole={viewerRole} />
+          {!optimisticDecision && (
+            <StatusBadge status={request.status} viewerRole={viewerRole} />
+          )}
+          {showOptimisticApproved && (
+            <Badge variant="success" className="gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Approved
+            </Badge>
+          )}
+          {showOptimisticDeclined && (
+            <Badge variant="destructive" className="gap-1.5">
+              <X className="w-3.5 h-3.5" />
+              Declined
+            </Badge>
+          )}
         </div>
 
         {/* Description */}
@@ -166,6 +202,30 @@ export function ChangeRequestCard({
           </div>
         )}
 
+        {/* Optimistic confirmation banner after client approves */}
+        {showOptimisticApproved && (
+          <div className="pt-3 border-t">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 text-approved">
+              <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+              <p className="text-sm font-medium">
+                Variation approved — your trade has been notified.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Optimistic confirmation banner after client declines */}
+        {showOptimisticDeclined && (
+          <div className="pt-3 border-t">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
+              <X className="w-4 h-4 flex-shrink-0" />
+              <p className="text-sm font-medium">
+                Variation declined — your trade has been notified.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Awaiting other party notice */}
         {isAwaitingOtherParty && (
           <div className="pt-3 border-t">
@@ -198,14 +258,16 @@ export function ChangeRequestCard({
             <Button 
               variant="approve" 
               className="flex-1"
-              onClick={() => onApprove?.(request.id)}
+              onClick={() => handleApprove(request.id)}
+              data-testid={`button-approve-variation-${request.id}`}
             >
               <Check className="w-4 h-4" />
               Approve
             </Button>
             <Button 
               variant="decline"
-              onClick={() => onDecline?.(request.id)}
+              onClick={() => handleDecline(request.id)}
+              data-testid={`button-decline-variation-${request.id}`}
             >
               <X className="w-4 h-4" />
               Decline
