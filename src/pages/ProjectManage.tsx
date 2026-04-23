@@ -944,12 +944,19 @@ function ChangeRequestItem({ request, onEdit, isNew }: { request: ChangeRequest;
 
   const config = typeConfig[request.type];
   const Icon = config.icon;
+  const isApproved = request.status === 'approved';
 
   return (
     <Card className={cn(
-      "p-4 group",
-      request.status === 'pending' && "ring-2 ring-pending/30"
+      "p-4 group overflow-hidden relative",
+      request.status === 'pending' && "ring-2 ring-pending/30",
+      isApproved && "border-approved/40 bg-approved/5"
     )}>
+      {/* Green approved stripe along the left edge */}
+      {isApproved && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-approved" />
+      )}
+
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
           <Icon className={cn("w-4 h-4", config.color)} />
@@ -976,7 +983,12 @@ function ChangeRequestItem({ request, onEdit, isNew }: { request: ChangeRequest;
         </div>
       </div>
 
-      <h4 className="font-medium mb-1">{request.title}</h4>
+      <div className="flex items-center gap-2 mb-1">
+        {isApproved && (
+          <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
+        )}
+        <h4 className="font-medium">{request.title}</h4>
+      </div>
       <p className="text-sm text-muted-foreground mb-3">{request.description}</p>
 
       {request.imageUrl && (
