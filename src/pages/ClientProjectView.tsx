@@ -85,6 +85,18 @@ export default function ClientProjectView() {
     );
   }
 
+  const tradeProjectInfo = {
+    name: project.name,
+    clientName: project.clientName,
+    clientEmail: project.clientEmail,
+    tradeBusinessName: project.tradeBusinessName,
+    tradeName: project.tradeName,
+    tradeAddress: project.tradeAddress,
+    tradePhone: project.tradePhone,
+    tradeWebsite: project.tradeWebsite,
+    abn: project.tradeAbn,
+  };
+
   const includedItems = project.scopeItems.filter(item => item.category === 'included');
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
@@ -326,20 +338,15 @@ export default function ClientProjectView() {
                       <Eye className="w-4 h-4 mr-2" />
                       View Details
                     </Button>
-                    <Button variant="outline" onClick={() => {
+                    <Button variant="outline" onClick={async () => {
                       try {
-                        downloadQuotePDF(
+                        await downloadQuotePDF(
                           activeQuote,
-                          {
-                            name: project.name,
-                            clientName: project.clientName,
-                            clientEmail: project.clientEmail,
-                            tradeBusinessName: project.tradeBusinessName,
-                            tradeName: project.tradeName,
-                          },
+                          tradeProjectInfo,
                           project.scopeItems,
                           project.changeRequests,
-                          quoteLineItems
+                          quoteLineItems,
+                          project.tradeLogoUrl
                         );
                         toast.success('Quote PDF downloaded');
                       } catch (error) {
@@ -679,13 +686,7 @@ export default function ClientProjectView() {
                           size="sm" 
                           onClick={() => {
                             try {
-                              downloadInvoicePDF(invoice, {
-                                name: project.name,
-                                clientName: project.clientName,
-                                clientEmail: project.clientEmail,
-                                tradeBusinessName: project.tradeBusinessName,
-                                tradeName: project.tradeName,
-                              });
+                              downloadInvoicePDF(invoice, tradeProjectInfo);
                               toast.success('Invoice PDF downloaded');
                             } catch (error) {
                               console.error('PDF download error:', error);
@@ -713,13 +714,7 @@ export default function ClientProjectView() {
               isOpen={!!viewingInvoice}
               onClose={() => setViewingInvoice(null)}
               invoice={viewingInvoice}
-              project={{
-                name: project.name,
-                clientName: project.clientName,
-                clientEmail: project.clientEmail,
-                tradeBusinessName: project.tradeBusinessName,
-                tradeName: project.tradeName,
-              }}
+              project={tradeProjectInfo}
             />
           </TabsContent>
 
@@ -788,13 +783,7 @@ export default function ClientProjectView() {
           scopeItems={project.scopeItems}
           changeRequests={project.changeRequests}
           quoteLineItems={quoteLineItems}
-          projectInfo={{
-            name: project.name,
-            clientName: project.clientName,
-            clientEmail: project.clientEmail,
-            tradeBusinessName: project.tradeBusinessName,
-            tradeName: project.tradeName,
-          }}
+          projectInfo={{ ...tradeProjectInfo, logoUrl: project.tradeLogoUrl }}
         />
       )}
 

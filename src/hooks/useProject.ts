@@ -225,6 +225,7 @@ export function useProject(projectId: string | undefined) {
       const p = projectData as DbProject;
       const currentStageIndex = projectStages.findIndex(s => s.status === 'current');
 
+      const storedLogo = (profile as any)?.logo_url || '';
       const mappedProject: Project = {
         id: p.id,
         name: p.name,
@@ -232,6 +233,11 @@ export function useProject(projectId: string | undefined) {
         clientEmail: p.client_email,
         tradeName: profile?.contact_name || 'Trade',
         tradeBusinessName: profile?.business_name || 'Business',
+        tradeAddress: (profile as any)?.business_address || undefined,
+        tradePhone: profile?.phone || undefined,
+        tradeWebsite: (profile as any)?.website || undefined,
+        tradeAbn: (profile as any)?.abn || undefined,
+        tradeLogoUrl: storedLogo.startsWith('data:') ? storedLogo : undefined,
         status: p.status === 'in_progress' ? 'in_progress' : p.status as Project['status'],
         createdAt: new Date(p.created_at),
         updatedAt: new Date(p.updated_at),

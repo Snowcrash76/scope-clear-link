@@ -104,6 +104,11 @@ export interface Project {
   clientEmail: string;
   tradeName: string;
   tradeBusinessName: string;
+  tradeAddress?: string;
+  tradePhone?: string;
+  tradeWebsite?: string;
+  tradeAbn?: string;
+  tradeLogoUrl?: string;
   status: 'draft' | 'sent' | 'acknowledged' | 'in_progress' | 'completed';
   createdAt: Date;
   updatedAt: Date;
