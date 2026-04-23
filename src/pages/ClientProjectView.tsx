@@ -519,20 +519,14 @@ export default function ClientProjectView() {
               </Card>
             )}
 
-            {project.changeRequests.length === 0 ? (
-              <Card className="p-8 text-center">
-                <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No changes requested yet.</p>
-              </Card>
-            ) : (() => {
-              // Split into two sections
-              const awaitingChanges = project.changeRequests.filter(
-                cr => !optimisticApprovedIds.has(cr.id) && !optimisticDeclinedIds.has(cr.id)
-                  ? cr.status !== 'approved'
-                  : optimisticApprovedIds.has(cr.id) ? false : true
-              );
+            {(() => {
+              // A card is "approved" when the server says so OR the client just tapped Approve
               const approvedChanges = project.changeRequests.filter(
                 cr => optimisticApprovedIds.has(cr.id) || cr.status === 'approved'
+              );
+              // Everything else is still in play (pending, awaiting trade, declined)
+              const awaitingChanges = project.changeRequests.filter(
+                cr => !approvedChanges.includes(cr)
               );
 
               const renderCard = (request: typeof project.changeRequests[0]) => (
@@ -547,6 +541,15 @@ export default function ClientProjectView() {
                   optimisticComment={optimisticDeclinedComments.get(request.id)}
                 />
               );
+
+              if (project.changeRequests.length === 0) {
+                return (
+                  <Card className="p-8 text-center">
+                    <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No changes requested yet.</p>
+                  </Card>
+                );
+              }
 
               return (
                 <div className="space-y-8">
