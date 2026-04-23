@@ -653,6 +653,16 @@ export default function ProjectManage() {
               </Button>
             </div>
 
+            {/* Client's comment on the quote — shown here so it's in context */}
+            {activeQuote?.clientComment && (
+              <Card className="p-4 bg-secondary/40 border-dashed">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Client's comment on the quote
+                </p>
+                <p className="text-sm">{activeQuote.clientComment}</p>
+              </Card>
+            )}
+
             {pendingClientRequests.length > 0 && (
               <div className="space-y-4">
                 <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
@@ -939,15 +949,13 @@ function ChangeRequestItem({ request, onEdit }: { request: ChangeRequest; onEdit
         </div>
       )}
 
-      {/* Resolution Comment */}
+      {/* Client's resolution comment */}
       {request.resolutionComment && request.status !== 'pending' && (
         <div className="mb-3 p-3 rounded-lg bg-secondary/50">
-          <p className="text-sm text-muted-foreground">
-            <span className="font-medium">
-              {request.status === 'approved' ? 'Approval' : 'Decline'} comment:
-            </span>{' '}
-            {request.resolutionComment}
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+            Client's comment
           </p>
+          <p className="text-sm">{request.resolutionComment}</p>
         </div>
       )}
 

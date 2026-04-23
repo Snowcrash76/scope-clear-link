@@ -26,6 +26,9 @@ interface ChangeRequestCardProps {
   // Parent-controlled optimistic state — immune to local re-renders
   isApprovedOptimistically?: boolean;
   isDeclinedOptimistically?: boolean;
+  // Comment the client entered in the decline modal, surfaced immediately
+  // without waiting for the server refetch.
+  optimisticComment?: string;
 }
 
 const typeConfig = {
@@ -57,6 +60,7 @@ export function ChangeRequestCard({
   viewerRole,
   isApprovedOptimistically = false,
   isDeclinedOptimistically = false,
+  optimisticComment,
 }: ChangeRequestCardProps) {
   const config = typeConfig[request.type];
   const Icon = config.icon;
@@ -207,13 +211,19 @@ export function ChangeRequestCard({
 
         {/* Optimistic confirmation after client declines */}
         {isDeclinedOptimistically && (
-          <div className="pt-3 border-t">
+          <div className="pt-3 border-t space-y-2">
             <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
               <X className="w-4 h-4 flex-shrink-0" />
               <p className="text-sm font-medium">
                 Variation declined — your trade has been notified.
               </p>
             </div>
+            {optimisticComment && (
+              <div className="px-3 py-2 rounded-lg bg-secondary/60">
+                <p className="text-xs font-medium text-muted-foreground mb-0.5">Your comment</p>
+                <p className="text-sm">{optimisticComment}</p>
+              </div>
+            )}
           </div>
         )}
 

@@ -725,13 +725,6 @@ export function QuoteSection({
           </div>
         )}
 
-        {/* Client Comment (if any) */}
-        {quote!.clientComment && (
-          <div className="mt-6 p-4 rounded-lg bg-secondary/50">
-            <h4 className="text-sm font-medium mb-1">Client Comment</h4>
-            <p className="text-sm text-muted-foreground">{quote!.clientComment}</p>
-          </div>
-        )}
 
         {/* Actions (Trade View) */}
         {isTradeView && (

@@ -50,6 +50,9 @@ export default function ClientProjectView() {
   // survives any child re-renders or reconciliations.
   const [optimisticApprovedIds, setOptimisticApprovedIds] = useState<Set<string>>(new Set());
   const [optimisticDeclinedIds, setOptimisticDeclinedIds] = useState<Set<string>>(new Set());
+  // Tracks comments left when declining, keyed by changeId, so the card can
+  // show the comment immediately without waiting for a server refetch.
+  const [optimisticDeclinedComments, setOptimisticDeclinedComments] = useState<Map<string, string>>(new Map());
 
   const [approvalModal, setApprovalModal] = useState<{
     isOpen: boolean;
@@ -130,6 +133,13 @@ export default function ClientProjectView() {
   const handleConfirmDecline = async (comment: string) => {
     const { changeId } = approvalModal;
     setOptimisticDeclinedIds(prev => new Set(prev).add(changeId));
+    if (comment) {
+      setOptimisticDeclinedComments(prev => {
+        const next = new Map(prev);
+        next.set(changeId, comment);
+        return next;
+      });
+    }
     setApprovalModal({ isOpen: false, action: 'decline', changeId: '', title: '' });
     const success = await updateChangeRequestStatus(changeId, 'declined', 'trade', comment);
     if (success) toast.success('Variation declined — your trade has been notified.');
@@ -451,13 +461,6 @@ export default function ClientProjectView() {
                   </div>
                 )}
 
-                {/* Show client comment if exists */}
-                {activeQuote.clientComment && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm text-muted-foreground">Your comment:</p>
-                    <p className="text-sm mt-1">{activeQuote.clientComment}</p>
-                  </div>
-                )}
               </Card>
             ) : (
               <Card className="p-8 text-center">
@@ -479,6 +482,16 @@ export default function ClientProjectView() {
               <RequestChangeButton onSubmit={handleRequestChange} />
             </div>
 
+            {/* Show client's own quote-level comment here so it's in context */}
+            {activeQuote?.clientComment && (
+              <Card className="p-4 bg-secondary/40 border-dashed">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
+                  Your comment on the quote
+                </p>
+                <p className="text-sm">{activeQuote.clientComment}</p>
+              </Card>
+            )}
+
             {project.changeRequests.length === 0 ? (
               <Card className="p-8 text-center">
                 <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -495,6 +508,7 @@ export default function ClientProjectView() {
                     onDecline={handleDeclineChange}
                     isApprovedOptimistically={optimisticApprovedIds.has(request.id)}
                     isDeclinedOptimistically={optimisticDeclinedIds.has(request.id)}
+                    optimisticComment={optimisticDeclinedComments.get(request.id)}
                   />
                 ))}
               </div>
