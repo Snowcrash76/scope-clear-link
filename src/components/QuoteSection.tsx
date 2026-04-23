@@ -182,15 +182,26 @@ export function QuoteSection({
     toast.success('Quote exported for Xero');
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!quote) return;
     try {
-      downloadQuotePDF(
+      await downloadQuotePDF(
         quote,
-        { name: projectName, clientName, clientEmail, tradeBusinessName, tradeName },
+        {
+          name: projectName,
+          clientName,
+          clientEmail,
+          tradeBusinessName,
+          tradeName,
+          tradeAddress: tradeAddress || undefined,
+          tradePhone: tradePhone || undefined,
+          tradeWebsite: tradeWebsite || undefined,
+          abn: tradeAbn || undefined,
+        },
         scopeItems,
         changeRequests,
-        quoteLineItems
+        quoteLineItems,
+        logoUrl || undefined
       );
       toast.success('Quote PDF downloaded');
     } catch (error) {

@@ -16,19 +16,34 @@ export interface ProjectInfo {
   abn?: string;
   registeredAddress?: string;
   logoBase64?: string;
+  logoNaturalW?: number;
+  logoNaturalH?: number;
 }
 
-async function loadImageAsBase64(url: string): Promise<string | null> {
+interface LoadedLogo {
+  base64: string;
+  naturalW: number;
+  naturalH: number;
+}
+
+async function loadLogoForPDF(url: string): Promise<LoadedLogo | null> {
   try {
     const response = await fetch(url);
     if (!response.ok) return null;
     const blob = await response.blob();
-    return await new Promise((resolve) => {
+    const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => resolve(reader.result as string);
-      reader.onerror = () => resolve(null);
+      reader.onerror = reject;
       reader.readAsDataURL(blob);
     });
+    const { naturalW, naturalH } = await new Promise<{ naturalW: number; naturalH: number }>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ naturalW: img.naturalWidth, naturalH: img.naturalHeight });
+      img.onerror = () => resolve({ naturalW: 0, naturalH: 0 });
+      img.src = base64;
+    });
+    return { base64, naturalW, naturalH };
   } catch {
     return null;
   }
@@ -61,10 +76,20 @@ export function generateQuotePDF(
   let rightColY = yPos;
   if (project.logoBase64) {
     try {
-      const logoMaxW = 45;
-      const logoMaxH = 20;
-      doc.addImage(project.logoBase64, pageWidth - margin - logoMaxW, rightColY - 2, logoMaxW, logoMaxH);
-      rightColY += logoMaxH + 2;
+      const logoMaxW = 55;
+      const logoMaxH = 25;
+      let renderW = logoMaxW;
+      let renderH = logoMaxH;
+      if (project.logoNaturalW && project.logoNaturalH && project.logoNaturalH > 0) {
+        const aspect = project.logoNaturalW / project.logoNaturalH;
+        renderH = renderW / aspect;
+        if (renderH > logoMaxH) {
+          renderH = logoMaxH;
+          renderW = renderH * aspect;
+        }
+      }
+      doc.addImage(project.logoBase64, pageWidth - margin - renderW, rightColY - 2, renderW, renderH);
+      rightColY += renderH + 3;
     } catch {
       // fallback to text if image fails
       doc.setFontSize(14);
@@ -434,12 +459,18 @@ export async function downloadQuotePDF(
   logoUrl?: string
 ): Promise<void> {
   try {
-    let logoBase64: string | undefined;
+    let projectWithLogo: ProjectInfo = project;
     if (logoUrl) {
-      const result = await loadImageAsBase64(logoUrl);
-      if (result) logoBase64 = result;
+      const loaded = await loadLogoForPDF(logoUrl);
+      if (loaded) {
+        projectWithLogo = {
+          ...project,
+          logoBase64: loaded.base64,
+          logoNaturalW: loaded.naturalW,
+          logoNaturalH: loaded.naturalH,
+        };
+      }
     }
-    const projectWithLogo = logoBase64 ? { ...project, logoBase64 } : project;
     const doc = generateQuotePDF(quote, projectWithLogo, scopeItems, changeRequests, quoteLineItems);
     doc.save(`${quote.quoteNumber}.pdf`);
   } catch (error) {
