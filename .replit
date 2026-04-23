@@ -45,3 +45,4 @@ externalPort = 80
 [userenv.shared]
 VITE_SUPABASE_URL = "https://aswmcyldowvpugmfmykf.supabase.co"
 VITE_SUPABASE_PROJECT_ID = "aswmcyldowvpugmfmykf"
+VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzd21jeWxkb3d2cHVnbWZteWtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MzM1ODQsImV4cCI6MjA5MjUwOTU4NH0.4Fu1v4gPBEQPneT4bRWvdG8n4gWu9_GxQRj82OYsvyY"
