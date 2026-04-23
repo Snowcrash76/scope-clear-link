@@ -547,9 +547,12 @@ export default function ClientProjectView() {
               const approvedChanges = project.changeRequests.filter(
                 cr => optimisticApprovedIds.has(cr.id) || cr.status === 'approved'
               );
-              // Everything else is still in play (pending, awaiting trade, declined)
+              const declinedChanges = project.changeRequests.filter(
+                cr => cr.status === 'declined' && !approvedChanges.includes(cr)
+              );
+              // Pending / awaiting trade response — not yet resolved
               const awaitingChanges = project.changeRequests.filter(
-                cr => !approvedChanges.includes(cr)
+                cr => !approvedChanges.includes(cr) && cr.status !== 'declined'
               );
 
               const renderCard = (request: typeof project.changeRequests[0]) => (
@@ -597,6 +600,18 @@ export default function ClientProjectView() {
                         </span>
                       </div>
                       {approvedChanges.map(renderCard)}
+                    </div>
+                  )}
+
+                  {declinedChanges.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-heading font-semibold text-base">Declined</h3>
+                        <span className="text-xs font-medium bg-destructive/15 text-destructive px-2 py-0.5 rounded-full">
+                          {declinedChanges.length}
+                        </span>
+                      </div>
+                      {declinedChanges.map(renderCard)}
                     </div>
                   )}
                 </div>

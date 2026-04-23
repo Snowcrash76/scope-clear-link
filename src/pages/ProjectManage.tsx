@@ -706,13 +706,13 @@ export default function ProjectManage() {
               </Card>
             ) : (
               <div className="space-y-8">
-                {/* AWAITING RESPONSE — everything not yet approved */}
-                {(pendingClientRequests.length > 0 || pendingTradeRequests.length > 0 || resolvedChanges.filter(cr => cr.status === 'declined').length > 0) && (
+                {/* AWAITING RESPONSE — pending items only */}
+                {(pendingClientRequests.length > 0 || pendingTradeRequests.length > 0) && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <h3 className="font-heading font-semibold text-base">Awaiting Response</h3>
                       <span className="text-xs font-medium bg-pending/15 text-pending-foreground px-2 py-0.5 rounded-full">
-                        {pendingClientRequests.length + pendingTradeRequests.length + resolvedChanges.filter(cr => cr.status === 'declined').length}
+                        {pendingClientRequests.length + pendingTradeRequests.length}
                       </span>
                     </div>
 
@@ -732,16 +732,6 @@ export default function ProjectManage() {
                         key={request.id}
                         request={request}
                         onEdit={() => setEditingChangeRequest(request)}
-                      />
-                    ))}
-
-                    {/* Declined — need renegotiation */}
-                    {resolvedChanges.filter(cr => cr.status === 'declined').map((request) => (
-                      <ChangeRequestItem
-                        key={request.id}
-                        request={request}
-                        onEdit={() => setEditingChangeRequest(request)}
-                        isNew={recentlyResolvedChanges.some(r => r.id === request.id)}
                       />
                     ))}
                   </div>
@@ -765,6 +755,26 @@ export default function ProjectManage() {
                       </div>
                     )}
                     {resolvedChanges.filter(cr => cr.status === 'approved').map((request) => (
+                      <ChangeRequestItem
+                        key={request.id}
+                        request={request}
+                        onEdit={() => setEditingChangeRequest(request)}
+                        isNew={recentlyResolvedChanges.some(r => r.id === request.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* DECLINED */}
+                {resolvedChanges.filter(cr => cr.status === 'declined').length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-semibold text-base">Declined</h3>
+                      <span className="text-xs font-medium bg-destructive/15 text-destructive px-2 py-0.5 rounded-full">
+                        {resolvedChanges.filter(cr => cr.status === 'declined').length}
+                      </span>
+                    </div>
+                    {resolvedChanges.filter(cr => cr.status === 'declined').map((request) => (
                       <ChangeRequestItem
                         key={request.id}
                         request={request}
