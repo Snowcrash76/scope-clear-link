@@ -288,12 +288,13 @@ export function QuoteSection({
             <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
               Line Items
             </h4>
-            {isEditing && onAddLineItem && (
+            {onAddLineItem && (
               <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => setIsAddingItem(true)}
                 disabled={isAddingItem}
+                data-testid="button-add-line-item"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 Add Item
@@ -408,26 +409,26 @@ export function QuoteSection({
                           <span className="font-medium whitespace-nowrap">
                             ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                           </span>
-                          {isEditing && (
-                            <>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8"
-                                onClick={() => handleStartEditItem(item)}
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-8 w-8 text-destructive"
-                                onClick={() => handleDeleteItem(item.id)}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </>
-                          )}
+                          <>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8"
+                              onClick={() => handleStartEditItem(item)}
+                              data-testid={`button-edit-lineitem-${item.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-destructive"
+                              onClick={() => handleDeleteItem(item.id)}
+                              data-testid={`button-delete-lineitem-${item.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
                         </div>
                       </div>
                     )}
@@ -770,16 +771,28 @@ export function QuoteSection({
               </>
             )}
             {quote!.status === 'approved' && (
-              <Button variant="outline" onClick={handleExportToXero}>
-                <FileText className="w-4 h-4 mr-2" />
-                Export to Xero
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button variant="outline" onClick={handleExportToXero}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export to Xero
+                </Button>
+              </>
             )}
             {(quote!.status === 'declined' || quote!.status === 'revised') && (
-              <Button onClick={handleReviseQuote}>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Create Revised Quote
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button onClick={handleReviseQuote}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Create Revised Quote
+                </Button>
+              </>
             )}
           </div>
         )}
