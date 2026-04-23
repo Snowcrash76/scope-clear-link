@@ -104,10 +104,13 @@ export default function ClientProjectView() {
   const liveTotal = subtotal + taxAmount;
 
   const handleAcknowledge = async (itemId: string) => {
-    const success = await acknowledgeScopeItem(itemId, true);
-    if (success) {
-      toast.success('Item acknowledged');
-    }
+    await acknowledgeScopeItem(itemId, true);
+  };
+
+  const handleAcknowledgeAll = async (items: typeof project.scopeItems) => {
+    const unacknowledged = items.filter(item => !item.acknowledged);
+    await Promise.all(unacknowledged.map(item => acknowledgeScopeItem(item.id, true)));
+    toast.success(`${unacknowledged.length} item${unacknowledged.length !== 1 ? 's' : ''} acknowledged`);
   };
 
   // Approve without a confirmation modal — optimistically hide the button
@@ -246,6 +249,7 @@ export default function ClientProjectView() {
               category="included"
               items={includedItems}
               onAcknowledge={handleAcknowledge}
+              onAcknowledgeAll={() => handleAcknowledgeAll(includedItems)}
               showTotal={true}
               totalAmount={liveTotal}
               approvedChanges={approvedChanges.map(cr => ({
@@ -261,6 +265,7 @@ export default function ClientProjectView() {
               category="excluded"
               items={excludedItems}
               onAcknowledge={handleAcknowledge}
+              onAcknowledgeAll={() => handleAcknowledgeAll(excludedItems)}
             />
 
             <ScopeSection
@@ -269,6 +274,7 @@ export default function ClientProjectView() {
               category="assumption"
               items={assumptionItems}
               onAcknowledge={handleAcknowledge}
+              onAcknowledgeAll={() => handleAcknowledgeAll(assumptionItems)}
             />
           </TabsContent>
 
@@ -454,7 +460,16 @@ export default function ClientProjectView() {
                     </Button>
                     <Button 
                       className="flex-1"
-                      onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'approve' })}
+                      onClick={async () => {
+                        if (!activeQuote) return;
+                        try {
+                          await approveQuote(activeQuote.id, '');
+                          toast.success('Quote approved! Your trade has been notified.');
+                          await refetchQuotes();
+                        } catch {
+                          toast.error('Failed to approve quote');
+                        }
+                      }}
                     >
                       Approve Quote
                     </Button>

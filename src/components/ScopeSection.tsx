@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ScopeItem } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle, Calculator } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
@@ -19,6 +20,7 @@ interface ScopeSectionProps {
   category: 'included' | 'excluded' | 'assumption';
   items: ScopeItem[];
   onAcknowledge: (itemId: string) => void;
+  onAcknowledgeAll?: () => void;
   isClientView?: boolean;
   showTotal?: boolean;
   totalAmount?: number;
@@ -55,12 +57,12 @@ export function ScopeSection({
   category, 
   items, 
   onAcknowledge,
+  onAcknowledgeAll,
   isClientView = true,
   showTotal = false,
   totalAmount = 0,
   approvedChanges = []
 }: ScopeSectionProps) {
-  // Included section starts expanded, others start collapsed
   const [isExpanded, setIsExpanded] = useState(category === 'included');
   const config = categoryConfig[category];
   const Icon = config.icon;
@@ -68,7 +70,6 @@ export function ScopeSection({
   const acknowledgedCount = items.filter(item => item.acknowledged).length;
   const allAcknowledged = acknowledgedCount === items.length;
   
-  // Calculate subtotal for items with costs
   const subtotal = items.reduce((sum, item) => sum + (item.cost || 0), 0);
 
   const isSubtle = category !== 'included';
@@ -135,6 +136,25 @@ export function ScopeSection({
           {isSubtle && (
             <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
           )}
+
+          {/* Acknowledge All button — shown when client view and there are unacknowledged items */}
+          {isClientView && onAcknowledgeAll && !allAcknowledged && items.length > 1 && (
+            <div className="flex justify-end -mt-1 mb-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs h-8"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAcknowledgeAll();
+                }}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-approved" />
+                Acknowledge All
+              </Button>
+            </div>
+          )}
+
           {items.map((item) => (
             <div
               key={item.id}
@@ -189,7 +209,6 @@ export function ScopeSection({
                   <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
                     {item.description}
                   </p>
-                  {/* Show multiple images if available, otherwise fall back to single image */}
                   {item.imageUrls && item.imageUrls.length > 0 ? (
                     <div className="mt-3">
                       <MultiImageDisplay paths={item.imageUrls} />
@@ -204,7 +223,6 @@ export function ScopeSection({
             </div>
           ))}
           
-          {/* Category Subtotal for non-included or when not showing total */}
           {subtotal > 0 && !showTotal && (
             <div className="pt-3 mt-3 border-t border-dashed flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
@@ -216,12 +234,10 @@ export function ScopeSection({
             </div>
           )}
 
-          {/* Contract Summary */}
           {showTotal && (
             <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-3">
               <h4 className="text-sm font-bold text-foreground uppercase tracking-wide mb-3">Contract Summary</h4>
               
-              {/* Original Contract */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-foreground font-medium">Original Contract</span>
                 <span className="font-semibold tabular-nums text-right">
@@ -229,7 +245,6 @@ export function ScopeSection({
                 </span>
               </div>
 
-              {/* Approved Changes Summary Line */}
               {approvedChanges.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
@@ -245,7 +260,6 @@ export function ScopeSection({
                     </span>
                   </div>
                   
-                  {/* Individual Changes Breakdown */}
                   <div className="pl-4 border-l-2 border-muted space-y-1.5">
                     {approvedChanges.map((change) => (
                       <div key={change.id} className="flex items-center justify-between text-xs">
@@ -262,7 +276,6 @@ export function ScopeSection({
                 </div>
               )}
 
-              {/* Revised Contract Total */}
               <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 mt-3">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10">
