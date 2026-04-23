@@ -127,8 +127,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
   };
 
   const canProceedStep1 = jobName.trim() && clientName.trim() && clientEmail.trim();
-  const hasIncludedItems = lineItems.some(item => item.category === 'included');
-  const canSubmit = hasIncludedItems;
+  const canSubmit = Boolean(canProceedStep1);
 
   const subtotal = lineItems
     .filter(item => item.category === 'included')
