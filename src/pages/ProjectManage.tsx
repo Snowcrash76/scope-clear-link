@@ -817,6 +817,11 @@ export default function ProjectManage() {
               clientEmail={project.clientEmail}
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
+              tradeAddress={tradeProfileInfo.address}
+              tradePhone={tradeProfileInfo.phone}
+              tradeWebsite={tradeProfileInfo.website}
+              tradeAbn={tradeProfileInfo.abn}
+              logoUrl={tradeProfileInfo.logoUrl}
               defaultTerms={defaultTerms}
               defaultPaymentInstructions={defaultPaymentInstructions}
               onCreateInvoice={createInvoice}
