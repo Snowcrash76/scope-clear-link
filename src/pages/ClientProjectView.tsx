@@ -21,7 +21,7 @@ import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2 } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice } from '@/types/project';
@@ -481,6 +481,33 @@ export default function ClientProjectView() {
               </div>
               <RequestChangeButton onSubmit={handleRequestChange} />
             </div>
+
+            {/* Notification for recently resolved variations */}
+            {(() => {
+              const recentlyResolved = project.changeRequests.filter(cr => {
+                if (!cr.resolvedAt || cr.status === 'pending' || cr.status === 'awaiting_client') return false;
+                return (Date.now() - cr.resolvedAt.getTime()) < 72 * 60 * 60 * 1000;
+              });
+              if (recentlyResolved.length === 0) return null;
+              const approvedCount = recentlyResolved.filter(cr => cr.status === 'approved').length;
+              const declinedCount = recentlyResolved.filter(cr => cr.status === 'declined').length;
+              const parts: string[] = [];
+              if (approvedCount > 0) parts.push(`${approvedCount} approved`);
+              if (declinedCount > 0) parts.push(`${declinedCount} declined`);
+              return (
+                <div className="flex items-start gap-3 p-4 rounded-lg bg-approved/10 border border-approved/20">
+                  <CheckCircle2 className="w-5 h-5 text-approved flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-approved">
+                      {parts.join(' and ')} recently — you and your trade have both been notified by email.
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      See the variation cards below for details.
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Show client's own quote-level comment here so it's in context */}
             {activeQuote?.clientComment && (

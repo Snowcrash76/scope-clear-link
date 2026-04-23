@@ -500,19 +500,21 @@ export function useProject(projectId: string | undefined) {
       }
 
       if (changeRequest && projectId) {
-        // Send email notification — wrap so a delivery failure doesn't block
-        // the approval from completing successfully from the user's point of view.
+        // Notify BOTH parties — run in parallel and let either fail silently
+        // so a delivery issue never blocks the approval completing.
         try {
-          await sendChangeNotification(
-            projectId,
-            requestId,
-            status,
-            recipientType,
-            changeRequest.title,
-            changeRequest.description,
-            changeRequest.costImpact,
-            changeRequest.timeImpact?.toString()
-          );
+          await Promise.allSettled([
+            sendChangeNotification(
+              projectId, requestId, status, 'trade',
+              changeRequest.title, changeRequest.description,
+              changeRequest.costImpact, changeRequest.timeImpact?.toString()
+            ),
+            sendChangeNotification(
+              projectId, requestId, status, 'client',
+              changeRequest.title, changeRequest.description,
+              changeRequest.costImpact, changeRequest.timeImpact?.toString()
+            ),
+          ]);
         } catch (notifyError) {
           console.warn('Notification failed (non-blocking):', notifyError);
         }

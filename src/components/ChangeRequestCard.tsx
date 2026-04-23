@@ -71,6 +71,13 @@ export function ChangeRequestCard({
     ? 'declined'
     : null;
 
+  // Show "New" badge for variations resolved in the last 72 hours
+  const isRecentlyResolved =
+    !optimisticDecision &&
+    request.resolvedAt != null &&
+    (request.status === 'approved' || request.status === 'declined') &&
+    (Date.now() - request.resolvedAt.getTime()) < 72 * 60 * 60 * 1000;
+
   // Trade can respond to pending client requests (adds costs and sends back)
   const canTradeRespond = viewerRole === 'trade' && 
     request.type === 'client_request' && 
@@ -116,21 +123,29 @@ export function ChangeRequestCard({
               <h3 className="font-heading font-semibold">{request.title}</h3>
             </div>
           </div>
-          {!optimisticDecision && (
-            <StatusBadge status={request.status} viewerRole={viewerRole} />
-          )}
-          {isApprovedOptimistically && (
-            <Badge variant="success" className="gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              Approved
-            </Badge>
-          )}
-          {isDeclinedOptimistically && (
-            <Badge variant="destructive" className="gap-1.5">
-              <X className="w-3.5 h-3.5" />
-              Declined
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {isRecentlyResolved && (
+              <Badge variant="success" className="gap-1 text-xs">
+                <CheckCircle2 className="w-3 h-3" />
+                New
+              </Badge>
+            )}
+            {!optimisticDecision && (
+              <StatusBadge status={request.status} viewerRole={viewerRole} />
+            )}
+            {isApprovedOptimistically && (
+              <Badge variant="success" className="gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Approved
+              </Badge>
+            )}
+            {isDeclinedOptimistically && (
+              <Badge variant="destructive" className="gap-1.5">
+                <X className="w-3.5 h-3.5" />
+                Declined
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Description */}

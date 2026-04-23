@@ -47,6 +47,12 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
   const unacknowledgedItems = project.scopeItems.filter(si => !si.acknowledged).length;
   const needsAttention = pendingChanges > 0 || (project.status === 'sent' && unacknowledgedItems > 0);
 
+  // Variations resolved (approved or declined) within the last 72 hours
+  const recentlyResolved = project.changeRequests.filter(cr => {
+    if (!cr.resolvedAt || cr.status === 'pending' || cr.status === 'awaiting_client') return false;
+    return (Date.now() - cr.resolvedAt.getTime()) < 72 * 60 * 60 * 1000;
+  }).length;
+
   const handleDelete = async () => {
     if (!onDeleteProject || isDeleting) return;
     
@@ -169,6 +175,13 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
               <span>{pendingChanges} pending</span>
             </div>
           )}
+
+          {recentlyResolved > 0 && (
+            <div className="flex items-center gap-1.5 text-sm text-approved">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{recentlyResolved} variation{recentlyResolved > 1 ? 's' : ''} resolved</span>
+            </div>
+          )}
           
           {project.status === 'in_progress' && (
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -179,15 +192,27 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
         </div>
 
         {/* Alerts */}
-        {needsAttention && (
-          <div className="flex items-center gap-2 p-2 rounded-lg bg-pending/10 text-pending-foreground text-sm mb-4">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            <span>
-              {pendingChanges > 0 
-                ? `${pendingChanges} variation${pendingChanges > 1 ? 's' : ''} awaiting approval`
-                : `${unacknowledgedItems} item${unacknowledgedItems > 1 ? 's' : ''} to acknowledge`
-              }
-            </span>
+        {(needsAttention || recentlyResolved > 0) && (
+          <div className="mb-4 space-y-2">
+            {needsAttention && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-pending/10 text-pending-foreground text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {pendingChanges > 0 
+                    ? `${pendingChanges} variation${pendingChanges > 1 ? 's' : ''} awaiting approval`
+                    : `${unacknowledgedItems} item${unacknowledgedItems > 1 ? 's' : ''} to acknowledge`
+                  }
+                </span>
+              </div>
+            )}
+            {recentlyResolved > 0 && (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-approved/10 text-approved text-sm">
+                <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {recentlyResolved} variation{recentlyResolved > 1 ? 's' : ''} recently resolved — check Variations
+                </span>
+              </div>
+            )}
           </div>
         )}
 

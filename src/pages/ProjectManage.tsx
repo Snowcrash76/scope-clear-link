@@ -327,6 +327,11 @@ export default function ProjectManage() {
     cr => (cr.status === 'pending' && cr.type !== 'client_request') || cr.status === 'awaiting_client'
   );
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
+  // Variations resolved in the last 72 hours — shown with a "New" badge
+  const RECENTLY_RESOLVED_MS = 72 * 60 * 60 * 1000;
+  const recentlyResolvedChanges = resolvedChanges.filter(
+    cr => cr.resolvedAt && (Date.now() - cr.resolvedAt.getTime()) < RECENTLY_RESOLVED_MS
+  );
 
   const groupedScopeItems = {
     included: project.scopeItems.filter(item => item.category === 'included'),
@@ -704,6 +709,14 @@ export default function ProjectManage() {
 
             {resolvedChanges.length > 0 && (
               <div className="space-y-4">
+                {recentlyResolvedChanges.length > 0 && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 border border-approved/20">
+                    <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
+                    <p className="text-sm text-approved font-medium">
+                      {recentlyResolvedChanges.length} variation{recentlyResolvedChanges.length > 1 ? 's' : ''} resolved in the last 72 hours — both parties have been notified by email.
+                    </p>
+                  </div>
+                )}
                 <h3 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
                   Resolved ({resolvedChanges.length})
                 </h3>
@@ -712,6 +725,7 @@ export default function ProjectManage() {
                     key={request.id} 
                     request={request} 
                     onEdit={() => setEditingChangeRequest(request)}
+                    isNew={recentlyResolvedChanges.some(r => r.id === request.id)}
                   />
                 ))}
               </div>
@@ -905,7 +919,7 @@ export default function ProjectManage() {
   );
 }
 
-function ChangeRequestItem({ request, onEdit }: { request: ChangeRequest; onEdit?: () => void }) {
+function ChangeRequestItem({ request, onEdit, isNew }: { request: ChangeRequest; onEdit?: () => void; isNew?: boolean }) {
   const typeConfig = {
     client_request: { icon: User, label: 'Client Request', color: 'text-primary' },
     site_issue: { icon: AlertTriangle, label: 'Site Issue', color: 'text-warning' },
@@ -926,6 +940,12 @@ function ChangeRequestItem({ request, onEdit }: { request: ChangeRequest; onEdit
           <Badge variant="secondary" className="text-xs">{config.label}</Badge>
         </div>
         <div className="flex items-center gap-2">
+          {isNew && (
+            <Badge variant="success" className="text-xs gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              New
+            </Badge>
+          )}
           {onEdit && (
             <Button 
               variant="ghost" 
