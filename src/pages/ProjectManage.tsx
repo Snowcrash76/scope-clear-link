@@ -311,7 +311,11 @@ export default function ProjectManage() {
   };
 
   const handleSendInvite = () => {
-    handleCopyClientLink();
+    const link = `${window.location.origin}/project/${project.id}`;
+    navigator.clipboard.writeText(link);
+    toast.success('Invite sent', {
+      description: `${project.clientName} has been invited to ${project.name}.`,
+    });
     setIsInviteModalOpen(false);
   };
 
