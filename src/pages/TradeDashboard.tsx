@@ -8,8 +8,9 @@ import { ProjectCard } from '@/components/ProjectCard';
 import { ProjectCardSkeletonGrid } from '@/components/ProjectCardSkeleton';
 import { DashboardStats } from '@/components/DashboardStats';
 import { AppShell } from '@/components/AppShell';
+import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
-import { Plus, Search, Briefcase } from 'lucide-react';
+import { Search, Briefcase } from 'lucide-react';
 
 export default function TradeDashboard() {
   const navigate = useNavigate();
@@ -136,6 +137,11 @@ export default function TradeDashboard() {
             </>
           )}
         </Tabs>
+
+        {/* Activity feed */}
+        <div className="mt-10">
+          <ActivityFeed />
+        </div>
       </main>
     </AppShell>
   );
