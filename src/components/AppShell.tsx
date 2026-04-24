@@ -74,7 +74,12 @@ function SidebarInner({
 }: SidebarInnerProps) {
   const act = (fn: () => void) => { onClose?.(); fn(); };
 
-  const isDashboardActive = currentPath.startsWith('/dashboard');
+  const navItems = [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', active: currentPath === '/dashboard', testId: 'nav-dashboard' },
+    { to: '/projects', icon: FolderOpen, label: 'Projects', active: currentPath.startsWith('/projects') || currentPath.startsWith('/manage'), testId: 'nav-projects' },
+    { to: '/quotes', icon: FileText, label: 'Quotes', active: currentPath.startsWith('/quotes'), testId: 'nav-quotes' },
+    { to: '/invoices', icon: Receipt, label: 'Invoices', active: currentPath.startsWith('/invoices'), testId: 'nav-invoices' },
+  ];
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -105,12 +110,7 @@ function SidebarInner({
 
       {/* Nav items */}
       <nav className="px-3 pt-3 flex-1 space-y-0.5">
-        {[
-          { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', active: isDashboardActive, testId: 'nav-dashboard' },
-          { to: '/dashboard', icon: FolderOpen, label: 'Projects', active: false, testId: 'nav-projects' },
-          { to: '/dashboard', icon: FileText, label: 'Quotes', active: false, testId: 'nav-quotes' },
-          { to: '/dashboard', icon: Receipt, label: 'Invoices', active: false, testId: 'nav-invoices' },
-        ].map(({ to, icon: Icon, label, active, testId }) => (
+        {navItems.map(({ to, icon: Icon, label, active, testId }) => (
           <Link
             key={label}
             to={to}
