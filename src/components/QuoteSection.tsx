@@ -630,87 +630,61 @@ export function QuoteSection({
           </div>
         </div>
 
-        {/* Line Items */}
-        <div className="space-y-3 mb-6">
-          <h4 className="font-bold text-base text-foreground uppercase tracking-wide">
-            Line Items
-          </h4>
-          <div className="border rounded-lg divide-y">
+        {/* Line Items — unified list */}
+        {(includedItems.length > 0 || approvedChanges.length > 0 || quoteLineItems.length > 0) && (
+          <div className="border rounded-lg divide-y mb-6">
             {includedItems.map(item => (
-              <div key={item.id} className="p-3">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 pr-4">
-                    <span className="text-base font-semibold text-foreground">{item.title}</span>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
-                    )}
-                  </div>
-                  <span className="font-medium whitespace-nowrap">
-                    ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                  </span>
+              <div key={item.id} className="p-3 flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                  <span className="text-sm font-medium">{item.title}</span>
+                  {item.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  )}
                 </div>
+                <span className="text-sm font-medium whitespace-nowrap">
+                  ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                </span>
               </div>
             ))}
-            {approvedChanges.length > 0 && (
-              <>
-                <div className="p-3 bg-muted/50">
-                  <span className="text-base font-bold text-foreground uppercase tracking-wide">
-                    Approved Variations
-                  </span>
-                </div>
-                {approvedChanges.map(change => (
-                  <div key={change.id} className="p-3 bg-muted/30">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <span className="text-base font-semibold text-foreground">{change.title}</span>
-                        {change.description && (
-                          <p className="text-sm text-muted-foreground mt-1.5">{change.description}</p>
-                        )}
-                      </div>
-                      <span className={cn(
-                        "font-medium whitespace-nowrap",
-                        change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                      )}>
-                        {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
+            {approvedChanges.map(change => (
+              <div key={change.id} className="p-3 flex justify-between items-start bg-muted/30">
+                <div className="flex-1 pr-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{change.title}</span>
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Variation</span>
                   </div>
-                ))}
-              </>
-            )}
-            {quoteLineItems.length > 0 && (
-              <>
-                <div className="p-3 bg-primary/5">
-                  <span className="text-base font-bold text-primary uppercase tracking-wide">
-                    Custom Line Items
-                  </span>
+                  {change.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
+                  )}
                 </div>
-                {quoteLineItems.map(item => (
-                  <div key={item.id} className="p-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-base font-semibold text-foreground">{item.title}</span>
-                          {item.title.startsWith('Variation: ') && (
-                            <Badge variant="secondary" className="text-xs" data-testid={`badge-variation-quote-${item.id}`}>
-                              Variation
-                            </Badge>
-                          )}
-                        </div>
-                        {item.description && (
-                          <p className="text-sm text-muted-foreground mt-1.5">{item.description}</p>
-                        )}
-                      </div>
-                      <span className="font-medium whitespace-nowrap">
-                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
+                <span className={cn(
+                  "text-sm font-medium whitespace-nowrap",
+                  change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                )}>
+                  {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
+            {quoteLineItems.map(item => (
+              <div key={item.id} className="p-3 flex justify-between items-start">
+                <div className="flex-1 pr-4 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium">{item.title}</span>
+                    <Badge variant="secondary" className="text-xs" data-testid={`badge-custom-quote-${item.id}`}>
+                      Custom
+                    </Badge>
                   </div>
-                ))}
-              </>
-            )}
+                  {item.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  )}
+                </div>
+                <span className="text-sm font-medium whitespace-nowrap">
+                  ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
           </div>
-        </div>
+        )}
 
         {/* Totals - Always use live calculated values */}
         <div className="space-y-2 border-t pt-4">
