@@ -71,8 +71,7 @@ function SidebarInner({
 }: SidebarInnerProps) {
   const act = (fn: () => void) => { onClose?.(); fn(); };
 
-  const isOnAppPage =
-    currentPath.startsWith('/dashboard') || currentPath.startsWith('/manage');
+  const isDashboardActive = currentPath.startsWith('/dashboard');
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -108,7 +107,7 @@ function SidebarInner({
           onClick={() => onClose?.()}
           className={cn(
             'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-            isOnAppPage
+            isDashboardActive
               ? 'bg-sidebar-accent text-sidebar-foreground'
               : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground'
           )}
