@@ -46,6 +46,7 @@ import {
   Pencil,
   User,
   Mail,
+  MapPin,
   Calendar,
   Clock,
   DollarSign,
@@ -407,7 +408,7 @@ export default function ProjectManage() {
                     {project.status.replace('_', ' ')}
                   </Badge>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
                   <span className="flex items-center gap-1">
                     <User className="w-3.5 h-3.5" />
                     {project.clientName}
@@ -416,6 +417,12 @@ export default function ProjectManage() {
                     <Mail className="w-3.5 h-3.5" />
                     {project.clientEmail}
                   </span>
+                  {project.clientAddress && (
+                    <span className="flex items-center gap-1" data-testid="text-client-address">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {project.clientAddress}
+                    </span>
+                  )}
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
