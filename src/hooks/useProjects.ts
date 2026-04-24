@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -60,6 +61,7 @@ type DbProjectStage = {
 export function useProjects() {
   const { user } = useAuth();
   const { createProject: createProjectBase } = useCreateProject();
+  const queryClient = useQueryClient();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -165,6 +167,7 @@ export function useProjects() {
     const projectId = await createProjectBase(data);
     if (projectId) {
       await fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ['/activity-feed', user?.id] });
     }
     return projectId;
   };
@@ -178,6 +181,7 @@ export function useProjects() {
 
       if (error) throw error;
       await fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ['/activity-feed', user?.id] });
       return true;
     } catch (error) {
       console.error('Error updating project status:', error);
@@ -225,6 +229,7 @@ export function useProjects() {
       if (error) throw error;
       
       await fetchProjects();
+      queryClient.invalidateQueries({ queryKey: ['/activity-feed', user?.id] });
       return true;
     } catch (error) {
       console.error('Error deleting project:', error);

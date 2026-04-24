@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { CreateJobModal } from '@/components/CreateJobModal';
 import { useCreateProject, type CreateProjectData } from '@/hooks/useCreateProject';
 import { Button } from '@/components/ui/button';
@@ -190,6 +191,7 @@ interface AppShellProps {
 export function AppShell({ children }: AppShellProps) {
   const { profile, signOut, user } = useAuth();
   const { createProject } = useCreateProject();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -306,6 +308,7 @@ export function AppShell({ children }: AppShellProps) {
   const handleCreateJob = async (jobData: CreateProjectData) => {
     const projectId = await createProject(jobData);
     if (projectId) {
+      queryClient.invalidateQueries({ queryKey: ['/activity-feed', user?.id] });
       toast.success('Job & quote created! Review and send to your client.');
       setIsCreateModalOpen(false);
       navigate(`/manage/${projectId}?tab=quote`);
