@@ -1,5 +1,5 @@
 import { Invoice, Quote, ScopeItem, ChangeRequest, InvoiceLineItem } from '@/types/project';
-import { cleanVariationTitle } from '@/lib/utils';
+import { cleanVariationTitle, isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface ProjectInfo {
@@ -106,7 +106,7 @@ export function exportQuoteToXeroCSV(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
-  _changeRequests: ChangeRequest[]
+  changeRequests: ChangeRequest[]
 ): string {
   const headers = [
     '*ContactName',
@@ -128,8 +128,8 @@ export function exportQuoteToXeroCSV(
     : formatXeroDate(new Date(quote.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000)); // Default 30 days
   const taxType = getXeroTaxType(quote.taxRate);
 
-  // Add included scope items as line items (variations are already included here)
-  const includedItems = scopeItems.filter(item => item.category === 'included');
+  // Base scope items only — exclude variation duplicates
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   includedItems.forEach(item => {
     rows.push(createCSVRow([
       project.clientName,
@@ -140,6 +140,22 @@ export function exportQuoteToXeroCSV(
       cleanVariationTitle(item.title),
       1,
       (item.cost || 0).toFixed(2),
+      taxType
+    ]));
+  });
+
+  // Approved variations as separate line items
+  const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
+  approvedChanges.forEach(cr => {
+    rows.push(createCSVRow([
+      project.clientName,
+      project.clientEmail,
+      quote.quoteNumber,
+      quoteDate,
+      expiryDate,
+      cr.title,
+      1,
+      cr.costImpact.toFixed(2),
       taxType
     ]));
   });

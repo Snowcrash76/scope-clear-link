@@ -26,7 +26,7 @@ import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice } from '@/types/project';
-import { cn, cleanVariationTitle } from '@/lib/utils';
+import { cn, isVariationItem } from '@/lib/utils';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -100,7 +100,7 @@ export default function ClientProjectView() {
     logoUrl: project.tradeLogoUrl,
   };
 
-  const includedItems = project.scopeItems.filter(item => item.category === 'included');
+  const includedItems = project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
@@ -109,10 +109,11 @@ export default function ClientProjectView() {
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
   const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
 
-  // Calculate live totals from current data
+  // Calculate live totals — variation duplicates filtered out; costs come from approvedChanges
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
-  const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const customItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxRate = activeQuote?.taxRate || 0;
   const taxAmount = subtotal * (taxRate / 100);
@@ -380,13 +381,13 @@ export default function ClientProjectView() {
 
                 <Separator />
 
-                {/* Included Items — scope + custom line items merged */}
-                {(includedItems.length > 0 || quoteLineItems.length > 0) && (
+                {/* Included Items — base scope + base custom line items only (no variation duplicates) */}
+                {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
                   <div className="border rounded-lg divide-y">
                     {includedItems.map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{cleanVariationTitle(item.title)}</p>
+                          <p className="text-sm font-medium">{item.title}</p>
                           {item.description && (
                             <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                           )}
@@ -396,7 +397,7 @@ export default function ClientProjectView() {
                         </span>
                       </div>
                     ))}
-                    {quoteLineItems.map(item => (
+                    {baseQuoteLineItems.map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{item.title}</p>

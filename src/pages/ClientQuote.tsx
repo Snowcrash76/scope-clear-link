@@ -19,6 +19,7 @@ import { CheckCircle2, XCircle, FileText, Loader2, AlertCircle, Calendar } from 
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
+import { isVariationItem } from '@/lib/utils';
 
 type QuoteRow = Database['public']['Tables']['quotes']['Row'];
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
@@ -290,16 +291,16 @@ export default function ClientQuote() {
           </div>
         )}
 
-        {/* Line items */}
-        {lineItems.length > 0 && (
+        {/* Line items — base items only */}
+        {lineItems.filter(li => !isVariationItem(li.title)).length > 0 && (
           <Card className="overflow-hidden">
             <div className="px-4 py-3 border-b bg-secondary/30">
               <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-                Line Items
+                Included Items
               </h2>
             </div>
             <div className="divide-y">
-              {lineItems.map((li) => (
+              {lineItems.filter(li => !isVariationItem(li.title)).map((li) => (
                 <div key={li.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <p className="font-medium" data-testid={`text-line-item-title-${li.id}`}>
@@ -310,6 +311,34 @@ export default function ClientQuote() {
                     )}
                   </div>
                   <p className="font-medium whitespace-nowrap tabular-nums">${fmt(li.cost)}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Approved Variations — separate green section */}
+        {lineItems.filter(li => isVariationItem(li.title)).length > 0 && (
+          <Card className="overflow-hidden border-approved/30">
+            <div className="px-4 py-3 border-b bg-approved/5">
+              <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-approved">
+                Approved Variations
+              </h2>
+            </div>
+            <div className="divide-y divide-approved/10">
+              {lineItems.filter(li => isVariationItem(li.title)).map((li) => (
+                <div key={li.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                  <div>
+                    <p className="font-medium" data-testid={`text-variation-title-${li.id}`}>
+                      {li.title.replace(/^Variation: /, '')}
+                    </p>
+                    {li.description && (
+                      <p className="text-sm text-muted-foreground mt-0.5">{li.description}</p>
+                    )}
+                  </div>
+                  <p className="font-medium whitespace-nowrap tabular-nums text-approved">
+                    +${fmt(li.cost)}
+                  </p>
                 </div>
               ))}
             </div>

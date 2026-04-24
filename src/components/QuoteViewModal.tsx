@@ -20,7 +20,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { cn, isVariationItem } from '@/lib/utils';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 
 interface QuoteViewModalProps {
@@ -54,15 +54,16 @@ export function QuoteViewModal({
   quoteLineItems = [],
   projectInfo,
 }: QuoteViewModalProps) {
-  const includedItems = scopeItems.filter(item => item.category === 'included');
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const excludedItems = scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = scopeItems.filter(item => item.category === 'assumption');
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
 
-  // Calculate live totals from current data (including custom line items)
+  // Calculate live totals — filter variation duplicates so they're only counted via approvedChanges
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
-  const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
+  const customItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxAmount = subtotal * (quote.taxRate / 100);
   const total = subtotal + taxAmount;
@@ -141,8 +142,8 @@ export function QuoteViewModal({
 
           <Separator />
 
-          {/* Included Items — scope + custom line items merged */}
-          {(includedItems.length > 0 || quoteLineItems.length > 0) && (
+          {/* Included Items — scope + custom line items merged (no variation duplicates) */}
+          {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
                 Included Items
@@ -165,7 +166,7 @@ export function QuoteViewModal({
                     </div>
                   </div>
                 ))}
-                {quoteLineItems.map(item => (
+                {baseQuoteLineItems.map(item => (
                   <div key={item.id} className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">

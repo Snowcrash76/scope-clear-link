@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
-import { cleanVariationTitle } from '@/lib/utils';
+import { cleanVariationTitle, isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 
 export interface ProjectInfo {
@@ -60,8 +60,8 @@ export function generateQuotePDF(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
-  _changeRequests: ChangeRequest[] = [],
-  _quoteLineItems: QuoteLineItem[] = []
+  changeRequests: ChangeRequest[] = [],
+  quoteLineItems: QuoteLineItem[] = []
 ): jsPDF {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -219,14 +219,27 @@ export function generateQuotePDF(
 
   yPos += 10;
 
-  // Combine all items into one table
-  const allItems: { description: string; details?: string; quantity: number; unitPrice: number; gst: string; amount: number }[] = [];
+  // Combine base items into one table — exclude variation duplicates
+  type PdfItem = { description: string; details?: string; quantity: number; unitPrice: number; gst: string; amount: number };
+  const allItems: PdfItem[] = [];
 
-  // Included Items (variations are already represented here as "Variation: X" scope items)
-  const includedItems = scopeItems.filter(item => item.category === 'included');
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   includedItems.forEach(item => {
     allItems.push({
-      description: cleanVariationTitle(item.title),
+      description: item.title,
+      details: item.description,
+      quantity: 1,
+      unitPrice: item.cost || 0,
+      gst: '10%',
+      amount: item.cost || 0
+    });
+  });
+
+  // Custom (non-variation) quote line items
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
+  baseQuoteLineItems.forEach(item => {
+    allItems.push({
+      description: item.title,
       details: item.description,
       quantity: 1,
       unitPrice: item.cost || 0,
@@ -290,6 +303,64 @@ export function generateQuotePDF(
           data.cell.styles.lineWidth = { bottom: 0.5 };
           data.cell.styles.lineColor = lineColor;
         }
+      },
+    });
+
+    yPos = (doc as any).lastAutoTable.finalY + 5;
+  }
+
+  // Approved Variations section
+  const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
+  if (approvedChanges.length > 0) {
+    if (yPos > 230) {
+      doc.addPage();
+      yPos = 20;
+    }
+
+    yPos += 10;
+    doc.setTextColor(34, 197, 94); // green-500 approximation
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Approved Variations', margin, yPos);
+    yPos += 6;
+
+    const variationData = approvedChanges.map(cr => {
+      const desc = cr.title;
+      const details = cr.description || '';
+      const displayDesc = details ? `${desc}\n${details}` : desc;
+      const amount = cr.costImpact;
+      return [
+        displayDesc,
+        '1.00',
+        amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+        '10%',
+        amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+      ];
+    });
+
+    autoTable(doc, {
+      startY: yPos,
+      head: [['Description', 'Quantity', 'Unit Price', 'GST', 'Amount AUD']],
+      body: variationData,
+      margin: { left: margin, right: margin },
+      headStyles: {
+        fillColor: [240, 253, 244], // green-50
+        textColor: [22, 163, 74],   // green-600
+        fontStyle: 'bold',
+        fontSize: 9,
+        cellPadding: 4,
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: [33, 33, 33],
+        cellPadding: 4,
+      },
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { cellWidth: 22, halign: 'right' },
+        2: { cellWidth: 28, halign: 'right' },
+        3: { cellWidth: 18, halign: 'right' },
+        4: { cellWidth: 30, halign: 'right' },
       },
     });
 
@@ -383,25 +454,33 @@ export function generateQuotePDF(
   const totalsX = pageWidth - margin - 60;
   const totalsValueX = pageWidth - margin;
 
+  // Live totals from current items (avoids stale stored values)
+  const pdfBaseCost = allItems.reduce((sum, i) => sum + i.amount, 0);
+  const pdfVariationCost = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
+  const pdfSubtotal = pdfBaseCost + pdfVariationCost;
+  const pdfTaxRate = quote.taxRate ?? 10;
+  const pdfTaxAmount = pdfSubtotal * (pdfTaxRate / 100);
+  const pdfTotal = pdfSubtotal + pdfTaxAmount;
+
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...mutedColor);
   doc.text('Subtotal', totalsX, yPos, { align: 'right' });
   doc.setTextColor(...textColor);
-  doc.text(`$${quote.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
+  doc.text(`$${pdfSubtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
   yPos += 7;
   doc.setTextColor(...mutedColor);
-  doc.text('TOTAL GST 10%', totalsX, yPos, { align: 'right' });
+  doc.text(`TOTAL GST ${pdfTaxRate}%`, totalsX, yPos, { align: 'right' });
   doc.setTextColor(...textColor);
-  doc.text(`$${quote.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
+  doc.text(`$${pdfTaxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
   yPos += 9;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.setTextColor(...textColor);
   doc.text('TOTAL AUD', totalsX, yPos, { align: 'right' });
-  doc.text(`$${quote.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
+  doc.text(`$${pdfTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
   // Notes
   if (quote.notes) {

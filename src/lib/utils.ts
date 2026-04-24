@@ -29,3 +29,8 @@ export function getQuoteShareUrl(quoteToken: string): string {
 export function cleanVariationTitle(title: string): string {
   return title.replace(/^(Variation: )(.*?)\s+variation$/i, '$1$2');
 }
+
+/** Returns true when a title was auto-generated from an approved variation */
+export function isVariationItem(title: string): boolean {
+  return title.startsWith('Variation: ');
+}

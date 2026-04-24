@@ -24,7 +24,7 @@ import { exportInvoiceToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -131,13 +131,14 @@ export function InvoiceSection({
   const [customAmount, setCustomAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const includedItems = scopeItems.filter(item => item.category === 'included');
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
 
-  // Calculate live quote total from all items (scope + approved variations + custom line items)
+  // Calculate live quote total — variation duplicates filtered; costs come from approvedChanges only
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
   const liveScopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const liveChangesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
-  const liveCustomItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const liveCustomItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const liveSubtotal = liveScopeSubtotal + liveChangesImpact + liveCustomItemsTotal;
   const liveTaxAmount = liveSubtotal * ((quote?.taxRate ?? taxRate) / 100);
   const quoteTotal = quote ? liveSubtotal + liveTaxAmount : 0;

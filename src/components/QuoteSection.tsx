@@ -24,7 +24,7 @@ import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { toast } from 'sonner';
-import { cn, cleanVariationTitle } from '@/lib/utils';
+import { cn, cleanVariationTitle, isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface QuoteSectionProps {
@@ -124,16 +124,17 @@ export function QuoteSection({
     }
   }, [quote]);
 
-  // Calculate totals from scope items
-  const includedItems = scopeItems.filter(item => item.category === 'included');
+  // Calculate totals from scope items — exclude variation duplicates (they appear in approvedChanges)
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
-  // Add approved change request impacts
+  // Add approved change request impacts (single source of truth for variation costs)
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
   
-  // Add custom quote line items
-  const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  // Add custom quote line items — exclude variation duplicates
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
+  const customItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
   const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxAmount = subtotal * (taxRate / 100);
@@ -389,14 +390,14 @@ export function QuoteSection({
             )}
 
             {/* Custom Quote Line Items (editable) */}
-            {(quoteLineItems.length > 0 || isAddingItem) && (
+            {(baseQuoteLineItems.length > 0 || isAddingItem) && (
               <>
                 <div className="p-3 bg-primary/5">
                   <span className="text-sm font-medium text-primary">
                     Custom Line Items
                   </span>
                 </div>
-                {quoteLineItems.map(item => (
+                {baseQuoteLineItems.map(item => (
                   <div key={item.id} className="p-3">
                     {editingItemId === item.id ? (
                       <div className="space-y-3">
@@ -504,7 +505,7 @@ export function QuoteSection({
               </>
             )}
             
-            {includedItems.length === 0 && approvedChanges.length === 0 && quoteLineItems.length === 0 && !isAddingItem && (
+            {includedItems.length === 0 && approvedChanges.length === 0 && baseQuoteLineItems.length === 0 && !isAddingItem && (
               <div className="p-6 text-center">
                 <p className="text-sm text-muted-foreground">No line items yet. Add scope items or custom line items.</p>
               </div>
@@ -628,13 +629,13 @@ export function QuoteSection({
           </div>
         </div>
 
-        {/* Included Items — scope + custom line items merged */}
-        {(includedItems.length > 0 || quoteLineItems.length > 0) && (
+        {/* Included Items — scope + custom line items merged (no variation duplicates) */}
+        {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
           <div className="border rounded-lg divide-y mb-4">
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                  <span className="text-sm font-medium">{item.title}</span>
                   {item.description && (
                     <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                   )}
@@ -644,10 +645,10 @@ export function QuoteSection({
                 </span>
               </div>
             ))}
-            {quoteLineItems.map(item => (
+            {baseQuoteLineItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                  <span className="text-sm font-medium">{item.title}</span>
                   {item.description && (
                     <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                   )}
