@@ -34,6 +34,7 @@ interface CreateJobModalProps {
     name: string;
     clientName: string;
     clientEmail: string;
+    clientAddress?: string;
     quoteData: {
       lineItems: Omit<QuoteLineItem, 'tempId'>[];
       taxRate: number;
@@ -51,6 +52,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
   const [jobName, setJobName] = useState('');
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
+  const [clientAddress, setClientAddress] = useState('');
   
   // Step 2: Quote Builder
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
@@ -72,6 +74,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
     setJobName('');
     setClientName('');
     setClientEmail('');
+    setClientAddress('');
     setLineItems([]);
     setCurrentItem({
       tempId: '',
@@ -115,6 +118,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
       name: jobName,
       clientName,
       clientEmail,
+      clientAddress: clientAddress.trim() || undefined,
       quoteData: {
         lineItems: lineItems.map(({ tempId, ...item }) => item),
         taxRate,
@@ -191,6 +195,18 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
                 placeholder="e.g., sarah@email.com"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="clientAddress">
+                Client Address <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Textarea
+                id="clientAddress"
+                placeholder="e.g., 12 Main St, Sydney NSW 2000"
+                value={clientAddress}
+                onChange={(e) => setClientAddress(e.target.value)}
+                className="min-h-[60px]"
               />
             </div>
           </div>

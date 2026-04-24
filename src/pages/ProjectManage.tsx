@@ -796,6 +796,7 @@ export default function ProjectManage() {
               quote={activeQuote}
               clientName={project.clientName}
               clientEmail={project.clientEmail}
+              clientAddress={project.clientAddress}
               projectName={project.name}
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
@@ -825,6 +826,7 @@ export default function ProjectManage() {
               projectName={project.name}
               clientName={project.clientName}
               clientEmail={project.clientEmail}
+              clientAddress={project.clientAddress}
               tradeBusinessName={project.tradeBusinessName}
               tradeName={project.tradeName}
               tradeAddress={tradeProfileInfo.address}

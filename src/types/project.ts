@@ -102,6 +102,7 @@ export interface Project {
   name: string;
   clientName: string;
   clientEmail: string;
+  clientAddress?: string;
   tradeName: string;
   tradeBusinessName: string;
   tradeAddress?: string;

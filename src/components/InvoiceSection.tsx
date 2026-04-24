@@ -50,6 +50,7 @@ interface InvoiceSectionProps {
   projectName: string;
   clientName: string;
   clientEmail: string;
+  clientAddress?: string;
   tradeBusinessName?: string;
   tradeName?: string;
   tradeAddress?: string;
@@ -89,6 +90,7 @@ export function InvoiceSection({
   projectName,
   clientName,
   clientEmail,
+  clientAddress,
   tradeBusinessName,
   tradeName,
   tradeAddress,
@@ -148,6 +150,7 @@ export function InvoiceSection({
     name: projectName,
     clientName,
     clientEmail,
+    clientAddress,
     tradeBusinessName,
     tradeName,
     tradeAddress,

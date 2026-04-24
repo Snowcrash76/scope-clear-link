@@ -17,6 +17,7 @@ interface ProjectInfo {
   name: string;
   clientName: string;
   clientEmail: string;
+  clientAddress?: string;
   tradeBusinessName?: string;
   tradeName?: string;
   tradeAddress?: string;

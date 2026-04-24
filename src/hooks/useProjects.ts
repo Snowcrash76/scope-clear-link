@@ -10,6 +10,7 @@ type DbProject = {
   name: string;
   client_name: string;
   client_email: string;
+  client_address: string | null;
   status: 'draft' | 'sent' | 'in_progress' | 'completed';
   total_value: number | null;
   created_at: string;
@@ -182,6 +183,7 @@ export function useProjects() {
     name: string;
     clientName: string;
     clientEmail: string;
+    clientAddress?: string;
     quoteData: QuoteData;
   }) => {
     if (!user) {
@@ -205,6 +207,7 @@ export function useProjects() {
           name: data.name,
           client_name: data.clientName,
           client_email: data.clientEmail,
+          ...(data.clientAddress ? { client_address: data.clientAddress } : {}),
           status: 'sent',
           total_value: total,
         })

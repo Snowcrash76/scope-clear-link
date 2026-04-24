@@ -33,6 +33,7 @@ interface QuoteSectionProps {
   changeRequests: ChangeRequest[];
   clientName?: string;
   clientEmail?: string;
+  clientAddress?: string;
   projectName?: string;
   tradeBusinessName?: string;
   tradeName?: string;
@@ -71,6 +72,7 @@ export function QuoteSection({
   changeRequests,
   clientName = '',
   clientEmail = '',
+  clientAddress,
   projectName = '',
   tradeBusinessName = '',
   tradeName = '',
@@ -191,6 +193,7 @@ export function QuoteSection({
           name: projectName,
           clientName,
           clientEmail,
+          clientAddress,
           tradeBusinessName,
           tradeName,
           tradeAddress: tradeAddress || undefined,
@@ -264,6 +267,7 @@ export function QuoteSection({
     name: projectName,
     clientName,
     clientEmail,
+    clientAddress,
     tradeBusinessName,
     tradeName,
     tradeAddress: tradeAddress || undefined,

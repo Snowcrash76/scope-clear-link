@@ -205,6 +205,7 @@ export default function TradeDashboard() {
     name: string;
     clientName: string;
     clientEmail: string;
+    clientAddress?: string;
     quoteData: {
       lineItems: { title: string; description: string; cost: number; category: 'included' | 'excluded' | 'assumption'; imageUrl?: string }[];
       taxRate: number;

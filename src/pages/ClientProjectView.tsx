@@ -89,6 +89,7 @@ export default function ClientProjectView() {
     name: project.name,
     clientName: project.clientName,
     clientEmail: project.clientEmail,
+    clientAddress: project.clientAddress,
     tradeBusinessName: project.tradeBusinessName,
     tradeName: project.tradeName,
     tradeAddress: project.tradeAddress,
