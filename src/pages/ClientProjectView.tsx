@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/integrations/supabase/client';
 import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
@@ -38,7 +39,7 @@ export default function ClientProjectView() {
     updateChangeRequestStatus,
   } = useProject(id);
   
-  const { activeQuote, respondByToken, refetch: refetchQuotes } = useQuotes(id);
+  const { activeQuote, refetch: refetchQuotes } = useQuotes(id);
   const { invoices, loading: invoicesLoading } = useInvoices(id);
   const { lineItems: quoteLineItems } = useQuoteLineItems(activeQuote?.id);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
@@ -182,24 +183,35 @@ export default function ClientProjectView() {
     const { action } = quoteApprovalModal;
     if (!activeQuote) return;
 
-    if (!activeQuote.quoteToken) {
-      toast.error('Quote token unavailable — please refresh the page and try again.');
-      setQuoteApprovalModal({ isOpen: false, action: 'approve' });
-      return;
-    }
+    try {
+      const isApprove = action === 'approve';
+      const updatePayload = isApprove
+        ? { status: 'approved' as const, approved_at: new Date().toISOString(), client_comment: comment || null }
+        : { status: 'declined' as const, declined_at: new Date().toISOString(), client_comment: comment || null };
 
-    const success = await respondByToken(
-      activeQuote.quoteToken,
-      action === 'approve' ? 'approved' : 'declined',
-      comment,
-    );
+      const { error } = await supabase
+        .from('quotes')
+        .update(updatePayload)
+        .eq('id', activeQuote.id);
 
-    if (success) {
+      if (error) throw error;
+
+      if (isApprove && id) {
+        await supabase
+          .from('projects')
+          .update({ status: 'in_progress' })
+          .eq('id', id)
+          .eq('status', 'sent');
+      }
+
+      await refetchQuotes();
       toast.success(
-        action === 'approve'
-          ? 'Quote approved! Your trade has been notified.'
-          : 'Quote declined. Your trade has been notified.',
+        isApprove
+          ? 'Quote approved! Your tradesperson has been notified.'
+          : 'Quote declined. Your tradesperson has been notified.',
       );
+    } catch {
+      toast.error('Failed to submit your response. Please try again.');
     }
     setQuoteApprovalModal({ isOpen: false, action: 'approve' });
   };
@@ -477,14 +489,27 @@ export default function ClientProjectView() {
                       className="flex-1"
                       onClick={async () => {
                         if (!activeQuote) return;
-                        const success = await respondByToken(
-                          activeQuote.quoteToken!,
-                          'approved',
-                          ''
-                        );
-                        if (success) {
-                          toast.success('Quote approved! Your trade has been notified.');
+                        try {
+                          const { error } = await supabase
+                            .from('quotes')
+                            .update({
+                              status: 'approved',
+                              approved_at: new Date().toISOString(),
+                              client_comment: null,
+                            })
+                            .eq('id', activeQuote.id);
+                          if (error) throw error;
+                          if (id) {
+                            await supabase
+                              .from('projects')
+                              .update({ status: 'in_progress' })
+                              .eq('id', id)
+                              .eq('status', 'sent');
+                          }
+                          toast.success('Quote approved! Your tradesperson has been notified.');
                           await refetchQuotes();
+                        } catch {
+                          toast.error('Failed to approve quote');
                         }
                       }}
                     >
