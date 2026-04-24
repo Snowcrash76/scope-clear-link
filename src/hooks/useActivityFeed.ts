@@ -51,6 +51,10 @@ async function fetchActivityEvents(userId: string): Promise<ActivityEvent[]> {
       .in('project_id', projectIds),
   ]);
 
+  if (quotesRes.error) throw quotesRes.error;
+  if (invoicesRes.error) throw invoicesRes.error;
+  if (changeReqRes.error) throw changeReqRes.error;
+
   const events: ActivityEvent[] = [];
 
   for (const project of projects) {

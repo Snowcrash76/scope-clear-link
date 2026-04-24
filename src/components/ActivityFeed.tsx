@@ -11,6 +11,7 @@ import {
   DollarSign,
   AlertCircle,
   Activity,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -118,8 +119,27 @@ function EmptyFeed() {
   );
 }
 
+function ErrorFeed({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="text-center py-10 px-4">
+      <RefreshCw className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+      <p className="text-sm font-medium">Couldn't load activity</p>
+      <p className="text-xs text-muted-foreground mt-1 mb-3">
+        There was a problem fetching recent events.
+      </p>
+      <button
+        onClick={onRetry}
+        className="text-xs text-primary underline underline-offset-2 hover:opacity-80 transition-opacity"
+        data-testid="button-activity-retry"
+      >
+        Try again
+      </button>
+    </div>
+  );
+}
+
 export function ActivityFeed() {
-  const { data: events, isLoading } = useActivityFeed();
+  const { data: events, isLoading, isError, refetch } = useActivityFeed();
 
   return (
     <div data-testid="activity-feed">
@@ -127,6 +147,8 @@ export function ActivityFeed() {
       <div className="rounded-xl border bg-card">
         {isLoading ? (
           <FeedSkeleton />
+        ) : isError ? (
+          <ErrorFeed onRetry={refetch} />
         ) : !events?.length ? (
           <EmptyFeed />
         ) : (
