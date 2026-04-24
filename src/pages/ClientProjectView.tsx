@@ -101,6 +101,7 @@ export default function ClientProjectView() {
   };
 
   const includedItems = project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
+  const variationScopeItems = project.scopeItems.filter(item => item.category === 'included' && isVariationItem(item.title));
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
@@ -277,18 +278,25 @@ export default function ClientProjectView() {
             </div>
 
             <ScopeSection
-              title="What's Included"
-              description="Work and materials covered in your quote"
+              title="Quoted Items"
+              description="Work and materials covered in your original quote"
               category="included"
               items={includedItems}
               onAcknowledge={handleAcknowledge}
               onAcknowledgeAll={() => handleAcknowledgeAll(includedItems)}
-              approvedChanges={approvedChanges.map(cr => ({
-                id: cr.id,
-                title: cr.title,
-                costImpact: cr.costImpact || 0
-              }))}
             />
+
+            {variationScopeItems.length > 0 && (
+              <ScopeSection
+                title="Approved Variations"
+                description="Additional work added and agreed to after the original quote"
+                category="included"
+                items={variationScopeItems}
+                onAcknowledge={handleAcknowledge}
+                onAcknowledgeAll={() => handleAcknowledgeAll(variationScopeItems)}
+                isVariationSection
+              />
+            )}
 
             <ScopeSection
               title="What's Not Included"

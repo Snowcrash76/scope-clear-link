@@ -3,8 +3,8 @@ import { ScopeItem } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
-import { cn, cleanVariationTitle } from '@/lib/utils';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle, TrendingUp } from 'lucide-react';
+import { cn, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { ImageDisplay } from '@/components/ImageUpload';
 
@@ -23,6 +23,7 @@ interface ScopeSectionProps {
   onAcknowledgeAll?: () => void;
   isClientView?: boolean;
   approvedChanges?: ApprovedChange[];
+  isVariationSection?: boolean;
 }
 
 const categoryConfig = {
@@ -57,24 +58,29 @@ export function ScopeSection({
   onAcknowledge,
   onAcknowledgeAll,
   isClientView = true,
-  approvedChanges = []
+  approvedChanges = [],
+  isVariationSection = false,
 }: ScopeSectionProps) {
   const [isExpanded, setIsExpanded] = useState(category === 'included');
   const config = categoryConfig[category];
-  const Icon = config.icon;
+  const Icon = isVariationSection ? TrendingUp : config.icon;
   
   const acknowledgedCount = items.filter(item => item.acknowledged).length;
-  const allAcknowledged = acknowledgedCount === items.length;
+  const allAcknowledged = items.length > 0 && acknowledgedCount === items.length;
   
   const subtotal = items.reduce((sum, item) => sum + (item.cost || 0), 0);
 
   const isSubtle = category !== 'included';
 
+  const borderClass = isVariationSection
+    ? 'border-2 border-approved/30'
+    : isSubtle ? 'border' : 'border-2';
+
   return (
     <Card className={cn(
       "overflow-hidden transition-all duration-200",
-      isSubtle ? "border" : "border-2",
-      config.borderColor,
+      borderClass,
+      !isVariationSection && !isSubtle && config.borderColor,
       isExpanded && !isSubtle && config.bgColor
     )}>
       <button
@@ -88,7 +94,7 @@ export function ScopeSection({
           <div className={cn(
             "rounded-lg",
             isSubtle ? "p-1.5" : "p-2",
-            isSubtle ? "bg-muted" : config.bgColor
+            isVariationSection ? "bg-approved/10" : isSubtle ? "bg-muted" : config.bgColor
           )}>
             <Icon className={cn(
               isSubtle ? "w-4 h-4" : "w-5 h-5",
@@ -111,7 +117,7 @@ export function ScopeSection({
               {items.length} item{items.length !== 1 ? 's' : ''}
             </Badge>
           )}
-          {!isSubtle && isClientView && (
+          {!isSubtle && isClientView && items.length > 0 && (
             <Badge variant={allAcknowledged ? 'success' : 'secondary'} className="hidden sm:flex">
               {acknowledgedCount}/{items.length} acknowledged
             </Badge>
@@ -133,7 +139,10 @@ export function ScopeSection({
             <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
           )}
 
-          {/* Acknowledge All button — shown when client view and there are unacknowledged items */}
+          {items.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">No items in this section.</p>
+          )}
+
           {isClientView && onAcknowledgeAll && !allAcknowledged && items.length > 1 && (
             <div className="flex justify-end -mt-1 mb-1">
               <Button
@@ -190,21 +199,26 @@ export function ScopeSection({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h4 className="font-medium text-foreground">{cleanVariationTitle(item.title)}</h4>
-                      {item.title.startsWith('Variation: ') && (
+                      {isVariationItem(item.title) && !isVariationSection && (
                         <Badge variant="secondary" className="text-xs" data-testid={`badge-variation-scope-${item.id}`}>
                           Variation
                         </Badge>
                       )}
                     </div>
                     {item.cost !== undefined && item.cost > 0 && (
-                      <span className="text-sm font-medium text-primary whitespace-nowrap">
-                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span className={cn(
+                        "text-sm font-medium whitespace-nowrap",
+                        isVariationSection ? "text-approved" : "text-primary"
+                      )}>
+                        {isVariationSection ? '+' : ''}${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                    {item.description}
-                  </p>
+                  {stripVariationMeta(item.description) && (
+                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                      {stripVariationMeta(item.description)}
+                    </p>
+                  )}
                   {item.imageUrls && item.imageUrls.length > 0 ? (
                     <div className="mt-3">
                       <MultiImageDisplay paths={item.imageUrls} />
@@ -222,10 +236,13 @@ export function ScopeSection({
           {subtotal > 0 && (
             <div className="pt-3 mt-3 border-t border-dashed flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
-                {category === 'included' ? 'Subtotal' : 'Category Total'}
+                {isVariationSection ? 'Variations Total' : category === 'included' ? 'Subtotal' : 'Category Total'}
               </span>
-              <span className="font-semibold text-primary">
-                ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              <span className={cn(
+                "font-semibold",
+                isVariationSection ? "text-approved" : "text-primary"
+              )}>
+                {isVariationSection ? '+' : ''}${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           )}
