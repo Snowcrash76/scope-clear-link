@@ -34,6 +34,9 @@ import {
   User,
   Mail,
   Loader2,
+  FolderOpen,
+  FileText,
+  Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -102,20 +105,28 @@ function SidebarInner({
 
       {/* Nav items */}
       <nav className="px-3 pt-3 flex-1 space-y-0.5">
-        <Link
-          to="/dashboard"
-          onClick={() => onClose?.()}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-            isDashboardActive
-              ? 'bg-sidebar-accent text-sidebar-foreground'
-              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground'
-          )}
-          data-testid="nav-dashboard"
-        >
-          <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-          Dashboard
-        </Link>
+        {[
+          { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', active: isDashboardActive, testId: 'nav-dashboard' },
+          { to: '/dashboard', icon: FolderOpen, label: 'Projects', active: false, testId: 'nav-projects' },
+          { to: '/dashboard', icon: FileText, label: 'Quotes', active: false, testId: 'nav-quotes' },
+          { to: '/dashboard', icon: Receipt, label: 'Invoices', active: false, testId: 'nav-invoices' },
+        ].map(({ to, icon: Icon, label, active, testId }) => (
+          <Link
+            key={label}
+            to={to}
+            onClick={() => onClose?.()}
+            className={cn(
+              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              active
+                ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground'
+            )}
+            data-testid={testId}
+          >
+            <Icon className="w-4 h-4 flex-shrink-0" />
+            {label}
+          </Link>
+        ))}
       </nav>
 
       {/* Bottom section */}
@@ -128,23 +139,23 @@ function SidebarInner({
           <Settings className="w-4 h-4 flex-shrink-0" />
           Settings
         </button>
-        <button
-          onClick={() => act(onSignOut)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground transition-colors"
-          data-testid="button-sidebar-sign-out"
-        >
-          <LogOut className="w-4 h-4 flex-shrink-0" />
-          Sign Out
-        </button>
         {contactName && (
           <div className="flex items-center gap-3 px-3 py-2.5 mt-1">
             <div className="w-7 h-7 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold flex-shrink-0">
               {getInitials(contactName)}
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-medium truncate text-sidebar-foreground">{contactName}</p>
               {email && <p className="text-xs text-sidebar-foreground/50 truncate">{email}</p>}
             </div>
+            <button
+              onClick={() => act(onSignOut)}
+              title="Sign out"
+              className="p-1.5 rounded hover:bg-sidebar-accent/70 transition-colors flex-shrink-0"
+              data-testid="button-sidebar-sign-out"
+            >
+              <LogOut className="w-3.5 h-3.5 text-sidebar-foreground/50" />
+            </button>
           </div>
         )}
       </div>

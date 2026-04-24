@@ -1,37 +1,172 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ProjectCard } from '@/components/ProjectCard';
-import { ProjectCardSkeletonGrid } from '@/components/ProjectCardSkeleton';
 import { DashboardStats } from '@/components/DashboardStats';
 import { AppShell } from '@/components/AppShell';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
-import { Search, Briefcase } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Download,
+  Eye,
+  MoreVertical,
+  ChevronRight,
+  Briefcase,
+  GitBranch,
+  User,
+  HelpCircle,
+  MessageSquare,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Project } from '@/types/project';
+
+const STATUS_LABELS: Record<Project['status'], string> = {
+  draft: 'Draft',
+  sent: 'Sent',
+  acknowledged: 'Acknowledged',
+  in_progress: 'In Progress',
+  completed: 'Completed',
+};
+
+const STATUS_VARIANTS: Record<Project['status'], string> = {
+  draft: 'bg-muted text-muted-foreground',
+  sent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  acknowledged: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
+  in_progress: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  completed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+};
+
+function ProjectInitial({ name }: { name: string }) {
+  const colors = [
+    'bg-blue-500', 'bg-emerald-500', 'bg-violet-500',
+    'bg-amber-500', 'bg-rose-500', 'bg-cyan-500',
+  ];
+  const idx = name.charCodeAt(0) % colors.length;
+  return (
+    <div className={cn('w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-lg', colors[idx])}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
+
+function ProjectListItem({
+  project,
+  onView,
+}: {
+  project: Project;
+  onView: (id: string) => void;
+}) {
+  const completedStages = project.stages.filter(s => s.status === 'completed').length;
+  const totalStages = project.stages.length;
+  const stageProgress = totalStages > 0 ? (completedStages / totalStages) * 100 : 0;
+  const pendingVariations = project.changeRequests.filter(cr => cr.status === 'pending').length;
+  const resolvedVariations = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined').length;
+
+  return (
+    <div className="flex items-center gap-4 py-3.5 px-4 hover:bg-muted/40 transition-colors group" data-testid={`project-list-item-${project.id}`}>
+      <ProjectInitial name={project.name} />
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="font-semibold text-sm truncate">{project.name}</span>
+          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
+            {STATUS_LABELS[project.status]}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <User className="w-3 h-3" />
+            {project.clientName}
+          </span>
+          {resolvedVariations > 0 && (
+            <span className="flex items-center gap-1">
+              <GitBranch className="w-3 h-3" />
+              {resolvedVariations} variation{resolvedVariations > 1 ? 's' : ''} resolved
+            </span>
+          )}
+          {pendingVariations > 0 && (
+            <span className="flex items-center gap-1 text-warning font-medium">
+              <GitBranch className="w-3 h-3" />
+              {pendingVariations} pending
+            </span>
+          )}
+        </div>
+      </div>
+
+      {totalStages > 0 && (
+        <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
+          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Stage</span>
+          <div className="flex items-center gap-2">
+            <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full bg-sidebar-primary transition-all"
+                style={{ width: `${stageProgress}%` }}
+              />
+            </div>
+            <span className="text-xs font-semibold">{completedStages} / {totalStages}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => onView(project.id)}
+          className="p-1.5 rounded hover:bg-muted transition-colors"
+          title="View project"
+          data-testid={`button-view-project-${project.id}`}
+        >
+          <Eye className="w-4 h-4 text-muted-foreground" />
+        </button>
+        <button
+          className="p-1.5 rounded hover:bg-muted transition-colors"
+          title="More options"
+        >
+          <MoreVertical className="w-4 h-4 text-muted-foreground" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SupportCard() {
+  return (
+    <div className="rounded-xl p-5 flex flex-col gap-3 h-full" style={{ background: 'hsl(var(--sidebar-background))' }}>
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-sidebar-primary/20 flex-shrink-0">
+          <HelpCircle className="w-5 h-5 text-sidebar-primary" />
+        </div>
+        <div>
+          <h3 className="font-heading font-semibold text-sidebar-foreground text-sm">Need Expert Help?</h3>
+          <p className="text-xs text-sidebar-foreground/60 mt-0.5 leading-relaxed">
+            Connect with our dedicated support team for any trade service escalations.
+          </p>
+        </div>
+      </div>
+      <button
+        className="w-full mt-auto border border-sidebar-foreground/20 text-sidebar-foreground text-sm font-semibold py-2 rounded-lg hover:bg-sidebar-foreground/10 transition-colors flex items-center justify-center gap-2"
+        data-testid="button-contact-support"
+      >
+        <MessageSquare className="w-4 h-4" />
+        Contact Support
+      </button>
+    </div>
+  );
+}
 
 export default function TradeDashboard() {
   const navigate = useNavigate();
-  const { projects, loading, updateProjectStatus, deleteProject } = useProjects();
+  const { projects, loading } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('active');
 
-  const filteredProjects = projects.filter(project => {
-    const matchesSearch =
-      project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      project.clientName.toLowerCase().includes(searchQuery.toLowerCase());
+  const activeProjects = projects.filter(p =>
+    p.status === 'in_progress' || p.status === 'acknowledged' || p.status === 'sent'
+  );
 
-    if (activeTab === 'active') {
-      return matchesSearch && (project.status === 'in_progress' || project.status === 'acknowledged' || project.status === 'sent');
-    } else if (activeTab === 'completed') {
-      return matchesSearch && project.status === 'completed';
-    } else if (activeTab === 'drafts') {
-      return matchesSearch && project.status === 'draft';
-    }
-    return matchesSearch;
-  });
+  const filteredActive = activeProjects.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.clientName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleViewProject = (id: string) => {
     navigate(`/manage/${id}`);
@@ -39,130 +174,103 @@ export default function TradeDashboard() {
 
   return (
     <AppShell>
+      {/* Top search bar */}
+      <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+          <div className="relative max-w-lg">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search projects, quotes, or clients..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
+              data-testid="input-dashboard-search"
+            />
+          </div>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Page heading */}
-        <div className="mb-6">
-          <h1 className="font-heading text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Manage your jobs and quotes</p>
+        <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
+          <div>
+            <h1 className="font-heading text-2xl font-bold">Dashboard Overview</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Welcome back. Here's what's happening across your jobs today.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors" data-testid="button-filters">
+              <Filter className="w-3.5 h-3.5" />
+              Filters
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors" data-testid="button-export">
+              <Download className="w-3.5 h-3.5" />
+              Export Report
+            </button>
+          </div>
         </div>
 
-        {/* Stats */}
+        {/* Stat cards */}
         <div className="mb-8">
           <DashboardStats projects={projects} />
         </div>
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search jobs or clients..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
+        {/* Active projects */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-heading text-base font-semibold">Active Property Projects</h2>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
+              data-testid="button-view-all-projects"
+            >
+              VIEW ALL <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="rounded-xl border bg-card overflow-hidden">
+            {loading ? (
+              <div className="divide-y">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 py-3.5 px-4 animate-pulse">
+                    <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-1/3" />
+                      <div className="h-3 bg-muted rounded w-1/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredActive.length > 0 ? (
+              <div className="divide-y divide-border/50">
+                {filteredActive.map(project => (
+                  <ProjectListItem
+                    key={project.id}
+                    project={project}
+                    onView={handleViewProject}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 px-4">
+                <Briefcase className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery
+                    ? `No active projects matching "${searchQuery}"`
+                    : 'No other active projects found at this time.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="active" className="gap-2">
-              <Briefcase className="w-4 h-4" />
-              Active
-              <Badge variant="secondary" className="ml-1">
-                {projects.filter(p => ['in_progress', 'acknowledged', 'sent'].includes(p.status)).length}
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger value="completed">Completed</TabsTrigger>
-            <TabsTrigger value="drafts">Drafts</TabsTrigger>
-          </TabsList>
-
-          {loading ? (
-            <ProjectCardSkeletonGrid />
-          ) : (
-            <>
-              <TabsContent value="active" className="mt-0">
-                {filteredProjects.length > 0 ? (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredProjects.map(project => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        onViewProject={handleViewProject}
-                        onUpdateStatus={updateProjectStatus}
-                        onDeleteProject={deleteProject}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState searchQuery={searchQuery} />
-                )}
-              </TabsContent>
-
-              <TabsContent value="completed" className="mt-0">
-                {filteredProjects.length > 0 ? (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredProjects.map(project => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        onViewProject={handleViewProject}
-                        onUpdateStatus={updateProjectStatus}
-                        onDeleteProject={deleteProject}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState message="No completed projects yet" searchQuery={searchQuery} />
-                )}
-              </TabsContent>
-
-              <TabsContent value="drafts" className="mt-0">
-                {filteredProjects.length > 0 ? (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredProjects.map(project => (
-                      <ProjectCard
-                        key={project.id}
-                        project={project}
-                        onViewProject={handleViewProject}
-                        onUpdateStatus={updateProjectStatus}
-                        onDeleteProject={deleteProject}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState message="No draft jobs" searchQuery={searchQuery} />
-                )}
-              </TabsContent>
-            </>
-          )}
-        </Tabs>
-
-        {/* Activity feed */}
-        <div className="mt-10">
+        {/* Bottom 2-col: Activity feed + Support card */}
+        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
           <ActivityFeed />
+          <SupportCard />
         </div>
       </main>
     </AppShell>
-  );
-}
-
-function EmptyState({
-  message = 'No projects found',
-  searchQuery,
-}: {
-  message?: string;
-  searchQuery?: string;
-}) {
-  return (
-    <div className="text-center py-12">
-      <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-      <p className="text-muted-foreground mb-4">
-        {searchQuery ? `No results for "${searchQuery}"` : message}
-      </p>
-      {!searchQuery && (
-        <p className="text-sm text-muted-foreground">Use the <span className="font-medium">New Job</span> button in the sidebar to get started.</p>
-      )}
-    </div>
   );
 }
