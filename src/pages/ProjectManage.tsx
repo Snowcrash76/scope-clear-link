@@ -54,7 +54,6 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
-  Calculator,
   FileText,
   Receipt,
   ChevronDown,
@@ -552,12 +551,6 @@ export default function ProjectManage() {
               const Icon = config.icon;
               const isExpanded = expandedSections[category];
               
-              // Calculate totals for included section
-              const scopeTotal = groupedScopeItems.included.reduce((sum, item) => sum + (item.cost || 0), 0);
-              const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
-              const changesTotal = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
-              const totalQuote = scopeTotal + changesTotal;
-
               return (
                 <Card key={category} className={cn("overflow-hidden", config.subtle && "border-border")}>
                   <div 
@@ -648,60 +641,6 @@ export default function ProjectManage() {
                         </div>
                       )}
                       
-                      {/* Contract Summary integrated into Included section */}
-                      {category === 'included' && (scopeTotal > 0 || approvedChanges.length > 0) && (
-                        <div className="border-t bg-primary/5 p-4">
-                          <h4 className="text-sm font-bold text-foreground uppercase tracking-wide mb-3">Contract Summary</h4>
-                          <div className="space-y-2">
-                            {/* Original Contract */}
-                            <div className="flex justify-between text-sm">
-                              <span className="text-foreground font-medium">Original Contract</span>
-                              <span className="font-semibold tabular-nums">${scopeTotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            
-                            {/* Approved Changes Summary Line */}
-                            {approvedChanges.length > 0 && (
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-foreground font-medium">Approved Variations ({approvedChanges.length})</span>
-                                  <span className={cn(
-                                    "font-semibold tabular-nums",
-                                    changesTotal >= 0 ? 'text-approved' : 'text-destructive'
-                                  )}>
-                                    {changesTotal >= 0 ? '+' : ''}${Math.abs(changesTotal).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                
-                                {/* Individual Changes Breakdown */}
-                                <div className="pl-4 border-l-2 border-muted space-y-1.5">
-                                  {approvedChanges.map(cr => (
-                                    <div key={cr.id} className="flex justify-between text-xs">
-                                      <span className="text-muted-foreground truncate mr-3 flex-1">{cr.title}</span>
-                                      <span className={cn(
-                                        "font-medium tabular-nums whitespace-nowrap",
-                                        cr.costImpact >= 0 ? 'text-approved' : 'text-destructive'
-                                      )}>
-                                        {cr.costImpact >= 0 ? '+' : ''}${Math.abs(cr.costImpact).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Revised Contract Total */}
-                            <div className="flex justify-between pt-3 mt-2 border-t border-primary/20">
-                              <span className="font-semibold flex items-center gap-2">
-                                <Calculator className="w-4 h-4 text-primary" />
-                                {approvedChanges.length > 0 ? 'Revised Contract Total' : 'Contract Total'}
-                              </span>
-                              <span className="text-lg font-bold text-primary tabular-nums">
-                                ${totalQuote.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
                     </>
                   )}
               </Card>
