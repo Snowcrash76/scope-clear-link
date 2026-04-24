@@ -395,7 +395,7 @@ export default function ProjectManage() {
   return (
     <AppShell>
       {/* Project sub-header */}
-      <div className="border-b bg-background">
+      <div className="border-b border-zinc-200 bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3">
