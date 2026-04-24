@@ -7,8 +7,6 @@ import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
 import {
   Search,
-  Filter,
-  Download,
   Eye,
   MoreVertical,
   ChevronRight,
@@ -191,16 +189,6 @@ export default function TradeDashboard() {
             <p className="text-sm text-muted-foreground mt-0.5">
               Welcome back. Here's what's happening across your jobs today.
             </p>
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors" data-testid="button-filters">
-              <Filter className="w-3.5 h-3.5" />
-              Filters
-            </button>
-            <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium hover:bg-muted transition-colors" data-testid="button-export">
-              <Download className="w-3.5 h-3.5" />
-              Export Report
-            </button>
           </div>
         </div>
 
