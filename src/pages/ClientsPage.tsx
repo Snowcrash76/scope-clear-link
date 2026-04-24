@@ -1,21 +1,16 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { useProjects } from '@/hooks/useProjects';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Users, Mail, MapPin, FolderOpen, ChevronRight } from 'lucide-react';
+import { Search, Users, Mail, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface ClientSummary {
+interface ClientInfo {
   key: string;
   name: string;
   email: string;
   address?: string;
-  projectIds: string[];
-  projectNames: string[];
-  activeCount: number;
-  completedCount: number;
 }
 
 function ClientInitial({ name }: { name: string }) {
@@ -25,19 +20,18 @@ function ClientInitial({ name }: { name: string }) {
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return (
-    <div className={cn('w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-base', colors[idx])}>
+    <div className={cn('w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-lg', colors[idx])}>
       {name.charAt(0).toUpperCase()}
     </div>
   );
 }
 
 export default function ClientsPage() {
-  const navigate = useNavigate();
   const { projects, loading } = useProjects();
   const [search, setSearch] = useState('');
 
-  const clients: ClientSummary[] = Object.values(
-    projects.reduce<Record<string, ClientSummary>>((acc, p) => {
+  const clients: ClientInfo[] = Object.values(
+    projects.reduce<Record<string, ClientInfo>>((acc, p) => {
       const key = p.clientEmail.toLowerCase().trim() || p.clientName.toLowerCase().trim();
       if (!acc[key]) {
         acc[key] = {
@@ -45,18 +39,7 @@ export default function ClientsPage() {
           name: p.clientName,
           email: p.clientEmail,
           address: p.clientAddress,
-          projectIds: [],
-          projectNames: [],
-          activeCount: 0,
-          completedCount: 0,
         };
-      }
-      acc[key].projectIds.push(p.id);
-      acc[key].projectNames.push(p.name);
-      if (p.status === 'completed') {
-        acc[key].completedCount++;
-      } else if (p.status !== 'draft') {
-        acc[key].activeCount++;
       }
       return acc;
     }, {})
@@ -75,7 +58,7 @@ export default function ClientsPage() {
           <div className="relative max-w-lg">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search clients by name, email or address..."
+              placeholder="Search by name, email or address..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
@@ -86,25 +69,23 @@ export default function ClientsPage() {
       </div>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="font-heading text-2xl font-bold">Clients</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {loading ? 'Loading…' : `${clients.length} client${clients.length !== 1 ? 's' : ''} across all projects`}
-            </p>
-          </div>
+        <div className="mb-6">
+          <h1 className="font-heading text-2xl font-bold">Clients</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {loading ? 'Loading…' : `${clients.length} client${clients.length !== 1 ? 's' : ''}`}
+          </p>
         </div>
 
         {loading ? (
-          <div className="rounded-xl border bg-card overflow-hidden divide-y">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4 px-4 py-4">
-                <Skeleton className="w-11 h-11 rounded-full" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-3 w-48" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-xl border bg-card p-5 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-12 h-12 rounded-full" />
+                  <Skeleton className="h-4 w-32" />
                 </div>
-                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-3 w-40" />
+                <Skeleton className="h-3 w-36" />
               </div>
             ))}
           </div>
@@ -116,60 +97,41 @@ export default function ClientsPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-xl border bg-card overflow-hidden divide-y divide-border/50">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(client => (
               <div
                 key={client.key}
-                className="flex items-center gap-4 px-4 py-4 hover:bg-muted/40 transition-colors cursor-pointer group"
-                onClick={() => {
-                  if (client.projectIds.length === 1) {
-                    navigate(`/manage/${client.projectIds[0]}`);
-                  } else {
-                    navigate(`/projects?client=${encodeURIComponent(client.email || client.name)}`);
-                  }
-                }}
-                data-testid={`client-row-${client.key}`}
+                className="rounded-xl border bg-card p-5"
+                data-testid={`client-card-${client.key}`}
               >
-                <ClientInitial name={client.name} />
-
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm">{client.name}</p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-0.5">
-                    {client.email && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Mail className="w-3 h-3" />
-                        {client.email}
-                      </span>
-                    )}
-                    {client.address && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[200px]">
-                        <MapPin className="w-3 h-3 flex-shrink-0" />
-                        {client.address}
-                      </span>
-                    )}
-                  </div>
+                <div className="flex items-center gap-3 mb-4">
+                  <ClientInitial name={client.name} />
+                  <p className="font-semibold text-sm leading-snug">{client.name}</p>
                 </div>
-
-                <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1.5">
-                    <FolderOpen className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">
-                      {client.projectIds.length} {client.projectIds.length === 1 ? 'project' : 'projects'}
-                    </span>
-                  </div>
-                  {client.activeCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
-                      {client.activeCount} active
-                    </span>
+                <div className="space-y-2">
+                  {client.email ? (
+                    <div className="flex items-start gap-2">
+                      <Mail className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground break-all">{client.email}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <Mail className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground/40 italic">No email</span>
+                    </div>
                   )}
-                  {client.completedCount > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
-                      {client.completedCount} done
-                    </span>
+                  {client.address ? (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground">{client.address}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-muted-foreground/40 italic">No address</span>
+                    </div>
                   )}
                 </div>
-
-                <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
               </div>
             ))}
           </div>
