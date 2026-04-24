@@ -349,8 +349,8 @@ export function generateInvoicePDF(
   // Notes / Payment Instructions (use invoice.notes, fall back to project default)
   const paymentText = invoice.notes || project.paymentInstructions || '';
   if (paymentText) {
-    yPos += 8;
-    if (yPos > 240) {
+    yPos += 5;
+    if (yPos > 255) {
       doc.addPage();
       yPos = 20;
     }
@@ -359,21 +359,21 @@ export function generateInvoicePDF(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.text('Payment Instructions', margin, yPos);
-    yPos += 6;
+    yPos += 5;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...mutedColor);
     const notesLines = doc.splitTextToSize(paymentText, pageWidth - margin * 2);
     doc.text(notesLines, margin, yPos);
-    yPos += notesLines.length * 4 + 5;
+    yPos += notesLines.length * 4;
   }
 
   // Terms & Conditions (use invoice.terms, fall back to project default)
   const termsText = invoice.terms || project.defaultTermsText || '';
   if (termsText) {
     yPos += 5;
-    if (yPos > 220) {
+    if (yPos > 265) {
       doc.addPage();
       yPos = 20;
     }
@@ -382,7 +382,7 @@ export function generateInvoicePDF(
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.text('Terms & Conditions', margin, yPos);
-    yPos += 6;
+    yPos += 5;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
