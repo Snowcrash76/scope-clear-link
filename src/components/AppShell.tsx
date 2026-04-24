@@ -23,7 +23,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  Briefcase,
   Save,
   UploadCloud,
   X,
@@ -103,17 +102,14 @@ function SidebarInner({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
+    <div className="flex flex-col h-full bg-zinc-900 text-zinc-100">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-4 border-b border-sidebar-border">
+      <div className="px-5 pt-6 pb-4 border-b border-zinc-800">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center flex-shrink-0">
-            <Briefcase className="w-4 h-4 text-sidebar-primary-foreground" />
-          </div>
-          <span className="font-heading font-bold text-lg tracking-tight">ScopeClear</span>
+          <span className="font-heading font-black text-xl tracking-tighter text-amber-500">ScopeClear</span>
         </div>
         {businessName && (
-          <p className="text-xs text-sidebar-foreground/50 mt-1 ml-[42px] truncate">{businessName}</p>
+          <p className="text-xs text-zinc-500 mt-1 truncate">{businessName}</p>
         )}
       </div>
 
@@ -121,7 +117,7 @@ function SidebarInner({
       <div className="px-4 pt-5 pb-2">
         <button
           onClick={() => act(onNewJob)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold text-sm transition-colors active:scale-95"
           data-testid="button-sidebar-new-job"
         >
           <Plus className="w-4 h-4" />
@@ -130,17 +126,17 @@ function SidebarInner({
       </div>
 
       {/* Nav items */}
-      <nav className="px-3 pt-3 flex-1 space-y-0.5">
+      <nav className="pt-3 flex-1 space-y-0.5 overflow-y-auto">
         {navItems.map(({ to, icon: Icon, label, active, testId }) => (
           <Link
             key={label}
             to={to}
             onClick={() => onClose?.()}
             className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
               active
-                ? 'bg-sidebar-primary text-sidebar-primary-foreground'
-                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground'
+                ? 'border-l-4 border-amber-500 bg-zinc-800/50 text-amber-500'
+                : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg mx-1'
             )}
             data-testid={testId}
           >
@@ -151,31 +147,31 @@ function SidebarInner({
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-sidebar-border px-3 pt-3 pb-5 space-y-0.5">
+      <div className="border-t border-zinc-800 pt-3 pb-5 space-y-0.5">
         <button
           onClick={() => act(onOpenSettings)}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
           data-testid="button-sidebar-settings"
         >
           <Settings className="w-4 h-4 flex-shrink-0" />
           Settings
         </button>
         {contactName && (
-          <div className="flex items-center gap-3 px-3 py-2.5 mt-1">
-            <div className="w-7 h-7 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold flex-shrink-0">
+          <div className="flex items-center gap-3 px-4 py-2.5 mt-1">
+            <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-zinc-900 text-xs font-bold flex-shrink-0">
               {getInitials(contactName)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate text-sidebar-foreground">{contactName}</p>
-              {email && <p className="text-xs text-sidebar-foreground/50 truncate">{email}</p>}
+              <p className="text-xs font-medium truncate text-zinc-200">{contactName}</p>
+              {email && <p className="text-xs text-zinc-500 truncate">{email}</p>}
             </div>
             <button
               onClick={() => act(onSignOut)}
               title="Sign out"
-              className="p-1.5 rounded hover:bg-sidebar-accent/70 transition-colors flex-shrink-0"
+              className="p-1.5 rounded hover:bg-zinc-800 transition-colors flex-shrink-0"
               data-testid="button-sidebar-sign-out"
             >
-              <LogOut className="w-3.5 h-3.5 text-sidebar-foreground/50" />
+              <LogOut className="w-3.5 h-3.5 text-zinc-500" />
             </button>
           </div>
         )}

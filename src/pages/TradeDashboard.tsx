@@ -37,11 +37,11 @@ const STATUS_LABELS: Record<Project['status'], string> = {
 };
 
 const STATUS_VARIANTS: Record<Project['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  acknowledged: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-  in_progress: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  completed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  draft: 'bg-zinc-100 text-zinc-600',
+  sent: 'bg-blue-50 text-blue-700',
+  acknowledged: 'bg-amber-50 text-amber-700',
+  in_progress: 'bg-green-50 text-green-700',
+  completed: 'bg-zinc-100 text-zinc-600',
 };
 
 function ProjectInitial({ name }: { name: string }) {
@@ -107,7 +107,7 @@ function ProjectListItem({
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-sidebar-primary transition-all"
+                className="h-full rounded-full bg-amber-500 transition-all"
                 style={{ width: `${stageProgress}%` }}
               />
             </div>
@@ -125,16 +125,12 @@ function SupportWidget() {
   return (
     <div className="fixed bottom-6 right-6 z-50 group">
       <button
-        className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-xs font-medium transition-all duration-200"
-        style={{
-          background: 'hsl(var(--sidebar-background))',
-          color: 'hsl(var(--sidebar-foreground))',
-          boxShadow: '0 4px 16px -4px hsl(220 20% 15% / 0.25)',
-        }}
+        className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-xs font-medium transition-all duration-200 bg-zinc-900 text-zinc-100"
+        style={{ boxShadow: '0 4px 16px -4px rgba(0,0,0,0.25)' }}
         data-testid="button-contact-support"
       >
-        <HelpCircle className="w-3.5 h-3.5 text-sidebar-primary flex-shrink-0" />
-        <span className="text-sidebar-foreground/70 group-hover:text-sidebar-foreground transition-colors">Need help?</span>
+        <HelpCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+        <span className="text-zinc-400 group-hover:text-zinc-100 transition-colors">Need help?</span>
       </button>
     </div>
   );
@@ -338,7 +334,7 @@ export default function TradeDashboard() {
             </button>
           </div>
 
-          <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="rounded-xl border bg-white overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
             {loading ? (
               <div className="divide-y">
                 {Array.from({ length: 3 }).map((_, i) => (

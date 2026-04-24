@@ -29,29 +29,29 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Active projects — dark highlighted card */}
       <div
-        className="rounded-xl p-4 col-span-1"
-        style={{ background: 'hsl(var(--sidebar-background))' }}
+        className="rounded-xl p-4 col-span-1 bg-zinc-900"
+        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
         data-testid="stat-active-projects"
       >
-        <p className="text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60 mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
           Active Projects
         </p>
-        <p className="text-3xl font-heading font-bold text-sidebar-foreground mb-2">
+        <p className="text-3xl font-heading font-bold text-zinc-100 mb-2">
           {activeProjects.length}
         </p>
         {mostRecentUpdate ? (
           <div className="flex items-center gap-1.5">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sidebar-primary opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-sidebar-primary" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
             </span>
-            <span className="text-xs font-medium text-sidebar-primary">LIVE NOW</span>
-            <span className="text-xs text-sidebar-foreground/40">
+            <span className="text-xs font-medium text-amber-500">LIVE NOW</span>
+            <span className="text-xs text-zinc-500">
               · Updated {formatDistanceToNow(mostRecentUpdate, { addSuffix: true })}
             </span>
           </div>
         ) : (
-          <p className="text-xs text-sidebar-foreground/40">No active jobs yet</p>
+          <p className="text-xs text-zinc-500">No active jobs yet</p>
         )}
       </div>
 
@@ -100,9 +100,10 @@ function StatCard({
   return (
     <div
       className={cn(
-        'rounded-xl border bg-card p-4 transition-all duration-200',
-        highlight && 'ring-2 ring-pending/40'
+        'rounded-xl border bg-white p-4 transition-all duration-200',
+        highlight && 'ring-2 ring-amber-300/40'
       )}
+      style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
       data-testid={testId}
     >
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">

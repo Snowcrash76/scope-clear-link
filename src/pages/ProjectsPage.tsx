@@ -17,11 +17,11 @@ const STATUS_LABELS: Record<Project['status'], string> = {
 };
 
 const STATUS_VARIANTS: Record<Project['status'], string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
-  acknowledged: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300',
-  in_progress: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
-  completed: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+  draft: 'bg-zinc-100 text-zinc-600',
+  sent: 'bg-blue-50 text-blue-700',
+  acknowledged: 'bg-amber-50 text-amber-700',
+  in_progress: 'bg-green-50 text-green-700',
+  completed: 'bg-zinc-100 text-zinc-600',
 };
 
 const TABS = [
@@ -165,7 +165,7 @@ export default function ProjectsPage() {
                     {total > 0 && (
                       <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
                         <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                          <div className="h-full rounded-full bg-sidebar-primary transition-all" style={{ width: `${progress}%` }} />
+                          <div className="h-full rounded-full bg-amber-500 transition-all" style={{ width: `${progress}%` }} />
                         </div>
                         <span className="text-xs font-semibold text-muted-foreground">{completed}/{total}</span>
                       </div>
