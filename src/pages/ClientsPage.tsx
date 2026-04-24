@@ -124,7 +124,7 @@ export default function ClientsPage() {
 
   return (
     <AppShell>
-      <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-20">
+      <div className="border-b border-zinc-200 bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
           <div className="relative max-w-lg">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

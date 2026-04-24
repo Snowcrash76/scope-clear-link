@@ -38,9 +38,9 @@ const STATUS_LABELS: Record<Project['status'], string> = {
 
 const STATUS_VARIANTS: Record<Project['status'], string> = {
   draft: 'bg-zinc-100 text-zinc-600',
-  sent: 'bg-blue-50 text-blue-700',
-  acknowledged: 'bg-amber-50 text-amber-700',
-  in_progress: 'bg-green-50 text-green-700',
+  sent: 'bg-amber-50 text-amber-800',
+  acknowledged: 'bg-amber-50 text-amber-800',
+  in_progress: 'bg-green-50 text-green-800',
   completed: 'bg-zinc-100 text-zinc-600',
 };
 
@@ -279,7 +279,7 @@ export default function TradeDashboard() {
     </Dialog>
     <AppShell>
       {/* Top search bar */}
-      <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-20">
+      <div className="border-b border-zinc-200 bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="relative max-w-lg">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
