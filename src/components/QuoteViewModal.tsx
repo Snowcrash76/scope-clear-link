@@ -20,7 +20,7 @@ import {
   FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn, isVariationItem } from '@/lib/utils';
+import { cn, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 
 interface QuoteViewModalProps {
@@ -154,9 +154,9 @@ export function QuoteViewModal({
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
                         <p className="text-base font-semibold text-foreground">{item.title}</p>
-                        {item.description && (
+                        {stripVariationMeta(item.description) && (
                           <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                            {item.description}
+                            {stripVariationMeta(item.description)}
                           </p>
                         )}
                       </div>
@@ -171,9 +171,9 @@ export function QuoteViewModal({
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
                         <p className="text-base font-semibold text-foreground">{item.title}</p>
-                        {item.description && (
+                        {stripVariationMeta(item.description) && (
                           <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                            {item.description}
+                            {stripVariationMeta(item.description)}
                           </p>
                         )}
                       </div>
@@ -199,9 +199,9 @@ export function QuoteViewModal({
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
                         <p className="text-base font-semibold text-foreground">{change.title}</p>
-                        {change.description && (
+                        {stripVariationMeta(change.description) && (
                           <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                            {change.description}
+                            {stripVariationMeta(change.description)}
                           </p>
                         )}
                       </div>

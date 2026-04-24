@@ -60,7 +60,7 @@ import {
   ChevronRight,
   RefreshCw
 } from 'lucide-react';
-import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem } from '@/lib/utils';
+import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -605,9 +605,11 @@ export default function ProjectManage() {
                                       <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
                                     )}
                                   </div>
-                                  <p className="text-sm text-muted-foreground mt-1">
-                                    {item.description}
-                                  </p>
+                                  {stripVariationMeta(item.description) && (
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                      {stripVariationMeta(item.description)}
+                                    </p>
+                                  )}
                                   {item.imageUrls && item.imageUrls.length > 0 ? (
                                     <div className="mt-3">
                                       <MultiImageDisplay paths={item.imageUrls} />

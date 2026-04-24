@@ -5,12 +5,6 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-/**
- * Returns the public-facing base URL used for client links.
- * Set VITE_PUBLIC_BASE_URL (e.g. "https://yourdomain.com") to force all
- * client-facing links to that domain regardless of where the trade dashboard
- * is being viewed. Falls back to the current window origin.
- */
 export function getPublicBaseUrl(): string {
   const configured = (import.meta.env.VITE_PUBLIC_BASE_URL as string | undefined)?.trim();
   if (configured) return configured.replace(/\/+$/, "");
@@ -27,10 +21,17 @@ export function getQuoteShareUrl(quoteToken: string): string {
 }
 
 export function cleanVariationTitle(title: string): string {
-  return title.replace(/^(Variation: )(.*?)\s+variation$/i, '$1$2');
+  return title.replace(/^variation[:\s-]+/i, '').trim();
 }
 
-/** Returns true when a title was auto-generated from an approved variation */
 export function isVariationItem(title: string): boolean {
-  return title.startsWith('Variation: ');
+  return /^variation[:\s-]/i.test(title);
+}
+
+export function stripVariationMeta(description: string | null | undefined): string {
+  if (!description) return '';
+  return description
+    .replace(/\n{1,2}Time impact:.*$/im, '')
+    .replace(/\n{1,2}Reason:.*$/im, '')
+    .trim();
 }

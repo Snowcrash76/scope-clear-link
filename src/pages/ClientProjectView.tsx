@@ -26,7 +26,7 @@ import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice } from '@/types/project';
-import { cn, isVariationItem } from '@/lib/utils';
+import { cn, isVariationItem, stripVariationMeta } from '@/lib/utils';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -388,8 +388,8 @@ export default function ClientProjectView() {
                       <div key={item.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{item.title}</p>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                          {stripVariationMeta(item.description) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
@@ -401,8 +401,8 @@ export default function ClientProjectView() {
                       <div key={item.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{item.title}</p>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                          {stripVariationMeta(item.description) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
@@ -423,8 +423,8 @@ export default function ClientProjectView() {
                       <div key={change.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{change.title}</p>
-                          {change.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
+                          {stripVariationMeta(change.description) && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(change.description)}</p>
                           )}
                         </div>
                         <span className={cn(

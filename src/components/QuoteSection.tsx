@@ -24,7 +24,7 @@ import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { toast } from 'sonner';
-import { cn, cleanVariationTitle, isVariationItem } from '@/lib/utils';
+import { cn, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface QuoteSectionProps {
@@ -345,8 +345,8 @@ export function QuoteSection({
                   <div className="flex justify-between items-start">
                     <div className="flex-1 pr-4">
                       <span className="text-sm font-medium">{change.title}</span>
-                      {change.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{change.description}</p>
+                      {stripVariationMeta(change.description) && (
+                        <p className="text-xs text-muted-foreground mt-1">{stripVariationMeta(change.description)}</p>
                       )}
                     </div>
                     <span className={cn(
@@ -376,8 +376,8 @@ export function QuoteSection({
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
                         <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                        {stripVariationMeta(item.description) && (
+                          <p className="text-xs text-muted-foreground mt-1">{stripVariationMeta(item.description)}</p>
                         )}
                       </div>
                       <span className="font-medium whitespace-nowrap">
@@ -635,9 +635,9 @@ export function QuoteSection({
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{item.title}</span>
-                  {item.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                  {stripVariationMeta(item.description) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
                   )}
                 </div>
                 <span className="text-sm font-medium whitespace-nowrap">
@@ -648,9 +648,9 @@ export function QuoteSection({
             {baseQuoteLineItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{item.title}</span>
-                  {item.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                  {stripVariationMeta(item.description) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
                   )}
                 </div>
                 <span className="text-sm font-medium whitespace-nowrap">
@@ -671,8 +671,8 @@ export function QuoteSection({
               <div key={change.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
                   <span className="text-sm font-medium">{change.title}</span>
-                  {change.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
+                  {stripVariationMeta(change.description) && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(change.description)}</p>
                   )}
                 </div>
                 <span className={cn(

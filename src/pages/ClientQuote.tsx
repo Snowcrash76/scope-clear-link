@@ -19,7 +19,7 @@ import { CheckCircle2, XCircle, FileText, Loader2, AlertCircle, Calendar } from 
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
-import { isVariationItem } from '@/lib/utils';
+import { isVariationItem, stripVariationMeta, cleanVariationTitle } from '@/lib/utils';
 
 type QuoteRow = Database['public']['Tables']['quotes']['Row'];
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
@@ -306,8 +306,8 @@ export default function ClientQuote() {
                     <p className="font-medium" data-testid={`text-line-item-title-${li.id}`}>
                       {li.title}
                     </p>
-                    {li.description && (
-                      <p className="text-sm text-muted-foreground mt-0.5">{li.description}</p>
+                    {stripVariationMeta(li.description) && (
+                      <p className="text-sm text-muted-foreground mt-0.5">{stripVariationMeta(li.description)}</p>
                     )}
                   </div>
                   <p className="font-medium whitespace-nowrap tabular-nums">${fmt(li.cost)}</p>
@@ -330,10 +330,10 @@ export default function ClientQuote() {
                 <div key={li.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <p className="font-medium" data-testid={`text-variation-title-${li.id}`}>
-                      {li.title.replace(/^Variation: /, '')}
+                      {cleanVariationTitle(li.title)}
                     </p>
-                    {li.description && (
-                      <p className="text-sm text-muted-foreground mt-0.5">{li.description}</p>
+                    {stripVariationMeta(li.description) && (
+                      <p className="text-sm text-muted-foreground mt-0.5">{stripVariationMeta(li.description)}</p>
                     )}
                   </div>
                   <p className="font-medium whitespace-nowrap tabular-nums text-approved">
