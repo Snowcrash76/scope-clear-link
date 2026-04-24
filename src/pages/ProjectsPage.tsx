@@ -4,7 +4,7 @@ import { AppShell } from '@/components/AppShell';
 import { useProjects } from '@/hooks/useProjects';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, FolderOpen, User, GitBranch, Eye, MoreVertical } from 'lucide-react';
+import { Search, FolderOpen, User, GitBranch, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
 
@@ -144,7 +144,8 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={project.id}
-                    className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors group"
+                    className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer group"
+                    onClick={() => navigate(`/manage/${project.id}`)}
                     data-testid={`project-row-${project.id}`}
                   >
                     <ProjectInitial name={project.name} />
@@ -169,19 +170,7 @@ export default function ProjectsPage() {
                         <span className="text-xs font-semibold text-muted-foreground">{completed}/{total}</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => navigate(`/manage/${project.id}`)}
-                        className="p-1.5 rounded hover:bg-muted transition-colors"
-                        title="Open project"
-                        data-testid={`button-open-project-${project.id}`}
-                      >
-                        <Eye className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                      <button className="p-1.5 rounded hover:bg-muted transition-colors">
-                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 );
               })}
