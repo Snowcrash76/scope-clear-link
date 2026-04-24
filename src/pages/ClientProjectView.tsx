@@ -379,19 +379,57 @@ export default function ClientProjectView() {
 
                 <Separator />
 
-                {/* All Quote Items — scope items only */}
-                {includedItems.length > 0 && (
+                {/* Included Items — scope + custom line items merged */}
+                {(includedItems.length > 0 || quoteLineItems.length > 0) && (
                   <div className="border rounded-lg divide-y">
                     {includedItems.map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{cleanVariationTitle(item.title)}</p>
                           {item.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
                           ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                    {quoteLineItems.map(item => (
+                      <div key={item.id} className="p-3 flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <p className="text-sm font-medium">{item.title}</p>
+                          {item.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                          )}
+                        </div>
+                        <span className="text-sm font-medium whitespace-nowrap">
+                          ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Approved Variations — separate green section */}
+                {approvedChanges.length > 0 && (
+                  <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
+                    <div className="px-3 py-2 border-b border-approved/20">
+                      <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
+                    </div>
+                    {approvedChanges.map(change => (
+                      <div key={change.id} className="p-3 flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <p className="text-sm font-medium">{change.title}</p>
+                          {change.description && (
+                            <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
+                          )}
+                        </div>
+                        <span className={cn(
+                          "text-sm font-medium whitespace-nowrap",
+                          change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                        )}>
+                          {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     ))}

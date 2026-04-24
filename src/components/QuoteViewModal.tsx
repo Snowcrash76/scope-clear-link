@@ -141,33 +141,52 @@ export function QuoteViewModal({
 
           <Separator />
 
-          {/* Included Items */}
-          <div className="space-y-3">
-            <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-              Included Items
-            </h4>
-            <div className="border rounded-lg divide-y">
-              {includedItems.map(item => (
-                <div key={item.id} className="p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 pr-4">
-                      <p className="text-base font-semibold text-foreground">{item.title}</p>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                          {item.description}
-                        </p>
-                      )}
+          {/* Included Items — scope + custom line items merged */}
+          {(includedItems.length > 0 || quoteLineItems.length > 0) && (
+            <div className="space-y-3">
+              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                Included Items
+              </h4>
+              <div className="border rounded-lg divide-y">
+                {includedItems.map(item => (
+                  <div key={item.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="text-base font-semibold text-foreground">{item.title}</p>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-medium whitespace-nowrap">
+                        ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
                     </div>
-                    <span className="font-medium whitespace-nowrap">
-                      ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                    </span>
                   </div>
-                </div>
-              ))}
+                ))}
+                {quoteLineItems.map(item => (
+                  <div key={item.id} className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-4">
+                        <p className="text-base font-semibold text-foreground">{item.title}</p>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-medium whitespace-nowrap">
+                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Approved Variations */}
+          {/* Approved Variations — always shown separately in green */}
           {approvedChanges.length > 0 && (
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
@@ -190,34 +209,6 @@ export function QuoteViewModal({
                         change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                       )}>
                         {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Custom Quote Line Items */}
-          {quoteLineItems.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                Additional Items
-              </h4>
-              <div className="border rounded-lg divide-y">
-                {quoteLineItems.map(item => (
-                  <div key={item.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-base font-semibold text-foreground">{item.title}</p>
-                        {item.description && (
-                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                            {item.description}
-                          </p>
-                        )}
-                      </div>
-                      <span className="font-medium whitespace-nowrap">
-                        ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -288,32 +279,6 @@ export function QuoteViewModal({
               </span>
             </div>
           </div>
-
-          {/* Notes & Terms */}
-          {(quote.notes || quote.terms) && (
-            <div className="space-y-4">
-              {quote.notes && (
-                <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                    Notes
-                  </h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-lg bg-muted/30">
-                    {quote.notes}
-                  </p>
-                </div>
-              )}
-              {quote.terms && (
-                <div>
-                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">
-                    Terms & Conditions
-                  </h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap p-3 rounded-lg bg-muted/30">
-                    {quote.terms}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Download Button */}
           <div className="flex justify-end pt-4">

@@ -332,6 +332,34 @@ export function QuoteSection({
             )}
           </div>
           
+          {/* Approved Variations — separate green section above the editable items */}
+          {approvedChanges.length > 0 && (
+            <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-3">
+              <div className="px-3 py-2 border-b border-approved/20 flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-approved" />
+                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations (read-only)</span>
+              </div>
+              {approvedChanges.map(change => (
+                <div key={change.id} className="p-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-4">
+                      <span className="text-sm font-medium">{change.title}</span>
+                      {change.description && (
+                        <p className="text-xs text-muted-foreground mt-1">{change.description}</p>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "font-medium whitespace-nowrap",
+                      change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                    )}>
+                      {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="border rounded-lg divide-y">
             {/* Scope Items (read-only) */}
             {includedItems.length > 0 && (
@@ -353,36 +381,6 @@ export function QuoteSection({
                       </div>
                       <span className="font-medium whitespace-nowrap">
                         ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </>
-            )}
-            
-            {/* Approved Changes (read-only) */}
-            {approvedChanges.length > 0 && (
-              <>
-                <div className="p-3 bg-muted/50">
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5" />
-                    Approved Variations (read-only)
-                  </span>
-                </div>
-                {approvedChanges.map(change => (
-                  <div key={change.id} className="p-3 bg-muted/20">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <span className="text-sm font-medium">{change.title}</span>
-                        {change.description && (
-                          <p className="text-xs text-muted-foreground mt-1">{change.description}</p>
-                        )}
-                      </div>
-                      <span className={cn(
-                        "font-medium whitespace-nowrap",
-                        change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                      )}>
-                        {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -630,9 +628,9 @@ export function QuoteSection({
           </div>
         </div>
 
-        {/* Line Items — scope items only */}
-        {includedItems.length > 0 && (
-          <div className="border rounded-lg divide-y mb-6">
+        {/* Included Items — scope + custom line items merged */}
+        {(includedItems.length > 0 || quoteLineItems.length > 0) && (
+          <div className="border rounded-lg divide-y mb-4">
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
@@ -643,6 +641,44 @@ export function QuoteSection({
                 </div>
                 <span className="text-sm font-medium whitespace-nowrap">
                   ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
+            {quoteLineItems.map(item => (
+              <div key={item.id} className="p-3 flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                  {item.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                  )}
+                </div>
+                <span className="text-sm font-medium whitespace-nowrap">
+                  ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Approved Variations — separate green section */}
+        {approvedChanges.length > 0 && (
+          <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-6">
+            <div className="px-3 py-2 border-b border-approved/20">
+              <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
+            </div>
+            {approvedChanges.map(change => (
+              <div key={change.id} className="p-3 flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                  <span className="text-sm font-medium">{change.title}</span>
+                  {change.description && (
+                    <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
+                  )}
+                </div>
+                <span className={cn(
+                  "text-sm font-medium whitespace-nowrap",
+                  change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                )}>
+                  {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             ))}
@@ -667,28 +703,12 @@ export function QuoteSection({
           </div>
         </div>
 
-        {/* Additional Info */}
-        {(quote!.validUntil || quote!.notes || quote!.terms) && (
-          <div className="mt-6 space-y-4 border-t pt-4">
-            {quote!.validUntil && (
-              <div className="flex items-center gap-2 text-sm">
-                <Calendar className="w-4 h-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Valid until:</span>
-                <span>{format(quote!.validUntil, 'dd MMM yyyy')}</span>
-              </div>
-            )}
-            {quote!.notes && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Notes</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{quote!.notes}</p>
-              </div>
-            )}
-            {quote!.terms && (
-              <div>
-                <h4 className="text-sm font-medium mb-1">Terms & Conditions</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{quote!.terms}</p>
-              </div>
-            )}
+        {/* Valid Until */}
+        {quote!.validUntil && (
+          <div className="mt-4 flex items-center gap-2 text-sm border-t pt-4">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Valid until:</span>
+            <span>{format(quote!.validUntil, 'dd MMM yyyy')}</span>
           </div>
         )}
 
@@ -780,6 +800,7 @@ export function QuoteSection({
           quote={quote}
           scopeItems={scopeItems}
           changeRequests={changeRequests}
+          quoteLineItems={quoteLineItems}
           projectInfo={projectInfo}
         />
       )}

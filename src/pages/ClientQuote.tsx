@@ -339,26 +339,6 @@ export default function ClientQuote() {
           </div>
         </Card>
 
-        {/* Notes */}
-        {quote.notes && (
-          <Card className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Notes
-            </p>
-            <p className="text-sm whitespace-pre-wrap">{quote.notes}</p>
-          </Card>
-        )}
-
-        {/* Terms */}
-        {quote.terms && (
-          <Card className="p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-              Terms &amp; Conditions
-            </p>
-            <p className="text-sm whitespace-pre-wrap">{quote.terms}</p>
-          </Card>
-        )}
-
         {/* Client's own comment */}
         {quote.client_comment && !isActionable && (
           <Card className="p-4 bg-secondary/40 border-dashed">
