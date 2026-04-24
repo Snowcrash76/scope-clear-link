@@ -3,7 +3,7 @@ import { ScopeItem } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle, Calculator } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { ImageDisplay } from '@/components/ImageUpload';
@@ -22,8 +22,6 @@ interface ScopeSectionProps {
   onAcknowledge: (itemId: string) => void;
   onAcknowledgeAll?: () => void;
   isClientView?: boolean;
-  showTotal?: boolean;
-  totalAmount?: number;
   approvedChanges?: ApprovedChange[];
 }
 
@@ -59,8 +57,6 @@ export function ScopeSection({
   onAcknowledge,
   onAcknowledgeAll,
   isClientView = true,
-  showTotal = false,
-  totalAmount = 0,
   approvedChanges = []
 }: ScopeSectionProps) {
   const [isExpanded, setIsExpanded] = useState(category === 'included');
@@ -223,7 +219,7 @@ export function ScopeSection({
             </div>
           ))}
           
-          {subtotal > 0 && !showTotal && (
+          {subtotal > 0 && (
             <div className="pt-3 mt-3 border-t border-dashed flex items-center justify-between">
               <span className="text-sm font-medium text-muted-foreground">
                 {category === 'included' ? 'Subtotal' : 'Category Total'}
@@ -231,69 +227,6 @@ export function ScopeSection({
               <span className="font-semibold text-primary">
                 ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-            </div>
-          )}
-
-          {showTotal && (
-            <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-3">
-              <h4 className="text-sm font-bold text-foreground uppercase tracking-wide mb-3">Contract Summary</h4>
-              
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-foreground font-medium">Original Contract</span>
-                <span className="font-semibold tabular-nums text-right">
-                  ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-
-              {approvedChanges.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-foreground font-medium">
-                      Approved Variations ({approvedChanges.length})
-                    </span>
-                    <span className={cn(
-                      "font-semibold tabular-nums text-right",
-                      approvedChanges.reduce((sum, c) => sum + c.costImpact, 0) >= 0 ? "text-approved" : "text-destructive"
-                    )}>
-                      {approvedChanges.reduce((sum, c) => sum + c.costImpact, 0) >= 0 ? '+' : ''}
-                      ${Math.abs(approvedChanges.reduce((sum, c) => sum + c.costImpact, 0)).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  
-                  <div className="pl-4 border-l-2 border-muted space-y-1.5">
-                    {approvedChanges.map((change) => (
-                      <div key={change.id} className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground truncate mr-3 flex-1">{change.title}</span>
-                        <span className={cn(
-                          "font-medium tabular-nums text-right whitespace-nowrap",
-                          change.costImpact >= 0 ? "text-approved" : "text-destructive"
-                        )}>
-                          {change.costImpact >= 0 ? '+' : ''}${Math.abs(change.costImpact).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between p-4 rounded-lg bg-primary/5 mt-3">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Calculator className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <span className="font-heading font-semibold">
-                      {approvedChanges.length > 0 ? 'Revised Contract Total' : 'Contract Total'}
-                    </span>
-                    <p className="text-xs text-muted-foreground">
-                      {approvedChanges.length > 0 ? 'Original + approved changes' : 'Sum of all included items'}
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xl sm:text-2xl font-bold text-primary tabular-nums">
-                  ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
             </div>
           )}
         </div>

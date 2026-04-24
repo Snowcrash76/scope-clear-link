@@ -167,7 +167,7 @@ export default function ClientProjectView() {
     // Client creating change request → notify trade
     const success = await createChangeRequest({
       type: 'client_request',
-      title: 'New variation',
+      title: 'Variation',
       description,
       costImpact: 0,
       timeImpact: 0,
@@ -282,8 +282,6 @@ export default function ClientProjectView() {
               items={includedItems}
               onAcknowledge={handleAcknowledge}
               onAcknowledgeAll={() => handleAcknowledgeAll(includedItems)}
-              showTotal={true}
-              totalAmount={liveTotal}
               approvedChanges={approvedChanges.map(cr => ({
                 id: cr.id,
                 title: cr.title,
