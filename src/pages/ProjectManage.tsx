@@ -416,14 +416,24 @@ export default function ProjectManage() {
                     <Mail className="w-3.5 h-3.5" />
                     {project.clientEmail}
                   </span>
-                  <button
-                    onClick={handleOpenEditClient}
-                    className="flex items-center gap-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
-                    data-testid="button-edit-client-details"
-                    title="Edit client details"
-                  >
-                    <Pencil className="w-3 h-3" />
-                  </button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5"
+                          onClick={handleOpenEditClient}
+                          data-testid="button-edit-client-details"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit client details</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>
