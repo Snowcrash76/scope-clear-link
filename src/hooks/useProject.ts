@@ -568,6 +568,7 @@ export function useProject(projectId: string | undefined) {
         image_url: changeRequest.imageUrl || null,
         image_urls: changeRequest.imageUrl ? [changeRequest.imageUrl] : [],
         cost: cost > 0 ? cost : null,
+        acknowledged: true,
       });
     if (scopeErr) throw scopeErr;
 
