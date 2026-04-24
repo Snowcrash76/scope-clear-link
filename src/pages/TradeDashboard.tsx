@@ -16,7 +16,6 @@ import {
   GitBranch,
   User,
   HelpCircle,
-  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
@@ -129,26 +128,20 @@ function ProjectListItem({
   );
 }
 
-function SupportCard() {
+function SupportWidget() {
   return (
-    <div className="rounded-xl p-5 flex flex-col gap-3 h-full" style={{ background: 'hsl(var(--sidebar-background))' }}>
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-sidebar-primary/20 flex-shrink-0">
-          <HelpCircle className="w-5 h-5 text-sidebar-primary" />
-        </div>
-        <div>
-          <h3 className="font-heading font-semibold text-sidebar-foreground text-sm">Need Expert Help?</h3>
-          <p className="text-xs text-sidebar-foreground/60 mt-0.5 leading-relaxed">
-            Connect with our dedicated support team for any trade service escalations.
-          </p>
-        </div>
-      </div>
+    <div className="fixed bottom-6 right-6 z-50 group">
       <button
-        className="w-full mt-auto border border-sidebar-foreground/20 text-sidebar-foreground text-sm font-semibold py-2 rounded-lg hover:bg-sidebar-foreground/10 transition-colors flex items-center justify-center gap-2"
+        className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-xs font-medium transition-all duration-200"
+        style={{
+          background: 'hsl(var(--sidebar-background))',
+          color: 'hsl(var(--sidebar-foreground))',
+          boxShadow: '0 4px 16px -4px hsl(220 20% 15% / 0.25)',
+        }}
         data-testid="button-contact-support"
       >
-        <MessageSquare className="w-4 h-4" />
-        Contact Support
+        <HelpCircle className="w-3.5 h-3.5 text-sidebar-primary flex-shrink-0" />
+        <span className="text-sidebar-foreground/70 group-hover:text-sidebar-foreground transition-colors">Need help?</span>
       </button>
     </div>
   );
@@ -265,12 +258,12 @@ export default function TradeDashboard() {
           </div>
         </div>
 
-        {/* Bottom 2-col: Activity feed + Support card */}
-        <div className="grid lg:grid-cols-[1fr_300px] gap-6">
-          <ActivityFeed />
-          <SupportCard />
-        </div>
+        {/* Activity feed — full width */}
+        <ActivityFeed />
       </main>
+
+      {/* Discreet support widget — fixed bottom-right */}
+      <SupportWidget />
     </AppShell>
   );
 }
