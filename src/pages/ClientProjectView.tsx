@@ -111,9 +111,8 @@ export default function ClientProjectView() {
 
   // Calculate live totals from current data
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
-  const changesImpact = approvedChanges.reduce((sum, cr) => sum + (cr.costImpact || 0), 0);
   const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
-  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
+  const subtotal = scopeSubtotal + customItemsTotal;
   const taxRate = activeQuote?.taxRate || 0;
   const taxAmount = subtotal * (taxRate / 100);
   const liveTotal = subtotal + taxAmount;
@@ -380,8 +379,8 @@ export default function ClientProjectView() {
 
                 <Separator />
 
-                {/* All Quote Items — single combined list */}
-                {(includedItems.length > 0 || approvedChanges.length > 0) && (
+                {/* All Quote Items — scope items only */}
+                {includedItems.length > 0 && (
                   <div className="border rounded-lg divide-y">
                     {includedItems.map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-start">
@@ -393,22 +392,6 @@ export default function ClientProjectView() {
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
                           ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    ))}
-                    {approvedChanges.map(change => (
-                      <div key={change.id} className="p-3 flex justify-between items-start bg-muted/30">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{change.title}</p>
-                          {change.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{change.description}</p>
-                          )}
-                        </div>
-                        <span className={cn(
-                          "text-sm font-medium whitespace-nowrap",
-                          (change.costImpact || 0) > 0 ? "text-approved" : (change.costImpact || 0) < 0 ? "text-destructive" : ""
-                        )}>
-                          {(change.costImpact || 0) > 0 ? '+' : ''}${(change.costImpact || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     ))}

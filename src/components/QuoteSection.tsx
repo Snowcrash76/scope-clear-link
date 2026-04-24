@@ -135,7 +135,7 @@ export function QuoteSection({
   // Add custom quote line items
   const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
-  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
+  const subtotal = scopeSubtotal + customItemsTotal;
   const taxAmount = subtotal * (taxRate / 100);
   const total = subtotal + taxAmount;
 
@@ -630,8 +630,8 @@ export function QuoteSection({
           </div>
         </div>
 
-        {/* Line Items — unified list */}
-        {(includedItems.length > 0 || approvedChanges.length > 0) && (
+        {/* Line Items — scope items only */}
+        {includedItems.length > 0 && (
           <div className="border rounded-lg divide-y mb-6">
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
@@ -643,22 +643,6 @@ export function QuoteSection({
                 </div>
                 <span className="text-sm font-medium whitespace-nowrap">
                   ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
-            {approvedChanges.map(change => (
-              <div key={change.id} className="p-3 flex justify-between items-start bg-muted/30">
-                <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{change.title}</span>
-                  {change.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
-                  )}
-                </div>
-                <span className={cn(
-                  "text-sm font-medium whitespace-nowrap",
-                  change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                )}>
-                  {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             ))}
