@@ -82,6 +82,8 @@ export function generateInvoicePDF(
   // Logo — Top Right only (no business text here)
   let logoBottomY = yPos;
   let logoLeftX = pageWidth - margin - 65; // fallback if no logo or on error
+  let logoMidX = pageWidth - margin - 32.5; // fallback: centre of fallback logo area
+  let logoRenderW = 65; // fallback width
   if (project.logoBase64) {
     try {
       const logoMaxW = 70;
@@ -97,6 +99,8 @@ export function generateInvoicePDF(
         }
       }
       logoLeftX = pageWidth - margin - renderW;
+      logoMidX = logoLeftX + renderW / 2;
+      logoRenderW = renderW;
       doc.addImage(project.logoBase64, logoLeftX, yPos - 2, renderW, renderH);
       logoBottomY = yPos + renderH;
     } catch {
@@ -119,11 +123,11 @@ export function generateInvoicePDF(
   // Info section starts just below the logo (tight gap matching the reference)
   yPos = logoBottomY + 4;
 
-  // Three-column info section — col3 aligned to logo's left edge
+  // Three-column info section — col3 centred under the logo
   const col1X = margin;
   const col2X = 75;
-  const col3X = logoLeftX;
-  const col3W = pageWidth - margin - col3X;
+  const col3X = logoMidX; // centre point for centred text
+  const col3W = logoRenderW; // wrap width = logo width
   const infoStartY = yPos;
 
   // Column 1: Client details
@@ -191,13 +195,13 @@ export function generateInvoicePDF(
     col2Y += 4;
   }
 
-  // Column 3: Business contact details — left-aligned at logo's left edge
+  // Column 3: Business contact details — centred under the logo
   let col3Y = infoStartY;
   if (project.tradeBusinessName) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...textColor);
-    doc.text(project.tradeBusinessName, col3X, col3Y);
+    doc.text(project.tradeBusinessName, col3X, col3Y, { align: 'center' });
     col3Y += 5;
   }
   doc.setFont('helvetica', 'normal');
@@ -205,15 +209,15 @@ export function generateInvoicePDF(
   doc.setTextColor(...mutedColor);
   if (project.tradeAddress) {
     const addrLines = doc.splitTextToSize(project.tradeAddress, col3W);
-    doc.text(addrLines, col3X, col3Y);
+    doc.text(addrLines, col3X, col3Y, { align: 'center' });
     col3Y += addrLines.length * 4.2;
   }
   if (project.tradePhone) {
-    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y);
+    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y, { align: 'center' });
     col3Y += 4.2;
   }
   if (project.tradeWebsite) {
-    doc.text(project.tradeWebsite, col3X, col3Y);
+    doc.text(project.tradeWebsite, col3X, col3Y, { align: 'center' });
     col3Y += 4.2;
   }
 
