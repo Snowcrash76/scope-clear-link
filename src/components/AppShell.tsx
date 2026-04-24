@@ -249,6 +249,7 @@ export function AppShell({ children }: AppShellProps) {
         business_name: settingsForm.businessName,
         contact_name: settingsForm.contactName,
         phone: settingsForm.phone || null,
+        email: settingsForm.email || null,
         business_address: settingsForm.businessAddress || null,
         abn: settingsForm.abn || null,
         website: settingsForm.website || null,
@@ -417,7 +418,7 @@ export function AppShell({ children }: AppShellProps) {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="settingsEmail" className="text-xs flex items-center gap-1"><Mail className="w-3 h-3" /> Email</Label>
-                  <Input id="settingsEmail" value={settingsForm.email} disabled className="opacity-60" placeholder="you@example.com" />
+                  <Input id="settingsEmail" value={settingsForm.email} onChange={e => setSettingsForm(f => ({ ...f, email: e.target.value }))} placeholder="you@example.com" data-testid="input-settings-email" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="settingsAbn" className="text-xs flex items-center gap-1"><Hash className="w-3 h-3" /> ABN</Label>
