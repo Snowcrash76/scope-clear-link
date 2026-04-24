@@ -3,6 +3,9 @@ import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ImageDisplay } from '@/components/ImageUpload';
@@ -83,6 +86,7 @@ export default function ProjectManage() {
     reorderStages,
     clearAllStages,
     updateProjectStatus,
+    updateClientDetails,
   } = useProject(id);
 
   const {
@@ -124,6 +128,11 @@ export default function ProjectManage() {
     title: string;
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [isEditClientOpen, setIsEditClientOpen] = useState(false);
+  const [editClientName, setEditClientName] = useState('');
+  const [editClientEmail, setEditClientEmail] = useState('');
+  const [editClientAddress, setEditClientAddress] = useState('');
+  const [isSavingClient, setIsSavingClient] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     included: true,
     excluded: false,
@@ -338,6 +347,25 @@ export default function ProjectManage() {
     setIsInviteModalOpen(false);
   };
 
+  const handleOpenEditClient = () => {
+    setEditClientName(project.clientName);
+    setEditClientEmail(project.clientEmail);
+    setEditClientAddress(project.clientAddress || '');
+    setIsEditClientOpen(true);
+  };
+
+  const handleSaveClientDetails = async () => {
+    if (!editClientName.trim() || !editClientEmail.trim()) return;
+    setIsSavingClient(true);
+    const success = await updateClientDetails({
+      clientName: editClientName.trim(),
+      clientEmail: editClientEmail.trim(),
+      clientAddress: editClientAddress.trim() || undefined,
+    });
+    setIsSavingClient(false);
+    if (success) setIsEditClientOpen(false);
+  };
+
   // Separate pending changes into client requests (need trade response) and trade requests (awaiting client)
   const pendingClientRequests = project.changeRequests.filter(
     cr => cr.status === 'pending' && cr.type === 'client_request'
@@ -388,6 +416,14 @@ export default function ProjectManage() {
                     <Mail className="w-3.5 h-3.5" />
                     {project.clientEmail}
                   </span>
+                  <button
+                    onClick={handleOpenEditClient}
+                    className="flex items-center gap-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+                    data-testid="button-edit-client-details"
+                    title="Edit client details"
+                  >
+                    <Pencil className="w-3 h-3" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -968,6 +1004,82 @@ export default function ProjectManage() {
             >
               <Send className="w-4 h-4 mr-2" />
               Send
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Client Details Dialog */}
+      <Dialog open={isEditClientOpen} onOpenChange={setIsEditClientOpen}>
+        <DialogContent className="max-w-md" data-testid="dialog-edit-client">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="w-5 h-5 text-primary" />
+              Edit Client Details
+            </DialogTitle>
+            <DialogDescription>
+              Update the client's name, email, or address. Changes will appear on all new PDFs.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-client-name">Name</Label>
+              <Input
+                id="edit-client-name"
+                value={editClientName}
+                onChange={e => setEditClientName(e.target.value)}
+                placeholder="Client name"
+                data-testid="input-edit-client-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-client-email">Email</Label>
+              <Input
+                id="edit-client-email"
+                type="email"
+                value={editClientEmail}
+                onChange={e => setEditClientEmail(e.target.value)}
+                placeholder="client@email.com"
+                data-testid="input-edit-client-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-client-address">
+                Address <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Textarea
+                id="edit-client-address"
+                value={editClientAddress}
+                onChange={e => setEditClientAddress(e.target.value)}
+                placeholder="e.g., 12 Main St, Sydney NSW 2000"
+                className="min-h-[60px]"
+                data-testid="input-edit-client-address"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsEditClientOpen(false)}
+              data-testid="button-edit-client-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveClientDetails}
+              disabled={isSavingClient || !editClientName.trim() || !editClientEmail.trim()}
+              data-testid="button-edit-client-save"
+            >
+              {isSavingClient ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

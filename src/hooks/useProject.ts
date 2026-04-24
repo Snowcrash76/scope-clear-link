@@ -857,6 +857,43 @@ export function useProject(projectId: string | undefined) {
   };
 
   // Project status operations
+  const updateClientDetails = async (details: {
+    clientName: string;
+    clientEmail: string;
+    clientAddress?: string;
+  }) => {
+    if (!projectId) return false;
+
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({
+          client_name: details.clientName,
+          client_email: details.clientEmail,
+          client_address: details.clientAddress || null,
+        })
+        .eq('id', projectId);
+
+      if (error) throw error;
+
+      setProject(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          clientName: details.clientName,
+          clientEmail: details.clientEmail,
+          clientAddress: details.clientAddress,
+        };
+      });
+      toast.success('Client details updated');
+      return true;
+    } catch (error) {
+      console.error('Error updating client details:', error);
+      toast.error('Failed to update client details');
+      return false;
+    }
+  };
+
   const updateProjectStatus = async (status: Project['status']) => {
     if (!projectId) return false;
 
@@ -900,5 +937,6 @@ export function useProject(projectId: string | undefined) {
     reorderStages,
     clearAllStages,
     updateProjectStatus,
+    updateClientDetails,
   };
 }
