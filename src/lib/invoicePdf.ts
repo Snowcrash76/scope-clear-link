@@ -77,12 +77,12 @@ export function generateInvoicePDF(
   doc.setFont('helvetica', 'bold');
   doc.text('TAX INVOICE', margin, yPos + 8);
 
-  // Logo or Business Name - Top Right
-  let rightColY = yPos;
+  // Logo - Top Right (larger)
+  let logoBottomY = yPos;
   if (project.logoBase64) {
     try {
-      const logoMaxW = 55;
-      const logoMaxH = 25;
+      const logoMaxW = 70;
+      const logoMaxH = 35;
       let renderW = logoMaxW;
       let renderH = logoMaxH;
       if (project.logoNaturalW && project.logoNaturalH && project.logoNaturalH > 0) {
@@ -93,94 +93,126 @@ export function generateInvoicePDF(
           renderW = renderH * aspect;
         }
       }
-      doc.addImage(project.logoBase64, pageWidth - margin - renderW, rightColY - 2, renderW, renderH);
-      rightColY += renderH + 3;
+      doc.addImage(project.logoBase64, pageWidth - margin - renderW, yPos - 2, renderW, renderH);
+      logoBottomY = yPos + renderH;
     } catch {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...textColor);
       if (project.tradeBusinessName) {
-        doc.setTextColor(...textColor);
-        doc.text(project.tradeBusinessName, pageWidth - margin, rightColY, { align: 'right' });
-        rightColY += 6;
+        doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
+        logoBottomY = yPos + 8;
       }
     }
-  } else {
+  } else if (project.tradeBusinessName) {
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    if (project.tradeBusinessName) {
-      doc.setTextColor(...textColor);
-      doc.text(project.tradeBusinessName, pageWidth - margin, rightColY, { align: 'right' });
-      rightColY += 6;
-    }
+    doc.setTextColor(...textColor);
+    doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
+    logoBottomY = yPos + 8;
   }
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...mutedColor);
-  if (project.tradeAddress) {
-    doc.text(project.tradeAddress, pageWidth - margin, rightColY, { align: 'right' });
-    rightColY += 4;
-  }
-  if (project.tradePhone) {
-    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, rightColY, { align: 'right' });
-    rightColY += 4;
-  }
-  if (project.tradeWebsite) {
-    doc.text(project.tradeWebsite, pageWidth - margin, rightColY, { align: 'right' });
-    rightColY += 4;
-  }
+  // Advance below the title / logo row
+  yPos = Math.max(yPos + 16, logoBottomY + 5);
 
-  yPos = Math.max(45, rightColY + 4);
-
-  // Two column section
+  // Three-column info section
   const col1X = margin;
-  const col2X = pageWidth / 2 + 5;
+  const col2X = 75;
+  const col3X = 138;
+  const infoStartY = yPos;
 
   // Column 1: Client details
+  let col1Y = infoStartY;
   doc.setTextColor(...textColor);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text(project.clientName, col1X, yPos);
-
+  doc.text(project.clientName, col1X, col1Y);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
   if (project.clientAddress) {
-    const addressLines = doc.splitTextToSize(project.clientAddress, 70);
-    doc.text(addressLines, col1X, yPos + 5);
+    const addressLines = doc.splitTextToSize(project.clientAddress, 55);
+    doc.text(addressLines, col1X, col1Y + 5);
+    col1Y += 5 + addressLines.length * 4.2;
   }
 
-  // Column 2: Invoice details
-  let col2Y = yPos;
-  doc.setTextColor(...mutedColor);
-  doc.setFontSize(9);
-
+  // Column 2: Invoice Date, Number, Reference, ABN — label stacked above value
+  let col2Y = infoStartY;
   const createdDate = invoice.createdAt instanceof Date ? invoice.createdAt : new Date(invoice.createdAt);
-  doc.text('Invoice Date', col2X, col2Y);
-  doc.setTextColor(...textColor);
-  doc.text(format(createdDate, 'd MMM yyyy'), col2X + 35, col2Y);
 
-  col2Y += 5;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...mutedColor);
+  doc.text('Invoice Date', col2X, col2Y);
+  col2Y += 4;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...textColor);
+  doc.text(format(createdDate, 'd MMM yyyy'), col2X, col2Y);
+  col2Y += 8;
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(...mutedColor);
   doc.text('Invoice Number', col2X, col2Y);
+  col2Y += 4;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(...textColor);
-  doc.text(invoice.invoiceNumber, col2X + 35, col2Y);
+  doc.text(invoice.invoiceNumber, col2X, col2Y);
+  col2Y += 8;
 
-  col2Y += 5;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
   doc.setTextColor(...mutedColor);
   doc.text('Reference', col2X, col2Y);
+  col2Y += 4;
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
   doc.setTextColor(...textColor);
-  doc.text(project.name, col2X + 35, col2Y);
+  doc.text(project.name, col2X, col2Y);
+  col2Y += 8;
 
   if (project.abn) {
-    col2Y += 5;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(...mutedColor);
     doc.text('ABN', col2X, col2Y);
+    col2Y += 4;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
     doc.setTextColor(...textColor);
-    doc.text(project.abn, col2X + 35, col2Y);
+    doc.text(project.abn, col2X, col2Y);
+    col2Y += 4;
   }
 
-  yPos = Math.max(yPos + 30, col2Y + 10);
+  // Column 3: Business contact details
+  let col3Y = infoStartY;
+  if (project.tradeBusinessName) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...textColor);
+    doc.text(project.tradeBusinessName, col3X, col3Y);
+    col3Y += 5;
+  }
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...mutedColor);
+  if (project.tradeAddress) {
+    const addrLines = doc.splitTextToSize(project.tradeAddress, 57);
+    doc.text(addrLines, col3X, col3Y);
+    col3Y += addrLines.length * 4.2;
+  }
+  if (project.tradePhone) {
+    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y);
+    col3Y += 4;
+  }
+  if (project.tradeWebsite) {
+    doc.text(project.tradeWebsite, col3X, col3Y);
+    col3Y += 4;
+  }
+
+  yPos = Math.max(col1Y, col2Y, col3Y) + 8;
 
   // Horizontal line
   doc.setDrawColor(...lineColor);
