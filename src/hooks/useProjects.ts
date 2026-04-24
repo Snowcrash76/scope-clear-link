@@ -120,6 +120,7 @@ export function useProjects() {
           name: p.name,
           clientName: p.client_name,
           clientEmail: p.client_email,
+          clientAddress: p.client_address || undefined,
           tradeName: '', // Will be populated from profile
           tradeBusinessName: '',
           status: p.status === 'in_progress' ? 'in_progress' : p.status as Project['status'],

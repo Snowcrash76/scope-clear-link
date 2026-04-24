@@ -355,6 +355,7 @@ export type Database = {
       projects: {
         Row: {
           active_quote_id: string | null
+          client_address: string | null
           client_email: string
           client_name: string
           created_at: string
@@ -367,6 +368,7 @@ export type Database = {
         }
         Insert: {
           active_quote_id?: string | null
+          client_address?: string | null
           client_email: string
           client_name: string
           created_at?: string
@@ -379,6 +381,7 @@ export type Database = {
         }
         Update: {
           active_quote_id?: string | null
+          client_address?: string | null
           client_email?: string
           client_name?: string
           created_at?: string
