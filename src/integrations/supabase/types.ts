@@ -453,6 +453,7 @@ export type Database = {
           notes: string | null
           project_id: string
           quote_number: string
+          quote_token: string
           status: Database["public"]["Enums"]["quote_status"]
           subtotal: number | null
           tax_amount: number | null
@@ -471,6 +472,7 @@ export type Database = {
           notes?: string | null
           project_id: string
           quote_number: string
+          quote_token?: string
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number | null
           tax_amount?: number | null
@@ -489,6 +491,7 @@ export type Database = {
           notes?: string | null
           project_id?: string
           quote_number?: string
+          quote_token?: string
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number | null
           tax_amount?: number | null
@@ -563,7 +566,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      respond_to_quote_by_token: {
+        Args: {
+          p_token: string
+          p_status: string
+          p_comment?: string | null
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       change_request_status:

@@ -21,3 +21,7 @@ export function getPublicBaseUrl(): string {
 export function getClientProjectUrl(projectId: string): string {
   return `${getPublicBaseUrl()}/project/${projectId}`;
 }
+
+export function getQuoteShareUrl(quoteToken: string): string {
+  return `${getPublicBaseUrl()}/quote/${quoteToken}`;
+}

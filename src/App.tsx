@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import ClientProjectView from "./pages/ClientProjectView";
+import ClientQuote from "./pages/ClientQuote";
 import TradeDashboard from "./pages/TradeDashboard";
 import ProjectManage from "./pages/ProjectManage";
 import ProjectsPage from "./pages/ProjectsPage";
@@ -66,6 +67,7 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/project/:id" element={<ClientProjectView />} />
+            <Route path="/quote/:token" element={<ClientQuote />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

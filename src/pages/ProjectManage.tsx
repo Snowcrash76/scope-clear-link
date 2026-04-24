@@ -60,7 +60,7 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react';
-import { cn, getClientProjectUrl } from '@/lib/utils';
+import { cn, getClientProjectUrl, getQuoteShareUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -837,7 +837,35 @@ export default function ProjectManage() {
           </TabsContent>
 
           {/* Quote Tab */}
-          <TabsContent value="quote" className="mt-0">
+          <TabsContent value="quote" className="mt-0 space-y-4">
+            {activeQuote?.quoteToken && (
+              <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-secondary/40 border border-border">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">Shareable Quote Link</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {getQuoteShareUrl(activeQuote.quoteToken)}
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0"
+                  onClick={() => {
+                    navigator.clipboard.writeText(getQuoteShareUrl(activeQuote.quoteToken));
+                    toast.success('Quote link copied!', {
+                      description: 'Send this link to your client so they can review and accept the quote.',
+                    });
+                  }}
+                  data-testid="button-copy-quote-link"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
+              </div>
+            )}
             <QuoteSection
               scopeItems={project.scopeItems}
               changeRequests={project.changeRequests}

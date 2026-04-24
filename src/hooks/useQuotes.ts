@@ -7,6 +7,7 @@ type DbQuote = {
   id: string;
   project_id: string;
   quote_number: string;
+  quote_token?: string;
   status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
   subtotal: number | null;
   tax_rate: number | null;
@@ -48,6 +49,7 @@ export function useQuotes(projectId: string | undefined) {
         id: q.id,
         projectId: q.project_id,
         quoteNumber: q.quote_number,
+        quoteToken: q.quote_token,
         status: q.status,
         subtotal: q.subtotal || 0,
         taxRate: q.tax_rate || 0,
@@ -271,6 +273,34 @@ export function useQuotes(projectId: string | undefined) {
     }
   };
 
+  const respondByToken = async (
+    token: string,
+    action: 'approved' | 'declined',
+    comment?: string
+  ): Promise<boolean> => {
+    try {
+      const { data: success, error } = await supabase.rpc('respond_to_quote_by_token', {
+        p_token: token,
+        p_status: action,
+        p_comment: comment || null,
+      });
+
+      if (error) throw error;
+
+      if (!success) {
+        toast.error('Unable to submit your response. The quote may have already been actioned.');
+        return false;
+      }
+
+      await fetchQuotes();
+      return true;
+    } catch (error) {
+      console.error('Error responding to quote by token:', error);
+      toast.error('Failed to respond to quote');
+      return false;
+    }
+  };
+
   return {
     quotes,
     activeQuote,
@@ -282,5 +312,6 @@ export function useQuotes(projectId: string | undefined) {
     approveQuote,
     declineQuote,
     reviseQuote,
+    respondByToken,
   };
 }

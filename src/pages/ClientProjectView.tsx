@@ -38,7 +38,7 @@ export default function ClientProjectView() {
     updateChangeRequestStatus,
   } = useProject(id);
   
-  const { activeQuote, approveQuote, declineQuote, refetch: refetchQuotes } = useQuotes(id);
+  const { activeQuote, respondByToken, refetch: refetchQuotes } = useQuotes(id);
   const { invoices, loading: invoicesLoading } = useInvoices(id);
   const { lineItems: quoteLineItems } = useQuoteLineItems(activeQuote?.id);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
@@ -181,19 +181,25 @@ export default function ClientProjectView() {
   const handleQuoteApproval = async (comment: string) => {
     const { action } = quoteApprovalModal;
     if (!activeQuote) return;
-    
-    try {
-      if (action === 'approve') {
-        await approveQuote(activeQuote.id, comment);
-        toast.success('Quote approved! Your trade has been notified.');
-      } else {
-        await declineQuote(activeQuote.id, comment);
-        toast.success('Quote declined. Your trade has been notified.');
-      }
-      await refetchQuotes();
-    } catch (error) {
-      console.error('Quote approval error:', error);
-      toast.error(`Failed to ${action} quote`);
+
+    if (!activeQuote.quoteToken) {
+      toast.error('Quote token unavailable — please refresh the page and try again.');
+      setQuoteApprovalModal({ isOpen: false, action: 'approve' });
+      return;
+    }
+
+    const success = await respondByToken(
+      activeQuote.quoteToken,
+      action === 'approve' ? 'approved' : 'declined',
+      comment,
+    );
+
+    if (success) {
+      toast.success(
+        action === 'approve'
+          ? 'Quote approved! Your trade has been notified.'
+          : 'Quote declined. Your trade has been notified.',
+      );
     }
     setQuoteApprovalModal({ isOpen: false, action: 'approve' });
   };
