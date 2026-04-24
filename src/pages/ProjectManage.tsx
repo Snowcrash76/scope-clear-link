@@ -60,7 +60,7 @@ import {
   ChevronRight,
   RefreshCw
 } from 'lucide-react';
-import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle } from '@/lib/utils';
+import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -387,7 +387,8 @@ export default function ProjectManage() {
   );
 
   const groupedScopeItems = {
-    included: project.scopeItems.filter(item => item.category === 'included'),
+    // Exclude variation items from the included list — they appear in the Approved Variations section
+    included: project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title)),
     excluded: project.scopeItems.filter(item => item.category === 'excluded'),
     assumption: project.scopeItems.filter(item => item.category === 'assumption'),
   };
