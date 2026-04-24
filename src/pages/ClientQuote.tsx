@@ -408,21 +408,22 @@ export default function ClientQuote() {
         {isActionable && (
           <div className="flex gap-3">
             <Button
-              className="flex-1"
-              onClick={() => setActionModal({ open: true, action: 'approve' })}
-              data-testid="button-accept-quote"
-            >
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Accept Quote
-            </Button>
-            <Button
-              variant="outline"
+              variant="decline"
               className="flex-1"
               onClick={() => setActionModal({ open: true, action: 'decline' })}
               data-testid="button-decline-quote"
             >
               <XCircle className="w-4 h-4 mr-2" />
               Decline
+            </Button>
+            <Button
+              variant="approve"
+              className="flex-1"
+              onClick={() => setActionModal({ open: true, action: 'approve' })}
+              data-testid="button-accept-quote"
+            >
+              <CheckCircle2 className="w-4 h-4 mr-2" />
+              Accept Quote
             </Button>
           </div>
         )}
@@ -480,7 +481,7 @@ export default function ClientQuote() {
               Cancel
             </Button>
             <Button
-              variant={actionModal.action === 'approve' ? 'default' : 'destructive'}
+              variant={actionModal.action === 'approve' ? 'approve' : 'decline'}
               onClick={handleRespond}
               disabled={isSubmitting}
               data-testid="button-confirm-response"

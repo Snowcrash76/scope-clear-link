@@ -324,17 +324,17 @@ export default function ClientProjectView() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">{activeQuote.quoteNumber}</h3>
                       {activeQuote.status === 'sent' && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-pending/15 text-foreground font-medium">
                           Awaiting Response
                         </span>
                       )}
                       {activeQuote.status === 'approved' && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-approved/15 text-approved font-medium">
                           Approved
                         </span>
                       )}
                       {activeQuote.status === 'declined' && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-destructive/10 text-destructive font-medium">
                           Declined
                         </span>
                       )}
@@ -421,13 +421,14 @@ export default function ClientProjectView() {
                 {activeQuote.status === 'sent' && (
                   <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
                     <Button 
-                      variant="outline" 
+                      variant="decline" 
                       className="flex-1"
                       onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'decline' })}
                     >
                       Decline Quote
                     </Button>
                     <Button 
+                      variant="approve"
                       className="flex-1"
                       onClick={async () => {
                         if (!activeQuote) return;
@@ -632,7 +633,7 @@ export default function ClientProjectView() {
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium">{invoice.invoiceNumber}</span>
                               <Badge variant={
-                                invoice.status === 'paid' ? 'default' :
+                                invoice.status === 'paid' ? 'success' :
                                 invoice.status === 'overdue' ? 'destructive' :
                                 invoice.status === 'sent' ? 'secondary' : 'outline'
                               }>
@@ -649,7 +650,7 @@ export default function ClientProjectView() {
                               )}
                             </p>
                             {invoice.paidAt && (
-                              <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                              <p className="text-xs text-approved mt-1">
                                 Paid on {format(new Date(invoice.paidAt), 'dd MMM yyyy')}
                               </p>
                             )}
