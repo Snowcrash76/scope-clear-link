@@ -9,6 +9,7 @@ type DbQuote = {
   quote_number: string;
   quote_token?: string;
   token_updated_at: string | null;
+  token_regenerated: boolean;
   status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
   subtotal: number | null;
   tax_rate: number | null;
@@ -52,6 +53,7 @@ export function useQuotes(projectId: string | undefined) {
         quoteNumber: q.quote_number,
         quoteToken: q.quote_token,
         tokenUpdatedAt: q.token_updated_at ? new Date(q.token_updated_at) : undefined,
+        tokenRegenerated: q.token_regenerated,
         status: q.status,
         subtotal: q.subtotal || 0,
         taxRate: q.tax_rate || 0,
@@ -308,9 +310,17 @@ export function useQuotes(projectId: string | undefined) {
       const newToken = crypto.randomUUID();
       const now = new Date().toISOString();
 
+      // If the quote already has a token, mark it as explicitly regenerated
+      const existingQuote = quotes.find(q => q.id === quoteId);
+      const isRegeneration = !!existingQuote?.quoteToken;
+
       const { error } = await supabase
         .from('quotes')
-        .update({ quote_token: newToken, token_updated_at: now })
+        .update({
+          quote_token: newToken,
+          token_updated_at: now,
+          ...(isRegeneration ? { token_regenerated: true } : {}),
+        })
         .eq('id', quoteId);
 
       if (error) throw error;

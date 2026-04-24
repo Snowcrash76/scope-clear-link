@@ -793,7 +793,7 @@ export default function ProjectManage() {
                     </p>
                     {activeQuote.tokenUpdatedAt && (
                       <p className="text-xs text-muted-foreground mt-0.5" data-testid="text-token-updated-at">
-                        Last regenerated:{' '}
+                        {activeQuote.tokenRegenerated ? 'Last regenerated' : 'Link generated'}:{' '}
                         {activeQuote.tokenUpdatedAt.toLocaleString(undefined, {
                           dateStyle: 'medium',
                           timeStyle: 'short',

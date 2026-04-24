@@ -50,6 +50,7 @@ export interface Quote {
   quoteNumber: string;
   quoteToken?: string;
   tokenUpdatedAt?: Date;
+  tokenRegenerated?: boolean;
   status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
   subtotal: number;
   taxRate: number;
