@@ -477,12 +477,14 @@ export default function ClientProjectView() {
                       className="flex-1"
                       onClick={async () => {
                         if (!activeQuote) return;
-                        try {
-                          await approveQuote(activeQuote.id, '');
+                        const success = await respondByToken(
+                          activeQuote.quoteToken!,
+                          'approved',
+                          ''
+                        );
+                        if (success) {
                           toast.success('Quote approved! Your trade has been notified.');
                           await refetchQuotes();
-                        } catch {
-                          toast.error('Failed to approve quote');
                         }
                       }}
                     >
