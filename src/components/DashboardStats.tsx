@@ -29,8 +29,7 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Active projects */}
       <div
-        className="rounded-xl p-4 col-span-1 bg-white border border-[#D8C3AD]"
-        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
+        className="rounded-xl p-4 col-span-1 bg-white border border-[#D8C3AD] shadow-card"
         data-testid="stat-active-projects"
       >
         <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
@@ -100,10 +99,9 @@ function StatCard({
   return (
     <div
       className={cn(
-        'rounded-xl border bg-white p-4 transition-all duration-200',
+        'rounded-xl border bg-white p-4 shadow-card transition-all duration-200',
         highlight && 'ring-2 ring-amber-300/40'
       )}
-      style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
       data-testid={testId}
     >
       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">

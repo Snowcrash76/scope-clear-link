@@ -334,7 +334,7 @@ export default function TradeDashboard() {
             </button>
           </div>
 
-          <div className="rounded-xl border bg-white overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+          <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
             {loading ? (
               <div className="divide-y">
                 {Array.from({ length: 3 }).map((_, i) => (

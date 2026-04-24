@@ -146,10 +146,9 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
 
   return (
     <Card className={cn(
-      "overflow-hidden transition-all duration-200 bg-white border border-[#D8C3AD] hover:shadow-md",
+      "overflow-hidden transition-all duration-200 bg-white border border-[#D8C3AD] shadow-card hover:shadow-elevated",
       needsAttention && "ring-2 ring-amber-300/50"
-    )}
-    style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+    )}>
       <div className="p-4 sm:p-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">

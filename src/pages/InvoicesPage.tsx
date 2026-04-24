@@ -79,7 +79,7 @@ export default function InvoicesPage() {
           <p className="text-sm text-muted-foreground mt-0.5">All invoices across your projects</p>
         </div>
 
-        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Project / Client</span>
