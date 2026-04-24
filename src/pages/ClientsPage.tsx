@@ -3,7 +3,7 @@ import { AppShell } from '@/components/AppShell';
 import { useProjects } from '@/hooks/useProjects';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Users, Mail, MapPin } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ClientInfo {
@@ -20,7 +20,7 @@ function ClientInitial({ name }: { name: string }) {
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return (
-    <div className={cn('w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-lg', colors[idx])}>
+    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-sm', colors[idx])}>
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -76,66 +76,57 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-xl border bg-card p-5 space-y-3">
-                <div className="flex items-center gap-3">
-                  <Skeleton className="w-12 h-12 rounded-full" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-                <Skeleton className="h-3 w-40" />
-                <Skeleton className="h-3 w-36" />
-              </div>
-            ))}
+        <div className="rounded-xl border bg-card overflow-hidden">
+          {/* Table header */}
+          <div className="grid grid-cols-[2fr_2fr_3fr] gap-4 px-4 py-2.5 border-b bg-muted/30">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Address</span>
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="rounded-xl border bg-card text-center py-14 px-4">
-            <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">
-              {search ? `No clients matching "${search}"` : 'No clients yet. Create a job to add your first client.'}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(client => (
-              <div
-                key={client.key}
-                className="rounded-xl border bg-card p-5"
-                data-testid={`client-card-${client.key}`}
-              >
-                <div className="flex items-center gap-3 mb-4">
-                  <ClientInitial name={client.name} />
-                  <p className="font-semibold text-sm leading-snug">{client.name}</p>
+
+          {loading ? (
+            <div className="divide-y">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="grid grid-cols-[2fr_2fr_3fr] gap-4 px-4 py-3.5 items-center">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="w-8 h-8 rounded-full" />
+                    <Skeleton className="h-4 w-28" />
+                  </div>
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-4 w-40" />
                 </div>
-                <div className="space-y-2">
-                  {client.email ? (
-                    <div className="flex items-start gap-2">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground break-all">{client.email}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground/40 italic">No email</span>
-                    </div>
-                  )}
-                  {client.address ? (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground">{client.address}</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-2">
-                      <MapPin className="w-3.5 h-3.5 text-muted-foreground/40 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-muted-foreground/40 italic">No address</span>
-                    </div>
-                  )}
+              ))}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-12 px-4">
+              <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground">
+                {search ? `No clients matching "${search}"` : 'No clients yet. Create a job to add your first client.'}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {filtered.map(client => (
+                <div
+                  key={client.key}
+                  className="grid grid-cols-[2fr_2fr_3fr] gap-4 px-4 py-3.5 items-center hover:bg-muted/40 transition-colors"
+                  data-testid={`client-row-${client.key}`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <ClientInitial name={client.name} />
+                    <span className="text-sm font-medium truncate">{client.name}</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground truncate">
+                    {client.email || <span className="italic text-muted-foreground/50">—</span>}
+                  </span>
+                  <span className="text-sm text-muted-foreground truncate">
+                    {client.address || <span className="italic text-muted-foreground/50">—</span>}
+                  </span>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </main>
     </AppShell>
   );
