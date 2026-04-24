@@ -78,51 +78,64 @@
   }
 
   .dark {
-    --background: 220 20% 10%;
-    --foreground: 40 20% 94%;
+    /* Field Utility dark mode — warm near-black surfaces (zinc-900/800 warm shift) */
+    --background: 24 8% 8%;
+    --foreground: 40 20% 91%;
 
-    --card: 220 18% 14%;
-    --card-foreground: 40 20% 94%;
+    --card: 24 6% 12%;
+    --card-foreground: 40 20% 91%;
 
-    --popover: 220 18% 14%;
-    --popover-foreground: 40 20% 94%;
+    --popover: 24 6% 12%;
+    --popover-foreground: 40 20% 91%;
 
-    --primary: 40 20% 94%;
-    --primary-foreground: 220 20% 10%;
+    /* Amber-brown primary — brightened for dark mode readability */
+    --primary: 39 100% 45%;
+    --primary-foreground: 24 8% 8%;
 
-    --secondary: 220 16% 20%;
-    --secondary-foreground: 40 20% 94%;
+    /* Warm dark secondary */
+    --secondary: 28 6% 18%;
+    --secondary-foreground: 40 20% 91%;
 
-    --muted: 220 16% 18%;
-    --muted-foreground: 40 10% 60%;
+    /* Warm muted dark */
+    --muted: 28 5% 15%;
+    --muted-foreground: 33 15% 55%;
 
-    --accent: 38 92% 50%;
-    --accent-foreground: 220 20% 10%;
+    /* Bright amber accent — unchanged */
+    --accent: 40 100% 48%;
+    --accent-foreground: 24 8% 8%;
 
+    /* Status colors */
     --success: 142 52% 48%;
     --success-foreground: 0 0% 100%;
 
-    --pending: 43 96% 56%;
-    --pending-foreground: 220 20% 10%;
-
-    --approved: 158 44% 48%;
-    --approved-foreground: 0 0% 100%;
+    --warning: 40 100% 48%;
+    --warning-foreground: 24 8% 8%;
 
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 16% 22%;
-    --input: 220 16% 22%;
-    --ring: 40 20% 94%;
+    /* Pending state */
+    --pending: 43 96% 56%;
+    --pending-foreground: 24 8% 8%;
 
-    --sidebar-background: 220 20% 8%;
-    --sidebar-foreground: 40 20% 94%;
-    --sidebar-primary: 38 92% 50%;
-    --sidebar-primary-foreground: 220 20% 10%;
-    --sidebar-accent: 220 18% 14%;
-    --sidebar-accent-foreground: 40 20% 94%;
-    --sidebar-border: 220 16% 18%;
-    --sidebar-ring: 38 92% 50%;
+    /* Approved state */
+    --approved: 158 44% 48%;
+    --approved-foreground: 0 0% 100%;
+
+    /* Warm dark borders */
+    --border: 28 7% 20%;
+    --input: 28 7% 20%;
+    --ring: 39 100% 45%;
+
+    /* Sidebar — charcoal-amber, consistent with light mode sidebar */
+    --sidebar-background: 24 8% 6%;
+    --sidebar-foreground: 40 20% 91%;
+    --sidebar-primary: 40 100% 48%;
+    --sidebar-primary-foreground: 24 8% 6%;
+    --sidebar-accent: 24 6% 12%;
+    --sidebar-accent-foreground: 40 20% 91%;
+    --sidebar-border: 24 5% 14%;
+    --sidebar-ring: 40 100% 48%;
   }
 }
 
