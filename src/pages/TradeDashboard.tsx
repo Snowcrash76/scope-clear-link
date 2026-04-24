@@ -18,8 +18,6 @@ import { exportProjectsReport } from '@/lib/exportReport';
 import { toast } from 'sonner';
 import {
   Search,
-  Eye,
-  MoreVertical,
   ChevronRight,
   Briefcase,
   GitBranch,
@@ -73,7 +71,7 @@ function ProjectListItem({
   const resolvedVariations = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined').length;
 
   return (
-    <div className="flex items-center gap-4 py-3.5 px-4 hover:bg-muted/40 transition-colors group" data-testid={`project-list-item-${project.id}`}>
+    <div onClick={() => onView(project.id)} className="flex items-center gap-4 py-3.5 px-4 hover:bg-muted/40 transition-colors cursor-pointer group" data-testid={`project-list-item-${project.id}`}>
       <ProjectInitial name={project.name} />
 
       <div className="flex-1 min-w-0">
@@ -118,22 +116,7 @@ function ProjectListItem({
         </div>
       )}
 
-      <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={() => onView(project.id)}
-          className="p-1.5 rounded hover:bg-muted transition-colors"
-          title="View project"
-          data-testid={`button-view-project-${project.id}`}
-        >
-          <Eye className="w-4 h-4 text-muted-foreground" />
-        </button>
-        <button
-          className="p-1.5 rounded hover:bg-muted transition-colors"
-          title="More options"
-        >
-          <MoreVertical className="w-4 h-4 text-muted-foreground" />
-        </button>
-      </div>
+      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
     </div>
   );
 }
