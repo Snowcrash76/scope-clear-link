@@ -380,99 +380,12 @@ export default function ClientProjectView() {
                   </div>
                 </div>
 
-                <Separator />
-
-                {/* Line Items Breakdown */}
-                <div className="space-y-4">
-                  {/* Included Scope Items */}
-                  {includedItems.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-base font-bold text-foreground uppercase tracking-wide">Included Items</h4>
-                      <div className="border rounded-lg divide-y">
-                        {includedItems.map(item => (
-                          <div key={item.id} className="p-3 flex justify-between items-start">
-                            <div className="flex-1 pr-4">
-                              <p className="text-base font-semibold text-foreground">{item.title}</p>
-                              {item.description && (
-                                <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{item.description}</p>
-                              )}
-                            </div>
-                            <span className="font-medium text-sm whitespace-nowrap">
-                              ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Approved Changes */}
-                  {approvedChanges.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-base font-bold text-foreground uppercase tracking-wide">Approved Changes</h4>
-                      <div className="border rounded-lg divide-y border-approved/30 bg-approved/5">
-                        {approvedChanges.map(change => (
-                          <div key={change.id} className="p-3 flex justify-between items-start">
-                            <div className="flex-1 pr-4">
-                              <p className="text-base font-semibold text-foreground">{change.title}</p>
-                              {change.description && (
-                                <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{change.description}</p>
-                              )}
-                            </div>
-                            <span className={cn(
-                              "font-medium text-sm whitespace-nowrap",
-                              (change.costImpact || 0) > 0 ? "text-approved" : (change.costImpact || 0) < 0 ? "text-destructive" : ""
-                            )}>
-                              {(change.costImpact || 0) > 0 ? '+' : ''}${(change.costImpact || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Custom Quote Line Items */}
-                  {quoteLineItems.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="text-base font-bold text-foreground uppercase tracking-wide">Additional Items</h4>
-                      <div className="border rounded-lg divide-y">
-                        {quoteLineItems.map(item => (
-                          <div key={item.id} className="p-3 flex justify-between items-start">
-                            <div className="flex-1 pr-4">
-                              <p className="text-base font-semibold text-foreground">{item.title}</p>
-                              {item.description && (
-                                <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{item.description}</p>
-                              )}
-                            </div>
-                            <span className="font-medium text-sm whitespace-nowrap">
-                              ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <Separator />
-
-                {/* Totals */}
-                <div className="space-y-2 p-4 rounded-lg bg-muted/50">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax ({taxRate}%)</span>
-                    <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-primary">
-                      ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
+                {/* Total */}
+                <div className="flex justify-between items-center p-4 rounded-lg bg-muted/50 border-t">
+                  <span className="text-lg font-bold">Total</span>
+                  <span className="text-2xl font-bold text-primary">
+                    ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
 
                 {/* Approve/Decline Buttons for sent quotes */}
