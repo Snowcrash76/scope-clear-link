@@ -49,6 +49,7 @@ export interface Quote {
   projectId: string;
   quoteNumber: string;
   quoteToken?: string;
+  tokenUpdatedAt?: Date;
   status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
   subtotal: number;
   taxRate: number;

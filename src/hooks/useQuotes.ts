@@ -8,6 +8,7 @@ type DbQuote = {
   project_id: string;
   quote_number: string;
   quote_token?: string;
+  token_updated_at: string | null;
   status: 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
   subtotal: number | null;
   tax_rate: number | null;
@@ -50,6 +51,7 @@ export function useQuotes(projectId: string | undefined) {
         projectId: q.project_id,
         quoteNumber: q.quote_number,
         quoteToken: q.quote_token,
+        tokenUpdatedAt: q.token_updated_at ? new Date(q.token_updated_at) : undefined,
         status: q.status,
         subtotal: q.subtotal || 0,
         taxRate: q.tax_rate || 0,
@@ -304,9 +306,11 @@ export function useQuotes(projectId: string | undefined) {
   const regenerateQuoteToken = async (quoteId: string): Promise<string | null> => {
     try {
       const newToken = crypto.randomUUID();
+      const now = new Date().toISOString();
+
       const { error } = await supabase
         .from('quotes')
-        .update({ quote_token: newToken })
+        .update({ quote_token: newToken, token_updated_at: now })
         .eq('id', quoteId);
 
       if (error) throw error;

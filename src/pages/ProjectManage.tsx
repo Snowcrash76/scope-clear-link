@@ -791,6 +791,15 @@ export default function ProjectManage() {
                     <p className="text-xs text-muted-foreground truncate">
                       {getQuoteShareUrl(activeQuote.quoteToken)}
                     </p>
+                    {activeQuote.tokenUpdatedAt && (
+                      <p className="text-xs text-muted-foreground mt-0.5" data-testid="text-token-updated-at">
+                        Last regenerated:{' '}
+                        {activeQuote.tokenUpdatedAt.toLocaleString(undefined, {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">

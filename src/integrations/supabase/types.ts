@@ -454,6 +454,7 @@ export type Database = {
           project_id: string
           quote_number: string
           quote_token: string
+          token_updated_at: string
           status: Database["public"]["Enums"]["quote_status"]
           subtotal: number | null
           tax_amount: number | null
@@ -473,6 +474,7 @@ export type Database = {
           project_id: string
           quote_number: string
           quote_token?: string
+          token_updated_at?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number | null
           tax_amount?: number | null
@@ -492,6 +494,7 @@ export type Database = {
           project_id?: string
           quote_number?: string
           quote_token?: string
+          token_updated_at?: string | null
           status?: Database["public"]["Enums"]["quote_status"]
           subtotal?: number | null
           tax_amount?: number | null
