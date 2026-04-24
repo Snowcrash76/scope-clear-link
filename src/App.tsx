@@ -12,6 +12,7 @@ import ProjectManage from "./pages/ProjectManage";
 import ProjectsPage from "./pages/ProjectsPage";
 import QuotesPage from "./pages/QuotesPage";
 import InvoicesPage from "./pages/InvoicesPage";
+import ClientsPage from "./pages/ClientsPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -57,6 +58,11 @@ const App = () => (
             <Route path="/invoices" element={
               <ProtectedRoute>
                 <InvoicesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/clients" element={
+              <ProtectedRoute>
+                <ClientsPage />
               </ProtectedRoute>
             } />
             <Route path="/project/:id" element={<ClientProjectView />} />
