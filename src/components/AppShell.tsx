@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { CreateJobModal } from '@/components/CreateJobModal';
+import { useCreateProject, type CreateProjectData } from '@/hooks/useCreateProject';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -153,14 +155,15 @@ function SidebarInner({
 
 interface AppShellProps {
   children: React.ReactNode;
-  onNewJob: () => void;
 }
 
-export function AppShell({ children, onNewJob }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   const { profile, signOut, user } = useAuth();
+  const { createProject } = useCreateProject();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
@@ -266,8 +269,17 @@ export function AppShell({ children, onNewJob }: AppShellProps) {
     setIsSettingsOpen(true);
   };
 
+  const handleCreateJob = async (jobData: CreateProjectData) => {
+    const projectId = await createProject(jobData);
+    if (projectId) {
+      toast.success('Job & quote created! Review and send to your client.');
+      setIsCreateModalOpen(false);
+      navigate(`/manage/${projectId}?tab=quote`);
+    }
+  };
+
   const sidebarProps: SidebarInnerProps = {
-    onNewJob,
+    onNewJob: () => setIsCreateModalOpen(true),
     onOpenSettings: openSettings,
     onSignOut: handleSignOut,
     currentPath: pathname,
@@ -307,6 +319,13 @@ export function AppShell({ children, onNewJob }: AppShellProps) {
 
         {children}
       </div>
+
+      {/* New Job Modal */}
+      <CreateJobModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        onCreateJob={handleCreateJob}
+      />
 
       {/* Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>

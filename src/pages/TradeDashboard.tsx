@@ -7,17 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from '@/components/ProjectCard';
 import { ProjectCardSkeletonGrid } from '@/components/ProjectCardSkeleton';
 import { DashboardStats } from '@/components/DashboardStats';
-import { CreateJobModal } from '@/components/CreateJobModal';
 import { AppShell } from '@/components/AppShell';
 import { useProjects } from '@/hooks/useProjects';
 import { Plus, Search, Briefcase } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function TradeDashboard() {
   const navigate = useNavigate();
-  const { projects, loading, createProject, updateProjectStatus, deleteProject } = useProjects();
+  const { projects, loading, updateProjectStatus, deleteProject } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('active');
 
   const filteredProjects = projects.filter(project => {
@@ -35,32 +32,12 @@ export default function TradeDashboard() {
     return matchesSearch;
   });
 
-  const handleCreateJob = async (jobData: {
-    name: string;
-    clientName: string;
-    clientEmail: string;
-    clientAddress?: string;
-    quoteData: {
-      lineItems: { title: string; description: string; cost: number; category: 'included' | 'excluded' | 'assumption'; imageUrl?: string }[];
-      taxRate: number;
-      validUntil: Date | null;
-      notes: string;
-      terms: string;
-    };
-  }) => {
-    const projectId = await createProject(jobData);
-    if (projectId) {
-      toast.success('Job & quote created! Review and send to your client.');
-      navigate(`/manage/${projectId}?tab=quote`);
-    }
-  };
-
   const handleViewProject = (id: string) => {
     navigate(`/manage/${id}`);
   };
 
   return (
-    <AppShell onNewJob={() => setIsCreateModalOpen(true)}>
+    <AppShell>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Page heading */}
         <div className="mb-6">
@@ -74,8 +51,8 @@ export default function TradeDashboard() {
         </div>
 
         {/* Search */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
+        <div className="mb-6">
+          <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search jobs or clients..."
@@ -84,10 +61,6 @@ export default function TradeDashboard() {
               className="pl-9"
             />
           </div>
-          <Button variant="accent" onClick={() => setIsCreateModalOpen(true)} className="lg:hidden">
-            <Plus className="w-4 h-4 mr-2" />
-            New Job
-          </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -121,7 +94,7 @@ export default function TradeDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState searchQuery={searchQuery} onCreateJob={() => setIsCreateModalOpen(true)} />
+                  <EmptyState searchQuery={searchQuery} />
                 )}
               </TabsContent>
 
@@ -157,19 +130,13 @@ export default function TradeDashboard() {
                     ))}
                   </div>
                 ) : (
-                  <EmptyState message="No draft jobs" searchQuery={searchQuery} onCreateJob={() => setIsCreateModalOpen(true)} />
+                  <EmptyState message="No draft jobs" searchQuery={searchQuery} />
                 )}
               </TabsContent>
             </>
           )}
         </Tabs>
       </main>
-
-      <CreateJobModal
-        open={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
-        onCreateJob={handleCreateJob}
-      />
     </AppShell>
   );
 }
@@ -177,11 +144,9 @@ export default function TradeDashboard() {
 function EmptyState({
   message = 'No projects found',
   searchQuery,
-  onCreateJob,
 }: {
   message?: string;
   searchQuery?: string;
-  onCreateJob?: () => void;
 }) {
   return (
     <div className="text-center py-12">
@@ -189,11 +154,8 @@ function EmptyState({
       <p className="text-muted-foreground mb-4">
         {searchQuery ? `No results for "${searchQuery}"` : message}
       </p>
-      {onCreateJob && !searchQuery && (
-        <Button variant="outline" onClick={onCreateJob}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create your first job
-        </Button>
+      {!searchQuery && (
+        <p className="text-sm text-muted-foreground">Use the <span className="font-medium">New Job</span> button in the sidebar to get started.</p>
       )}
     </div>
   );
