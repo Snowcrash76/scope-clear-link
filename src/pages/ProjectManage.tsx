@@ -58,7 +58,8 @@ import {
   FileText,
   Receipt,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  RefreshCw
 } from 'lucide-react';
 import { cn, getClientProjectUrl, getQuoteShareUrl } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -97,6 +98,7 @@ export default function ProjectManage() {
     updateQuote,
     sendQuote,
     reviseQuote,
+    regenerateQuoteToken,
   } = useQuotes(id);
 
   const {
@@ -131,6 +133,7 @@ export default function ProjectManage() {
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
+  const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
   const [editClientName, setEditClientName] = useState('');
   const [editClientEmail, setEditClientEmail] = useState('');
   const [editClientAddress, setEditClientAddress] = useState('');
@@ -850,21 +853,46 @@ export default function ProjectManage() {
                     </p>
                   </div>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-shrink-0"
-                  onClick={() => {
-                    navigator.clipboard.writeText(getQuoteShareUrl(activeQuote.quoteToken));
-                    toast.success('Quote link copied!', {
-                      description: 'Send this link to your client so they can review and accept the quote.',
-                    });
-                  }}
-                  data-testid="button-copy-quote-link"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy Link
-                </Button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(getQuoteShareUrl(activeQuote.quoteToken));
+                      toast.success('Quote link copied!', {
+                        description: 'Send this link to your client so they can review and accept the quote.',
+                      });
+                    }}
+                    data-testid="button-copy-quote-link"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy Link
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isRegeneratingToken}
+                    onClick={async () => {
+                      setIsRegeneratingToken(true);
+                      const newToken = await regenerateQuoteToken(activeQuote.id);
+                      setIsRegeneratingToken(false);
+                      if (newToken) {
+                        navigator.clipboard.writeText(getQuoteShareUrl(newToken));
+                        toast.success('Quote link regenerated!', {
+                          description: 'The old link is now invalid. The new link has been copied to your clipboard.',
+                        });
+                      }
+                    }}
+                    data-testid="button-regenerate-quote-link"
+                  >
+                    {isRegeneratingToken ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                    )}
+                    Regenerate Link
+                  </Button>
+                </div>
               </div>
             )}
             <QuoteSection

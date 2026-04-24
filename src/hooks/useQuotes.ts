@@ -301,6 +301,25 @@ export function useQuotes(projectId: string | undefined) {
     }
   };
 
+  const regenerateQuoteToken = async (quoteId: string): Promise<string | null> => {
+    try {
+      const newToken = crypto.randomUUID();
+      const { error } = await supabase
+        .from('quotes')
+        .update({ quote_token: newToken })
+        .eq('id', quoteId);
+
+      if (error) throw error;
+
+      await fetchQuotes();
+      return newToken;
+    } catch (error) {
+      console.error('Error regenerating quote token:', error);
+      toast.error('Failed to regenerate quote link');
+      return null;
+    }
+  };
+
   return {
     quotes,
     activeQuote,
@@ -313,5 +332,6 @@ export function useQuotes(projectId: string | undefined) {
     declineQuote,
     reviseQuote,
     respondByToken,
+    regenerateQuoteToken,
   };
 }
