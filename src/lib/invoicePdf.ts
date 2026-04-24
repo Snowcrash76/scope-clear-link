@@ -22,6 +22,8 @@ export interface ProjectInfo {
   logoBase64?: string;
   logoNaturalW?: number;
   logoNaturalH?: number;
+  paymentInstructions?: string;
+  defaultTermsText?: string;
 }
 
 interface LoadedLogo {
@@ -295,7 +297,7 @@ export function generateInvoicePDF(
   doc.text(`$${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 
   // Payment Details Section
-  yPos += 25;
+  yPos += 12;
   if (yPos > 240) {
     doc.addPage();
     yPos = 20;
@@ -342,9 +344,10 @@ export function generateInvoicePDF(
     }
   }
 
-  // Notes / Payment Instructions
-  if (invoice.notes) {
-    yPos += 10;
+  // Notes / Payment Instructions (use invoice.notes, fall back to project default)
+  const paymentText = invoice.notes || project.paymentInstructions || '';
+  if (paymentText) {
+    yPos += 8;
     if (yPos > 240) {
       doc.addPage();
       yPos = 20;
@@ -359,13 +362,14 @@ export function generateInvoicePDF(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...mutedColor);
-    const notesLines = doc.splitTextToSize(invoice.notes, pageWidth - margin * 2);
+    const notesLines = doc.splitTextToSize(paymentText, pageWidth - margin * 2);
     doc.text(notesLines, margin, yPos);
     yPos += notesLines.length * 4 + 5;
   }
 
-  // Terms & Conditions
-  if (invoice.terms) {
+  // Terms & Conditions (use invoice.terms, fall back to project default)
+  const termsText = invoice.terms || project.defaultTermsText || '';
+  if (termsText) {
     yPos += 5;
     if (yPos > 220) {
       doc.addPage();
@@ -381,7 +385,7 @@ export function generateInvoicePDF(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...mutedColor);
-    const termsLines = doc.splitTextToSize(invoice.terms, pageWidth - margin * 2);
+    const termsLines = doc.splitTextToSize(termsText, pageWidth - margin * 2);
     doc.text(termsLines, margin, yPos);
   }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -112,6 +112,15 @@ export function InvoiceSection({
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState(defaultPaymentInstructions || '');
   const [terms, setTerms] = useState(defaultTerms || '');
+
+  // Re-sync when profile defaults load asynchronously after component mount
+  useEffect(() => {
+    if (defaultPaymentInstructions) setNotes(defaultPaymentInstructions);
+  }, [defaultPaymentInstructions]);
+  useEffect(() => {
+    if (defaultTerms) setTerms(defaultTerms);
+  }, [defaultTerms]);
+
   const [percentage, setPercentage] = useState(50);
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
   const [customDescription, setCustomDescription] = useState('');
@@ -146,6 +155,8 @@ export function InvoiceSection({
     tradeWebsite,
     abn: tradeAbn,
     logoUrl,
+    paymentInstructions: defaultPaymentInstructions,
+    defaultTermsText: defaultTerms,
   };
 
   const handleExportToXero = (invoice: Invoice) => {
