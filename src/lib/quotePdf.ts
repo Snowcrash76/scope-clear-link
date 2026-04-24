@@ -78,8 +78,8 @@ export function generateQuotePDF(
   doc.setFont('helvetica', 'bold');
   doc.text('QUOTE', margin, yPos + 8);
 
-  // Logo + business details — Top Right block
-  let rightY = yPos;
+  // Logo — Top Right only (no business text here)
+  let logoBottomY = yPos;
   if (project.logoBase64) {
     try {
       const logoMaxW = 70;
@@ -95,55 +95,31 @@ export function generateQuotePDF(
         }
       }
       doc.addImage(project.logoBase64, pageWidth - margin - renderW, yPos - 2, renderW, renderH);
-      rightY = yPos + renderH + 3;
+      logoBottomY = yPos + renderH;
     } catch {
       doc.setFontSize(14);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...textColor);
       if (project.tradeBusinessName) {
-        doc.text(project.tradeBusinessName, pageWidth - margin, rightY, { align: 'right' });
-        rightY += 6;
+        doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
+        logoBottomY = yPos + 8;
       }
     }
   } else if (project.tradeBusinessName) {
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...textColor);
-    doc.text(project.tradeBusinessName, pageWidth - margin, rightY, { align: 'right' });
-    rightY += 6;
+    doc.text(project.tradeBusinessName, pageWidth - margin, yPos, { align: 'right' });
+    logoBottomY = yPos + 8;
   }
 
-  // Business details right-aligned directly below the logo
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...mutedColor);
-  if (project.tradeBusinessName && project.logoBase64) {
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...textColor);
-    doc.text(project.tradeBusinessName, pageWidth - margin, rightY, { align: 'right' });
-    rightY += 4.5;
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...mutedColor);
-  }
-  if (project.tradeAddress) {
-    doc.text(project.tradeAddress, pageWidth - margin, rightY, { align: 'right' });
-    rightY += 4.5;
-  }
-  if (project.tradePhone) {
-    doc.text(`Ph: ${project.tradePhone}`, pageWidth - margin, rightY, { align: 'right' });
-    rightY += 4.5;
-  }
-  if (project.tradeWebsite) {
-    doc.text(project.tradeWebsite, pageWidth - margin, rightY, { align: 'right' });
-    rightY += 4.5;
-  }
+  // Info section starts just below the logo (tight gap matching the reference)
+  yPos = logoBottomY + 4;
 
-  // Advance below both the title and the right block
-  yPos = Math.max(yPos + 16, rightY + 5);
-
-  // Two-column info section
+  // Three-column info section
   const col1X = margin;
   const col2X = 75;
+  const col3X = 138;
   const infoStartY = yPos;
 
   // Column 1: Client details
@@ -200,7 +176,33 @@ export function generateQuotePDF(
     col2Y += 4;
   }
 
-  yPos = Math.max(col1Y, col2Y) + 8;
+  // Column 3: Business contact details (same row as client / date info)
+  let col3Y = infoStartY;
+  if (project.tradeBusinessName) {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...textColor);
+    doc.text(project.tradeBusinessName, col3X, col3Y);
+    col3Y += 5;
+  }
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...mutedColor);
+  if (project.tradeAddress) {
+    const addrLines = doc.splitTextToSize(project.tradeAddress, 57);
+    doc.text(addrLines, col3X, col3Y);
+    col3Y += addrLines.length * 4.2;
+  }
+  if (project.tradePhone) {
+    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y);
+    col3Y += 4.2;
+  }
+  if (project.tradeWebsite) {
+    doc.text(project.tradeWebsite, col3X, col3Y);
+    col3Y += 4.2;
+  }
+
+  yPos = Math.max(col1Y, col2Y, col3Y) + 8;
 
   // Horizontal line
   doc.setDrawColor(...lineColor);
