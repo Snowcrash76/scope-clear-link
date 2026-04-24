@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
+import { cleanVariationTitle } from '@/lib/utils';
 import { format } from 'date-fns';
 
 export interface ProjectInfo {
@@ -59,8 +60,8 @@ export function generateQuotePDF(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
-  changeRequests: ChangeRequest[] = [],
-  quoteLineItems: QuoteLineItem[] = []
+  _changeRequests: ChangeRequest[] = [],
+  _quoteLineItems: QuoteLineItem[] = []
 ): jsPDF {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -221,41 +222,16 @@ export function generateQuotePDF(
   // Combine all items into one table
   const allItems: { description: string; details?: string; quantity: number; unitPrice: number; gst: string; amount: number }[] = [];
 
-  // Included Items
+  // Included Items (variations are already represented here as "Variation: X" scope items)
   const includedItems = scopeItems.filter(item => item.category === 'included');
   includedItems.forEach(item => {
     allItems.push({
-      description: item.title,
+      description: cleanVariationTitle(item.title),
       details: item.description,
       quantity: 1,
       unitPrice: item.cost || 0,
       gst: '10%',
       amount: item.cost || 0
-    });
-  });
-
-  // Quote Line Items
-  quoteLineItems.forEach(item => {
-    allItems.push({
-      description: item.title,
-      details: item.description,
-      quantity: 1,
-      unitPrice: item.cost,
-      gst: '10%',
-      amount: item.cost
-    });
-  });
-
-  // Approved Changes
-  const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
-  approvedChanges.forEach(change => {
-    allItems.push({
-      description: `Variation: ${change.title}`,
-      details: change.description,
-      quantity: 1,
-      unitPrice: change.costImpact,
-      gst: '10%',
-      amount: change.costImpact
     });
   });
 

@@ -1,4 +1,5 @@
 import { Invoice, Quote, ScopeItem, ChangeRequest, InvoiceLineItem } from '@/types/project';
+import { cleanVariationTitle } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface ProjectInfo {
@@ -105,7 +106,7 @@ export function exportQuoteToXeroCSV(
   quote: Quote,
   project: ProjectInfo,
   scopeItems: ScopeItem[],
-  changeRequests: ChangeRequest[]
+  _changeRequests: ChangeRequest[]
 ): string {
   const headers = [
     '*ContactName',
@@ -127,7 +128,7 @@ export function exportQuoteToXeroCSV(
     : formatXeroDate(new Date(quote.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000)); // Default 30 days
   const taxType = getXeroTaxType(quote.taxRate);
 
-  // Add included scope items as line items
+  // Add included scope items as line items (variations are already included here)
   const includedItems = scopeItems.filter(item => item.category === 'included');
   includedItems.forEach(item => {
     rows.push(createCSVRow([
@@ -136,25 +137,9 @@ export function exportQuoteToXeroCSV(
       quote.quoteNumber,
       quoteDate,
       expiryDate,
-      item.title,
+      cleanVariationTitle(item.title),
       1,
       (item.cost || 0).toFixed(2),
-      taxType
-    ]));
-  });
-
-  // Add approved change requests
-  const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
-  approvedChanges.forEach(change => {
-    rows.push(createCSVRow([
-      project.clientName,
-      project.clientEmail,
-      quote.quoteNumber,
-      quoteDate,
-      expiryDate,
-      `Variation: ${change.title}`,
-      1,
-      change.costImpact.toFixed(2),
       taxType
     ]));
   });
