@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2 } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
-import { Invoice } from '@/types/project';
+import { Invoice, ScopeItem } from '@/types/project';
 import { cn, isVariationItem, stripVariationMeta } from '@/lib/utils';
 
 export default function ClientProjectView() {
@@ -100,15 +100,26 @@ export default function ClientProjectView() {
     logoUrl: project.tradeLogoUrl,
   };
 
+  const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
+  const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
+  const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
+
   const includedItems = project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
-  const variationScopeItems = project.scopeItems.filter(item => item.category === 'included' && isVariationItem(item.title));
+  // Approved variations come from the change requests, NOT from scope_items —
+  // the old approach of creating "Variation: X" scope items caused duplication.
+  const variationScopeItems: ScopeItem[] = approvedChanges.map(cr => ({
+    id: cr.id,
+    title: cr.title,
+    description: cr.description || '',
+    category: 'included' as const,
+    acknowledged: true,
+    imageUrl: cr.imageUrl,
+    imageUrls: cr.imageUrl ? [cr.imageUrl] : [],
+    cost: cr.costImpact,
+  }));
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
-
-  const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
-  const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
-  const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
 
   // Calculate live totals — variation duplicates filtered out; costs come from approvedChanges
   const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));

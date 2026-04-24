@@ -538,41 +538,24 @@ export function useProject(projectId: string | undefined) {
     }
   };
 
-  // Adds the approved change as a new included scope item and a new quote
-  // line item on the project's active quote, then recalculates the quote totals.
+  // When a variation is approved, clean up any "Variation: X" scope/line items
+  // that were created by older code (they cause duplication) and recalculate
+  // the quote total from base line items + ALL approved change requests.
   const applyApprovedChangeToScopeAndQuote = async (
     pid: string,
     changeRequest: ChangeRequest
   ) => {
-    const cost = Number(changeRequest.costImpact) || 0;
-    const titlePrefix = 'Variation: ';
-    const cleanedTitle = changeRequest.title.replace(/\s+variation$/i, '').trim();
-    const scopeTitle = `${titlePrefix}${cleanedTitle}`;
-    const descriptionParts = [changeRequest.description];
-    if (changeRequest.timeImpact) {
-      descriptionParts.push(`Time impact: ${changeRequest.timeImpact} day(s).`);
-    }
-    if (changeRequest.reason) {
-      descriptionParts.push(`Reason: ${changeRequest.reason}`);
-    }
-    const scopeDescription = descriptionParts.filter(Boolean).join('\n\n');
-
-    // 1. Add an "included" scope item so the agreed scope reflects the change
-    const { error: scopeErr } = await supabase
+    // Clean up any existing "Variation: " scope items and quote line items that
+    // were created by old versions of this function — they are the source of
+    // duplication because the approved change requests already serve as the
+    // single source of truth for variation display and financial totals.
+    await supabase
       .from('scope_items')
-      .insert({
-        project_id: pid,
-        title: scopeTitle,
-        description: scopeDescription,
-        category: 'included',
-        image_url: changeRequest.imageUrl || null,
-        image_urls: changeRequest.imageUrl ? [changeRequest.imageUrl] : [],
-        cost: cost > 0 ? cost : null,
-        acknowledged: true,
-      });
-    if (scopeErr) throw scopeErr;
+      .delete()
+      .eq('project_id', pid)
+      .ilike('title', 'Variation:%');
 
-    // 2. Find the active quote for this project (if any) and append a line item
+    // Find the active quote and clean its variation line items too
     const { data: projectRow, error: projectErr } = await supabase
       .from('projects')
       .select('active_quote_id')
@@ -582,54 +565,39 @@ export function useProject(projectId: string | undefined) {
     const activeQuoteId: string | null = projectRow?.active_quote_id || null;
     if (!activeQuoteId) return;
 
-    const { data: existingItems, error: itemsErr } = await supabase
+    await supabase
       .from('quote_line_items')
-      .select('sort_order')
+      .delete()
       .eq('quote_id', activeQuoteId)
-      .order('sort_order', { ascending: false })
-      .limit(1);
-    if (itemsErr) throw itemsErr;
-    const nextSortOrder = (existingItems?.[0]?.sort_order ?? -1) + 1;
+      .ilike('title', 'Variation:%');
 
-    const { error: lineErr } = await supabase
-      .from('quote_line_items')
-      .insert({
-        quote_id: activeQuoteId,
-        title: scopeTitle,
-        description: changeRequest.description || null,
-        cost,
-        sort_order: nextSortOrder,
-      });
-    if (lineErr) throw lineErr;
+    // Recalculate quote totals: base line items + ALL approved change requests
+    const [quoteRes, baseItemsRes, approvedChangesRes] = await Promise.all([
+      supabase.from('quotes').select('tax_rate').eq('id', activeQuoteId).single(),
+      supabase.from('quote_line_items').select('cost').eq('quote_id', activeQuoteId),
+      supabase.from('change_requests').select('cost_impact').eq('project_id', pid).eq('status', 'approved'),
+    ]);
+    if (quoteRes.error) throw quoteRes.error;
 
-    // 3. Recalculate quote totals from the full set of line items
-    const { data: quoteRow, error: quoteErr } = await supabase
-      .from('quotes')
-      .select('tax_rate')
-      .eq('id', activeQuoteId)
-      .single();
-    if (quoteErr) throw quoteErr;
-    const taxRate = Number(quoteRow?.tax_rate) || 0;
-
-    const { data: allItems, error: allItemsErr } = await supabase
-      .from('quote_line_items')
-      .select('cost')
-      .eq('quote_id', activeQuoteId);
-    if (allItemsErr) throw allItemsErr;
-    const newSubtotal = (allItems || []).reduce(
+    const taxRate = Number(quoteRes.data?.tax_rate) || 0;
+    const baseSubtotal = (baseItemsRes.data || []).reduce(
       (sum, it: { cost: number | null }) => sum + (Number(it.cost) || 0),
       0
     );
+    const changesSubtotal = (approvedChangesRes.data || []).reduce(
+      (sum, cr: { cost_impact: number | null }) => sum + (Number(cr.cost_impact) || 0),
+      0
+    );
+    // Include the current change request's cost (it's approved but fetchProject
+    // hasn't run yet so it may not appear in the DB query above)
+    const thisCost = Number(changeRequest.costImpact) || 0;
+    const newSubtotal = baseSubtotal + changesSubtotal + thisCost;
     const newTaxAmount = newSubtotal * (taxRate / 100);
     const newTotal = newSubtotal + newTaxAmount;
 
     const { error: updateQuoteErr } = await supabase
       .from('quotes')
-      .update({
-        subtotal: newSubtotal,
-        tax_amount: newTaxAmount,
-        total: newTotal,
-      })
+      .update({ subtotal: newSubtotal, tax_amount: newTaxAmount, total: newTotal })
       .eq('id', activeQuoteId);
     if (updateQuoteErr) throw updateQuoteErr;
   };
