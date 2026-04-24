@@ -81,6 +81,7 @@ export function generateInvoicePDF(
 
   // Logo — Top Right only (no business text here)
   let logoBottomY = yPos;
+  let logoLeftX = pageWidth - margin - 65; // fallback if no logo or on error
   if (project.logoBase64) {
     try {
       const logoMaxW = 70;
@@ -95,7 +96,8 @@ export function generateInvoicePDF(
           renderW = renderH * aspect;
         }
       }
-      doc.addImage(project.logoBase64, pageWidth - margin - renderW, yPos - 2, renderW, renderH);
+      logoLeftX = pageWidth - margin - renderW;
+      doc.addImage(project.logoBase64, logoLeftX, yPos - 2, renderW, renderH);
       logoBottomY = yPos + renderH;
     } catch {
       doc.setFontSize(14);
@@ -117,10 +119,11 @@ export function generateInvoicePDF(
   // Info section starts just below the logo (tight gap matching the reference)
   yPos = logoBottomY + 4;
 
-  // Three-column info section
+  // Three-column info section — col3 aligned to logo's left edge
   const col1X = margin;
   const col2X = 75;
-  const col3X = 138;
+  const col3X = logoLeftX;
+  const col3W = pageWidth - margin - col3X;
   const infoStartY = yPos;
 
   // Column 1: Client details
@@ -188,7 +191,7 @@ export function generateInvoicePDF(
     col2Y += 4;
   }
 
-  // Column 3: Business contact details (same row as client / date info)
+  // Column 3: Business contact details — left-aligned at logo's left edge
   let col3Y = infoStartY;
   if (project.tradeBusinessName) {
     doc.setFontSize(9);
@@ -201,7 +204,7 @@ export function generateInvoicePDF(
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
   if (project.tradeAddress) {
-    const addrLines = doc.splitTextToSize(project.tradeAddress, 57);
+    const addrLines = doc.splitTextToSize(project.tradeAddress, col3W);
     doc.text(addrLines, col3X, col3Y);
     col3Y += addrLines.length * 4.2;
   }
