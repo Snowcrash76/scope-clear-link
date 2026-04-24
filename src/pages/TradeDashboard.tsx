@@ -14,7 +14,7 @@ import { DashboardStats } from '@/components/DashboardStats';
 import { AppShell } from '@/components/AppShell';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
-import { exportProjectsReport } from '@/lib/exportReport';
+import { exportProjectsReport, exportProjectsReportPDF } from '@/lib/exportReport';
 import { toast } from 'sonner';
 import {
   Search,
@@ -148,6 +148,7 @@ export default function TradeDashboard() {
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [exportFromDate, setExportFromDate] = useState('');
   const [exportToDate, setExportToDate] = useState('');
+  const [exportFormat, setExportFormat] = useState<'csv' | 'pdf'>('csv');
 
   const handleExportReport = () => {
     if (projects.length === 0) {
@@ -166,7 +167,11 @@ export default function TradeDashboard() {
       };
       const fromDate = exportFromDate ? parseLocalDate(exportFromDate) : undefined;
       const toDate = exportToDate ? parseLocalDate(exportToDate) : undefined;
-      await exportProjectsReport(projects, fromDate, toDate);
+      if (exportFormat === 'pdf') {
+        await exportProjectsReportPDF(projects, fromDate, toDate);
+      } else {
+        await exportProjectsReport(projects, fromDate, toDate);
+      }
       toast.success('Report downloaded');
       setShowExportDialog(false);
     } catch (err: unknown) {
@@ -201,6 +206,37 @@ export default function TradeDashboard() {
           Choose a date range to filter which projects are included. Leave blank to export all projects.
         </p>
         <div className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label>Format</Label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setExportFormat('csv')}
+                className={cn(
+                  'flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors',
+                  exportFormat === 'csv'
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-input bg-background hover:bg-muted'
+                )}
+                data-testid="button-export-format-csv"
+              >
+                CSV
+              </button>
+              <button
+                type="button"
+                onClick={() => setExportFormat('pdf')}
+                className={cn(
+                  'flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors',
+                  exportFormat === 'pdf'
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-input bg-background hover:bg-muted'
+                )}
+                data-testid="button-export-format-pdf"
+              >
+                PDF
+              </button>
+            </div>
+          </div>
           <div className="space-y-1.5">
             <Label htmlFor="export-from-date">From</Label>
             <Input
@@ -240,7 +276,7 @@ export default function TradeDashboard() {
             data-testid="button-export-confirm"
           >
             <Download className="w-4 h-4" />
-            {isExporting ? 'Exporting…' : 'Export CSV'}
+            {isExporting ? 'Exporting…' : `Export ${exportFormat.toUpperCase()}`}
           </Button>
         </DialogFooter>
       </DialogContent>
