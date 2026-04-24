@@ -631,7 +631,7 @@ export function QuoteSection({
         </div>
 
         {/* Line Items — unified list */}
-        {(includedItems.length > 0 || approvedChanges.length > 0 || quoteLineItems.length > 0) && (
+        {(includedItems.length > 0 || approvedChanges.length > 0) && (
           <div className="border rounded-lg divide-y mb-6">
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
@@ -649,10 +649,7 @@ export function QuoteSection({
             {approvedChanges.map(change => (
               <div key={change.id} className="p-3 flex justify-between items-start bg-muted/30">
                 <div className="flex-1 pr-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium">{change.title}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Variation</span>
-                  </div>
+                  <span className="text-sm font-medium">{change.title}</span>
                   {change.description && (
                     <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
                   )}
@@ -662,24 +659,6 @@ export function QuoteSection({
                   change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                 )}>
                   {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
-            {quoteLineItems.map(item => (
-              <div key={item.id} className="p-3 flex justify-between items-start">
-                <div className="flex-1 pr-4 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium">{item.title}</span>
-                    <Badge variant="secondary" className="text-xs" data-testid={`badge-custom-quote-${item.id}`}>
-                      Custom
-                    </Badge>
-                  </div>
-                  {item.description && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
-                  )}
-                </div>
-                <span className="text-sm font-medium whitespace-nowrap">
-                  ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             ))}

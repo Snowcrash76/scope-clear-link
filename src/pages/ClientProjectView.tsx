@@ -383,7 +383,7 @@ export default function ClientProjectView() {
                 <Separator />
 
                 {/* All Quote Items — single combined list */}
-                {(includedItems.length > 0 || approvedChanges.length > 0 || quoteLineItems.length > 0) && (
+                {(includedItems.length > 0 || approvedChanges.length > 0) && (
                   <div className="border rounded-lg divide-y">
                     {includedItems.map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-start">
@@ -401,10 +401,7 @@ export default function ClientProjectView() {
                     {approvedChanges.map(change => (
                       <div key={change.id} className="p-3 flex justify-between items-start bg-muted/30">
                         <div className="flex-1 pr-4">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm font-medium">{change.title}</p>
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">Change</span>
-                          </div>
+                          <p className="text-sm font-medium">{change.title}</p>
                           {change.description && (
                             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{change.description}</p>
                           )}
@@ -414,19 +411,6 @@ export default function ClientProjectView() {
                           (change.costImpact || 0) > 0 ? "text-approved" : (change.costImpact || 0) < 0 ? "text-destructive" : ""
                         )}>
                           {(change.costImpact || 0) > 0 ? '+' : ''}${(change.costImpact || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    ))}
-                    {quoteLineItems.map(item => (
-                      <div key={item.id} className="p-3 flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{item.title}</p>
-                          {item.description && (
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
-                          )}
-                        </div>
-                        <span className="text-sm font-medium whitespace-nowrap">
-                          ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     ))}
