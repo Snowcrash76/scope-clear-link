@@ -60,7 +60,7 @@ import {
   ChevronRight,
   RefreshCw
 } from 'lucide-react';
-import { cn, getClientProjectUrl, getQuoteShareUrl } from '@/lib/utils';
+import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle } from '@/lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -599,7 +599,7 @@ export default function ProjectManage() {
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2">
-                                    <h4 className="font-medium">{item.title}</h4>
+                                    <h4 className="font-medium">{cleanVariationTitle(item.title)}</h4>
                                     {item.acknowledged && (
                                       <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
                                     )}

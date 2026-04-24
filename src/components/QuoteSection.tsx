@@ -24,7 +24,7 @@ import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, cleanVariationTitle } from '@/lib/utils';
 import { format } from 'date-fns';
 
 interface QuoteSectionProps {
@@ -346,7 +346,7 @@ export function QuoteSection({
                   <div key={item.id} className="p-3 bg-muted/20">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 pr-4">
-                        <span className="text-sm font-medium">{item.title}</span>
+                        <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                         {item.description && (
                           <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                         )}
@@ -430,7 +430,7 @@ export function QuoteSection({
                     ) : (
                       <div className="flex justify-between items-start">
                         <div className="flex-1 pr-4">
-                          <span className="text-sm font-medium">{item.title}</span>
+                          <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                           {item.description && (
                             <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                           )}
@@ -636,7 +636,7 @@ export function QuoteSection({
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{item.title}</span>
+                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                   {item.description && (
                     <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                   )}

@@ -26,7 +26,7 @@ import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice } from '@/types/project';
-import { cn } from '@/lib/utils';
+import { cn, cleanVariationTitle } from '@/lib/utils';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -385,7 +385,7 @@ export default function ClientProjectView() {
                     {includedItems.map(item => (
                       <div key={item.id} className="p-3 flex justify-between items-start">
                         <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{item.title}</p>
+                          <p className="text-sm font-medium">{cleanVariationTitle(item.title)}</p>
                           {item.description && (
                             <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
                           )}

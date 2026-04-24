@@ -25,3 +25,7 @@ export function getClientProjectUrl(projectId: string): string {
 export function getQuoteShareUrl(quoteToken: string): string {
   return `${getPublicBaseUrl()}/quote/${quoteToken}`;
 }
+
+export function cleanVariationTitle(title: string): string {
+  return title.replace(/^(Variation: )(.*?)\s+variation$/i, '$1$2');
+}

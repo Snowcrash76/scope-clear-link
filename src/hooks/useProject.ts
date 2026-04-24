@@ -546,7 +546,8 @@ export function useProject(projectId: string | undefined) {
   ) => {
     const cost = Number(changeRequest.costImpact) || 0;
     const titlePrefix = 'Variation: ';
-    const scopeTitle = `${titlePrefix}${changeRequest.title}`;
+    const cleanedTitle = changeRequest.title.replace(/\s+variation$/i, '').trim();
+    const scopeTitle = `${titlePrefix}${cleanedTitle}`;
     const descriptionParts = [changeRequest.description];
     if (changeRequest.timeImpact) {
       descriptionParts.push(`Time impact: ${changeRequest.timeImpact} day(s).`);
