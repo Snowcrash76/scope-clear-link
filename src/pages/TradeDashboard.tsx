@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { DashboardStats } from '@/components/DashboardStats';
 import { AppShell } from '@/components/AppShell';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
+import { exportProjectsReport } from '@/lib/exportReport';
+import { toast } from 'sonner';
 import {
   Search,
   Eye,
@@ -14,6 +17,7 @@ import {
   GitBranch,
   User,
   HelpCircle,
+  Download,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
@@ -149,6 +153,24 @@ export default function TradeDashboard() {
   const navigate = useNavigate();
   const { projects, loading } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportReport = async () => {
+    if (projects.length === 0) {
+      toast.error('No projects to export');
+      return;
+    }
+    setIsExporting(true);
+    try {
+      await exportProjectsReport(projects);
+      toast.success('Report downloaded');
+    } catch (err) {
+      console.error('Export failed:', err);
+      toast.error('Failed to export report');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const activeProjects = projects.filter(p =>
     p.status === 'in_progress' || p.status === 'acknowledged' || p.status === 'sent'
@@ -190,6 +212,17 @@ export default function TradeDashboard() {
               Welcome back. Here's what's happening across your jobs today.
             </p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportReport}
+            disabled={isExporting || loading}
+            className="flex items-center gap-2 flex-shrink-0"
+            data-testid="button-export-report"
+          >
+            <Download className="w-4 h-4" />
+            {isExporting ? 'Exporting…' : 'Export Report'}
+          </Button>
         </div>
 
         {/* Stat cards */}
