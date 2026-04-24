@@ -134,6 +134,7 @@ export default function ProjectManage() {
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
+  const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
   const [editClientName, setEditClientName] = useState('');
   const [editClientEmail, setEditClientEmail] = useState('');
   const [editClientAddress, setEditClientAddress] = useState('');
@@ -872,17 +873,7 @@ export default function ProjectManage() {
                     variant="outline"
                     size="sm"
                     disabled={isRegeneratingToken}
-                    onClick={async () => {
-                      setIsRegeneratingToken(true);
-                      const newToken = await regenerateQuoteToken(activeQuote.id);
-                      setIsRegeneratingToken(false);
-                      if (newToken) {
-                        navigator.clipboard.writeText(getQuoteShareUrl(newToken));
-                        toast.success('Quote link regenerated!', {
-                          description: 'The old link is now invalid. The new link has been copied to your clipboard.',
-                        });
-                      }
-                    }}
+                    onClick={() => setIsRegenerateConfirmOpen(true)}
                     data-testid="button-regenerate-quote-link"
                   >
                     {isRegeneratingToken ? (
@@ -1148,6 +1139,59 @@ export default function ProjectManage() {
                 </>
               ) : (
                 'Save Changes'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Regenerate Quote Link Confirmation Dialog */}
+      <Dialog open={isRegenerateConfirmOpen} onOpenChange={setIsRegenerateConfirmOpen}>
+        <DialogContent className="max-w-md" data-testid="dialog-regenerate-quote-link">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              Regenerate Quote Link?
+            </DialogTitle>
+            <DialogDescription>
+              This will create a new quote link and <span className="font-medium text-foreground">permanently invalidate the current one</span>. Any client who already has the old link will no longer be able to access the quote.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsRegenerateConfirmOpen(false)}
+              data-testid="button-regenerate-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={isRegeneratingToken}
+              onClick={async () => {
+                if (!activeQuote) return;
+                setIsRegenerateConfirmOpen(false);
+                setIsRegeneratingToken(true);
+                const newToken = await regenerateQuoteToken(activeQuote.id);
+                setIsRegeneratingToken(false);
+                if (newToken) {
+                  navigator.clipboard.writeText(getQuoteShareUrl(newToken));
+                  toast.success('Quote link regenerated!', {
+                    description: 'The old link is now invalid. The new link has been copied to your clipboard.',
+                  });
+                }
+              }}
+              data-testid="button-regenerate-confirm"
+            >
+              {isRegeneratingToken ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Regenerating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Yes, Regenerate
+                </>
               )}
             </Button>
           </DialogFooter>
