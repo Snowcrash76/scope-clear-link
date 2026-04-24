@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { AppShell } from '@/components/AppShell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -388,17 +389,17 @@ export default function ProjectManage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+    <AppShell>
+      {/* Project sub-header */}
+      <div className="border-b bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-3">
+              <Button variant="ghost" size="icon" className="mt-0.5 flex-shrink-0" onClick={() => navigate('/dashboard')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
               <div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <h1 className="font-heading text-xl sm:text-2xl font-bold">{project.name}</h1>
                   <Badge variant={
                     project.status === 'draft' ? 'secondary' :
@@ -444,7 +445,7 @@ export default function ProjectManage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={() => setIsInviteModalOpen(true)}>
                 <Send className="w-4 h-4" />
                 <span className="hidden sm:inline ml-2">Invite Client to Project</span>
@@ -478,13 +479,7 @@ export default function ProjectManage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() =>
-                        window.open(
-                          getClientProjectUrl(project.id),
-                          '_blank',
-                          'noopener,noreferrer'
-                        )
-                      }
+                      onClick={() => window.open(getClientProjectUrl(project.id), '_blank', 'noopener,noreferrer')}
                       data-testid="button-preview-client-page"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -498,7 +493,7 @@ export default function ProjectManage() {
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -1101,7 +1096,7 @@ export default function ProjectManage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }
 
