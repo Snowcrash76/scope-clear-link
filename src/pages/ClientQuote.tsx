@@ -142,6 +142,17 @@ export default function ClientQuote() {
       toast.success(isApprove ? 'Quote accepted!' : 'Quote declined');
       setActionModal({ open: false, action: 'approve' });
       setComment('');
+
+      supabase.functions
+        .invoke('send-quote-notification', {
+          body: {
+            quoteToken: token,
+            notificationType: isApprove ? 'approved' : 'declined',
+          },
+        })
+        .catch((err) => {
+          console.error('Failed to send quote notification email:', err);
+        });
     } catch (err) {
       console.error('Error responding to quote:', err);
       toast.error('Something went wrong. Please try again.');
