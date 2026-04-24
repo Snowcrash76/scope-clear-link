@@ -101,12 +101,37 @@ function downloadCSV(content: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-export async function exportProjectsReport(projects: Project[]): Promise<void> {
+export async function exportProjectsReport(
+  projects: Project[],
+  fromDate?: Date,
+  toDate?: Date,
+): Promise<void> {
   if (projects.length === 0) {
     throw new Error('No projects to export');
   }
 
-  const projectIds = projects.map(p => p.id);
+  let filtered = projects;
+  if (fromDate || toDate) {
+    const from = fromDate
+      ? new Date(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate(), 0, 0, 0, 0)
+      : null;
+    const to = toDate
+      ? new Date(toDate.getFullYear(), toDate.getMonth(), toDate.getDate(), 23, 59, 59, 999)
+      : null;
+    filtered = projects.filter(p => {
+      const createdAt = new Date(p.createdAt);
+      const updatedAt = new Date(p.updatedAt);
+      const inRange = (d: Date) =>
+        (!from || d >= from) && (!to || d <= to);
+      return inRange(createdAt) || inRange(updatedAt);
+    });
+  }
+
+  if (filtered.length === 0) {
+    throw new Error('No projects found in the selected date range');
+  }
+
+  const projectIds = filtered.map(p => p.id);
 
   const [quotesRes, invoicesRes] = await Promise.all([
     supabase
@@ -127,7 +152,7 @@ export async function exportProjectsReport(projects: Project[]): Promise<void> {
   const quotes = quotesRes.data || [];
   const invoices = invoicesRes.data || [];
 
-  const rows: ProjectReportRow[] = projects.map(project => {
+  const rows: ProjectReportRow[] = filtered.map(project => {
     const projectQuotes = quotes.filter(q => q.project_id === project.id);
     const activeQuote =
       projectQuotes.find(q => q.status !== 'declined' && q.status !== 'revised') ||
@@ -151,6 +176,15 @@ export async function exportProjectsReport(projects: Project[]): Promise<void> {
   });
 
   const csv = buildCSV(rows);
-  const date = format(new Date(), 'yyyy-MM-dd');
-  downloadCSV(csv, `jobs-report-${date}.csv`);
+  let filename: string;
+  if (fromDate && toDate) {
+    filename = `jobs-report-${format(fromDate, 'yyyy-MM-dd')}-to-${format(toDate, 'yyyy-MM-dd')}.csv`;
+  } else if (fromDate) {
+    filename = `jobs-report-from-${format(fromDate, 'yyyy-MM-dd')}.csv`;
+  } else if (toDate) {
+    filename = `jobs-report-to-${format(toDate, 'yyyy-MM-dd')}.csv`;
+  } else {
+    filename = `jobs-report-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+  }
+  downloadCSV(csv, filename);
 }

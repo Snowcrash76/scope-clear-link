@@ -2,6 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { DashboardStats } from '@/components/DashboardStats';
 import { AppShell } from '@/components/AppShell';
 import { ActivityFeed } from '@/components/ActivityFeed';
@@ -154,19 +162,33 @@ export default function TradeDashboard() {
   const { projects, loading } = useProjects();
   const [searchQuery, setSearchQuery] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [exportFromDate, setExportFromDate] = useState('');
+  const [exportToDate, setExportToDate] = useState('');
 
-  const handleExportReport = async () => {
+  const handleExportReport = () => {
     if (projects.length === 0) {
       toast.error('No projects to export');
       return;
     }
+    setShowExportDialog(true);
+  };
+
+  const handleConfirmExport = async () => {
     setIsExporting(true);
     try {
-      await exportProjectsReport(projects);
+      const parseLocalDate = (s: string): Date => {
+        const [year, month, day] = s.split('-').map(Number);
+        return new Date(year, month - 1, day);
+      };
+      const fromDate = exportFromDate ? parseLocalDate(exportFromDate) : undefined;
+      const toDate = exportToDate ? parseLocalDate(exportToDate) : undefined;
+      await exportProjectsReport(projects, fromDate, toDate);
       toast.success('Report downloaded');
-    } catch (err) {
+      setShowExportDialog(false);
+    } catch (err: unknown) {
       console.error('Export failed:', err);
-      toast.error('Failed to export report');
+      toast.error(err instanceof Error ? err.message : 'Failed to export report');
     } finally {
       setIsExporting(false);
     }
@@ -186,6 +208,60 @@ export default function TradeDashboard() {
   };
 
   return (
+    <>
+    <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+      <DialogContent className="sm:max-w-sm" data-testid="dialog-export-report">
+        <DialogHeader>
+          <DialogTitle>Export Report</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground -mt-1">
+          Choose a date range to filter which projects are included. Leave blank to export all projects.
+        </p>
+        <div className="space-y-4 pt-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="export-from-date">From</Label>
+            <Input
+              id="export-from-date"
+              type="date"
+              value={exportFromDate}
+              onChange={e => setExportFromDate(e.target.value)}
+              max={exportToDate || undefined}
+              data-testid="input-export-from-date"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="export-to-date">To</Label>
+            <Input
+              id="export-to-date"
+              type="date"
+              value={exportToDate}
+              onChange={e => setExportToDate(e.target.value)}
+              min={exportFromDate || undefined}
+              data-testid="input-export-to-date"
+            />
+          </div>
+        </div>
+        <DialogFooter className="mt-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowExportDialog(false)}
+            disabled={isExporting}
+            data-testid="button-export-cancel"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleConfirmExport}
+            disabled={isExporting}
+            className="flex items-center gap-2"
+            data-testid="button-export-confirm"
+          >
+            <Download className="w-4 h-4" />
+            {isExporting ? 'Exporting…' : 'Export CSV'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <AppShell>
       {/* Top search bar */}
       <div className="border-b bg-background/95 backdrop-blur sticky top-0 z-20">
@@ -286,5 +362,6 @@ export default function TradeDashboard() {
       {/* Discreet support widget — fixed bottom-right */}
       <SupportWidget />
     </AppShell>
+    </>
   );
 }
