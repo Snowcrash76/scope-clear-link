@@ -47,6 +47,7 @@ interface InvoiceSectionProps {
   quote: Quote | null;
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
+  quoteLineItems?: Array<{ id: string; cost: number | null }>;
   projectName: string;
   clientName: string;
   clientEmail: string;
@@ -87,6 +88,7 @@ export function InvoiceSection({
   quote,
   scopeItems,
   changeRequests,
+  quoteLineItems = [],
   projectName,
   clientName,
   clientEmail,
@@ -132,10 +134,17 @@ export function InvoiceSection({
   const includedItems = scopeItems.filter(item => item.category === 'included');
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
 
+  // Calculate live quote total from all items (scope + approved variations + custom line items)
+  const liveScopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const liveChangesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
+  const liveCustomItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const liveSubtotal = liveScopeSubtotal + liveChangesImpact + liveCustomItemsTotal;
+  const liveTaxAmount = liveSubtotal * ((quote?.taxRate ?? taxRate) / 100);
+  const quoteTotal = quote ? liveSubtotal + liveTaxAmount : 0;
+
   // Calculate totals
   const totalInvoiced = invoices.reduce((sum, inv) => sum + inv.total, 0);
   const totalPaid = invoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
-  const quoteTotal = quote?.total ?? 0;
   const remainingAmount = quoteTotal - totalInvoiced;
 
   const statusConfig = {

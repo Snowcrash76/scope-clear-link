@@ -867,6 +867,7 @@ export default function ProjectManage() {
               quote={activeQuote}
               scopeItems={project.scopeItems}
               changeRequests={project.changeRequests}
+              quoteLineItems={quoteLineItems}
               projectName={project.name}
               clientName={project.clientName}
               clientEmail={project.clientEmail}

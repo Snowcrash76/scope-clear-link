@@ -135,7 +135,7 @@ export function QuoteSection({
   // Add custom quote line items
   const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
-  const subtotal = scopeSubtotal + customItemsTotal;
+  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxAmount = subtotal * (taxRate / 100);
   const total = subtotal + taxAmount;
 

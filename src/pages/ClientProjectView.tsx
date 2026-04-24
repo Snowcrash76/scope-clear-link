@@ -111,8 +111,9 @@ export default function ClientProjectView() {
 
   // Calculate live totals from current data
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
+  const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
   const customItemsTotal = quoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
-  const subtotal = scopeSubtotal + customItemsTotal;
+  const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
   const taxRate = activeQuote?.taxRate || 0;
   const taxAmount = subtotal * (taxRate / 100);
   const liveTotal = subtotal + taxAmount;
