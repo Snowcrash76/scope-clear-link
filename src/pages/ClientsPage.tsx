@@ -29,8 +29,8 @@ interface ClientInfo {
 
 function ClientInitial({ name }: { name: string }) {
   const colors = [
-    'bg-blue-500', 'bg-emerald-500', 'bg-violet-500',
-    'bg-amber-500', 'bg-rose-500', 'bg-cyan-500',
+    'bg-amber-600', 'bg-stone-600', 'bg-zinc-600',
+    'bg-amber-800', 'bg-orange-600', 'bg-stone-500',
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return (
@@ -147,7 +147,7 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
           {/* Table header */}
           <div className="grid grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</span>

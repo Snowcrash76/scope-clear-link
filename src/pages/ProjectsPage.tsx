@@ -34,7 +34,7 @@ const TABS = [
 type Tab = typeof TABS[number]['key'];
 
 function ProjectInitial({ name }: { name: string }) {
-  const colors = ['bg-blue-500','bg-emerald-500','bg-violet-500','bg-amber-500','bg-rose-500','bg-cyan-500'];
+  const colors = ['bg-amber-600','bg-stone-600','bg-zinc-600','bg-amber-800','bg-orange-600','bg-stone-500'];
   const idx = name.charCodeAt(0) % colors.length;
   return (
     <div className={cn('w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-heading font-bold', colors[idx])}>
@@ -112,7 +112,7 @@ export default function ProjectsPage() {
           ))}
         </div>
 
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
           {loading ? (
             <div className="divide-y">
               {Array.from({ length: 4 }).map((_, i) => (

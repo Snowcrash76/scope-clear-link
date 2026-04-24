@@ -46,8 +46,8 @@ const STATUS_VARIANTS: Record<Project['status'], string> = {
 
 function ProjectInitial({ name }: { name: string }) {
   const colors = [
-    'bg-blue-500', 'bg-emerald-500', 'bg-violet-500',
-    'bg-amber-500', 'bg-rose-500', 'bg-cyan-500',
+    'bg-amber-600', 'bg-stone-600', 'bg-zinc-600',
+    'bg-amber-800', 'bg-orange-600', 'bg-stone-500',
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return (
