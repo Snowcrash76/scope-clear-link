@@ -27,16 +27,16 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {/* Active projects — dark highlighted card */}
+      {/* Active projects */}
       <div
-        className="rounded-xl p-4 col-span-1 bg-zinc-900"
+        className="rounded-xl p-4 col-span-1 bg-white border border-[#D8C3AD]"
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}
         data-testid="stat-active-projects"
       >
-        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400 mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
           Active Projects
         </p>
-        <p className="text-3xl font-heading font-bold text-zinc-100 mb-2">
+        <p className="text-3xl font-heading font-bold text-zinc-900 mb-2">
           {activeProjects.length}
         </p>
         {mostRecentUpdate ? (
@@ -45,13 +45,13 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-500 opacity-75" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
             </span>
-            <span className="text-xs font-medium text-amber-500">LIVE NOW</span>
-            <span className="text-xs text-zinc-500">
-              · Updated {formatDistanceToNow(mostRecentUpdate, { addSuffix: true })}
+            <span className="text-xs font-medium text-amber-700">LIVE</span>
+            <span className="text-xs text-zinc-400">
+              · {formatDistanceToNow(mostRecentUpdate, { addSuffix: true })}
             </span>
           </div>
         ) : (
-          <p className="text-xs text-zinc-500">No active jobs yet</p>
+          <p className="text-xs text-zinc-400">No active jobs yet</p>
         )}
       </div>
 

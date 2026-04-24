@@ -11,11 +11,11 @@ import { format } from 'date-fns';
 type QuoteStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
 
 const STATUS_VARIANTS: Record<QuoteStatus, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  sent: 'bg-blue-100 text-blue-700',
-  approved: 'bg-green-100 text-green-700',
-  declined: 'bg-red-100 text-red-700',
-  revised: 'bg-yellow-100 text-yellow-700',
+  draft: 'bg-zinc-100 text-zinc-600',
+  sent: 'bg-amber-100 text-amber-800',
+  approved: 'bg-green-100 text-green-800',
+  declined: 'bg-red-100 text-red-800',
+  revised: 'bg-amber-100 text-amber-800',
 };
 
 interface QuoteRow {
@@ -78,7 +78,7 @@ export default function QuotesPage() {
           <p className="text-sm text-muted-foreground mt-0.5">All quotes across your projects</p>
         </div>
 
-        <div className="rounded-xl border bg-card overflow-hidden">
+        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
           {/* Table header */}
           <div className="grid grid-cols-[1fr_140px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Project / Client</span>

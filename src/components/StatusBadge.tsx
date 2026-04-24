@@ -11,27 +11,27 @@ const STATUS_CONFIG = {
   pending: {
     icon: Clock,
     label: 'Pending',
-    className: 'bg-amber-50 text-amber-800 border-amber-100',
+    className: 'bg-amber-100 text-amber-800 border-amber-200',
   },
   awaiting_client: {
     icon: Send,
     label: null,
-    className: 'bg-amber-50 text-amber-800 border-amber-100',
+    className: 'bg-amber-100 text-amber-800 border-amber-200',
   },
   approved: {
     icon: Check,
     label: 'Approved',
-    className: 'bg-green-50 text-green-800 border-green-100',
+    className: 'bg-green-100 text-green-800 border-green-200',
   },
   declined: {
     icon: X,
     label: 'Declined',
-    className: 'bg-red-50 text-red-700 border-red-100',
+    className: 'bg-red-100 text-red-800 border-red-200',
   },
   acknowledged: {
     icon: Check,
     label: 'Acknowledged',
-    className: 'bg-green-50 text-green-800 border-green-100',
+    className: 'bg-green-100 text-green-800 border-green-200',
   },
 } as const;
 

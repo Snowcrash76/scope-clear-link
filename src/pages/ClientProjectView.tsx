@@ -324,17 +324,17 @@ export default function ClientProjectView() {
                     <div className="flex items-center gap-2">
                       <h3 className="font-semibold text-lg">{activeQuote.quoteNumber}</h3>
                       {activeQuote.status === 'sent' && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-blue-50 text-blue-700">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800">
                           Awaiting Response
                         </span>
                       )}
                       {activeQuote.status === 'approved' && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-50 text-green-700">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-800">
                           Approved
                         </span>
                       )}
                       {activeQuote.status === 'declined' && (
-                        <span className="px-2 py-0.5 text-xs rounded-full bg-red-50 text-red-700">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800">
                           Declined
                         </span>
                       )}

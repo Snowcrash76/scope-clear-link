@@ -38,9 +38,9 @@ const STATUS_LABELS: Record<Project['status'], string> = {
 
 const STATUS_VARIANTS: Record<Project['status'], string> = {
   draft: 'bg-zinc-100 text-zinc-600',
-  sent: 'bg-amber-50 text-amber-800',
-  acknowledged: 'bg-amber-50 text-amber-800',
-  in_progress: 'bg-green-50 text-green-800',
+  sent: 'bg-amber-100 text-amber-800',
+  acknowledged: 'bg-amber-100 text-amber-800',
+  in_progress: 'bg-green-100 text-green-800',
   completed: 'bg-zinc-100 text-zinc-600',
 };
 
