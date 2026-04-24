@@ -120,12 +120,8 @@ export function generateInvoicePDF(
     logoBottomY = yPos + 8;
   }
 
-  // Separator line between header (logo/title) and info section
-  yPos = logoBottomY + 5;
-  doc.setDrawColor(...lineColor);
-  doc.setLineWidth(0.5);
-  doc.line(margin, yPos, pageWidth - margin, yPos);
-  yPos += 7;
+  // Info section starts just below the logo
+  yPos = logoBottomY + 4;
 
   // Three-column info section — all columns start at the same infoStartY
   const col1X = margin;
