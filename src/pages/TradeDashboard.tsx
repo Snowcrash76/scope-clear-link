@@ -309,7 +309,7 @@ export default function TradeDashboard() {
         {/* Active projects */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-heading text-base font-semibold">Active Property Projects</h2>
+            <h2 className="font-heading text-base font-semibold">Active Projects</h2>
             <button
               onClick={() => navigate('/dashboard')}
               className="text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
