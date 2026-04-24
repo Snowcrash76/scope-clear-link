@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { AppShell } from '@/components/AppShell';
+import { AppShell, parseDefaultTerms } from '@/components/AppShell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -163,7 +163,8 @@ export default function ProjectManage() {
         .single();
 
       if (profile?.default_terms) {
-        setDefaultTerms(profile.default_terms);
+        const parsed = parseDefaultTerms(profile.default_terms);
+        setDefaultTerms(parsed.invoice);
       }
       if (profile?.default_payment_instructions) {
         setDefaultPaymentInstructions(profile.default_payment_instructions);

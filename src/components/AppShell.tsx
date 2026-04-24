@@ -48,6 +48,24 @@ import type { Database } from '@/integrations/supabase/types';
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
+export function parseDefaultTerms(raw: string | null): { quote: string; invoice: string } {
+  if (!raw) return { quote: '', invoice: '' };
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      return { quote: parsed.quote ?? '', invoice: parsed.invoice ?? '' };
+    }
+  } catch { /* not JSON — legacy plain text */ }
+  return { quote: '', invoice: raw };
+}
+
+function encodeDefaultTerms(quote: string, invoice: string): string | null {
+  const q = quote.trim();
+  const i = invoice.trim();
+  if (!q && !i) return null;
+  return JSON.stringify({ quote: q, invoice: i });
+}
+
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
@@ -188,7 +206,8 @@ export function AppShell({ children }: AppShellProps) {
     businessAddress: '',
     abn: '',
     website: '',
-    defaultTerms: '',
+    quoteTerms: '',
+    invoiceTerms: '',
     defaultPaymentInstructions: '',
   });
   const [logoDataUrl, setLogoDataUrl] = useState('');
@@ -204,6 +223,7 @@ export function AppShell({ children }: AppShellProps) {
       .single();
     if (!data) return;
     const row = data as ProfileRow;
+    const parsedTerms = parseDefaultTerms(row.default_terms ?? null);
     setSettingsForm({
       businessName: row.business_name || '',
       contactName: row.contact_name || '',
@@ -212,7 +232,8 @@ export function AppShell({ children }: AppShellProps) {
       businessAddress: row.business_address || '',
       abn: row.abn || '',
       website: row.website || '',
-      defaultTerms: row.default_terms || '',
+      quoteTerms: parsedTerms.quote,
+      invoiceTerms: parsedTerms.invoice,
       defaultPaymentInstructions: row.default_payment_instructions || '',
     });
     const stored = row.logo_url || '';
@@ -253,7 +274,7 @@ export function AppShell({ children }: AppShellProps) {
         business_address: settingsForm.businessAddress || null,
         abn: settingsForm.abn || null,
         website: settingsForm.website || null,
-        default_terms: settingsForm.defaultTerms || null,
+        default_terms: encodeDefaultTerms(settingsForm.quoteTerms, settingsForm.invoiceTerms),
         default_payment_instructions: settingsForm.defaultPaymentInstructions || null,
         logo_url: newLogoUrl,
       };
@@ -437,19 +458,51 @@ export function AppShell({ children }: AppShellProps) {
 
             <Separator />
 
-            {/* Quote/Invoice Defaults */}
+            {/* Quote Defaults */}
             <div className="space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-primary" />
-                Quote & Invoice Defaults
+                Quote Defaults
               </h3>
               <div className="space-y-2">
-                <Label htmlFor="defaultTerms" className="text-xs">Default Terms & Conditions</Label>
-                <Textarea id="defaultTerms" placeholder="Payment is due within 14 days..." value={settingsForm.defaultTerms} onChange={e => setSettingsForm(f => ({ ...f, defaultTerms: e.target.value }))} className="min-h-[100px] text-sm" />
+                <Label htmlFor="quoteTerms" className="text-xs">Quote Terms & Conditions</Label>
+                <Textarea
+                  id="quoteTerms"
+                  placeholder="e.g. This quote is valid for 30 days. Prices are subject to change..."
+                  value={settingsForm.quoteTerms}
+                  onChange={e => setSettingsForm(f => ({ ...f, quoteTerms: e.target.value }))}
+                  className="min-h-[100px] text-sm"
+                  data-testid="textarea-quote-terms"
+                />
+              </div>
+            </div>
+
+            {/* Invoice Defaults */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-primary" />
+                Invoice Defaults
+              </h3>
+              <div className="space-y-2">
+                <Label htmlFor="invoiceTerms" className="text-xs">Invoice Terms & Conditions</Label>
+                <Textarea
+                  id="invoiceTerms"
+                  placeholder="e.g. Payment is due within 14 days of invoice date..."
+                  value={settingsForm.invoiceTerms}
+                  onChange={e => setSettingsForm(f => ({ ...f, invoiceTerms: e.target.value }))}
+                  className="min-h-[100px] text-sm"
+                  data-testid="textarea-invoice-terms"
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="defaultPaymentInstructions" className="text-xs">Default Payment Instructions</Label>
-                <Textarea id="defaultPaymentInstructions" placeholder={"Bank: ANZ\nBSB: 123-456\nAccount: 12345678"} value={settingsForm.defaultPaymentInstructions} onChange={e => setSettingsForm(f => ({ ...f, defaultPaymentInstructions: e.target.value }))} className="min-h-[100px] text-sm" />
+                <Label htmlFor="defaultPaymentInstructions" className="text-xs">Payment Instructions</Label>
+                <Textarea
+                  id="defaultPaymentInstructions"
+                  placeholder={"Bank: ANZ\nBSB: 123-456\nAccount: 12345678"}
+                  value={settingsForm.defaultPaymentInstructions}
+                  onChange={e => setSettingsForm(f => ({ ...f, defaultPaymentInstructions: e.target.value }))}
+                  className="min-h-[100px] text-sm"
+                />
               </div>
             </div>
           </div>
