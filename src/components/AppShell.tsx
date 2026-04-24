@@ -37,13 +37,17 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
 interface SidebarInnerProps {
-  onNewJob?: () => void;
+  onNewJob: () => void;
   onOpenSettings: () => void;
   onSignOut: () => void;
   currentPath: string;
@@ -65,9 +69,8 @@ function SidebarInner({
 }: SidebarInnerProps) {
   const act = (fn: () => void) => { onClose?.(); fn(); };
 
-  const navItems = [
-    { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
-  ];
+  const isOnAppPage =
+    currentPath.startsWith('/dashboard') || currentPath.startsWith('/manage');
 
   return (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
@@ -85,41 +88,33 @@ function SidebarInner({
       </div>
 
       {/* New Job CTA */}
-      {onNewJob && (
-        <div className="px-4 pt-5 pb-2">
-          <button
-            onClick={() => act(onNewJob)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
-            data-testid="button-sidebar-new-job"
-          >
-            <Plus className="w-4 h-4" />
-            New Job
-          </button>
-        </div>
-      )}
+      <div className="px-4 pt-5 pb-2">
+        <button
+          onClick={() => act(onNewJob)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-sidebar-primary text-sidebar-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
+          data-testid="button-sidebar-new-job"
+        >
+          <Plus className="w-4 h-4" />
+          New Job
+        </button>
+      </div>
 
       {/* Nav items */}
       <nav className="px-3 pt-3 flex-1 space-y-0.5">
-        {navItems.map(({ label, icon: Icon, href }) => {
-          const active = currentPath === href;
-          return (
-            <Link
-              key={href}
-              to={href}
-              onClick={() => onClose?.()}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                active
-                  ? 'bg-sidebar-accent text-sidebar-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground'
-              )}
-              data-testid="nav-dashboard"
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              {label}
-            </Link>
-          );
-        })}
+        <Link
+          to="/dashboard"
+          onClick={() => onClose?.()}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            isOnAppPage
+              ? 'bg-sidebar-accent text-sidebar-foreground'
+              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/70 hover:text-sidebar-foreground'
+          )}
+          data-testid="nav-dashboard"
+        >
+          <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
+          Dashboard
+        </Link>
       </nav>
 
       {/* Bottom section */}
@@ -158,7 +153,7 @@ function SidebarInner({
 
 interface AppShellProps {
   children: React.ReactNode;
-  onNewJob?: () => void;
+  onNewJob: () => void;
 }
 
 export function AppShell({ children, onNewJob }: AppShellProps) {
@@ -193,18 +188,19 @@ export function AppShell({ children, onNewJob }: AppShellProps) {
       .eq('user_id', user.id)
       .single();
     if (!data) return;
+    const row = data as ProfileRow;
     setSettingsForm({
-      businessName: data.business_name || '',
-      contactName: data.contact_name || '',
-      email: data.email || '',
-      phone: data.phone || '',
-      businessAddress: (data as any).business_address || '',
-      abn: (data as any).abn || '',
-      website: (data as any).website || '',
-      defaultTerms: data.default_terms || '',
-      defaultPaymentInstructions: data.default_payment_instructions || '',
+      businessName: row.business_name || '',
+      contactName: row.contact_name || '',
+      email: row.email || '',
+      phone: row.phone || '',
+      businessAddress: row.business_address || '',
+      abn: row.abn || '',
+      website: row.website || '',
+      defaultTerms: row.default_terms || '',
+      defaultPaymentInstructions: row.default_payment_instructions || '',
     });
-    const stored = (data as any).logo_url || '';
+    const stored = row.logo_url || '';
     setLogoDataUrl(stored.startsWith('data:') ? stored : '');
   };
 
@@ -234,20 +230,18 @@ export function AppShell({ children, onNewJob }: AppShellProps) {
     setSaving(true);
     try {
       const newLogoUrl = removeLogo ? null : (pendingLogoDataUrl || logoDataUrl || null);
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          business_name: settingsForm.businessName,
-          contact_name: settingsForm.contactName,
-          phone: settingsForm.phone || null,
-          business_address: settingsForm.businessAddress || null,
-          abn: settingsForm.abn || null,
-          website: settingsForm.website || null,
-          default_terms: settingsForm.defaultTerms || null,
-          default_payment_instructions: settingsForm.defaultPaymentInstructions || null,
-          logo_url: newLogoUrl,
-        } as any)
-        .eq('user_id', user.id);
+      const updatePayload: ProfileUpdate = {
+        business_name: settingsForm.businessName,
+        contact_name: settingsForm.contactName,
+        phone: settingsForm.phone || null,
+        business_address: settingsForm.businessAddress || null,
+        abn: settingsForm.abn || null,
+        website: settingsForm.website || null,
+        default_terms: settingsForm.defaultTerms || null,
+        default_payment_instructions: settingsForm.defaultPaymentInstructions || null,
+        logo_url: newLogoUrl,
+      };
+      const { error } = await supabase.from('profiles').update(updatePayload).eq('user_id', user.id);
       if (error) throw error;
       toast.success('Settings saved');
       setPendingLogoDataUrl('');

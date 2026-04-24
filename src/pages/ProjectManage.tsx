@@ -389,7 +389,7 @@ export default function ProjectManage() {
   };
 
   return (
-    <AppShell>
+    <AppShell onNewJob={() => navigate('/dashboard')}>
       {/* Project sub-header */}
       <div className="border-b bg-background">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
