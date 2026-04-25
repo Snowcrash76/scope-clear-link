@@ -25,7 +25,11 @@ export function cleanVariationTitle(title: string): string {
 }
 
 export function isVariationItem(title: string): boolean {
-  return /^variation[:\s-]/i.test(title);
+  if (!title || typeof title !== 'string') return false;
+  const t = title.toLowerCase().trim();
+  return t.startsWith('variation:') ||
+    t.startsWith('variation ') ||
+    t.startsWith('variation-');
 }
 
 export function stripVariationMeta(description: string | null | undefined): string {
