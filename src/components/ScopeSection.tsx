@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle, TrendingUp } from 'lucide-react';
 import { cn, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
+import { RichTextContent } from '@/components/RichTextEditor';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
 import { ImageDisplay } from '@/components/ImageUpload';
 
@@ -215,9 +216,10 @@ export function ScopeSection({
                     )}
                   </div>
                   {stripVariationMeta(item.description) && (
-                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                      {stripVariationMeta(item.description)}
-                    </p>
+                    <RichTextContent
+                      html={stripVariationMeta(item.description)}
+                      className="mt-1"
+                    />
                   )}
                   {item.imageUrls && item.imageUrls.length > 0 ? (
                     <div className="mt-3">

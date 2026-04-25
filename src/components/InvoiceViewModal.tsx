@@ -128,7 +128,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               {invoice.lineItems.map(item => (
                 <div key={item.id} className="flex justify-between items-start py-2 border-b last:border-b-0">
                   <div className="flex-1">
-                    <p className="font-medium">{item.description}</p>
+                    <RichTextContent html={item.description} className="font-medium" />
                     <p className="text-sm text-muted-foreground">
                       {item.quantity} × ${item.unitPrice.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </p>

@@ -61,6 +61,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
+import { RichTextContent } from '@/components/RichTextEditor';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -607,9 +608,7 @@ export default function ProjectManage() {
                                     )}
                                   </div>
                                   {stripVariationMeta(item.description) && (
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                      {stripVariationMeta(item.description)}
-                                    </p>
+                                    <RichTextContent html={stripVariationMeta(item.description)} className="mt-1" />
                                   )}
                                   {item.imageUrls && item.imageUrls.length > 0 ? (
                                     <div className="mt-3">

@@ -226,10 +226,8 @@ export function QuoteViewModal({
                 {excludedItems.map(item => (
                   <div key={item.id} className="p-3 rounded-lg bg-muted/30">
                     <p className="text-base font-semibold text-foreground">{item.title}</p>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                        {item.description}
-                      </p>
+                    {stripVariationMeta(item.description) && (
+                      <RichTextContent html={stripVariationMeta(item.description)} className="mt-1.5" />
                     )}
                   </div>
                 ))}
@@ -247,10 +245,8 @@ export function QuoteViewModal({
                 {assumptionItems.map(item => (
                   <div key={item.id} className="p-3 rounded-lg bg-muted/30">
                     <p className="font-medium text-sm">{item.title}</p>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                        {item.description}
-                      </p>
+                    {stripVariationMeta(item.description) && (
+                      <RichTextContent html={stripVariationMeta(item.description)} className="mt-1" />
                     )}
                   </div>
                 ))}

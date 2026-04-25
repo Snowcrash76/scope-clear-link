@@ -27,6 +27,7 @@ import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice, ScopeItem } from '@/types/project';
 import { cn, isVariationItem, stripVariationMeta } from '@/lib/utils';
+import { RichTextContent } from '@/components/RichTextEditor';
 
 export default function ClientProjectView() {
   const { id } = useParams();
@@ -409,7 +410,7 @@ export default function ClientProjectView() {
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{item.title}</p>
                           {stripVariationMeta(item.description) && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
+                            <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
@@ -422,7 +423,7 @@ export default function ClientProjectView() {
                         <div className="flex-1 pr-4">
                           <p className="text-sm font-medium">{item.title}</p>
                           {stripVariationMeta(item.description) && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
+                            <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
