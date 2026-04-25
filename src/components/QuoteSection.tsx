@@ -182,9 +182,9 @@ export function QuoteSection({
   const handleSaveRef = async () => {
     if (!quote || !quoteRef.trim()) return;
     setIsSavingRef(true);
-    await onUpdateQuote(quote.id, { quoteNumber: quoteRef.trim() });
+    const success = await onUpdateQuote(quote.id, { quoteNumber: quoteRef.trim() });
     setIsSavingRef(false);
-    setEditingRef(false);
+    if (success) setEditingRef(false);
   };
 
   const handleSendQuote = async () => {

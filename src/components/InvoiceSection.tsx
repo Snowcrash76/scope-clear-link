@@ -125,9 +125,9 @@ export function InvoiceSection({
   const handleSaveInvRef = async () => {
     if (!editingInvRef || !invRefValue.trim() || !onUpdateInvoiceNumber) return;
     setIsSavingInvRef(true);
-    await onUpdateInvoiceNumber(editingInvRef, invRefValue.trim());
+    const success = await onUpdateInvoiceNumber(editingInvRef, invRefValue.trim());
     setIsSavingInvRef(false);
-    setEditingInvRef(null);
+    if (success) setEditingInvRef(null);
   };
 
   const [invoiceType, setInvoiceType] = useState<'staged' | 'final'>('staged');
