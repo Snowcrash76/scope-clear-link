@@ -222,8 +222,10 @@ export function AppShell({ children }: AppShellProps) {
   const [newEmail, setNewEmail] = useState('');
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState('');
   const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
   const [pwSaving, setPwSaving] = useState(false);
+  const [pwErrors, setPwErrors] = useState({ current: '', next: '', confirm: '', general: '' });
 
   const loadSettings = async () => {
     if (!user?.id) return;
@@ -313,7 +315,9 @@ export function AppShell({ children }: AppShellProps) {
     loadSettings();
     setNewEmail('');
     setEmailSent(false);
+    setEmailError('');
     setPwForm({ current: '', next: '', confirm: '' });
+    setPwErrors({ current: '', next: '', confirm: '', general: '' });
     setIsSettingsOpen(true);
   };
 
@@ -321,11 +325,12 @@ export function AppShell({ children }: AppShellProps) {
     e.preventDefault();
     const trimmed = newEmail.trim();
     if (!trimmed || !user?.email) return;
+    setEmailError('');
     setEmailSaving(true);
     const { error } = await supabase.auth.updateUser({ email: trimmed });
     setEmailSaving(false);
     if (error) {
-      toast.error(error.message);
+      setEmailError(error.message);
     } else {
       setEmailSent(true);
       setNewEmail('');
@@ -334,9 +339,12 @@ export function AppShell({ children }: AppShellProps) {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pwForm.next.length < 6) { toast.error('New password must be at least 6 characters'); return; }
-    if (pwForm.next !== pwForm.confirm) { toast.error('New passwords do not match'); return; }
+    const errors = { current: '', next: '', confirm: '', general: '' };
+    if (pwForm.next.length < 6) errors.next = 'Must be at least 6 characters';
+    if (pwForm.next && pwForm.confirm && pwForm.next !== pwForm.confirm) errors.confirm = 'Passwords do not match';
+    if (errors.next || errors.confirm) { setPwErrors(errors); return; }
     if (!user?.email) return;
+    setPwErrors({ current: '', next: '', confirm: '', general: '' });
     setPwSaving(true);
     // Verify current password by re-authenticating
     const { error: authError } = await supabase.auth.signInWithPassword({
@@ -344,16 +352,16 @@ export function AppShell({ children }: AppShellProps) {
       password: pwForm.current,
     });
     if (authError) {
-      toast.error('Current password is incorrect');
+      setPwErrors(e => ({ ...e, current: 'Current password is incorrect' }));
       setPwSaving(false);
       return;
     }
     const { error } = await supabase.auth.updateUser({ password: pwForm.next });
     setPwSaving(false);
     if (error) {
-      toast.error(error.message);
+      setPwErrors(e => ({ ...e, general: error.message }));
     } else {
-      toast.success('Password updated successfully');
+      toast.success('Password updated');
       setPwForm({ current: '', next: '', confirm: '' });
     }
   };
@@ -600,32 +608,37 @@ export function AppShell({ children }: AppShellProps) {
                     Change Login Email
                   </h3>
                   {emailSent ? (
-                    <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
-                      Confirmation link sent. Check your new email and click the link to confirm the change.
+                    <div className="space-y-2">
+                      <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                        Confirmation link sent. Check your new email and click the link to confirm the change.
+                      </div>
+                      <button
+                        onClick={() => setEmailSent(false)}
+                        className="text-xs text-muted-foreground hover:underline"
+                      >
+                        Change a different email
+                      </button>
                     </div>
                   ) : (
-                    <form onSubmit={handleChangeEmail} className="flex gap-2">
-                      <Input
-                        type="email"
-                        placeholder="New email address"
-                        value={newEmail}
-                        onChange={e => setNewEmail(e.target.value)}
-                        required
-                        className="flex-1"
-                        data-testid="input-new-email"
-                      />
-                      <Button type="submit" disabled={emailSaving || !newEmail.trim()} data-testid="button-update-email">
-                        {emailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
-                      </Button>
-                    </form>
-                  )}
-                  {emailSent && (
-                    <button
-                      onClick={() => setEmailSent(false)}
-                      className="text-xs text-muted-foreground hover:underline"
-                    >
-                      Change a different email
-                    </button>
+                    <div className="space-y-1.5">
+                      <form onSubmit={handleChangeEmail} className="flex gap-2">
+                        <Input
+                          type="email"
+                          placeholder="New email address"
+                          value={newEmail}
+                          onChange={e => { setNewEmail(e.target.value); setEmailError(''); }}
+                          required
+                          className={emailError ? 'flex-1 border-destructive focus-visible:ring-destructive' : 'flex-1'}
+                          data-testid="input-new-email"
+                        />
+                        <Button type="submit" disabled={emailSaving || !newEmail.trim()} data-testid="button-update-email">
+                          {emailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
+                        </Button>
+                      </form>
+                      {emailError && (
+                        <p className="text-xs text-destructive" data-testid="error-email">{emailError}</p>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -644,10 +657,14 @@ export function AppShell({ children }: AppShellProps) {
                         id="currentPassword"
                         placeholder="••••••••"
                         value={pwForm.current}
-                        onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                        onChange={e => { setPwForm(f => ({ ...f, current: e.target.value })); setPwErrors(p => ({ ...p, current: '' })); }}
                         required
+                        className={pwErrors.current ? 'border-destructive focus-visible:ring-destructive' : ''}
                         data-testid="input-current-password"
                       />
+                      {pwErrors.current && (
+                        <p className="text-xs text-destructive" data-testid="error-current-password">{pwErrors.current}</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="newPassword" className="text-xs">New Password</Label>
@@ -655,12 +672,16 @@ export function AppShell({ children }: AppShellProps) {
                         id="newPassword"
                         placeholder="••••••••"
                         value={pwForm.next}
-                        onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+                        onChange={e => { setPwForm(f => ({ ...f, next: e.target.value })); setPwErrors(p => ({ ...p, next: '' })); }}
                         required
-                        minLength={6}
+                        className={pwErrors.next ? 'border-destructive focus-visible:ring-destructive' : ''}
                         data-testid="input-new-password"
                       />
-                      <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                      {pwErrors.next ? (
+                        <p className="text-xs text-destructive" data-testid="error-new-password">{pwErrors.next}</p>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="confirmNewPassword" className="text-xs">Confirm New Password</Label>
@@ -668,12 +689,18 @@ export function AppShell({ children }: AppShellProps) {
                         id="confirmNewPassword"
                         placeholder="••••••••"
                         value={pwForm.confirm}
-                        onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                        onChange={e => { setPwForm(f => ({ ...f, confirm: e.target.value })); setPwErrors(p => ({ ...p, confirm: '' })); }}
                         required
-                        minLength={6}
+                        className={pwErrors.confirm ? 'border-destructive focus-visible:ring-destructive' : ''}
                         data-testid="input-confirm-new-password"
                       />
+                      {pwErrors.confirm && (
+                        <p className="text-xs text-destructive" data-testid="error-confirm-password">{pwErrors.confirm}</p>
+                      )}
                     </div>
+                    {pwErrors.general && (
+                      <p className="text-xs text-destructive" data-testid="error-password-general">{pwErrors.general}</p>
+                    )}
                     <Button
                       type="submit"
                       disabled={pwSaving || !pwForm.current || !pwForm.next || !pwForm.confirm}
