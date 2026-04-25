@@ -46,18 +46,27 @@ export async function validateSupabaseJwt(authHeader: string | undefined): Promi
   return user.id;
 }
 
+export interface ChangeNotificationBody {
+  projectId: string;
+  changeRequestId: string;
+  notificationType: 'created' | 'approved' | 'declined';
+  recipientType: 'trade' | 'client';
+  changeTitle: string;
+  changeDescription: string;
+  costImpact?: number;
+  timeImpact?: string;
+}
+
+/**
+ * Send a change request notification email.
+ *
+ * authenticatedUserId — when provided (trade flow), the user must own the project.
+ * When omitted (client-public flow), the request is restricted to 'created'
+ * notifications only, and the changeRequest is verified to belong to the project.
+ */
 export async function handleChangeNotification(
-  body: {
-    projectId: string;
-    changeRequestId: string;
-    notificationType: 'created' | 'approved' | 'declined';
-    recipientType: 'trade' | 'client';
-    changeTitle: string;
-    changeDescription: string;
-    costImpact?: number;
-    timeImpact?: string;
-  },
-  userId: string
+  body: ChangeNotificationBody,
+  authenticatedUserId?: string
 ) {
   const supabase = getSupabaseAdmin();
   const {
@@ -65,10 +74,27 @@ export async function handleChangeNotification(
     changeTitle, changeDescription, costImpact, timeImpact,
   } = body;
 
-  // Verify the requesting user owns this project
-  const { data: project, error: projectError } = await supabase
-    .from('projects').select('*').eq('id', projectId).eq('user_id', userId).single();
+  // For unauthenticated (client) calls, restrict to 'created' notifications only.
+  // Approval/decline notifications can only be sent by authenticated owners.
+  if (!authenticatedUserId && notificationType !== 'created') {
+    throw new Error('Unauthorized: only authenticated users can send approval/decline notifications');
+  }
+
+  // Fetch project
+  const projectQuery = supabase.from('projects').select('*').eq('id', projectId);
+  if (authenticatedUserId) {
+    // Trade: must own the project
+    projectQuery.eq('user_id', authenticatedUserId);
+  }
+  const { data: project, error: projectError } = await projectQuery.single();
   if (projectError || !project) throw new Error('Project not found or access denied');
+
+  // For unauthenticated calls, verify the change request belongs to this project
+  if (!authenticatedUserId) {
+    const { data: cr, error: crError } = await supabase
+      .from('change_requests').select('id').eq('id', changeRequestId).eq('project_id', projectId).single();
+    if (crError || !cr) throw new Error('Change request not found');
+  }
 
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('user_id', project.user_id).single();
