@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { DashboardStats } from '@/components/DashboardStats';
-import { TodaySchedule } from '@/components/TodaySchedule';
 import { AppShell } from '@/components/AppShell';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
@@ -322,61 +321,52 @@ export default function TradeDashboard() {
           <DashboardStats projects={projects} />
         </div>
 
-        {/* Two-column section: Active Projects + Today's Schedule */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          {/* Active projects — left, takes 2/3 */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-heading text-base font-semibold">Active Projects</h2>
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
-                data-testid="button-view-all-projects"
-              >
-                VIEW ALL <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
-              {loading ? (
-                <div className="divide-y">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 py-3.5 px-4 animate-pulse">
-                      <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-muted rounded w-1/3" />
-                        <div className="h-3 bg-muted rounded w-1/4" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : filteredActive.length > 0 ? (
-                <div className="divide-y divide-border/50">
-                  {filteredActive.map(project => (
-                    <ProjectListItem
-                      key={project.id}
-                      project={project}
-                      onView={handleViewProject}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-10 px-4">
-                  <Briefcase className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    {searchQuery
-                      ? `No active projects matching "${searchQuery}"`
-                      : 'No other active projects found at this time.'}
-                  </p>
-                </div>
-              )}
-            </div>
+        {/* Active projects */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-heading text-base font-semibold">Active Projects</h2>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
+              data-testid="button-view-all-projects"
+            >
+              VIEW ALL <ChevronRight className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* Today's Schedule — right, takes 1/3 */}
-          <div className="lg:col-span-1">
-            <div className="mb-3 h-[26px]" aria-hidden />
-            <TodaySchedule />
+          <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
+            {loading ? (
+              <div className="divide-y">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-4 py-3.5 px-4 animate-pulse">
+                    <div className="w-14 h-14 rounded-lg bg-muted flex-shrink-0" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-muted rounded w-1/3" />
+                      <div className="h-3 bg-muted rounded w-1/4" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredActive.length > 0 ? (
+              <div className="divide-y divide-border/50">
+                {filteredActive.map(project => (
+                  <ProjectListItem
+                    key={project.id}
+                    project={project}
+                    onView={handleViewProject}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 px-4">
+                <Briefcase className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  {searchQuery
+                    ? `No active projects matching "${searchQuery}"`
+                    : 'No other active projects found at this time.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
