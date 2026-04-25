@@ -12,16 +12,28 @@ function stripHtml(html: string): string {
   const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   const lines: string[] = [];
   let currentLine = '';
+  let inListItem = false;
+  let listItemHasContent = false;
   let node: Node | null = walker.nextNode();
   while (node) {
     if (node.nodeType === Node.TEXT_NODE) {
-      currentLine += node.textContent || '';
+      const text = node.textContent || '';
+      if (inListItem && !listItemHasContent && text.trim()) {
+        currentLine += '• ' + text;
+        listItemHasContent = true;
+      } else {
+        currentLine += text;
+      }
     } else if (node.nodeType === Node.ELEMENT_NODE) {
       const tag = (node as Element).tagName.toLowerCase();
-      if (['p', 'li', 'br', 'h1', 'h2', 'h3'].includes(tag)) {
+      if (tag === 'li') {
         if (currentLine.trim()) lines.push(currentLine.trim());
         currentLine = '';
-        if (tag === 'li') currentLine = '• ';
+        inListItem = true;
+        listItemHasContent = false;
+      } else if (['p', 'br', 'h1', 'h2', 'h3'].includes(tag)) {
+        if (currentLine.trim()) lines.push(currentLine.trim());
+        currentLine = '';
       }
     }
     node = walker.nextNode();
