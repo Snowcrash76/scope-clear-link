@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/AppShell';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Receipt, ExternalLink } from 'lucide-react';
+import { Receipt, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 
@@ -64,12 +64,12 @@ function useAllInvoices() {
   });
 }
 
+const formatCurrency = (n: number | null) =>
+  n == null ? '—' : `$${n.toLocaleString('en-AU', { minimumFractionDigits: 0 })}`;
+
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useAllInvoices();
-
-  const formatCurrency = (n: number | null) =>
-    n == null ? '—' : `$${n.toLocaleString('en-AU', { minimumFractionDigits: 0 })}`;
 
   return (
     <AppShell>
@@ -79,9 +79,9 @@ export default function InvoicesPage() {
           <p className="text-sm text-muted-foreground mt-0.5">All invoices across your projects</p>
         </div>
 
-        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
-          {/* Table header */}
-          <div className="grid grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
+        <div className="rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
+          {/* Table header — desktop only */}
+          <div className="hidden sm:grid sm:grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Project / Client</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invoice #</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</span>
@@ -93,13 +93,13 @@ export default function InvoicesPage() {
           {isLoading ? (
             <div className="divide-y">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="grid grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-3.5 items-center">
-                  <div className="space-y-1.5"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-24" /></div>
-                  <Skeleton className="h-4 w-20" />
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
                   <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-4 w-16 ml-auto" />
-                  <Skeleton className="h-4 w-16" />
-                  <span />
+                  <Skeleton className="h-4 w-14" />
                 </div>
               ))}
             </div>
@@ -113,23 +113,44 @@ export default function InvoicesPage() {
               {invoices.map(inv => (
                 <div
                   key={inv.id}
-                  className="grid grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-3.5 items-center hover:bg-muted/40 transition-colors cursor-pointer group"
                   onClick={() => navigate(`/manage/${inv.project_id}?tab=invoices`)}
+                  className="cursor-pointer hover:bg-muted/40 transition-colors group"
                   data-testid={`invoice-row-${inv.id}`}
                 >
-                  <div>
-                    <p className="text-sm font-medium">{inv.projectName}</p>
-                    <p className="text-xs text-muted-foreground">{inv.clientName} · {format(new Date(inv.created_at), 'd MMM yyyy')}</p>
+                  {/* Mobile layout */}
+                  <div className="flex items-center gap-3 px-4 py-3.5 sm:hidden">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{inv.projectName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{inv.clientName} · {format(new Date(inv.created_at), 'd MMM yyyy')}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold capitalize', STATUS_VARIANTS[inv.status])}>
+                          {inv.status}
+                        </span>
+                        <span className="text-xs font-semibold text-muted-foreground">{formatCurrency(inv.total)}</span>
+                        {inv.due_date && (
+                          <span className="text-xs text-muted-foreground">· Due {format(new Date(inv.due_date), 'd MMM')}</span>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   </div>
-                  <span className="text-sm text-muted-foreground font-mono">{inv.invoice_number}</span>
-                  <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold capitalize w-fit', STATUS_VARIANTS[inv.status])}>
-                    {inv.status}
-                  </span>
-                  <span className="text-sm font-semibold text-right">{formatCurrency(inv.total)}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {inv.due_date ? format(new Date(inv.due_date), 'd MMM yyyy') : '—'}
-                  </span>
-                  <ExternalLink className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+
+                  {/* Desktop layout */}
+                  <div className="hidden sm:grid sm:grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-3.5 items-center">
+                    <div>
+                      <p className="text-sm font-medium">{inv.projectName}</p>
+                      <p className="text-xs text-muted-foreground">{inv.clientName} · {format(new Date(inv.created_at), 'd MMM yyyy')}</p>
+                    </div>
+                    <span className="text-sm text-muted-foreground font-mono">{inv.invoice_number}</span>
+                    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold capitalize w-fit', STATUS_VARIANTS[inv.status])}>
+                      {inv.status}
+                    </span>
+                    <span className="text-sm font-semibold text-right">{formatCurrency(inv.total)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {inv.due_date ? format(new Date(inv.due_date), 'd MMM yyyy') : '—'}
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
                 </div>
               ))}
             </div>

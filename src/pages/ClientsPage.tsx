@@ -147,9 +147,9 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
-          {/* Table header */}
-          <div className="grid grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-2.5 border-b bg-muted/30">
+        <div className="rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
+          {/* Table header — desktop only */}
+          <div className="hidden sm:grid sm:grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Address</span>
@@ -159,14 +159,12 @@ export default function ClientsPage() {
           {loading ? (
             <div className="divide-y">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="grid grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-3.5 items-center">
-                  <div className="flex items-center gap-2.5">
-                    <Skeleton className="w-8 h-8 rounded-full" />
+                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+                  <Skeleton className="w-8 h-8 rounded-full flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
                     <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-3 w-40" />
                   </div>
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-4 w-40" />
-                  <span />
                 </div>
               ))}
             </div>
@@ -182,36 +180,67 @@ export default function ClientsPage() {
               {filtered.map(client => (
                 <div
                   key={client.key}
-                  className="grid grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-3.5 items-center hover:bg-muted/40 transition-colors group"
+                  className="hover:bg-muted/40 transition-colors group"
                   data-testid={`client-row-${client.key}`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Mobile layout */}
+                  <div className="flex items-center gap-3 px-4 py-3.5 sm:hidden">
                     <ClientInitial name={client.name} />
-                    <span className="text-sm font-medium truncate">{client.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{client.name}</p>
+                      {client.email && <p className="text-xs text-muted-foreground truncate">{client.email}</p>}
+                      {client.address && <p className="text-xs text-muted-foreground truncate">{client.address}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => openEdit(client)}
+                        className="p-1.5 rounded hover:bg-muted transition-colors"
+                        title="Edit client"
+                        data-testid={`button-edit-client-${client.key}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteClient(client)}
+                        className="p-1.5 rounded hover:bg-destructive/10 transition-colors"
+                        title="Delete client"
+                        data-testid={`button-delete-client-${client.key}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </button>
+                    </div>
                   </div>
-                  <span className="text-sm text-muted-foreground truncate">
-                    {client.email || <span className="italic text-muted-foreground/40">—</span>}
-                  </span>
-                  <span className="text-sm text-muted-foreground truncate">
-                    {client.address || <span className="italic text-muted-foreground/40">—</span>}
-                  </span>
-                  <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => openEdit(client)}
-                      className="p-1.5 rounded hover:bg-muted transition-colors"
-                      title="Edit client"
-                      data-testid={`button-edit-client-${client.key}`}
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteClient(client)}
-                      className="p-1.5 rounded hover:bg-destructive/10 transition-colors"
-                      title="Delete client"
-                      data-testid={`button-delete-client-${client.key}`}
-                    >
-                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                    </button>
+
+                  {/* Desktop layout */}
+                  <div className="hidden sm:grid sm:grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-3.5 items-center">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <ClientInitial name={client.name} />
+                      <span className="text-sm font-medium truncate">{client.name}</span>
+                    </div>
+                    <span className="text-sm text-muted-foreground truncate">
+                      {client.email || <span className="italic text-muted-foreground/40">—</span>}
+                    </span>
+                    <span className="text-sm text-muted-foreground truncate">
+                      {client.address || <span className="italic text-muted-foreground/40">—</span>}
+                    </span>
+                    <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => openEdit(client)}
+                        className="p-1.5 rounded hover:bg-muted transition-colors"
+                        title="Edit client"
+                        data-testid={`button-edit-client-${client.key}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteClient(client)}
+                        className="p-1.5 rounded hover:bg-destructive/10 transition-colors"
+                        title="Delete client"
+                        data-testid={`button-delete-client-${client.key}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
