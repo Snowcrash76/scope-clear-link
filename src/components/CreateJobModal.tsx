@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor, htmlToText } from '@/components/RichTextEditor';
 import { ImageUpload } from '@/components/ImageUpload';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -237,7 +237,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
                             )}
                           </div>
                           {item.description && (
-                            <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+                            <p className="text-xs text-muted-foreground truncate">{htmlToText(item.description)}</p>
                           )}
                         </div>
                         <button
@@ -305,11 +305,11 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
                 onChange={(e) => setCurrentItem(prev => ({ ...prev, title: e.target.value }))}
               />
               
-              <Textarea
-                placeholder="Description (optional)"
+              <RichTextEditor
                 value={currentItem.description}
-                onChange={(e) => setCurrentItem(prev => ({ ...prev, description: e.target.value }))}
-                className="min-h-[60px]"
+                onChange={(v) => setCurrentItem(prev => ({ ...prev, description: v }))}
+                placeholder="Description (optional)"
+                minHeight="60px"
               />
 
               {/* Cost field for included items */}

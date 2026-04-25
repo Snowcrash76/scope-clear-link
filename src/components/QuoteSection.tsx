@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RichTextEditor } from '@/components/RichTextEditor';
+import { RichTextEditor, RichTextContent, htmlToText } from '@/components/RichTextEditor';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { 
   FileText, 
@@ -436,11 +436,11 @@ export function QuoteSection({
                             onChange={(e) => setEditItemCost(e.target.value)}
                           />
                         </div>
-                        <Textarea
-                          placeholder="Description (optional)"
+                        <RichTextEditor
                           value={editItemDescription}
-                          onChange={(e) => setEditItemDescription(e.target.value)}
-                          rows={2}
+                          onChange={setEditItemDescription}
+                          placeholder="Description (optional)"
+                          minHeight="60px"
                         />
                         <div className="flex gap-2">
                           <Button size="sm" onClick={handleSaveEditItem}>Save</Button>
@@ -452,7 +452,7 @@ export function QuoteSection({
                         <div className="flex-1 pr-4">
                           <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                           {item.description && (
-                            <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{htmlToText(item.description)}</p>
                           )}
                         </div>
                         <div className="flex items-center gap-2">
@@ -502,11 +502,11 @@ export function QuoteSection({
                         onChange={(e) => setNewItemCost(e.target.value)}
                       />
                     </div>
-                    <Textarea
-                      placeholder="Description (optional)"
+                    <RichTextEditor
                       value={newItemDescription}
-                      onChange={(e) => setNewItemDescription(e.target.value)}
-                      rows={2}
+                      onChange={setNewItemDescription}
+                      placeholder="Description (optional)"
+                      minHeight="60px"
                     />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={handleAddLineItem} disabled={!newItemTitle.trim()}>
@@ -710,7 +710,7 @@ export function QuoteSection({
                 <div className="flex-1 pr-4">
                   <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                   {stripVariationMeta(item.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
+                    <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                   )}
                 </div>
                 <span className="text-sm font-medium whitespace-nowrap">
@@ -723,7 +723,7 @@ export function QuoteSection({
                 <div className="flex-1 pr-4">
                   <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                   {stripVariationMeta(item.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(item.description)}</p>
+                    <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                   )}
                 </div>
                 <span className="text-sm font-medium whitespace-nowrap">

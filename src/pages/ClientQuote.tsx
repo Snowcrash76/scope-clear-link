@@ -322,7 +322,7 @@ export default function ClientQuote() {
                       {li.title}
                     </p>
                     {stripVariationMeta(li.description) && (
-                      <p className="text-sm text-muted-foreground mt-0.5">{stripVariationMeta(li.description)}</p>
+                      <RichTextContent html={stripVariationMeta(li.description)} className="mt-0.5" />
                     )}
                   </div>
                   <p className="font-medium whitespace-nowrap tabular-nums">${fmt(li.cost)}</p>
@@ -348,7 +348,7 @@ export default function ClientQuote() {
                       {cleanVariationTitle(li.title)}
                     </p>
                     {stripVariationMeta(li.description) && (
-                      <p className="text-sm text-muted-foreground mt-0.5">{stripVariationMeta(li.description)}</p>
+                      <RichTextContent html={stripVariationMeta(li.description)} className="mt-0.5" />
                     )}
                   </div>
                   <p className="font-medium whitespace-nowrap tabular-nums text-approved">

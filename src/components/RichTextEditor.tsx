@@ -121,6 +121,15 @@ export function RichTextEditor({
   );
 }
 
+export function htmlToText(html: string): string {
+  if (!html) return '';
+  const isHtml = /<[a-z][\s\S]*>/i.test(html);
+  if (!isHtml) return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.textContent || div.innerText || '';
+}
+
 interface RichTextContentProps {
   html: string;
   className?: string;

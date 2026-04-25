@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
-import { RichTextContent } from '@/components/RichTextEditor';
+import { RichTextContent, htmlToText } from '@/components/RichTextEditor';
 import { QuoteLineItem } from '@/hooks/useQuoteLineItems';
 import { 
   Download, 
@@ -157,9 +157,7 @@ export function QuoteViewModal({
                       <div className="flex-1 pr-4">
                         <p className="text-base font-semibold text-foreground">{item.title}</p>
                         {stripVariationMeta(item.description) && (
-                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                            {stripVariationMeta(item.description)}
-                          </p>
+                          <RichTextContent html={stripVariationMeta(item.description)} className="mt-1.5" />
                         )}
                       </div>
                       <span className="font-medium whitespace-nowrap">
@@ -174,9 +172,7 @@ export function QuoteViewModal({
                       <div className="flex-1 pr-4">
                         <p className="text-base font-semibold text-foreground">{item.title}</p>
                         {stripVariationMeta(item.description) && (
-                          <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
-                            {stripVariationMeta(item.description)}
-                          </p>
+                          <RichTextContent html={stripVariationMeta(item.description)} className="mt-1.5" />
                         )}
                       </div>
                       <span className="font-medium whitespace-nowrap">
