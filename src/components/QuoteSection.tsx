@@ -367,7 +367,7 @@ export function QuoteSection({
                     <div className="flex-1 pr-4">
                       <span className="text-sm font-medium">{change.title}</span>
                       {stripVariationMeta(change.description) && (
-                        <p className="text-xs text-muted-foreground mt-1">{stripVariationMeta(change.description)}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(change.description))}</p>
                       )}
                     </div>
                     <span className={cn(
@@ -398,7 +398,7 @@ export function QuoteSection({
                       <div className="flex-1 pr-4">
                         <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
                         {stripVariationMeta(item.description) && (
-                          <p className="text-xs text-muted-foreground mt-1">{stripVariationMeta(item.description)}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(item.description))}</p>
                         )}
                       </div>
                       <span className="font-medium whitespace-nowrap">
@@ -745,7 +745,7 @@ export function QuoteSection({
                 <div className="flex-1 pr-4">
                   <span className="text-sm font-medium">{change.title}</span>
                   {stripVariationMeta(change.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(change.description)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{htmlToText(stripVariationMeta(change.description))}</p>
                   )}
                 </div>
                 <span className={cn(
