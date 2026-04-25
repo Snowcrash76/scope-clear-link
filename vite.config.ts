@@ -18,9 +18,8 @@ function readBody(req: IncomingMessage): Promise<string> {
 }
 
 function sendJson(res: ServerResponse, status: number, body: unknown) {
-  const json = JSON.stringify(body);
   res.writeHead(status, { "Content-Type": "application/json" });
-  res.end(json);
+  res.end(JSON.stringify(body));
 }
 
 // https://vitejs.dev/config/
@@ -45,27 +44,29 @@ export default defineConfig(({ mode }) => ({
 
           if (req.url === "/api/send-change-notification" && req.method === "POST") {
             try {
+              const { validateSupabaseJwt, handleChangeNotification } = await import("./server/emailHandlers");
+              const userId = await validateSupabaseJwt(req.headers["authorization"] as string | undefined);
               const raw = await readBody(req);
               const body = JSON.parse(raw);
-              const { handleChangeNotification } = await import("./server/emailHandlers");
-              const result = await handleChangeNotification(body);
+              const result = await handleChangeNotification(body, userId);
               sendJson(res, 200, { success: true, result });
             } catch (err: any) {
-              console.error("[email-api] send-change-notification error:", err.message);
-              sendJson(res, 500, { error: err.message });
+              const status = err.message === "Unauthorized" ? 401 : 500;
+              console.error("[email-api] send-change-notification:", err.message);
+              sendJson(res, status, { error: err.message });
             }
             return;
           }
 
           if (req.url === "/api/send-quote-notification" && req.method === "POST") {
             try {
+              const { handleQuoteNotification } = await import("./server/emailHandlers");
               const raw = await readBody(req);
               const body = JSON.parse(raw);
-              const { handleQuoteNotification } = await import("./server/emailHandlers");
               const result = await handleQuoteNotification(body);
               sendJson(res, 200, { success: true, result });
             } catch (err: any) {
-              console.error("[email-api] send-quote-notification error:", err.message);
+              console.error("[email-api] send-quote-notification:", err.message);
               sendJson(res, 500, { error: err.message });
             }
             return;

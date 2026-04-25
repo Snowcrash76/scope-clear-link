@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-function getSupabase() {
-  const url = process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co';
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co';
+
+function getSupabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!key) throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
-  return createClient(url, key);
+  return createClient(SUPABASE_URL, key, { auth: { persistSession: false } });
 }
 
 function getResendKey() {
@@ -33,37 +34,41 @@ async function sendViaResend(to: string, subject: string, html: string) {
   return result;
 }
 
-export async function handleChangeNotification(body: {
-  projectId: string;
-  changeRequestId: string;
-  notificationType: 'created' | 'approved' | 'declined';
-  recipientType: 'trade' | 'client';
-  changeTitle: string;
-  changeDescription: string;
-  costImpact?: number;
-  timeImpact?: string;
-  updateStatus?: 'approved' | 'declined';
-  resolutionComment?: string;
-}) {
-  const supabase = getSupabase();
+/**
+ * Validate a Supabase JWT. Returns the user ID if valid, throws if not.
+ */
+export async function validateSupabaseJwt(authHeader: string | undefined): Promise<string> {
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
+  const token = authHeader.slice(7);
+  const supabase = getSupabaseAdmin();
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) throw new Error('Unauthorized');
+  return user.id;
+}
+
+export async function handleChangeNotification(
+  body: {
+    projectId: string;
+    changeRequestId: string;
+    notificationType: 'created' | 'approved' | 'declined';
+    recipientType: 'trade' | 'client';
+    changeTitle: string;
+    changeDescription: string;
+    costImpact?: number;
+    timeImpact?: string;
+  },
+  userId: string
+) {
+  const supabase = getSupabaseAdmin();
   const {
     projectId, changeRequestId, notificationType, recipientType,
     changeTitle, changeDescription, costImpact, timeImpact,
-    updateStatus, resolutionComment,
   } = body;
 
-  if (updateStatus) {
-    const { error } = await supabase.from('change_requests').update({
-      status: updateStatus,
-      resolved_at: new Date().toISOString(),
-      resolution_comment: resolutionComment || null,
-    }).eq('id', changeRequestId);
-    if (error) throw new Error(`Failed to update change request: ${error.message}`);
-  }
-
+  // Verify the requesting user owns this project
   const { data: project, error: projectError } = await supabase
-    .from('projects').select('*').eq('id', projectId).single();
-  if (projectError || !project) throw new Error('Project not found');
+    .from('projects').select('*').eq('id', projectId).eq('user_id', userId).single();
+  if (projectError || !project) throw new Error('Project not found or access denied');
 
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('user_id', project.user_id).single();
@@ -129,15 +134,6 @@ export async function handleChangeNotification(body: {
       </div>`;
   }
 
-  let commentHtml = '';
-  if (resolutionComment && notificationType !== 'created') {
-    commentHtml = `
-      <div style="background:#f8f9fa;padding:16px;border-radius:8px;margin:16px 0;border-left:4px solid #6b7280">
-        <h4 style="margin:0 0 8px 0;color:#374151">Comment</h4>
-        <p style="margin:0;color:#6b7280">${resolutionComment}</p>
-      </div>`;
-  }
-
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#374151;max-width:600px;margin:0 auto;padding:20px">
   <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);padding:32px;border-radius:12px 12px 0 0;text-align:center">
@@ -150,7 +146,7 @@ export async function handleChangeNotification(body: {
       <h3 style="margin:0 0 8px 0;color:#1f2937">${changeTitle}</h3>
       <p style="margin:0;color:#6b7280">${changeDescription}</p>
     </div>
-    ${impactHtml}${commentHtml}
+    ${impactHtml}
     <div style="text-align:center;margin-top:32px">
       <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">${actionText}</a>
     </div>
@@ -169,10 +165,10 @@ export async function handleQuoteNotification(body: {
   quoteToken: string;
   notificationType: 'approved' | 'declined';
 }) {
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
   const { quoteToken, notificationType } = body;
 
-  if (!quoteToken) throw new Error('quoteToken is required');
+  if (!quoteToken || typeof quoteToken !== 'string') throw new Error('quoteToken is required');
   if (notificationType !== 'approved' && notificationType !== 'declined') {
     throw new Error("notificationType must be 'approved' or 'declined'");
   }
@@ -181,6 +177,7 @@ export async function handleQuoteNotification(body: {
     .from('quotes').select('*').eq('quote_token', quoteToken).single();
   if (quoteError || !quote) throw new Error('Quote not found');
 
+  // Security: verify quote status matches — prevents spoofed notifications
   if (quote.status !== notificationType) {
     throw new Error('Quote status does not match notificationType');
   }
