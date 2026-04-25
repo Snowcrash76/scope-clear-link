@@ -341,7 +341,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Page content */}
       <div className="flex-1 lg:pl-64 min-w-0 flex flex-col">
         {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-200 bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-30">
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors"
