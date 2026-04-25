@@ -235,8 +235,10 @@ export function generateQuotePDF(
     });
   });
 
-  // Custom (non-variation) quote line items
-  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
+  // Custom (non-variation) quote line items — also exclude items whose cost matches an approved variation
+  const approvedChangesEarly = changeRequests.filter(cr => cr.status === 'approved');
+  const approvedChangeCosts = new Set(approvedChangesEarly.map(cr => cr.costImpact));
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
   baseQuoteLineItems.forEach(item => {
     allItems.push({
       description: item.title,

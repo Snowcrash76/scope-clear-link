@@ -25,12 +25,14 @@ type QuoteRow = Database['public']['Tables']['quotes']['Row'];
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type QuoteLineItemRow = Database['public']['Tables']['quote_line_items']['Row'];
+type ChangeRequestRow = Database['public']['Tables']['change_requests']['Row'];
 
 export default function ClientQuote() {
   const { token } = useParams<{ token: string }>();
 
   const [quote, setQuote] = useState<QuoteRow | null>(null);
   const [lineItems, setLineItems] = useState<QuoteLineItemRow[]>([]);
+  const [changeRequests, setChangeRequests] = useState<ChangeRequestRow[]>([]);
   const [project, setProject] = useState<ProjectRow | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +65,7 @@ export default function ClientQuote() {
 
         setQuote(quoteRow);
 
-        const [lineItemsRes, projectRes] = await Promise.all([
+        const [lineItemsRes, projectRes, changeRequestsRes] = await Promise.all([
           supabase
             .from('quote_line_items')
             .select('*')
@@ -74,10 +76,19 @@ export default function ClientQuote() {
             .select('*')
             .eq('id', quoteRow.project_id)
             .single(),
+          supabase
+            .from('change_requests')
+            .select('*')
+            .eq('project_id', quoteRow.project_id)
+            .eq('status', 'approved'),
         ]);
 
         if (lineItemsRes.data) {
           setLineItems(lineItemsRes.data);
+        }
+
+        if (changeRequestsRes.data) {
+          setChangeRequests(changeRequestsRes.data);
         }
 
         if (projectRes.data) {
@@ -164,6 +175,9 @@ export default function ClientQuote() {
 
   const fmt = (n: number) =>
     n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const approvedChangeCosts = new Set(changeRequests.map(cr => cr.cost_impact).filter((c): c is number => c !== null));
+  const baseLineItems = lineItems.filter(li => !isVariationItem(li.title) && !approvedChangeCosts.has(li.cost));
 
   if (loading) {
     return (
@@ -291,8 +305,8 @@ export default function ClientQuote() {
           </div>
         )}
 
-        {/* Line items — base items only */}
-        {lineItems.filter(li => !isVariationItem(li.title)).length > 0 && (
+        {/* Line items — base items only (variation duplicates excluded) */}
+        {baseLineItems.length > 0 && (
           <Card className="overflow-hidden">
             <div className="px-4 py-3 border-b bg-secondary/30">
               <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-muted-foreground">
@@ -300,7 +314,7 @@ export default function ClientQuote() {
               </h2>
             </div>
             <div className="divide-y">
-              {lineItems.filter(li => !isVariationItem(li.title)).map((li) => (
+              {baseLineItems.map((li) => (
                 <div key={li.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <p className="font-medium" data-testid={`text-line-item-title-${li.id}`}>

@@ -101,6 +101,7 @@ export default function ClientProjectView() {
   };
 
   const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
+  const approvedChangeCosts = new Set(approvedChanges.map(cr => cr.costImpact));
   const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
 
@@ -122,7 +123,7 @@ export default function ClientProjectView() {
   const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
 
   // Calculate live totals — variation duplicates filtered out; costs come from approvedChanges
-  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title));
+  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
   const customItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
