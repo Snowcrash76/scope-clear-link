@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointments: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          date: string
+          start_time: string
+          end_time: string
+          project_id: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          date: string
+          start_time: string
+          end_time: string
+          project_id?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          date?: string
+          start_time?: string
+          end_time?: string
+          project_id?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       change_requests: {
         Row: {
           cost_impact: number | null
