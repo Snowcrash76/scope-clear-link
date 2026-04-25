@@ -45,24 +45,17 @@ const tables = [
 
 console.log("=== Step 1: Delete all table data ===");
 for (const table of tables) {
-  // Use a SQL RPC to do an unconditional DELETE bypassing PostgREST filter requirement
-  const { error } = await supabase.rpc('exec_sql', { sql: `DELETE FROM public.${table}` }).maybeSingle();
+  // Use created_at filter — all rows have this column; matches every real row
+  const { error } = await supabase
+    .from(table)
+    .delete()
+    .gte('created_at', '1970-01-01');
 
-  // Fall back to PostgREST delete with a filter that matches every UUID row
-  if (error) {
-    const { error: e2 } = await supabase
-      .from(table)
-      .delete()
-      .gte('created_at', '1970-01-01');
-
-    if (e2 && e2.code !== 'PGRST116' && e2.code !== 'PGRST205') {
-      console.error(`  ERROR ${table}: ${e2.message} (code: ${e2.code})`);
-      errors++;
-    } else if (e2 && e2.code === 'PGRST205') {
-      console.log(`  SKIP ${table}: table does not exist`);
-    } else {
-      console.log(`  DELETED ${table}`);
-    }
+  if (error && error.code === 'PGRST205') {
+    console.log(`  SKIP ${table}: table does not exist`);
+  } else if (error) {
+    console.error(`  ERROR ${table}: ${error.message} (code: ${error.code})`);
+    errors++;
   } else {
     console.log(`  DELETED ${table}`);
   }
@@ -70,8 +63,12 @@ for (const table of tables) {
 
 console.log("\n=== Step 2: Delete all auth users ===");
 let totalDeleted = 0;
-// Always fetch from page 1 (first page) after each deletion to avoid pagination skip
-while (true) {
+const MAX_ATTEMPTS = 200;
+let attempts = 0;
+const failedUserIds = new Set();
+
+// Always fetch page 1 after each deletion to avoid pagination-skip bug
+while (attempts < MAX_ATTEMPTS) {
   const { data, error } = await supabase.auth.admin.listUsers({ page: 1, perPage: 50 });
   if (error) {
     console.error("  Error listing users:", error.message);
@@ -80,16 +77,30 @@ while (true) {
   }
   if (!data.users || data.users.length === 0) break;
 
-  for (const user of data.users) {
+  // Filter out users that have already failed to prevent infinite loop
+  const candidates = data.users.filter(u => !failedUserIds.has(u.id));
+  if (candidates.length === 0) {
+    console.error(`  Stopping: ${failedUserIds.size} user(s) could not be deleted.`);
+    errors += failedUserIds.size;
+    break;
+  }
+
+  for (const user of candidates) {
+    attempts++;
     const { error: delErr } = await supabase.auth.admin.deleteUser(user.id);
     if (delErr) {
       console.error(`  ERROR deleting ${user.email}: ${delErr.message}`);
-      errors++;
+      failedUserIds.add(user.id);
     } else {
       console.log(`  Deleted user: ${user.email}`);
       totalDeleted++;
     }
   }
+}
+
+if (attempts >= MAX_ATTEMPTS) {
+  console.error(`  Stopped after ${MAX_ATTEMPTS} attempts to prevent infinite loop.`);
+  errors++;
 }
 
 console.log("\n=== Step 3: Verification ===");
