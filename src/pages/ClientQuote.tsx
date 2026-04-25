@@ -156,16 +156,16 @@ export default function ClientQuote() {
       setActionModal({ open: false, action: 'approve' });
       setComment('');
 
-      supabase.functions
-        .invoke('send-quote-notification', {
-          body: {
-            quoteToken: token,
-            notificationType: isApprove ? 'approved' : 'declined',
-          },
-        })
-        .catch((err) => {
-          console.error('Failed to send quote notification email:', err);
-        });
+      fetch('/api/send-quote-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quoteToken: token,
+          notificationType: isApprove ? 'approved' : 'declined',
+        }),
+      }).catch((err) => {
+        console.error('Failed to send quote notification email:', err);
+      });
     } catch (err) {
       console.error('Error responding to quote:', err);
       toast.error('Something went wrong. Please try again.');

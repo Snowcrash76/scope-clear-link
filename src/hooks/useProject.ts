@@ -15,8 +15,10 @@ const sendChangeNotification = async (
   timeImpact?: string
 ) => {
   try {
-    const response = await supabase.functions.invoke('send-change-notification', {
-      body: {
+    const res = await fetch('/api/send-change-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         projectId,
         changeRequestId,
         notificationType,
@@ -25,11 +27,11 @@ const sendChangeNotification = async (
         changeDescription,
         costImpact,
         timeImpact,
-      },
+      }),
     });
-
-    if (response.error) {
-      console.error('Failed to send notification:', response.error);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('Failed to send notification:', err);
     } else {
       console.log('Notification sent successfully');
     }
