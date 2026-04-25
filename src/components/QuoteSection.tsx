@@ -19,6 +19,9 @@ import {
   Download,
   Trash2,
   Lock,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
@@ -55,6 +58,7 @@ interface QuoteSectionProps {
     validUntil?: Date;
   }) => Promise<string | null>;
   onUpdateQuote: (quoteId: string, data: Partial<{
+    quoteNumber: string;
     subtotal: number;
     taxRate: number;
     notes: string;
@@ -101,6 +105,11 @@ export function QuoteSection({
     quote?.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : ''
   );
   const [isSaving, setIsSaving] = useState(false);
+
+  // Inline reference editing state (read view)
+  const [editingRef, setEditingRef] = useState(false);
+  const [quoteRef, setQuoteRef] = useState(quote?.quoteNumber ?? '');
+  const [isSavingRef, setIsSavingRef] = useState(false);
   
   // New line item form state
   const [isAddingItem, setIsAddingItem] = useState(false);
@@ -121,6 +130,7 @@ export function QuoteSection({
       setNotes(quote.notes ?? '');
       setTerms(quote.terms ?? '');
       setValidUntil(quote.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : '');
+      setQuoteRef(quote.quoteNumber ?? '');
     }
   }, [quote]);
 
@@ -158,6 +168,7 @@ export function QuoteSection({
     if (!quote) return;
     setIsSaving(true);
     const success = await onUpdateQuote(quote.id, {
+      quoteNumber: quoteRef || undefined,
       subtotal,
       taxRate,
       notes,
@@ -166,6 +177,14 @@ export function QuoteSection({
     });
     setIsSaving(false);
     if (success) setIsEditing(false);
+  };
+
+  const handleSaveRef = async () => {
+    if (!quote || !quoteRef.trim()) return;
+    setIsSavingRef(true);
+    await onUpdateQuote(quote.id, { quoteNumber: quoteRef.trim() });
+    setIsSavingRef(false);
+    setEditingRef(false);
   };
 
   const handleSendQuote = async () => {
@@ -547,6 +566,19 @@ export function QuoteSection({
 
         {/* Additional Fields */}
         <div className="space-y-4">
+          {isEditing && (
+            <div>
+              <Label htmlFor="quoteRef">Reference</Label>
+              <Input
+                id="quoteRef"
+                value={quoteRef}
+                onChange={e => setQuoteRef(e.target.value)}
+                placeholder="e.g. Q-2024-001"
+                data-testid="input-quote-ref-edit"
+              />
+            </div>
+          )}
+
           <div>
             <Label htmlFor="validUntil">Valid Until</Label>
             <Input
@@ -616,7 +648,50 @@ export function QuoteSection({
               <FileText className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h3 className="font-heading font-semibold">{quote!.quoteNumber}</h3>
+              {editingRef ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={quoteRef}
+                    onChange={e => setQuoteRef(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleSaveRef();
+                      if (e.key === 'Escape') { setEditingRef(false); setQuoteRef(quote!.quoteNumber ?? ''); }
+                    }}
+                    className="h-7 text-sm font-semibold w-40"
+                    autoFocus
+                    data-testid="input-quote-reference"
+                  />
+                  <button
+                    onClick={handleSaveRef}
+                    disabled={isSavingRef || !quoteRef.trim()}
+                    className="p-1 rounded hover:bg-muted transition-colors text-primary"
+                    data-testid="button-save-quote-reference"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => { setEditingRef(false); setQuoteRef(quote!.quoteNumber ?? ''); }}
+                    className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
+                    data-testid="button-cancel-quote-reference"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 group/ref">
+                  <h3 className="font-heading font-semibold">{quote!.quoteNumber}</h3>
+                  {isTradeView && (
+                    <button
+                      onClick={() => setEditingRef(true)}
+                      className="p-1 rounded opacity-0 group-hover/ref:opacity-100 hover:bg-muted transition-all text-muted-foreground"
+                      title="Edit reference"
+                      data-testid="button-edit-quote-reference"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
                 Created {format(quote!.createdAt, 'dd MMM yyyy')}
               </p>

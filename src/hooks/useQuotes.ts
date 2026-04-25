@@ -140,6 +140,7 @@ export function useQuotes(projectId: string | undefined) {
   };
 
   const updateQuote = async (quoteId: string, quoteData: Partial<{
+    quoteNumber: string;
     subtotal: number;
     taxRate: number;
     notes: string;
@@ -149,7 +150,9 @@ export function useQuotes(projectId: string | undefined) {
   }>) => {
     try {
       const updateData: Record<string, unknown> = {};
-      
+
+      if (quoteData.quoteNumber !== undefined) updateData.quote_number = quoteData.quoteNumber;
+
       if (quoteData.subtotal !== undefined) {
         updateData.subtotal = quoteData.subtotal;
         const taxRate = quoteData.taxRate ?? activeQuote?.taxRate ?? 0;

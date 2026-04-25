@@ -237,6 +237,25 @@ export function useInvoices(projectId: string | undefined) {
     return updateInvoiceStatus(invoiceId, 'cancelled');
   };
 
+  const updateInvoiceNumber = async (invoiceId: string, invoiceNumber: string) => {
+    try {
+      const { error } = await supabase
+        .from('invoices')
+        .update({ invoice_number: invoiceNumber })
+        .eq('id', invoiceId);
+
+      if (error) throw error;
+
+      await fetchInvoices();
+      toast.success('Invoice reference updated');
+      return true;
+    } catch (error) {
+      console.error('Error updating invoice number:', error);
+      toast.error('Failed to update invoice reference');
+      return false;
+    }
+  };
+
   const deleteInvoice = async (invoiceId: string) => {
     try {
       // Line items will be cascade deleted
@@ -268,6 +287,7 @@ export function useInvoices(projectId: string | undefined) {
     refetch: fetchInvoices,
     createInvoice,
     updateInvoiceStatus,
+    updateInvoiceNumber,
     sendInvoice,
     markAsPaid,
     cancelInvoice,

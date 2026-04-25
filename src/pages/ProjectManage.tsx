@@ -110,6 +110,7 @@ export default function ProjectManage() {
   const {
     invoices,
     createInvoice,
+    updateInvoiceNumber,
     sendInvoice,
     markAsPaid,
     cancelInvoice,
@@ -885,6 +886,7 @@ export default function ProjectManage() {
               defaultTerms={defaultTerms}
               defaultPaymentInstructions={defaultPaymentInstructions}
               onCreateInvoice={createInvoice}
+              onUpdateInvoiceNumber={updateInvoiceNumber}
               onSendInvoice={sendInvoice}
               onMarkAsPaid={markAsPaid}
               onCancelInvoice={cancelInvoice}

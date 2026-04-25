@@ -19,6 +19,9 @@ import {
   Clock,
   CreditCard,
   Download,
+  Pencil,
+  Check,
+  X,
 } from 'lucide-react';
 import { exportInvoiceToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
@@ -76,6 +79,7 @@ interface InvoiceSectionProps {
       changeRequestId?: string;
     }>;
   }) => Promise<string | null>;
+  onUpdateInvoiceNumber?: (invoiceId: string, num: string) => Promise<boolean>;
   onSendInvoice: (invoiceId: string) => Promise<boolean>;
   onMarkAsPaid: (invoiceId: string) => Promise<boolean>;
   onCancelInvoice: (invoiceId: string) => Promise<boolean>;
@@ -102,6 +106,7 @@ export function InvoiceSection({
   logoUrl,
   defaultTerms,
   defaultPaymentInstructions,
+  onUpdateInvoiceNumber,
   onCreateInvoice,
   onSendInvoice,
   onMarkAsPaid,
@@ -111,6 +116,20 @@ export function InvoiceSection({
 }: InvoiceSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+
+  // Inline invoice reference editing
+  const [editingInvRef, setEditingInvRef] = useState<string | null>(null);
+  const [invRefValue, setInvRefValue] = useState('');
+  const [isSavingInvRef, setIsSavingInvRef] = useState(false);
+
+  const handleSaveInvRef = async () => {
+    if (!editingInvRef || !invRefValue.trim() || !onUpdateInvoiceNumber) return;
+    setIsSavingInvRef(true);
+    await onUpdateInvoiceNumber(editingInvRef, invRefValue.trim());
+    setIsSavingInvRef(false);
+    setEditingInvRef(null);
+  };
+
   const [invoiceType, setInvoiceType] = useState<'staged' | 'final'>('staged');
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
@@ -362,8 +381,51 @@ export function InvoiceSection({
                       <FileText className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-medium">{invoice.invoiceNumber}</h4>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {isTradeView && editingInvRef === invoice.id ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={invRefValue}
+                              onChange={e => setInvRefValue(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleSaveInvRef();
+                                if (e.key === 'Escape') setEditingInvRef(null);
+                              }}
+                              className="h-7 text-sm font-medium w-36"
+                              autoFocus
+                              data-testid={`input-invoice-reference-${invoice.id}`}
+                            />
+                            <button
+                              onClick={handleSaveInvRef}
+                              disabled={isSavingInvRef || !invRefValue.trim()}
+                              className="p-1 rounded hover:bg-muted transition-colors text-primary"
+                              data-testid={`button-save-invoice-reference-${invoice.id}`}
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => setEditingInvRef(null)}
+                              className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
+                              data-testid={`button-cancel-invoice-reference-${invoice.id}`}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 group/invref">
+                            <h4 className="font-medium">{invoice.invoiceNumber}</h4>
+                            {isTradeView && onUpdateInvoiceNumber && (
+                              <button
+                                onClick={() => { setEditingInvRef(invoice.id); setInvRefValue(invoice.invoiceNumber); }}
+                                className="p-1 rounded opacity-0 group-hover/invref:opacity-100 hover:bg-muted transition-all text-muted-foreground"
+                                title="Edit reference"
+                                data-testid={`button-edit-invoice-reference-${invoice.id}`}
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                         <Badge variant={config.variant} className="gap-1">
                           <StatusIcon className="w-3 h-3" />
                           {config.label}
