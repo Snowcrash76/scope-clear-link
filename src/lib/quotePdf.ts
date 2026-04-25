@@ -284,7 +284,7 @@ export function generateQuotePDF(
     const tableData = allItems.map(item => {
       let descriptionText = item.description;
       if (item.details) {
-        descriptionText += `\n${item.details}`;
+        descriptionText += `\n${stripHtml(item.details)}`;
       }
       return [
         descriptionText,
@@ -429,7 +429,7 @@ export function generateQuotePDF(
         yPos += 4;
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...mutedColor);
-        const lines = doc.splitTextToSize(item.description, pageWidth - margin * 2 - 5);
+        const lines = doc.splitTextToSize(stripHtml(item.description), pageWidth - margin * 2 - 5);
         doc.text(lines, margin + 5, yPos);
         yPos += lines.length * 4;
       }
@@ -467,7 +467,7 @@ export function generateQuotePDF(
         yPos += 4;
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...mutedColor);
-        const lines = doc.splitTextToSize(item.description, pageWidth - margin * 2 - 5);
+        const lines = doc.splitTextToSize(stripHtml(item.description), pageWidth - margin * 2 - 5);
         doc.text(lines, margin + 5, yPos);
         yPos += lines.length * 4;
       }

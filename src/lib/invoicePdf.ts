@@ -260,7 +260,7 @@ export function generateInvoicePDF(
   // Line Items Table
   if (invoice.lineItems.length > 0) {
     const tableData = invoice.lineItems.map(item => [
-      item.description,
+      stripHtml(item.description),
       item.quantity.toFixed(2),
       item.unitPrice.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
       '10%',
