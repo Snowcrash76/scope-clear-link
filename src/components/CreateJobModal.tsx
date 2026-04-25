@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { ImageUpload } from '@/components/ImageUpload';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -395,21 +396,21 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
 
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Notes for Client</Label>
-                <Textarea
-                  placeholder="Any additional notes..."
+                <RichTextEditor
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[60px]"
+                  onChange={setNotes}
+                  placeholder="Any additional notes..."
+                  minHeight="60px"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Terms & Conditions</Label>
-                <Textarea
-                  placeholder="Payment terms, warranty, etc."
+                <RichTextEditor
                   value={terms}
-                  onChange={(e) => setTerms(e.target.value)}
-                  className="min-h-[60px]"
+                  onChange={setTerms}
+                  placeholder="Payment terms, warranty, etc."
+                  minHeight="60px"
                 />
               </div>
             </div>
