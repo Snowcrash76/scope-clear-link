@@ -54,13 +54,13 @@ export function QuoteViewModal({
   quoteLineItems = [],
   projectInfo,
 }: QuoteViewModalProps) {
-  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const excludedItems = scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = scopeItems.filter(item => item.category === 'assumption');
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
   const approvedChangeCosts = new Set(approvedChanges.map(cr => cr.costImpact));
 
-  // Calculate live totals — filter variation duplicates so they're only counted via approvedChanges
+  // Calculate live totals — filter variation duplicates (by title prefix or matching cost) so they're only counted via approvedChanges
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1));
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
   const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));

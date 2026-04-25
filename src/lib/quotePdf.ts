@@ -223,7 +223,11 @@ export function generateQuotePDF(
   type PdfItem = { description: string; details?: string; quantity: number; unitPrice: number; gst: string; amount: number };
   const allItems: PdfItem[] = [];
 
-  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
+  // Build approved-variation cost set first so both scope and line-item filters can use it
+  const approvedChangesEarly = changeRequests.filter(cr => cr.status === 'approved');
+  const approvedChangeCosts = new Set(approvedChangesEarly.map(cr => cr.costImpact));
+
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1));
   includedItems.forEach(item => {
     allItems.push({
       description: item.title,
@@ -236,8 +240,6 @@ export function generateQuotePDF(
   });
 
   // Custom (non-variation) quote line items — also exclude items whose cost matches an approved variation
-  const approvedChangesEarly = changeRequests.filter(cr => cr.status === 'approved');
-  const approvedChangeCosts = new Set(approvedChangesEarly.map(cr => cr.costImpact));
   const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
   baseQuoteLineItems.forEach(item => {
     allItems.push({

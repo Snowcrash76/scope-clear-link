@@ -124,14 +124,14 @@ export function QuoteSection({
     }
   }, [quote]);
 
-  // Calculate totals from scope items — exclude variation duplicates (they appear in approvedChanges)
-  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
-  const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
-  
-  // Add approved change request impacts (single source of truth for variation costs)
+  // Build approved-variation cost set first so all filters can use it
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
   const approvedChangeCosts = new Set(approvedChanges.map(cr => cr.costImpact));
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
+
+  // Calculate totals from scope items — exclude variation duplicates (by title prefix or matching cost)
+  const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1));
+  const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
   // Add custom quote line items — exclude variation duplicates (by title prefix or matching cost)
   const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));

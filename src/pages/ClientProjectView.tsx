@@ -105,7 +105,7 @@ export default function ClientProjectView() {
   const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
 
-  const includedItems = project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
+  const includedItems = project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1));
   // Approved variations come from the change requests, NOT from scope_items —
   // the old approach of creating "Variation: X" scope items caused duplication.
   const variationScopeItems: ScopeItem[] = approvedChanges.map(cr => ({
