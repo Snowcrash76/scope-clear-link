@@ -22,12 +22,19 @@ function sendJson(res: ServerResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "0.0.0.0",
     port: 5000,
     allowedHosts: true,
+  },
+  build: {
+    outDir: "dist/client",
   },
   plugins: [
     react(),
@@ -45,15 +52,16 @@ export default defineConfig(({ mode }) => ({
           if (req.url === "/api/send-change-notification" && req.method === "POST") {
             try {
               const { validateSupabaseJwt, handleChangeNotification } = await import("./server/emailHandlers");
-              const userId = await validateSupabaseJwt(req.headers["authorization"] as string | undefined);
+              const userId = await validateSupabaseJwt(req.headers["authorization"]);
               const raw = await readBody(req);
-              const body = JSON.parse(raw);
-              const result = await handleChangeNotification(body, userId);
+              const body = JSON.parse(raw) as Record<string, unknown>;
+              const result = await handleChangeNotification(body as Parameters<typeof handleChangeNotification>[0], userId);
               sendJson(res, 200, { success: true, result });
-            } catch (err: any) {
-              const status = err.message === "Unauthorized" ? 401 : 500;
-              console.error("[email-api] send-change-notification:", err.message);
-              sendJson(res, status, { error: err.message });
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              const status = message === "Unauthorized" ? 401 : 500;
+              console.error("[email-api] send-change-notification:", message);
+              sendJson(res, status, { error: message });
             }
             return;
           }
@@ -62,18 +70,33 @@ export default defineConfig(({ mode }) => ({
             try {
               const { handleQuoteNotification } = await import("./server/emailHandlers");
               const raw = await readBody(req);
-              const body = JSON.parse(raw);
+              const body = JSON.parse(raw) as Parameters<typeof handleQuoteNotification>[0];
               const result = await handleQuoteNotification(body);
               sendJson(res, 200, { success: true, result });
-            } catch (err: any) {
-              console.error("[email-api] send-quote-notification:", err.message);
-              sendJson(res, 500, { error: err.message });
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              console.error("[email-api] send-quote-notification:", message);
+              sendJson(res, 500, { error: message });
             }
             return;
           }
 
           next();
         });
+      },
+      async closeBundle() {
+        // Build the production Express server after the frontend bundle is written
+        const { build } = await import("esbuild");
+        await build({
+          entryPoints: ["server/index.ts"],
+          bundle: true,
+          outfile: "dist/index.cjs",
+          format: "cjs",
+          platform: "node",
+          target: "node18",
+          external: [],
+        });
+        console.log("Server bundle written to dist/index.cjs");
       },
     },
   ].filter(Boolean),

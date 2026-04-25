@@ -16,7 +16,10 @@ const sendChangeNotification = async (
 ) => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      console.warn('sendChangeNotification: no active session, skipping email');
+      return;
+    }
     const res = await fetch('/api/send-change-notification', {
       method: 'POST',
       headers: {
