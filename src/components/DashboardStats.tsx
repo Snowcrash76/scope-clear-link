@@ -26,16 +26,16 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
     : null;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {/* Active projects */}
       <div
-        className="rounded-xl p-4 col-span-1 bg-white border border-[#D8C3AD] shadow-card"
+        className="rounded-lg px-4 py-3 col-span-1 bg-white border border-[#D8C3AD] shadow-card"
         data-testid="stat-active-projects"
       >
-        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+        <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">
           Active Projects
         </p>
-        <p className="text-3xl font-heading font-bold text-zinc-900 mb-2">
+        <p className="text-2xl font-heading font-bold text-zinc-900 mb-1">
           {activeProjects.length}
         </p>
         {mostRecentUpdate ? (
@@ -99,15 +99,15 @@ function StatCard({
   return (
     <div
       className={cn(
-        'rounded-xl border bg-white p-4 shadow-card transition-all duration-200',
+        'rounded-lg border bg-white px-4 py-3 shadow-card transition-all duration-200',
         highlight && 'ring-2 ring-amber-300/40'
       )}
       data-testid={testId}
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
         {label}
       </p>
-      <p className="text-3xl font-heading font-bold mb-2">{value}</p>
+      <p className="text-2xl font-heading font-bold mb-1">{value}</p>
       <p className={cn('text-xs', highlight ? 'text-warning font-medium' : 'text-muted-foreground')}>
         {subtitle}
       </p>
