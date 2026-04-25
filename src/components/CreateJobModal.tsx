@@ -395,16 +395,6 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Notes for Client</Label>
-                <RichTextEditor
-                  value={notes}
-                  onChange={setNotes}
-                  placeholder="Any additional notes..."
-                  minHeight="60px"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label className="text-sm text-muted-foreground">Terms & Conditions</Label>
                 <RichTextEditor
                   value={terms}
