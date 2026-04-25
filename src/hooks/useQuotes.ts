@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Quote } from '@/types/project';
@@ -26,6 +27,7 @@ type DbQuote = {
 };
 
 export function useQuotes(projectId: string | undefined) {
+  const queryClient = useQueryClient();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -180,6 +182,7 @@ export function useQuotes(projectId: string | undefined) {
       if (error) throw error;
 
       await fetchQuotes();
+      queryClient.invalidateQueries({ queryKey: ['/quotes/all'] });
       return true;
     } catch (error) {
       console.error('Error updating quote:', error);

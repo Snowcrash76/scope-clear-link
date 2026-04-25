@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Invoice, InvoiceLineItem } from '@/types/project';
@@ -37,6 +38,7 @@ type DbInvoiceLineItem = {
 };
 
 export function useInvoices(projectId: string | undefined) {
+  const queryClient = useQueryClient();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -247,6 +249,7 @@ export function useInvoices(projectId: string | undefined) {
       if (error) throw error;
 
       await fetchInvoices();
+      queryClient.invalidateQueries({ queryKey: ['/invoices/all'] });
       toast.success('Invoice reference updated');
       return true;
     } catch (error) {
