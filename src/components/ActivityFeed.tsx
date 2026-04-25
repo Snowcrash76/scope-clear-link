@@ -94,7 +94,7 @@ function EventRow({ event }: { event: ActivityEvent }) {
 function FeedSkeleton() {
   return (
     <div className="space-y-1">
-      {Array.from({ length: 5 }).map((_, i) => (
+      {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="flex items-start gap-3 px-4 py-3">
           <Skeleton className="w-7 h-7 rounded-lg flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
@@ -140,11 +140,17 @@ function ErrorFeed({ onRetry }: { onRetry: () => void }) {
 
 export function ActivityFeed() {
   const { data: events, isLoading, isError, refetch } = useActivityFeed();
+  const hasMore = (events?.length ?? 0) > 3;
 
   return (
     <div data-testid="activity-feed">
-      <h2 className="font-heading text-base font-semibold mb-2 px-1">Recent Activity</h2>
-      <div className="rounded-xl border bg-card">
+      <div className="flex items-center justify-between mb-2 px-1">
+        <h2 className="font-heading text-base font-semibold">Recent Activity</h2>
+        {!isLoading && !isError && hasMore && (
+          <span className="text-xs text-muted-foreground">{events!.length} events — scroll to see all</span>
+        )}
+      </div>
+      <div className="rounded-xl border bg-card overflow-hidden">
         {isLoading ? (
           <FeedSkeleton />
         ) : isError ? (
@@ -152,7 +158,11 @@ export function ActivityFeed() {
         ) : !events?.length ? (
           <EmptyFeed />
         ) : (
-          <div className="divide-y divide-border/50">
+          <div
+            className="divide-y divide-border/50 overflow-y-auto"
+            style={{ maxHeight: '195px' }}
+            data-testid="activity-feed-scroll"
+          >
             {events.map(event => (
               <EventRow key={event.id} event={event} />
             ))}
