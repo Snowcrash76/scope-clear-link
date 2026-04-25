@@ -247,6 +247,11 @@ export function TodaySchedule() {
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-amber-600" />
           <h2 className="font-heading text-sm font-semibold">Today's Schedule</h2>
+          {!loading && appointments.length > 0 && (
+            <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold leading-none" data-testid="text-appointment-count">
+              {appointments.length}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{dateLabel}</span>
