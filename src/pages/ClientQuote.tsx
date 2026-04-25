@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import { isVariationItem, stripVariationMeta, cleanVariationTitle } from '@/lib/utils';
+import { RichTextContent } from '@/components/RichTextEditor';
 
 type QuoteRow = Database['public']['Tables']['quotes']['Row'];
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
@@ -381,6 +382,22 @@ export default function ClientQuote() {
             </span>
           </div>
         </Card>
+
+        {/* Notes */}
+        {quote.notes && (
+          <Card className="p-4 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Notes</p>
+            <RichTextContent html={quote.notes} />
+          </Card>
+        )}
+
+        {/* Terms */}
+        {quote.terms && (
+          <Card className="p-4 space-y-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Terms & Conditions</p>
+            <RichTextContent html={quote.terms} />
+          </Card>
+        )}
 
         {/* Client's own comment */}
         {quote.client_comment && !isActionable && (
