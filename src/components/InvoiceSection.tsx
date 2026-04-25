@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { Invoice, ScopeItem, ChangeRequest, Quote } from '@/types/project';
 import { 
   FileText, 
@@ -602,12 +602,10 @@ export function InvoiceSection({
             {/* Payment Instructions */}
             <div className="space-y-2">
               <Label htmlFor="invoiceNotes">Payment Instructions</Label>
-              <Textarea
-                id="invoiceNotes"
+              <RichTextEditor
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Bank: ANZ&#10;BSB: 123-456&#10;Account: 12345678&#10;Reference: Invoice number"
-                rows={4}
+                onChange={setNotes}
+                placeholder="Bank: ANZ, BSB: 123-456, Account: 12345678..."
               />
               <p className="text-xs text-muted-foreground">
                 Include bank details and payment reference for your client.
@@ -617,12 +615,10 @@ export function InvoiceSection({
             {/* Terms & Conditions */}
             <div className="space-y-2">
               <Label htmlFor="invoiceTerms">Terms & Conditions</Label>
-              <Textarea
-                id="invoiceTerms"
+              <RichTextEditor
                 value={terms}
-                onChange={(e) => setTerms(e.target.value)}
+                onChange={setTerms}
                 placeholder="Payment terms, warranty information..."
-                rows={4}
               />
             </div>
           </div>

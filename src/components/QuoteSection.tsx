@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { 
   FileText, 
@@ -591,23 +592,19 @@ export function QuoteSection({
           
           <div>
             <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
+            <RichTextEditor
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={setNotes}
               placeholder="Additional notes for the client..."
-              rows={3}
             />
           </div>
 
           <div>
             <Label htmlFor="terms">Terms & Conditions</Label>
-            <Textarea
-              id="terms"
+            <RichTextEditor
               value={terms}
-              onChange={(e) => setTerms(e.target.value)}
+              onChange={setTerms}
               placeholder="Payment terms, warranty, etc..."
-              rows={3}
             />
           </div>
         </div>

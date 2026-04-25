@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Invoice } from '@/types/project';
+import { RichTextContent } from '@/components/RichTextEditor';
 import { format } from 'date-fns';
 import { Download, FileText, CheckCircle2, Clock, XCircle, Send } from 'lucide-react';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
@@ -174,7 +175,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               <Separator />
               <div>
                 <h4 className="font-semibold mb-2">Payment Instructions</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.notes}</p>
+                <RichTextContent html={invoice.notes} />
               </div>
             </>
           )}
@@ -185,7 +186,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               <Separator />
               <div>
                 <h4 className="font-semibold mb-2">Terms & Conditions</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{invoice.terms}</p>
+                <RichTextContent html={invoice.terms} />
               </div>
             </>
           )}

@@ -4,6 +4,33 @@ import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project'
 import { cleanVariationTitle, isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 
+function stripHtml(html: string): string {
+  if (!html) return '';
+  const isHtml = /<[a-z][\s\S]*>/i.test(html);
+  if (!isHtml) return html;
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const walker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
+  const lines: string[] = [];
+  let currentLine = '';
+  let node: Node | null = walker.nextNode();
+  while (node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      currentLine += node.textContent || '';
+    } else if (node.nodeType === Node.ELEMENT_NODE) {
+      const tag = (node as Element).tagName.toLowerCase();
+      if (['p', 'li', 'br', 'h1', 'h2', 'h3'].includes(tag)) {
+        if (currentLine.trim()) lines.push(currentLine.trim());
+        currentLine = '';
+        if (tag === 'li') currentLine = '• ';
+      }
+    }
+    node = walker.nextNode();
+  }
+  if (currentLine.trim()) lines.push(currentLine.trim());
+  return lines.join('\n');
+}
+
 export interface ProjectInfo {
   name: string;
   clientName: string;
@@ -503,7 +530,7 @@ export function generateQuotePDF(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...mutedColor);
-    const notesLines = doc.splitTextToSize(quote.notes, pageWidth - margin * 2);
+    const notesLines = doc.splitTextToSize(stripHtml(quote.notes), pageWidth - margin * 2);
     doc.text(notesLines, margin, yPos);
     yPos += notesLines.length * 4 + 5;
   }
@@ -525,7 +552,7 @@ export function generateQuotePDF(
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.setTextColor(...mutedColor);
-    const termsLines = doc.splitTextToSize(quote.terms, pageWidth - margin * 2);
+    const termsLines = doc.splitTextToSize(stripHtml(quote.terms), pageWidth - margin * 2);
     doc.text(termsLines, margin, yPos);
     yPos += termsLines.length * 4;
   }

@@ -6,7 +6,7 @@ import { useCreateProject, type CreateProjectData } from '@/hooks/useCreateProje
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import {
@@ -538,13 +538,11 @@ export function AppShell({ children }: AppShellProps) {
               </h3>
               <div className="space-y-2">
                 <Label htmlFor="quoteTerms" className="text-xs">Quote Terms & Conditions</Label>
-                <Textarea
-                  id="quoteTerms"
-                  placeholder="e.g. This quote is valid for 30 days. Prices are subject to change..."
+                <RichTextEditor
                   value={settingsForm.quoteTerms}
-                  onChange={e => setSettingsForm(f => ({ ...f, quoteTerms: e.target.value }))}
-                  className="min-h-[100px] text-sm"
-                  data-testid="textarea-quote-terms"
+                  onChange={v => setSettingsForm(f => ({ ...f, quoteTerms: v }))}
+                  placeholder="e.g. This quote is valid for 30 days. Prices are subject to change..."
+                  minHeight="100px"
                 />
               </div>
             </div>
@@ -557,23 +555,20 @@ export function AppShell({ children }: AppShellProps) {
               </h3>
               <div className="space-y-2">
                 <Label htmlFor="invoiceTerms" className="text-xs">Invoice Terms & Conditions</Label>
-                <Textarea
-                  id="invoiceTerms"
-                  placeholder="e.g. Payment is due within 14 days of invoice date..."
+                <RichTextEditor
                   value={settingsForm.invoiceTerms}
-                  onChange={e => setSettingsForm(f => ({ ...f, invoiceTerms: e.target.value }))}
-                  className="min-h-[100px] text-sm"
-                  data-testid="textarea-invoice-terms"
+                  onChange={v => setSettingsForm(f => ({ ...f, invoiceTerms: v }))}
+                  placeholder="e.g. Payment is due within 14 days of invoice date..."
+                  minHeight="100px"
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="defaultPaymentInstructions" className="text-xs">Payment Instructions</Label>
-                <Textarea
-                  id="defaultPaymentInstructions"
-                  placeholder={"Bank: ANZ\nBSB: 123-456\nAccount: 12345678"}
+                <RichTextEditor
                   value={settingsForm.defaultPaymentInstructions}
-                  onChange={e => setSettingsForm(f => ({ ...f, defaultPaymentInstructions: e.target.value }))}
-                  className="min-h-[100px] text-sm"
+                  onChange={v => setSettingsForm(f => ({ ...f, defaultPaymentInstructions: v }))}
+                  placeholder="Bank: ANZ, BSB: 123-456, Account: 12345678..."
+                  minHeight="100px"
                 />
               </div>
             </div>

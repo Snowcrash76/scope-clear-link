@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
+import { RichTextContent } from '@/components/RichTextEditor';
 import { QuoteLineItem } from '@/hooks/useQuoteLineItems';
 import { 
   Download, 
@@ -281,6 +282,28 @@ export function QuoteViewModal({
               </span>
             </div>
           </div>
+
+          {/* Notes */}
+          {quote.notes && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="font-semibold mb-2">Notes</h4>
+                <RichTextContent html={quote.notes} />
+              </div>
+            </>
+          )}
+
+          {/* Terms */}
+          {quote.terms && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="font-semibold mb-2">Terms & Conditions</h4>
+                <RichTextContent html={quote.terms} />
+              </div>
+            </>
+          )}
 
           {/* Download Button */}
           <div className="flex justify-end pt-4">
