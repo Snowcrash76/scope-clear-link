@@ -38,7 +38,11 @@ import {
   FileText,
   Receipt,
   Users,
+  KeyRound,
+  ShieldCheck,
 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PasswordInput } from '@/components/PasswordInput';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -214,6 +218,13 @@ export function AppShell({ children }: AppShellProps) {
   const [pendingLogoDataUrl, setPendingLogoDataUrl] = useState('');
   const [removeLogo, setRemoveLogo] = useState(false);
 
+  // Account tab state
+  const [newEmail, setNewEmail] = useState('');
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwSaving, setPwSaving] = useState(false);
+
   const loadSettings = async () => {
     if (!user?.id) return;
     const { data } = await supabase
@@ -300,7 +311,51 @@ export function AppShell({ children }: AppShellProps) {
 
   const openSettings = () => {
     loadSettings();
+    setNewEmail('');
+    setEmailSent(false);
+    setPwForm({ current: '', next: '', confirm: '' });
     setIsSettingsOpen(true);
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newEmail.trim();
+    if (!trimmed || !user?.email) return;
+    setEmailSaving(true);
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    setEmailSaving(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setEmailSent(true);
+      setNewEmail('');
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (pwForm.next.length < 6) { toast.error('New password must be at least 6 characters'); return; }
+    if (pwForm.next !== pwForm.confirm) { toast.error('New passwords do not match'); return; }
+    if (!user?.email) return;
+    setPwSaving(true);
+    // Verify current password by re-authenticating
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: pwForm.current,
+    });
+    if (authError) {
+      toast.error('Current password is incorrect');
+      setPwSaving(false);
+      return;
+    }
+    const { error } = await supabase.auth.updateUser({ password: pwForm.next });
+    setPwSaving(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Password updated successfully');
+      setPwForm({ current: '', next: '', confirm: '' });
+    }
   };
 
   const handleCreateJob = async (jobData: CreateProjectData) => {
@@ -368,13 +423,21 @@ export function AppShell({ children }: AppShellProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5 text-primary" />
-              Business Settings
+              Settings
             </DialogTitle>
             <DialogDescription>
-              Customise your brand and default content for quotes and invoices.
+              Manage your business details and account credentials.
             </DialogDescription>
           </DialogHeader>
 
+          <Tabs defaultValue="business" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 mb-2">
+              <TabsTrigger value="business" data-testid="tab-settings-business">Business</TabsTrigger>
+              <TabsTrigger value="account" data-testid="tab-settings-account">Account</TabsTrigger>
+            </TabsList>
+
+            {/* ── BUSINESS TAB ── */}
+            <TabsContent value="business">
           <div className="space-y-6 py-2">
             {/* Logo */}
             <div className="space-y-3">
@@ -508,13 +571,129 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </div>
 
-          <DialogFooter className="pt-2">
-            <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveSettings} disabled={saving} data-testid="button-save-settings">
-              {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Save Changes
-            </Button>
-          </DialogFooter>
+              <div className="pt-2 flex justify-end gap-2">
+                <Button variant="ghost" onClick={() => setIsSettingsOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveSettings} disabled={saving} data-testid="button-save-settings">
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  Save Changes
+                </Button>
+              </div>
+            </TabsContent>
+
+            {/* ── ACCOUNT TAB ── */}
+            <TabsContent value="account">
+              <div className="space-y-6 py-2">
+
+                {/* Current login email */}
+                <div className="rounded-lg border bg-muted/30 px-4 py-3 flex items-center gap-3">
+                  <Mail className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">Signed in as</p>
+                    <p className="text-sm font-medium truncate">{user?.email}</p>
+                  </div>
+                </div>
+
+                {/* Change email */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-primary" />
+                    Change Login Email
+                  </h3>
+                  {emailSent ? (
+                    <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                      Confirmation link sent. Check your new email and click the link to confirm the change.
+                    </div>
+                  ) : (
+                    <form onSubmit={handleChangeEmail} className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="New email address"
+                        value={newEmail}
+                        onChange={e => setNewEmail(e.target.value)}
+                        required
+                        className="flex-1"
+                        data-testid="input-new-email"
+                      />
+                      <Button type="submit" disabled={emailSaving || !newEmail.trim()} data-testid="button-update-email">
+                        {emailSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
+                      </Button>
+                    </form>
+                  )}
+                  {emailSent && (
+                    <button
+                      onClick={() => setEmailSent(false)}
+                      className="text-xs text-muted-foreground hover:underline"
+                    >
+                      Change a different email
+                    </button>
+                  )}
+                </div>
+
+                <Separator />
+
+                {/* Change password */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold flex items-center gap-2">
+                    <KeyRound className="w-4 h-4 text-primary" />
+                    Change Password
+                  </h3>
+                  <form onSubmit={handleChangePassword} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="currentPassword" className="text-xs">Current Password</Label>
+                      <PasswordInput
+                        id="currentPassword"
+                        placeholder="••••••••"
+                        value={pwForm.current}
+                        onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                        required
+                        data-testid="input-current-password"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="newPassword" className="text-xs">New Password</Label>
+                      <PasswordInput
+                        id="newPassword"
+                        placeholder="••••••••"
+                        value={pwForm.next}
+                        onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+                        required
+                        minLength={6}
+                        data-testid="input-new-password"
+                      />
+                      <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="confirmNewPassword" className="text-xs">Confirm New Password</Label>
+                      <PasswordInput
+                        id="confirmNewPassword"
+                        placeholder="••••••••"
+                        value={pwForm.confirm}
+                        onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                        required
+                        minLength={6}
+                        data-testid="input-confirm-new-password"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={pwSaving || !pwForm.current || !pwForm.next || !pwForm.confirm}
+                      className="w-full"
+                      data-testid="button-update-password"
+                    >
+                      {pwSaving ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="w-4 h-4 mr-2" />
+                      )}
+                      Update Password
+                    </Button>
+                  </form>
+                </div>
+
+              </div>
+            </TabsContent>
+
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
