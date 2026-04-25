@@ -15,14 +15,40 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [hasSession, setHasSession] = useState(false);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Check if we have a valid session from the reset link
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setHasSession(true);
+    let settled = false;
+
+    const settle = (sessionFound: boolean) => {
+      if (settled) return;
+      settled = true;
+      setHasSession(sessionFound);
+      setChecking(false);
+    };
+
+    // Listen for PASSWORD_RECOVERY or SIGNED_IN events triggered by the
+    // token/code in the URL. This fires after the Supabase client processes
+    // the URL fragment or PKCE code, so it's more reliable than getSession().
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') {
+        settle(!!session);
       }
     });
+
+    // Also call getSession() in case the session was already established
+    // (e.g. user refreshed the page after the token was exchanged).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) settle(true);
+    });
+
+    // Fallback: if neither fires within 3 s, treat as no session.
+    const timeout = setTimeout(() => settle(false), 3000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,7 +76,6 @@ export default function ResetPassword() {
     } else {
       setSuccess(true);
       setLoading(false);
-      // Sign out after password reset
       await supabase.auth.signOut();
     }
   };
@@ -74,6 +99,17 @@ export default function ResetPassword() {
               Sign in with new password
             </Button>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <p className="text-sm">Verifying reset link…</p>
         </div>
       </div>
     );
