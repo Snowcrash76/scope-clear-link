@@ -97,7 +97,10 @@ const handler = async (req: Request): Promise<Response> => {
     const quoteNumber = quote.quote_number;
     const clientComment = quote.client_comment;
 
-    const baseUrl = Deno.env.get("SITE_URL") || "https://scope-clear-link.lovable.app";
+    const baseUrl = Deno.env.get("SITE_URL");
+    if (!baseUrl) {
+      throw new Error("SITE_URL is not configured as a Supabase secret");
+    }
     const projectUrl = `${baseUrl}/manage/${project.id}`;
 
     let subject: string;

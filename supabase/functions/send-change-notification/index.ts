@@ -89,7 +89,10 @@ const handler = async (req: Request): Promise<Response> => {
     let senderName: string;
     let projectUrl: string;
 
-    const baseUrl = Deno.env.get("SITE_URL") || "https://scope-clear-link.lovable.app";
+    const baseUrl = Deno.env.get("SITE_URL");
+    if (!baseUrl) {
+      throw new Error("SITE_URL is not configured as a Supabase secret");
+    }
 
     if (recipientType === "client") {
       recipientEmail = project.client_email;
