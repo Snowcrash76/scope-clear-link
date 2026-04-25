@@ -1,10 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = "https://bazzdojysnmxfccmnqfj.supabase.co";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SERVICE_KEY = process.env.RESET_KEY;
 
 if (!SERVICE_KEY) {
-  console.error("SUPABASE_SERVICE_ROLE_KEY not set");
+  console.error("RESET_KEY not set");
+  process.exit(1);
+}
+
+const SUPABASE_URL = process.env.RESET_URL;
+
+if (!SUPABASE_URL) {
+  console.error("RESET_URL not set");
   process.exit(1);
 }
 
@@ -25,9 +31,9 @@ const tables = [
   "profiles"
 ];
 
-console.log("=== Deleting all table data ===");
+console.log(`\n=== Deleting all table data on ${SUPABASE_URL} ===`);
 for (const table of tables) {
-  const { error, count } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (error) {
     console.error(`ERROR deleting ${table}:`, error.message);
   } else {
@@ -44,7 +50,10 @@ while (true) {
     console.error("Error listing users:", error.message);
     break;
   }
-  if (!data.users || data.users.length === 0) break;
+  if (!data.users || data.users.length === 0) {
+    console.log("No users found.");
+    break;
+  }
 
   for (const user of data.users) {
     const { error: delErr } = await supabase.auth.admin.deleteUser(user.id);
