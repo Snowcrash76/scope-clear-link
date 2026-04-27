@@ -216,13 +216,14 @@ export function useQuotes(projectId: string | undefined) {
           });
           const json = await res.json();
           if (!res.ok) throw new Error(json.error || 'Email failed');
-          toast.success('Quote sent', { description: 'Your client has been emailed the quote link.' });
+          const clientName = json.result?.clientName;
+          toast.success(`Quote sent to ${clientName || 'client'}`, { description: 'Your client has been emailed the quote link.' });
         } else {
           toast.success('Quote sent to client');
         }
       } catch (emailErr) {
         console.error('Quote email error:', emailErr);
-        toast.success('Quote marked as sent', { description: 'Could not send the email notification — share the quote link manually.' });
+        toast.warning('Quote marked as sent', { description: 'Could not send the email notification — share the quote link manually.' });
       }
 
       return true;

@@ -256,7 +256,8 @@ export async function handleSendQuoteToClient(
   </div>
 </body></html>`;
 
-  return sendViaResend(project.client_email, subject, html);
+  await sendViaResend(project.client_email, subject, html);
+  return { clientName: project.client_name };
 }
 
 export async function handleQuoteNotification(body: {
