@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { isVariationItem } from '@/lib/utils';
 
 export interface QuoteLineItem {
   id: string;
@@ -28,23 +29,44 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // After every mutation, re-read all line items and write the correct
+  // After every mutation, re-read all cost sources and write the correct
   // subtotal / tax_amount / total back to the quotes row.
+  // Mirrors the QuoteSection formula: scope items (included, non-variation,
+  // not already captured as an approved change) + approved change requests +
+  // custom quote line items (non-variation, not already captured as a change).
   const recalculateQuoteTotals = useCallback(async () => {
     if (!quoteId) return;
     try {
-      const [itemsRes, quoteRes] = await Promise.all([
-        supabase.from('quote_line_items').select('cost').eq('quote_id', quoteId),
-        supabase.from('quotes').select('tax_rate').eq('id', quoteId).single(),
-      ]);
-      if (itemsRes.error) throw itemsRes.error;
+      const quoteRes = await supabase
+        .from('quotes')
+        .select('tax_rate, project_id')
+        .eq('id', quoteId)
+        .single();
       if (quoteRes.error) throw quoteRes.error;
 
       const taxRate = Number(quoteRes.data?.tax_rate) || 0;
-      const subtotal = (itemsRes.data || []).reduce(
-        (sum, row: { cost: number | null }) => sum + (Number(row.cost) || 0),
-        0
+      const projectId = quoteRes.data?.project_id;
+
+      const [lineItemsRes, scopeItemsRes, changesRes] = await Promise.all([
+        supabase.from('quote_line_items').select('cost, title').eq('quote_id', quoteId),
+        supabase.from('scope_items').select('cost, title').eq('project_id', projectId).eq('category', 'included'),
+        supabase.from('change_requests').select('cost_impact').eq('project_id', projectId).eq('status', 'approved'),
+      ]);
+
+      const approvedChangeCosts = new Set(
+        (changesRes.data || []).map(cr => Number(cr.cost_impact) || 0)
       );
+      const changesImpact = (changesRes.data || []).reduce(
+        (sum, cr) => sum + (Number(cr.cost_impact) || 0), 0
+      );
+      const scopeSubtotal = (scopeItemsRes.data || [])
+        .filter(item => !isVariationItem(item.title ?? '') && !approvedChangeCosts.has(Number(item.cost) || 0))
+        .reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+      const customItemsTotal = (lineItemsRes.data || [])
+        .filter(item => !isVariationItem(item.title ?? '') && !approvedChangeCosts.has(Number(item.cost) || 0))
+        .reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
+
+      const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
       const taxAmount = subtotal * (taxRate / 100);
       const total = subtotal + taxAmount;
 

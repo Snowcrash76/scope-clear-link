@@ -118,19 +118,37 @@ export default function ProjectManage() {
     deleteInvoice,
   } = useInvoices(id);
 
-  // Enrich the active quote with a computed total derived from the loaded line
-  // items whenever the stored total is 0 (null in DB maps to 0 via `|| 0`).
-  // This makes the stage invoice button work for older quotes that were saved
-  // before totals were written back on every line item mutation.
+  // Enrich the active quote with a computed total whenever the stored total is
+  // 0 (null in DB maps to 0 via `|| 0`). Mirrors the exact formula used by
+  // QuoteSection: scope items (included, non-variation) + approved change
+  // requests + custom quote line items, de-duped by the approvedChangeCosts set.
   const effectiveQuote = useMemo(() => {
-    if (!activeQuote) return null;
+    if (!activeQuote || !project) return null;
     if (activeQuote.total > 0) return activeQuote;
-    const subtotal = quoteLineItems.reduce((sum, item) => sum + item.cost, 0);
+
+    const approvedChanges = project.changeRequests.filter(cr => cr.status === 'approved');
+    const approvedChangeCosts = new Set(approvedChanges.map(cr => cr.costImpact));
+    const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
+
+    const scopeSubtotal = project.scopeItems
+      .filter(item =>
+        item.category === 'included' &&
+        !isVariationItem(item.title) &&
+        !approvedChangeCosts.has(item.cost ?? -1)
+      )
+      .reduce((sum, item) => sum + (item.cost || 0), 0);
+
+    const customItemsTotal = quoteLineItems
+      .filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost))
+      .reduce((sum, item) => sum + (item.cost || 0), 0);
+
+    const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
     if (subtotal === 0) return activeQuote;
+
     const taxRate = activeQuote.taxRate || 0;
     const taxAmount = subtotal * (taxRate / 100);
     return { ...activeQuote, subtotal, taxAmount, total: subtotal + taxAmount };
-  }, [activeQuote, quoteLineItems]);
+  }, [activeQuote, quoteLineItems, project]);
 
   // Check for tab query param (e.g., from job creation)
   const initialTab = searchParams.get('tab') || 'quote';
