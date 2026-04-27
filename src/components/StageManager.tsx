@@ -115,11 +115,11 @@ export function StageManager({
     return invoices.find(inv => inv.stageId === stageId);
   };
 
-  // Helper to calculate stage billing amount
+  // Helper to calculate stage billing amount (always returns ex-tax subtotal)
   const getStageBillingAmount = (stage: ProjectStage) => {
     if (stage.invoiceAmount) return stage.invoiceAmount;
-    if (stage.invoicePercentage && quote?.total) {
-      return (quote.total * stage.invoicePercentage) / 100;
+    if (stage.invoicePercentage && quote?.subtotal) {
+      return (quote.subtotal * stage.invoicePercentage) / 100;
     }
     return null;
   };
@@ -277,9 +277,9 @@ export function StageManager({
                       Invoice: {stage.invoiceAmount 
                         ? `$${stage.invoiceAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
                         : `${stage.invoicePercentage}% of quote`}
-                      {stage.invoicePercentage && quote?.total && (
+                      {stage.invoicePercentage && quote?.subtotal && (
                         <span className="text-muted-foreground/70">
-                          (${((quote.total * stage.invoicePercentage) / 100).toLocaleString('en-AU', { minimumFractionDigits: 2 })})
+                          (${((quote.subtotal * stage.invoicePercentage) / 100).toLocaleString('en-AU', { minimumFractionDigits: 2 })} ex. tax)
                         </span>
                       )}
                     </p>

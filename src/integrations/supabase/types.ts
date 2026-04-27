@@ -640,7 +640,7 @@ export type Database = {
         | "awaiting_client"
       change_request_type: "client_request" | "site_issue" | "substitution"
       invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
-      invoice_type: "staged" | "final"
+      invoice_type: "staged" | "final" | "deposit"
       project_status: "draft" | "sent" | "in_progress" | "completed"
       quote_status: "draft" | "sent" | "approved" | "declined" | "revised"
       scope_category: "included" | "excluded" | "assumption"
@@ -780,7 +780,7 @@ export const Constants = {
       ],
       change_request_type: ["client_request", "site_issue", "substitution"],
       invoice_status: ["draft", "sent", "paid", "overdue", "cancelled"],
-      invoice_type: ["staged", "final"],
+      invoice_type: ["staged", "final", "deposit"],
       project_status: ["draft", "sent", "in_progress", "completed"],
       quote_status: ["draft", "sent", "approved", "declined", "revised"],
       scope_category: ["included", "excluded", "assumption"],

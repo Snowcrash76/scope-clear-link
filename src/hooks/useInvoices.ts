@@ -10,7 +10,7 @@ type DbInvoice = {
   quote_id: string | null;
   stage_id: string | null;
   invoice_number: string;
-  type: 'staged' | 'final';
+  type: 'staged' | 'final' | 'deposit';
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   subtotal: number | null;
   tax_rate: number | null;
@@ -127,7 +127,7 @@ export function useInvoices(projectId: string | undefined) {
   };
 
   const createInvoice = async (invoiceData: {
-    type: 'staged' | 'final';
+    type: 'staged' | 'final' | 'deposit';
     quoteId?: string;
     stageId?: string;
     taxRate: number;

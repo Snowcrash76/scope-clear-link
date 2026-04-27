@@ -65,7 +65,7 @@ interface InvoiceSectionProps {
   defaultTerms?: string;
   defaultPaymentInstructions?: string;
   onCreateInvoice: (data: {
-    type: 'staged' | 'final';
+    type: 'staged' | 'final' | 'deposit';
     quoteId?: string;
     taxRate: number;
     dueDate?: Date;
@@ -130,7 +130,7 @@ export function InvoiceSection({
     if (success) setEditingInvRef(null);
   };
 
-  const [invoiceType, setInvoiceType] = useState<'staged' | 'final'>('staged');
+  const [invoiceType, setInvoiceType] = useState<'staged' | 'final' | 'deposit'>('staged');
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState(defaultPaymentInstructions || '');
@@ -224,6 +224,8 @@ export function InvoiceSection({
       lineItems = [{
         description: invoiceType === 'final' 
           ? 'Final Payment' 
+          : invoiceType === 'deposit'
+          ? `Deposit (${percentage}%)`
           : `Progress Payment (${percentage}%)`,
         quantity: 1,
         unitPrice: amount / (1 + taxRate / 100), // Remove tax for subtotal
@@ -431,7 +433,7 @@ export function InvoiceSection({
                           {config.label}
                         </Badge>
                         <Badge variant="outline">
-                          {invoice.type === 'staged' ? 'Progress' : 'Final'}
+                          {invoice.type === 'deposit' ? 'Deposit' : invoice.type === 'staged' ? 'Progress' : 'Final'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground mt-1">
@@ -547,11 +549,12 @@ export function InvoiceSection({
             {/* Invoice Type */}
             <div className="space-y-2">
               <Label>Invoice Type</Label>
-              <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final')}>
+              <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final' | 'deposit')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="deposit">Deposit</SelectItem>
                   <SelectItem value="staged">Progress Payment</SelectItem>
                   <SelectItem value="final">Final Invoice</SelectItem>
                 </SelectContent>

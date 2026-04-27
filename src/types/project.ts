@@ -84,7 +84,7 @@ export interface Invoice {
   quoteId?: string;
   stageId?: string;
   invoiceNumber: string;
-  type: 'staged' | 'final';
+  type: 'staged' | 'final' | 'deposit';
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   subtotal: number;
   taxRate: number;

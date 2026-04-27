@@ -82,7 +82,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               {config.label}
             </Badge>
             <Badge variant="outline">
-              {invoice.type === 'staged' ? 'Progress Payment' : 'Final Invoice'}
+              {invoice.type === 'deposit' ? 'Deposit' : invoice.type === 'staged' ? 'Progress Payment' : 'Final Invoice'}
             </Badge>
           </div>
 

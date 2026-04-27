@@ -88,7 +88,7 @@ export function exportInvoiceToXeroCSV(
       invoice.invoiceNumber,
       invoiceDate,
       dueDate,
-      invoice.type === 'final' ? 'Final Payment' : 'Progress Payment',
+      invoice.type === 'final' ? 'Final Payment' : invoice.type === 'deposit' ? 'Deposit' : 'Progress Payment',
       1,
       invoice.subtotal.toFixed(2),
       accountCode,

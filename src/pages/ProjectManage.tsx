@@ -314,6 +314,7 @@ export default function ProjectManage() {
     setActiveTab('invoices');
     
     // Create invoice with stage details
+    // amount is already the ex-tax subtotal (invoiceAmount is ex-tax; invoicePercentage uses subtotal)
     const invoiceId = await createInvoice({
       type: 'staged',
       quoteId: activeQuote?.id,
@@ -322,7 +323,7 @@ export default function ProjectManage() {
       lineItems: [{
         description: `Stage Payment: ${stage.name}`,
         quantity: 1,
-        unitPrice: amount / (1 + (activeQuote?.taxRate ?? 10) / 100), // Remove tax for subtotal
+        unitPrice: amount,
       }],
     });
 
