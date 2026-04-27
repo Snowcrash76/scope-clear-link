@@ -48,6 +48,7 @@ export interface Quote {
   id: string;
   projectId: string;
   quoteNumber: string;
+  reference?: string;
   quoteToken?: string;
   tokenUpdatedAt?: Date;
   tokenRegenerated?: boolean;

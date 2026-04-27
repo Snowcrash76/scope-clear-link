@@ -210,6 +210,20 @@ export function generateQuotePDF(
   doc.text(quote.quoteNumber, col2X, col2Y);
   col2Y += 8;
 
+  if (quote.reference) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...mutedColor);
+    doc.text('Reference', col2X, col2Y);
+    col2Y += 4;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...textColor);
+    const refLines = doc.splitTextToSize(quote.reference, 55);
+    doc.text(refLines, col2X, col2Y);
+    col2Y += refLines.length * 4.5 + 3;
+  }
+
   if (project.abn) {
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');

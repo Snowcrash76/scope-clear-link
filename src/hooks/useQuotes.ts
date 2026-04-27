@@ -8,6 +8,7 @@ type DbQuote = {
   id: string;
   project_id: string;
   quote_number: string;
+  reference: string | null;
   quote_token?: string;
   token_updated_at: string | null;
   token_regenerated: boolean;
@@ -53,6 +54,7 @@ export function useQuotes(projectId: string | undefined) {
         id: q.id,
         projectId: q.project_id,
         quoteNumber: q.quote_number,
+        reference: q.reference || undefined,
         quoteToken: q.quote_token,
         tokenUpdatedAt: q.token_updated_at ? new Date(q.token_updated_at) : undefined,
         tokenRegenerated: q.token_regenerated,
@@ -143,6 +145,7 @@ export function useQuotes(projectId: string | undefined) {
 
   const updateQuote = async (quoteId: string, quoteData: Partial<{
     quoteNumber: string;
+    reference: string;
     subtotal: number;
     taxRate: number;
     notes: string;
@@ -154,6 +157,7 @@ export function useQuotes(projectId: string | undefined) {
       const updateData: Record<string, unknown> = {};
 
       if (quoteData.quoteNumber !== undefined) updateData.quote_number = quoteData.quoteNumber;
+      if (quoteData.reference !== undefined) updateData.reference = quoteData.reference || null;
 
       if (quoteData.subtotal !== undefined) {
         updateData.subtotal = quoteData.subtotal;

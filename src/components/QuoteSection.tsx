@@ -60,6 +60,7 @@ interface QuoteSectionProps {
   }) => Promise<string | null>;
   onUpdateQuote: (quoteId: string, data: Partial<{
     quoteNumber: string;
+    reference: string;
     subtotal: number;
     taxRate: number;
     notes: string;
@@ -109,7 +110,7 @@ export function QuoteSection({
 
   // Inline reference editing state (read view)
   const [editingRef, setEditingRef] = useState(false);
-  const [quoteRef, setQuoteRef] = useState(quote?.quoteNumber ?? '');
+  const [quoteRef, setQuoteRef] = useState(quote?.reference ?? '');
   const [isSavingRef, setIsSavingRef] = useState(false);
   
   // New line item form state
@@ -131,7 +132,7 @@ export function QuoteSection({
       setNotes(quote.notes ?? '');
       setTerms(quote.terms ?? '');
       setValidUntil(quote.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : '');
-      setQuoteRef(quote.quoteNumber ?? '');
+      setQuoteRef(quote.reference ?? '');
     }
   }, [quote]);
 
@@ -169,7 +170,7 @@ export function QuoteSection({
     if (!quote) return;
     setIsSaving(true);
     const success = await onUpdateQuote(quote.id, {
-      quoteNumber: quoteRef || undefined,
+      reference: quoteRef || undefined,
       subtotal,
       taxRate,
       notes,
@@ -181,9 +182,9 @@ export function QuoteSection({
   };
 
   const handleSaveRef = async () => {
-    if (!quote || !quoteRef.trim()) return;
+    if (!quote) return;
     setIsSavingRef(true);
-    const success = await onUpdateQuote(quote.id, { quoteNumber: quoteRef.trim() });
+    const success = await onUpdateQuote(quote.id, { reference: quoteRef.trim() });
     setIsSavingRef(false);
     if (success) setEditingRef(false);
   };
@@ -568,15 +569,21 @@ export function QuoteSection({
         {/* Additional Fields */}
         <div className="space-y-4">
           {isEditing && (
-            <div>
-              <Label htmlFor="quoteRef">Reference</Label>
-              <Input
-                id="quoteRef"
-                value={quoteRef}
-                onChange={e => setQuoteRef(e.target.value)}
-                placeholder="e.g. Q-2024-001"
-                data-testid="input-quote-ref-edit"
-              />
+            <div className="space-y-3">
+              <div>
+                <Label>Quote Number</Label>
+                <p className="text-sm font-medium text-muted-foreground mt-1 px-3 py-2 rounded-md bg-secondary/40 border border-border/50">{quote!.quoteNumber}</p>
+              </div>
+              <div>
+                <Label htmlFor="quoteRef">Reference</Label>
+                <Input
+                  id="quoteRef"
+                  value={quoteRef}
+                  onChange={e => setQuoteRef(e.target.value)}
+                  placeholder="e.g. job address or custom note"
+                  data-testid="input-quote-ref-edit"
+                />
+              </div>
             </div>
           )}
 
@@ -645,50 +652,58 @@ export function QuoteSection({
               <FileText className="w-5 h-5 text-primary" />
             </div>
             <div>
-              {editingRef ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={quoteRef}
-                    onChange={e => setQuoteRef(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleSaveRef();
-                      if (e.key === 'Escape') { setEditingRef(false); setQuoteRef(quote!.quoteNumber ?? ''); }
-                    }}
-                    className="h-7 text-sm font-semibold w-40"
-                    autoFocus
-                    data-testid="input-quote-reference"
-                  />
-                  <button
-                    onClick={handleSaveRef}
-                    disabled={isSavingRef || !quoteRef.trim()}
-                    className="p-1 rounded hover:bg-muted transition-colors text-primary"
-                    data-testid="button-save-quote-reference"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => { setEditingRef(false); setQuoteRef(quote!.quoteNumber ?? ''); }}
-                    className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
-                    data-testid="button-cancel-quote-reference"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 group/ref">
-                  <h3 className="font-heading font-semibold">{quote!.quoteNumber}</h3>
-                  {isTradeView && (
+              <div className="flex flex-col gap-0.5">
+                <h3 className="font-heading font-semibold">{quote!.quoteNumber}</h3>
+                {editingRef ? (
+                  <div className="flex items-center gap-1.5">
+                    <Input
+                      value={quoteRef}
+                      onChange={e => setQuoteRef(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleSaveRef();
+                        if (e.key === 'Escape') { setEditingRef(false); setQuoteRef(quote!.reference ?? ''); }
+                      }}
+                      className="h-6 text-xs w-44"
+                      autoFocus
+                      placeholder="e.g. job address or note"
+                      data-testid="input-quote-reference"
+                    />
                     <button
-                      onClick={() => setEditingRef(true)}
-                      className="p-1 rounded opacity-0 group-hover/ref:opacity-100 hover:bg-muted transition-all text-muted-foreground"
-                      title="Edit reference"
-                      data-testid="button-edit-quote-reference"
+                      onClick={handleSaveRef}
+                      disabled={isSavingRef}
+                      className="p-1 rounded hover:bg-muted transition-colors text-primary"
+                      data-testid="button-save-quote-reference"
                     >
-                      <Pencil className="w-3 h-3" />
+                      <Check className="w-3 h-3" />
                     </button>
-                  )}
-                </div>
-              )}
+                    <button
+                      onClick={() => { setEditingRef(false); setQuoteRef(quote!.reference ?? ''); }}
+                      className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
+                      data-testid="button-cancel-quote-reference"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 group/ref">
+                    {(quote!.reference || isTradeView) && (
+                      <p className="text-xs text-muted-foreground">
+                        {quote!.reference || <span className="italic opacity-60">Add reference</span>}
+                      </p>
+                    )}
+                    {isTradeView && (
+                      <button
+                        onClick={() => setEditingRef(true)}
+                        className="p-0.5 rounded opacity-0 group-hover/ref:opacity-100 hover:bg-muted transition-all text-muted-foreground"
+                        title="Edit reference"
+                        data-testid="button-edit-quote-reference"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">
                 Created {format(quote!.createdAt, 'dd MMM yyyy')}
               </p>
