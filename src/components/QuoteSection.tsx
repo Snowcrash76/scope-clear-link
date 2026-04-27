@@ -170,7 +170,7 @@ export function QuoteSection({
     if (!quote) return;
     setIsSaving(true);
     const success = await onUpdateQuote(quote.id, {
-      reference: quoteRef || undefined,
+      reference: quoteRef.trim() || null,
       subtotal,
       taxRate,
       notes,

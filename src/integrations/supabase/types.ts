@@ -504,6 +504,7 @@ export type Database = {
           notes: string | null
           project_id: string
           quote_number: string
+          reference: string | null
           quote_token: string
           token_updated_at: string
           token_regenerated: boolean
@@ -525,6 +526,7 @@ export type Database = {
           notes?: string | null
           project_id: string
           quote_number: string
+          reference?: string | null
           quote_token?: string
           token_updated_at?: string | null
           token_regenerated?: boolean
@@ -546,6 +548,7 @@ export type Database = {
           notes?: string | null
           project_id?: string
           quote_number?: string
+          reference?: string | null
           quote_token?: string
           token_updated_at?: string | null
           token_regenerated?: boolean

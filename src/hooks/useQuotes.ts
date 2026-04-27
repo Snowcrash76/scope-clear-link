@@ -145,7 +145,7 @@ export function useQuotes(projectId: string | undefined) {
 
   const updateQuote = async (quoteId: string, quoteData: Partial<{
     quoteNumber: string;
-    reference: string;
+    reference: string | null;
     subtotal: number;
     taxRate: number;
     notes: string;
