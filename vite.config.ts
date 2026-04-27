@@ -81,6 +81,25 @@ export default defineConfig(({ mode }) => ({
             return;
           }
 
+          if (req.url === "/api/send-quote-to-client" && req.method === "POST") {
+            try {
+              const { validateSupabaseJwt, handleSendQuoteToClient } = await import("./server/emailHandlers");
+              const userId = await validateSupabaseJwt(req.headers["authorization"]);
+              const raw = await readBody(req);
+              const body = JSON.parse(raw) as Parameters<typeof handleSendQuoteToClient>[0];
+              const result = await handleSendQuoteToClient(body, userId);
+              sendJson(res, 200, { success: true, result });
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              const status = message === "Unauthorized" ? 401
+                : message === "Client email not set on project" ? 400
+                : 500;
+              console.error("[email-api] send-quote-to-client:", message);
+              sendJson(res, status, { error: message });
+            }
+            return;
+          }
+
           next();
         });
       },
