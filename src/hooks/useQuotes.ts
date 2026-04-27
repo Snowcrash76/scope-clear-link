@@ -200,7 +200,13 @@ export function useQuotes(projectId: string | undefined) {
 
       if (error) throw error;
 
-      await fetchQuotes();
+      // Ensure a shareable token exists before emailing — generate one if needed
+      const hasToken = quotes.find(q => q.id === quoteId)?.quoteToken;
+      if (!hasToken) {
+        await regenerateQuoteToken(quoteId); // also calls fetchQuotes internally
+      } else {
+        await fetchQuotes();
+      }
 
       // Send email to client with quote link and project page link
       try {
