@@ -10,13 +10,15 @@ import { Separator } from '@/components/ui/separator';
 import { Quote, ScopeItem, ChangeRequest } from '@/types/project';
 import { RichTextContent, htmlToText } from '@/components/RichTextEditor';
 import { QuoteLineItem } from '@/hooks/useQuoteLineItems';
-import {
-  Download,
-  CheckCircle2,
-  XCircle,
-  Send,
-  Edit,
+import { 
+  Download, 
+  Calendar, 
+  CheckCircle2, 
+  XCircle, 
+  Send, 
+  Edit, 
   RefreshCw,
+  FileText,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn, isVariationItem, stripVariationMeta } from '@/lib/utils';
@@ -90,98 +92,66 @@ export function QuoteViewModal({
   const formatDate = (date: Date | string | undefined) => {
     if (!date) return '';
     const d = date instanceof Date ? date : new Date(date);
-    return format(d, 'd MMM yyyy');
+    return format(d, 'dd MMM yyyy');
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader className="pb-0">
-          {/* Required for accessibility — visually hidden since we render our own heading below */}
-          <DialogTitle className="sr-only">{quote.quoteNumber}</DialogTitle>
-
-          {/* ── Header bar: QUOTE title + status ── */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-3xl font-bold tracking-tight">QUOTE</h2>
+        <DialogHeader>
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Badge variant={config.variant} className="gap-1.5">
-                <StatusIcon className="w-3.5 h-3.5" />
-                {config.label}
-              </Badge>
-            </div>
-          </div>
-
-          {/* ── Three-column info block (mirrors PDF) ── */}
-          <div className="grid grid-cols-3 gap-6 p-4 rounded-lg bg-muted/40 border text-sm">
-            {/* Col 1 — Client */}
-            <div className="space-y-0.5">
-              <p className="font-semibold text-foreground">{projectInfo.clientName}</p>
-              {projectInfo.clientAddress && (
-                <p className="text-muted-foreground whitespace-pre-line">{projectInfo.clientAddress}</p>
-              )}
-              {projectInfo.clientEmail && (
-                <p className="text-muted-foreground">{projectInfo.clientEmail}</p>
-              )}
-            </div>
-
-            {/* Col 2 — Date, Quote Number, Reference, ABN */}
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-0.5">Date</p>
-                <p className="text-foreground">{formatDate(quote.createdAt)}</p>
+              <div className="p-2 rounded-lg bg-primary/10">
+                <FileText className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-0.5">Quote Number</p>
-                <p className="text-foreground font-medium">{quote.quoteNumber}</p>
+                <DialogTitle className="text-xl">{quote.quoteNumber}</DialogTitle>
+                <p className="text-sm text-muted-foreground">
+                  Created {formatDate(quote.createdAt)}
+                </p>
               </div>
-              {quote.reference && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-0.5">Reference</p>
-                  <p className="text-foreground">{quote.reference}</p>
-                </div>
-              )}
-              {projectInfo.abn && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-0.5">ABN</p>
-                  <p className="text-foreground">{projectInfo.abn}</p>
-                </div>
-              )}
-              {quote.validUntil && (
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-0.5">Valid Until</p>
-                  <p className="text-foreground">{formatDate(quote.validUntil)}</p>
-                </div>
-              )}
             </div>
-
-            {/* Col 3 — Business / trade contact */}
-            <div className="space-y-0.5 text-right">
-              {projectInfo.logoUrl ? (
-                <img
-                  src={projectInfo.logoUrl}
-                  alt="Business logo"
-                  className="max-h-12 max-w-full object-contain ml-auto mb-2"
-                />
-              ) : projectInfo.tradeBusinessName ? (
-                <p className="font-semibold text-foreground">{projectInfo.tradeBusinessName}</p>
-              ) : null}
-              {projectInfo.tradeBusinessName && projectInfo.logoUrl && (
-                <p className="font-semibold text-foreground">{projectInfo.tradeBusinessName}</p>
-              )}
-              {projectInfo.tradeAddress && (
-                <p className="text-muted-foreground whitespace-pre-line">{projectInfo.tradeAddress}</p>
-              )}
-              {projectInfo.tradePhone && (
-                <p className="text-muted-foreground">Ph: {projectInfo.tradePhone}</p>
-              )}
-              {projectInfo.tradeWebsite && (
-                <p className="text-muted-foreground">{projectInfo.tradeWebsite}</p>
-              )}
-            </div>
+            <Badge variant={config.variant} className="gap-1.5">
+              <StatusIcon className="w-3.5 h-3.5" />
+              {config.label}
+            </Badge>
           </div>
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
+          {/* Project, Client & Quote Info */}
+          <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Project</p>
+              <p className="font-medium">{projectInfo.name}</p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Client</p>
+              <p className="font-medium">{projectInfo.clientName}</p>
+              <p className="text-sm text-muted-foreground">{projectInfo.clientEmail}</p>
+            </div>
+            {quote.reference && (
+              <div className="col-span-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Reference</p>
+                <p className="font-medium">{quote.reference}</p>
+              </div>
+            )}
+            {projectInfo.abn && (
+              <div className="col-span-2">
+                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">ABN</p>
+                <p className="font-medium">{projectInfo.abn}</p>
+              </div>
+            )}
+          </div>
+
+          {quote.validUntil && (
+            <div className="flex items-center gap-2 text-sm">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Valid until:</span>
+              <span className="font-medium">{formatDate(quote.validUntil)}</span>
+            </div>
+          )}
+
           <Separator />
 
           {/* Included Items */}
@@ -303,12 +273,12 @@ export function QuoteViewModal({
               <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">TOTAL GST {quote.taxRate}%</span>
+              <span className="text-muted-foreground">Tax ({quote.taxRate}%)</span>
               <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
             </div>
             <Separator className="my-2" />
             <div className="flex justify-between text-lg font-bold">
-              <span>TOTAL AUD</span>
+              <span>Total</span>
               <span className="text-primary">
                 ${total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
               </span>
@@ -337,9 +307,9 @@ export function QuoteViewModal({
             </>
           )}
 
-          {/* Download */}
-          <div className="flex justify-end pt-2">
-            <Button onClick={handleDownloadPDF} className="gap-2" data-testid="button-download-pdf">
+          {/* Download Button */}
+          <div className="flex justify-end pt-4">
+            <Button onClick={handleDownloadPDF} className="gap-2">
               <Download className="w-4 h-4" />
               Download PDF
             </Button>
