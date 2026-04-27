@@ -164,7 +164,6 @@ export default function ProjectManage() {
     changeId: string;
     title: string;
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
-  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isEditClientOpen, setIsEditClientOpen] = useState(false);
   const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
@@ -379,15 +378,6 @@ export default function ProjectManage() {
     });
   };
 
-  const handleSendInvite = () => {
-    const link = getClientProjectUrl(project.id);
-    navigator.clipboard.writeText(link);
-    toast.success('Invite sent', {
-      description: `${project.clientName} has been invited to ${project.name}.`,
-    });
-    setIsInviteModalOpen(false);
-  };
-
   const handleOpenEditClient = () => {
     setEditClientName(project.clientName);
     setEditClientEmail(project.clientEmail);
@@ -486,10 +476,6 @@ export default function ProjectManage() {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" onClick={() => setIsInviteModalOpen(true)}>
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:inline ml-2">Invite Client to Project</span>
-              </Button>
               {project.status === 'draft' && (
                 <Button variant="accent" size="sm" onClick={handleSendToClient}>
                   <Send className="w-4 h-4" />
@@ -993,67 +979,6 @@ export default function ProjectManage() {
         action={approvalModal.action}
         title={approvalModal.title}
       />
-
-      <Dialog open={isInviteModalOpen} onOpenChange={setIsInviteModalOpen}>
-        <DialogContent className="max-w-md" data-testid="dialog-invite-client">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Send className="w-5 h-5 text-primary" />
-              Invite Client to Project
-            </DialogTitle>
-            <DialogDescription>
-              We'll send your client a private link to their live project page where they can review the scope, approve variations and follow progress.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-3 py-2">
-            <div className="rounded-lg border bg-muted/40 p-4 space-y-2">
-              <div className="flex items-start gap-2 text-sm">
-                <FileText className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Project</p>
-                  <p className="font-medium" data-testid="text-invite-project-name">{project.name}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-sm">
-                <User className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Client</p>
-                  <p className="font-medium" data-testid="text-invite-client-name">{project.clientName}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2 text-sm">
-                <Mail className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="font-medium break-all" data-testid="text-invite-client-email">{project.clientEmail}</p>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              They'll receive an invitation to view <span className="font-medium text-foreground">{project.name}</span>, approve the scope of work, raise variations and track progress in real time.
-            </p>
-          </div>
-
-          <DialogFooter className="gap-2 sm:gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setIsInviteModalOpen(false)}
-              data-testid="button-invite-cancel"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendInvite}
-              data-testid="button-invite-send"
-            >
-              <Send className="w-4 h-4 mr-2" />
-              Send
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Edit Client Details Dialog */}
       <Dialog open={isEditClientOpen} onOpenChange={setIsEditClientOpen}>

@@ -201,7 +201,30 @@ export function useQuotes(projectId: string | undefined) {
       if (error) throw error;
 
       await fetchQuotes();
-      toast.success('Quote sent to client');
+
+      // Send email to client with quote link and project page link
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token && projectId) {
+          const res = await fetch('/api/send-quote-to-client', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ projectId, quoteId }),
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || 'Email failed');
+          toast.success('Quote sent', { description: 'Your client has been emailed the quote link.' });
+        } else {
+          toast.success('Quote sent to client');
+        }
+      } catch (emailErr) {
+        console.error('Quote email error:', emailErr);
+        toast.success('Quote marked as sent', { description: 'Could not send the email notification — share the quote link manually.' });
+      }
+
       return true;
     } catch (error) {
       console.error('Error sending quote:', error);

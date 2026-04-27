@@ -187,6 +187,78 @@ export async function handleChangeNotification(
   return sendViaResend(recipientEmail, subject, html);
 }
 
+export async function handleSendQuoteToClient(
+  body: { projectId: string; quoteId: string },
+  authenticatedUserId: string
+) {
+  const supabase = getSupabaseAdmin();
+  const { projectId, quoteId } = body;
+
+  if (!projectId || !quoteId) throw new Error('projectId and quoteId are required');
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', authenticatedUserId)
+    .single();
+  if (projectError || !project) throw new Error('Project not found or access denied');
+
+  if (!project.client_email) throw new Error('Client email not set on project');
+
+  const { data: quote, error: quoteError } = await supabase
+    .from('quotes')
+    .select('*')
+    .eq('id', quoteId)
+    .eq('project_id', projectId)
+    .single();
+  if (quoteError || !quote) throw new Error('Quote not found');
+  if (!quote.quote_token) throw new Error('Quote has no shareable token');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', authenticatedUserId)
+    .single();
+
+  const baseUrl = getSiteUrl();
+  const quoteUrl = `${baseUrl}/quote/${quote.quote_token}`;
+  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
+  const clientName = project.client_name || 'there';
+  const projectName = project.name;
+  const quoteNumber = quote.quote_number;
+
+  const subject = `[${projectName}] Your quote is ready to review`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#374151;max-width:600px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);padding:32px;border-radius:12px 12px 0 0;text-align:center">
+    <h1 style="color:white;margin:0;font-size:24px">Your Quote is Ready</h1>
+  </div>
+  <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+    <p style="color:#6b7280;margin-bottom:24px">Hi ${clientName},</p>
+    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has prepared a quote for your project <strong>${projectName}</strong>. You can review the full scope of work, accept or decline, and leave a comment.</p>
+    <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
+      <p style="margin:0 0 4px 0;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:0.05em">Quote reference</p>
+      <h3 style="margin:0;color:#1f2937">${quoteNumber}</h3>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="${quoteUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">Review &amp; Accept Quote</a>
+    </div>
+    <p style="text-align:center;margin-top:20px;color:#6b7280;font-size:14px">
+      You can also <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">view your project page</a> at any time to track progress, review the scope of work and see any change requests.
+    </p>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
+    <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
+      This email was sent on behalf of ${tradeName} regarding project: ${projectName}
+    </p>
+  </div>
+</body></html>`;
+
+  return sendViaResend(project.client_email, subject, html);
+}
+
 export async function handleQuoteNotification(body: {
   quoteToken: string;
   notificationType: 'approved' | 'declined';
