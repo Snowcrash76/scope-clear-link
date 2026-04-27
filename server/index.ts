@@ -36,7 +36,9 @@ app.post('/api/send-quote-to-client', async (req, res) => {
     res.json({ success: true, result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message === 'Unauthorized' ? 401 : 500;
+    const status = message === 'Unauthorized' ? 401
+      : message === 'Client email not set on project' ? 400
+      : 500;
     console.error('[email] send-quote-to-client:', message);
     res.status(status).json({ error: message });
   }

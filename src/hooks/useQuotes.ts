@@ -223,7 +223,12 @@ export function useQuotes(projectId: string | undefined) {
         }
       } catch (emailErr) {
         console.error('Quote email error:', emailErr);
-        toast.warning('Quote marked as sent', { description: 'Could not send the email notification — share the quote link manually.' });
+        const emailMsg = emailErr instanceof Error ? emailErr.message : '';
+        if (emailMsg.includes('email not set')) {
+          toast.error('Client email missing', { description: 'Quote marked as sent, but no email was delivered — update the client details with a valid email first.' });
+        } else {
+          toast.warning('Quote marked as sent', { description: 'Could not send the email notification — share the quote link manually.' });
+        }
       }
 
       return true;
