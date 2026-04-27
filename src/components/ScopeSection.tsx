@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { ScopeItem } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, Package, Ban, AlertTriangle, TrendingUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Package, Ban, AlertTriangle, TrendingUp } from 'lucide-react';
 import { cn, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
 import { MultiImageDisplay } from '@/components/MultiImageUpload';
@@ -20,9 +19,6 @@ interface ScopeSectionProps {
   description: string;
   category: 'included' | 'excluded' | 'assumption';
   items: ScopeItem[];
-  onAcknowledge: (itemId: string) => void;
-  onAcknowledgeAll?: () => void;
-  isClientView?: boolean;
   approvedChanges?: ApprovedChange[];
   isVariationSection?: boolean;
 }
@@ -56,18 +52,12 @@ export function ScopeSection({
   description, 
   category, 
   items, 
-  onAcknowledge,
-  onAcknowledgeAll,
-  isClientView = true,
   approvedChanges = [],
   isVariationSection = false,
 }: ScopeSectionProps) {
   const [isExpanded, setIsExpanded] = useState(category === 'included');
   const config = categoryConfig[category];
   const Icon = isVariationSection ? TrendingUp : config.icon;
-  
-  const acknowledgedCount = items.filter(item => item.acknowledged).length;
-  const allAcknowledged = items.length > 0 && acknowledgedCount === items.length;
   
   const subtotal = items.reduce((sum, item) => sum + (item.cost || 0), 0);
 
@@ -118,11 +108,6 @@ export function ScopeSection({
               {items.length} item{items.length !== 1 ? 's' : ''}
             </Badge>
           )}
-          {!isSubtle && isClientView && items.length > 0 && (
-            <Badge variant={allAcknowledged ? 'success' : 'secondary'} className="hidden sm:flex">
-              {acknowledgedCount}/{items.length} acknowledged
-            </Badge>
-          )}
           {isExpanded ? (
             <ChevronUp className={cn("text-muted-foreground", isSubtle ? "w-4 h-4" : "w-5 h-5")} />
           ) : (
@@ -133,69 +118,18 @@ export function ScopeSection({
 
       {isExpanded && (
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3 animate-fade-in">
-          {!isSubtle && isClientView && (
-            <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
-          )}
-          {isSubtle && (
-            <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
-          )}
+          <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
 
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">No items in this section.</p>
           )}
 
-          {isClientView && onAcknowledgeAll && !allAcknowledged && items.length > 1 && (
-            <div className="flex justify-end -mt-1 mb-1">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs h-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAcknowledgeAll();
-                }}
-              >
-                <CheckCircle2 className="w-3.5 h-3.5 text-approved" />
-                Acknowledge All
-              </Button>
-            </div>
-          )}
-
           {items.map((item) => (
             <div
               key={item.id}
-              className={cn(
-                "p-4 rounded-lg bg-card border transition-all duration-200",
-                item.acknowledged ? "border-approved/30" : "border-border"
-              )}
+              className="p-4 rounded-lg bg-card border border-border"
             >
               <div className="flex items-start gap-3">
-                {isClientView ? (
-                  <button
-                    onClick={() => onAcknowledge(item.id)}
-                    className={cn(
-                      "mt-0.5 flex-shrink-0 transition-colors",
-                      item.acknowledged ? "text-approved" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {item.acknowledged ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                      <Circle className="w-5 h-5" />
-                    )}
-                  </button>
-                ) : (
-                  <div className={cn(
-                    "mt-0.5 flex-shrink-0",
-                    item.acknowledged ? "text-approved" : "text-muted-foreground"
-                  )}>
-                    {item.acknowledged ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                      <Circle className="w-5 h-5" />
-                    )}
-                  </div>
-                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">

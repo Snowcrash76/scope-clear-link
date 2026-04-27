@@ -1,23 +1,20 @@
-import { ChangeRequest, ScopeItem } from '@/types/project';
+import { ChangeRequest } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface ActionRequiredProps {
   pendingChanges: ChangeRequest[];
-  unacknowledgedItems: ScopeItem[];
   viewerRole: 'client' | 'trade';
 }
 
-export function ActionRequired({ pendingChanges, unacknowledgedItems, viewerRole }: ActionRequiredProps) {
-  // Filter changes to only show ones that this viewer can approve
+export function ActionRequired({ pendingChanges, viewerRole }: ActionRequiredProps) {
   const changesAwaitingApproval = pendingChanges.filter(change => 
     viewerRole === 'client' 
-      ? change.type !== 'client_request'  // Client approves trade variations (site_issue, substitution)
-      : change.type === 'client_request'   // Trade approves client requests
+      ? change.type !== 'client_request'
+      : change.type === 'client_request'
   );
   
-  const hasActions = changesAwaitingApproval.length > 0 || unacknowledgedItems.length > 0;
+  const hasActions = changesAwaitingApproval.length > 0;
 
   if (!hasActions) {
     return (
@@ -47,11 +44,6 @@ export function ActionRequired({ pendingChanges, unacknowledgedItems, viewerRole
             {changesAwaitingApproval.length > 0 && (
               <li>
                 • {changesAwaitingApproval.length} change{changesAwaitingApproval.length > 1 ? 's' : ''} awaiting your approval
-              </li>
-            )}
-            {unacknowledgedItems.length > 0 && (
-              <li>
-                • {unacknowledgedItems.length} scope item{unacknowledgedItems.length > 1 ? 's' : ''} to acknowledge
               </li>
             )}
           </ul>

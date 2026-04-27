@@ -22,7 +22,7 @@ import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2 } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice, ScopeItem } from '@/types/project';
@@ -35,7 +35,6 @@ export default function ClientProjectView() {
     project,
     documents,
     loading,
-    acknowledgeScopeItem,
     createChangeRequest,
     updateChangeRequestStatus,
   } = useProject(id);
@@ -121,7 +120,6 @@ export default function ClientProjectView() {
   }));
   const excludedItems = project.scopeItems.filter(item => item.category === 'excluded');
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
-  const unacknowledgedItems = project.scopeItems.filter(item => !item.acknowledged);
 
   // Calculate live totals — variation duplicates filtered out; costs come from approvedChanges
   const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
@@ -132,16 +130,6 @@ export default function ClientProjectView() {
   const taxRate = activeQuote?.taxRate || 0;
   const taxAmount = subtotal * (taxRate / 100);
   const liveTotal = subtotal + taxAmount;
-
-  const handleAcknowledge = async (itemId: string) => {
-    await acknowledgeScopeItem(itemId, true);
-  };
-
-  const handleAcknowledgeAll = async (items: typeof project.scopeItems) => {
-    const unacknowledged = items.filter(item => !item.acknowledged);
-    await Promise.all(unacknowledged.map(item => acknowledgeScopeItem(item.id, true)));
-    toast.success(`${unacknowledged.length} item${unacknowledged.length !== 1 ? 's' : ''} acknowledged`);
-  };
 
   // Approve without a confirmation modal — optimistically hide the button
   // immediately and fire the update in the background.
@@ -239,7 +227,6 @@ export default function ClientProjectView() {
         {/* Action Required Banner */}
         <ActionRequired 
           pendingChanges={pendingChanges}
-          unacknowledgedItems={unacknowledgedItems}
           viewerRole="client"
         />
 
@@ -281,13 +268,11 @@ export default function ClientProjectView() {
 
           {/* Scope Tab */}
           <TabsContent value="scope" className="space-y-4 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="font-heading text-xl font-bold">Project Scope</h2>
-                <p className="text-sm text-muted-foreground">
-                  Please review and acknowledge each section below
-                </p>
-              </div>
+            <div>
+              <h2 className="font-heading text-xl font-bold">Project Scope</h2>
+              <p className="text-sm text-muted-foreground">
+                What's included, excluded, and assumed for this project
+              </p>
             </div>
 
             <ScopeSection
@@ -295,8 +280,6 @@ export default function ClientProjectView() {
               description="Work and materials covered in your original quote"
               category="included"
               items={includedItems}
-              onAcknowledge={handleAcknowledge}
-              onAcknowledgeAll={() => handleAcknowledgeAll(includedItems)}
             />
 
             {variationScopeItems.length > 0 && (
@@ -305,8 +288,6 @@ export default function ClientProjectView() {
                 description="Additional work added and agreed to after the original quote"
                 category="included"
                 items={variationScopeItems}
-                onAcknowledge={handleAcknowledge}
-                onAcknowledgeAll={() => handleAcknowledgeAll(variationScopeItems)}
                 isVariationSection
               />
             )}
@@ -316,8 +297,6 @@ export default function ClientProjectView() {
               description="Items outside the scope of this project"
               category="excluded"
               items={excludedItems}
-              onAcknowledge={handleAcknowledge}
-              onAcknowledgeAll={() => handleAcknowledgeAll(excludedItems)}
             />
 
             <ScopeSection
@@ -325,8 +304,6 @@ export default function ClientProjectView() {
               description="Conditions we're expecting — if different, we'll discuss"
               category="assumption"
               items={assumptionItems}
-              onAcknowledge={handleAcknowledge}
-              onAcknowledgeAll={() => handleAcknowledgeAll(assumptionItems)}
             />
           </TabsContent>
 
