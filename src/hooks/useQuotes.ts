@@ -218,6 +218,7 @@ export function useQuotes(projectId: string | undefined) {
           if (!res.ok) throw new Error(json.error || 'Email failed');
           const clientName = json.result?.clientName;
           toast.success(`Quote sent to ${clientName || 'client'}`, { description: 'Your client has been emailed the quote link.' });
+          await fetchQuotes();
         } else {
           toast.success('Quote sent to client');
         }

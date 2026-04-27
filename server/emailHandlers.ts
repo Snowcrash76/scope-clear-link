@@ -213,7 +213,16 @@ export async function handleSendQuoteToClient(
     .eq('project_id', projectId)
     .single();
   if (quoteError || !quote) throw new Error('Quote not found');
-  if (!quote.quote_token) throw new Error('Quote has no shareable token');
+
+  // Auto-generate a token if none exists yet — so the email always has a valid link
+  let quoteToken = quote.quote_token;
+  if (!quoteToken) {
+    quoteToken = crypto.randomUUID();
+    await supabase
+      .from('quotes')
+      .update({ quote_token: quoteToken, token_updated_at: new Date().toISOString() })
+      .eq('id', quoteId);
+  }
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -222,7 +231,7 @@ export async function handleSendQuoteToClient(
     .single();
 
   const baseUrl = getSiteUrl();
-  const quoteUrl = `${baseUrl}/quote/${quote.quote_token}`;
+  const quoteUrl = `${baseUrl}/quote/${quoteToken}`;
   const projectUrl = `${baseUrl}/project/${projectId}`;
   const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
   const clientName = project.client_name || 'there';
