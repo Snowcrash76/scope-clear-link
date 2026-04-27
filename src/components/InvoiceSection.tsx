@@ -567,7 +567,7 @@ export function InvoiceSection({
               <div className="flex items-center gap-4">
                 <Input
                   type="range"
-                  min="10"
+                  min="5"
                   max="100"
                   step="5"
                   value={percentage}
