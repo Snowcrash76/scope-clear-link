@@ -5,16 +5,17 @@ import { AlertCircle, CheckCircle2 } from 'lucide-react';
 interface ActionRequiredProps {
   pendingChanges: ChangeRequest[];
   viewerRole: 'client' | 'trade';
+  quoteAwaitingApproval?: boolean;
 }
 
-export function ActionRequired({ pendingChanges, viewerRole }: ActionRequiredProps) {
+export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApproval }: ActionRequiredProps) {
   const changesAwaitingApproval = pendingChanges.filter(change => 
     viewerRole === 'client' 
       ? change.type !== 'client_request'
       : change.type === 'client_request'
   );
   
-  const hasActions = changesAwaitingApproval.length > 0;
+  const hasActions = changesAwaitingApproval.length > 0 || quoteAwaitingApproval;
 
   if (!hasActions) {
     return (
@@ -41,6 +42,9 @@ export function ActionRequired({ pendingChanges, viewerRole }: ActionRequiredPro
         <div className="flex-1">
           <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {quoteAwaitingApproval && (
+              <li>• Your quote is ready — please review and approve or decline it in the Quote tab</li>
+            )}
             {changesAwaitingApproval.length > 0 && (
               <li>
                 • {changesAwaitingApproval.length} change{changesAwaitingApproval.length > 1 ? 's' : ''} awaiting your approval

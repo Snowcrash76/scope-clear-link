@@ -228,6 +228,7 @@ export default function ClientProjectView() {
         <ActionRequired 
           pendingChanges={pendingChanges}
           viewerRole="client"
+          quoteAwaitingApproval={activeQuote?.status === 'sent'}
         />
 
         {/* Main Content Tabs */}
