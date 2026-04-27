@@ -9,11 +9,16 @@ interface ActionRequiredProps {
 }
 
 export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApproval }: ActionRequiredProps) {
-  const changesAwaitingApproval = pendingChanges.filter(change => 
-    viewerRole === 'client' 
-      ? change.type !== 'client_request'
-      : change.type === 'client_request'
-  );
+  const changesAwaitingApproval = pendingChanges.filter(change => {
+    if (viewerRole === 'client') {
+      // Client needs to act on:
+      // 1. Trade-initiated variations (site_issue, substitution) that are pending
+      // 2. Client's own requests that the trade has responded to with costs (awaiting_client = client needs to decide)
+      return change.type !== 'client_request' || change.status === 'awaiting_client';
+    }
+    // Trade needs to act on pending client requests
+    return change.type === 'client_request' && change.status === 'pending';
+  });
   
   const hasActions = changesAwaitingApproval.length > 0 || quoteAwaitingApproval;
 
@@ -33,6 +38,10 @@ export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApprov
     );
   }
 
+  const tradeVariations = changesAwaitingApproval.filter(c => c.type !== 'client_request');
+  const clientRequestsWithResponse = changesAwaitingApproval.filter(c => c.type === 'client_request' && c.status === 'awaiting_client');
+  const tradeClientRequests = changesAwaitingApproval.filter(c => c.type === 'client_request' && c.status === 'pending');
+
   return (
     <Card className="p-4 bg-pending/5 border-pending/30 animate-pulse-soft">
       <div className="flex items-start gap-3">
@@ -45,9 +54,19 @@ export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApprov
             {quoteAwaitingApproval && (
               <li>• Your quote is ready — please review and approve or decline it in the Quote tab</li>
             )}
-            {changesAwaitingApproval.length > 0 && (
+            {tradeVariations.length > 0 && (
               <li>
-                • {changesAwaitingApproval.length} change{changesAwaitingApproval.length > 1 ? 's' : ''} awaiting your approval
+                • {tradeVariations.length} variation{tradeVariations.length > 1 ? 's' : ''} from your trade {tradeVariations.length > 1 ? 'are' : 'is'} awaiting your approval in the Variations tab
+              </li>
+            )}
+            {clientRequestsWithResponse.length > 0 && (
+              <li>
+                • Your trade has responded to {clientRequestsWithResponse.length} of your change {clientRequestsWithResponse.length > 1 ? 'requests' : 'request'} — review the updated costs in the Variations tab
+              </li>
+            )}
+            {tradeClientRequests.length > 0 && (
+              <li>
+                • {tradeClientRequests.length} client change {tradeClientRequests.length > 1 ? 'requests' : 'request'} awaiting your response
               </li>
             )}
           </ul>

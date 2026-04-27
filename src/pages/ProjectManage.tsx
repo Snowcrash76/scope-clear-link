@@ -58,7 +58,8 @@ import {
   Receipt,
   ChevronDown,
   ChevronRight,
-  RefreshCw
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
@@ -479,6 +480,49 @@ export default function ProjectManage() {
       </div>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Notification banners */}
+        {(pendingClientRequests.length > 0 || recentlyResolvedChanges.length > 0) && (
+          <div className="space-y-3 mb-6">
+            {pendingClientRequests.length > 0 && (
+              <Card className="p-4 bg-pending/5 border-pending/30">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-full bg-pending/20 flex-shrink-0">
+                    <AlertCircle className="w-5 h-5 text-pending-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Your client has submitted {pendingClientRequests.length} change {pendingClientRequests.length > 1 ? 'requests' : 'request'} that {pendingClientRequests.length > 1 ? 'need' : 'needs'} your response — see the Variations tab.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+            {recentlyResolvedChanges.length > 0 && (
+              <Card className="p-4 bg-approved/5 border-approved/20">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-full bg-approved/10 flex-shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-approved" />
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-semibold text-approved">Variation Update</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {(() => {
+                        const approvedCount = recentlyResolvedChanges.filter(cr => cr.status === 'approved').length;
+                        const declinedCount = recentlyResolvedChanges.filter(cr => cr.status === 'declined').length;
+                        const parts: string[] = [];
+                        if (approvedCount > 0) parts.push(`${approvedCount} variation${approvedCount > 1 ? 's' : ''} approved`);
+                        if (declinedCount > 0) parts.push(`${declinedCount} variation${declinedCount > 1 ? 's' : ''} declined`);
+                        return `${parts.join(' and ')} by your client recently — see the Variations tab for details.`;
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
             <TabsList className="w-max sm:w-auto inline-flex flex-nowrap justify-start">
