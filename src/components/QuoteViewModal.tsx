@@ -2,6 +2,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -96,6 +97,9 @@ export function QuoteViewModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-0">
+          {/* Required for accessibility — visually hidden since we render our own heading below */}
+          <DialogTitle className="sr-only">{quote.quoteNumber}</DialogTitle>
+
           {/* ── Header bar: QUOTE title + status ── */}
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-3xl font-bold tracking-tight">QUOTE</h2>
