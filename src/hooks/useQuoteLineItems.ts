@@ -28,6 +28,37 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // After every mutation, re-read all line items and write the correct
+  // subtotal / tax_amount / total back to the quotes row.
+  const recalculateQuoteTotals = useCallback(async () => {
+    if (!quoteId) return;
+    try {
+      const [itemsRes, quoteRes] = await Promise.all([
+        supabase.from('quote_line_items').select('cost').eq('quote_id', quoteId),
+        supabase.from('quotes').select('tax_rate').eq('id', quoteId).single(),
+      ]);
+      if (itemsRes.error) throw itemsRes.error;
+      if (quoteRes.error) throw quoteRes.error;
+
+      const taxRate = Number(quoteRes.data?.tax_rate) || 0;
+      const subtotal = (itemsRes.data || []).reduce(
+        (sum, row: { cost: number | null }) => sum + (Number(row.cost) || 0),
+        0
+      );
+      const taxAmount = subtotal * (taxRate / 100);
+      const total = subtotal + taxAmount;
+
+      const { error: updateError } = await supabase
+        .from('quotes')
+        .update({ subtotal, tax_amount: taxAmount, total })
+        .eq('id', quoteId);
+
+      if (updateError) throw updateError;
+    } catch (err) {
+      console.error('Error recalculating quote totals:', err);
+    }
+  }, [quoteId]);
+
   const fetchLineItems = useCallback(async () => {
     if (!quoteId) {
       setLineItems([]);
@@ -95,7 +126,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       if (error) throw error;
 
-      await fetchLineItems();
+      await Promise.all([fetchLineItems(), recalculateQuoteTotals()]);
       return data.id;
     } catch (error) {
       console.error('Error adding quote line item:', error);
@@ -125,7 +156,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       if (error) throw error;
 
-      await fetchLineItems();
+      await Promise.all([fetchLineItems(), recalculateQuoteTotals()]);
       return true;
     } catch (error) {
       console.error('Error updating quote line item:', error);
@@ -143,7 +174,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       if (error) throw error;
 
-      await fetchLineItems();
+      await Promise.all([fetchLineItems(), recalculateQuoteTotals()]);
       return true;
     } catch (error) {
       console.error('Error deleting quote line item:', error);

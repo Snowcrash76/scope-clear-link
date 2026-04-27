@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { AppShell, parseDefaultTerms } from '@/components/AppShell';
 import { Button } from '@/components/ui/button';
@@ -117,6 +117,20 @@ export default function ProjectManage() {
     cancelInvoice,
     deleteInvoice,
   } = useInvoices(id);
+
+  // Enrich the active quote with a computed total derived from the loaded line
+  // items whenever the stored total is 0 (null in DB maps to 0 via `|| 0`).
+  // This makes the stage invoice button work for older quotes that were saved
+  // before totals were written back on every line item mutation.
+  const effectiveQuote = useMemo(() => {
+    if (!activeQuote) return null;
+    if (activeQuote.total > 0) return activeQuote;
+    const subtotal = quoteLineItems.reduce((sum, item) => sum + item.cost, 0);
+    if (subtotal === 0) return activeQuote;
+    const taxRate = activeQuote.taxRate || 0;
+    const taxAmount = subtotal * (taxRate / 100);
+    return { ...activeQuote, subtotal, taxAmount, total: subtotal + taxAmount };
+  }, [activeQuote, quoteLineItems]);
 
   // Check for tab query param (e.g., from job creation)
   const initialTab = searchParams.get('tab') || 'quote';
@@ -317,9 +331,9 @@ export default function ProjectManage() {
     // amount is already the ex-tax subtotal (invoiceAmount is ex-tax; invoicePercentage uses subtotal)
     const invoiceId = await createInvoice({
       type: 'staged',
-      quoteId: activeQuote?.id,
+      quoteId: effectiveQuote?.id,
       stageId: stage.id,
-      taxRate: activeQuote?.taxRate ?? 10,
+      taxRate: effectiveQuote?.taxRate ?? 10,
       lineItems: [{
         description: `Stage Payment: ${stage.name}`,
         quantity: 1,
@@ -900,7 +914,7 @@ export default function ProjectManage() {
               stages={project.stages}
               currentStageIndex={project.currentStageIndex}
               invoices={invoices}
-              quote={activeQuote}
+              quote={effectiveQuote}
               onUpdateStage={handleUpdateStage}
               onSetCurrentStage={handleSetCurrentStage}
               onAddStage={addStage}
