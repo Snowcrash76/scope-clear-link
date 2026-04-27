@@ -64,31 +64,31 @@ export function StageManager({
   const [stageToDelete, setStageToDelete] = useState<string | null>(null);
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
 
+  // Each handler makes exactly ONE call — either onSetCurrentStage (which sets
+  // ALL stage statuses correctly in a single sequential pass) or onUpdateStage
+  // for the edge case where there is no adjacent stage to advance/retreat to.
   const handleMarkComplete = (stageIndex: number) => {
-    const stage = stages[stageIndex];
-    onUpdateStage(stage.id, 'completed');
-    
-    // If there's a next stage, make it current
     if (stageIndex + 1 < stages.length) {
+      // Advance to next stage; onSetCurrentStage marks everything correctly.
       onSetCurrentStage(stageIndex + 1);
-      onUpdateStage(stages[stageIndex + 1].id, 'current');
+    } else {
+      // Last stage — just mark it complete, nothing to advance to.
+      onUpdateStage(stages[stageIndex].id, 'completed');
     }
   };
 
   const handleStartStage = (stageIndex: number) => {
-    const stage = stages[stageIndex];
+    // onSetCurrentStage sets all previous stages to completed and this one current.
     onSetCurrentStage(stageIndex);
-    onUpdateStage(stage.id, 'current');
   };
 
   const handleRevertStage = (stageIndex: number) => {
-    const stage = stages[stageIndex];
-    onUpdateStage(stage.id, 'upcoming');
-    
-    // Make previous stage current if exists
     if (stageIndex > 0) {
+      // Go back to previous stage; onSetCurrentStage handles all statuses.
       onSetCurrentStage(stageIndex - 1);
-      onUpdateStage(stages[stageIndex - 1].id, 'current');
+    } else {
+      // First stage — just mark it upcoming; nothing to revert to.
+      onUpdateStage(stages[0].id, 'upcoming');
     }
   };
 
@@ -115,11 +115,19 @@ export function StageManager({
     return invoices.find(inv => inv.stageId === stageId);
   };
 
-  // Helper to calculate stage billing amount (always returns ex-tax subtotal)
+  // Helper to calculate stage billing amount (always returns ex-tax subtotal).
+  // Gate on quote.total (reliably non-zero) rather than quote.subtotal which can
+  // be 0 for older records mapped as `q.subtotal || 0` in useQuotes.
   const getStageBillingAmount = (stage: ProjectStage) => {
     if (stage.invoiceAmount) return stage.invoiceAmount;
-    if (stage.invoicePercentage && quote?.subtotal) {
-      return (quote.subtotal * stage.invoicePercentage) / 100;
+    if (stage.invoicePercentage && quote?.total) {
+      const taxRate = quote.taxRate || 0;
+      // Use stored subtotal when available; derive from total otherwise.
+      const subtotal =
+        quote.subtotal && quote.subtotal > 0
+          ? quote.subtotal
+          : quote.total / (1 + taxRate / 100);
+      return (subtotal * stage.invoicePercentage) / 100;
     }
     return null;
   };
@@ -277,11 +285,14 @@ export function StageManager({
                       Invoice: {stage.invoiceAmount 
                         ? `$${stage.invoiceAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
                         : `${stage.invoicePercentage}% of quote`}
-                      {stage.invoicePercentage && quote?.subtotal && (
-                        <span className="text-muted-foreground/70">
-                          (${((quote.subtotal * stage.invoicePercentage) / 100).toLocaleString('en-AU', { minimumFractionDigits: 2 })} ex. tax)
-                        </span>
-                      )}
+                      {stage.invoicePercentage && quote?.total && (() => {
+                        const amt = getStageBillingAmount(stage);
+                        return amt ? (
+                          <span className="text-muted-foreground/70">
+                            (${amt.toLocaleString('en-AU', { minimumFractionDigits: 2 })} ex. tax)
+                          </span>
+                        ) : null;
+                      })()}
                     </p>
                   )}
                 </div>
