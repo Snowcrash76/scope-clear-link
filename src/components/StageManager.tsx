@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { ProjectStage, Invoice, Quote } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -331,7 +332,13 @@ export function StageManager({
                       variant="outline"
                       onClick={() => {
                         const amount = getStageBillingAmount(stage);
-                        if (amount) onGenerateStageInvoice(stage, amount);
+                        if (amount) {
+                          onGenerateStageInvoice(stage, amount);
+                        } else if (stage.invoicePercentage) {
+                          toast.error('Quote total not available. Open the quote, save it with line items, then try again.');
+                        } else {
+                          toast.error('No billing amount configured for this stage.');
+                        }
                       }}
                     >
                       <Receipt className="w-4 h-4 mr-1" />
