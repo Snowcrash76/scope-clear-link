@@ -34,8 +34,8 @@ interface StageManagerProps {
   currentStageIndex: number;
   invoices?: Invoice[];
   quote?: Quote | null;
-  onUpdateStage: (stageId: string, status: 'upcoming' | 'current' | 'completed') => void;
-  onSetCurrentStage: (index: number) => void;
+  onUpdateStage: (stageId: string, status: 'upcoming' | 'current' | 'completed') => Promise<void> | void;
+  onSetCurrentStage: (index: number) => Promise<void> | void;
   onAddStage?: (data: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => Promise<boolean>;
   onEditStage?: (stageId: string, data: { name: string; description: string; invoiceAmount?: number; invoicePercentage?: number }) => Promise<boolean>;
   onDeleteStage?: (stageId: string) => Promise<boolean>;
@@ -64,31 +64,31 @@ export function StageManager({
   const [stageToDelete, setStageToDelete] = useState<string | null>(null);
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
 
-  // Each handler makes exactly ONE call — either onSetCurrentStage (which sets
-  // ALL stage statuses correctly in a single sequential pass) or onUpdateStage
+  // Each handler makes exactly ONE awaited call — either onSetCurrentStage (which
+  // sets ALL stage statuses correctly in a single sequential pass) or onUpdateStage
   // for the edge case where there is no adjacent stage to advance/retreat to.
-  const handleMarkComplete = (stageIndex: number) => {
+  const handleMarkComplete = async (stageIndex: number) => {
     if (stageIndex + 1 < stages.length) {
       // Advance to next stage; onSetCurrentStage marks everything correctly.
-      onSetCurrentStage(stageIndex + 1);
+      await onSetCurrentStage(stageIndex + 1);
     } else {
       // Last stage — just mark it complete, nothing to advance to.
-      onUpdateStage(stages[stageIndex].id, 'completed');
+      await onUpdateStage(stages[stageIndex].id, 'completed');
     }
   };
 
-  const handleStartStage = (stageIndex: number) => {
+  const handleStartStage = async (stageIndex: number) => {
     // onSetCurrentStage sets all previous stages to completed and this one current.
-    onSetCurrentStage(stageIndex);
+    await onSetCurrentStage(stageIndex);
   };
 
-  const handleRevertStage = (stageIndex: number) => {
+  const handleRevertStage = async (stageIndex: number) => {
     if (stageIndex > 0) {
       // Go back to previous stage; onSetCurrentStage handles all statuses.
-      onSetCurrentStage(stageIndex - 1);
+      await onSetCurrentStage(stageIndex - 1);
     } else {
       // First stage — just mark it upcoming; nothing to revert to.
-      onUpdateStage(stages[0].id, 'upcoming');
+      await onUpdateStage(stages[0].id, 'upcoming');
     }
   };
 
