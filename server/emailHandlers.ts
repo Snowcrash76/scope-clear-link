@@ -27,7 +27,7 @@ async function sendViaResend(to: string, subject: string, html: string) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getResendKey()}`,
     },
-    body: JSON.stringify({ from: 'ScopeClear <onboarding@resend.dev>', to: [to], subject, html }),
+    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL || 'ScopeClear <onboarding@resend.dev>', to: [to], subject, html }),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(`Resend error: ${JSON.stringify(result)}`);
