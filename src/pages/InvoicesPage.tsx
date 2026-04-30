@@ -7,12 +7,15 @@ import { AppShell } from '@/components/AppShell';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Receipt, ChevronRight, Download, CalendarRange, X } from 'lucide-react';
+import { Receipt, ChevronRight, Download, CalendarRange, X, ListFilter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
 
 type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+
+const ALL_STATUSES: InvoiceStatus[] = ['draft', 'sent', 'paid', 'overdue', 'cancelled'];
 
 const STATUS_VARIANTS: Record<InvoiceStatus, string> = {
   draft: 'bg-zinc-100 text-zinc-600',
@@ -107,30 +110,65 @@ function exportInvoicesCSV(rows: InvoiceRow[]) {
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const { data: invoices, isLoading } = useAllInvoices();
+
+  // Date filter
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [dateFilterOpen, setDateFilterOpen] = useState(false);
 
-  const isFiltered = !!dateFrom || !!dateTo;
+  // Status filter — empty set means "show all"
+  const [statusFilter, setStatusFilter] = useState<Set<InvoiceStatus>>(new Set());
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+
+  const isDateFiltered = !!dateFrom || !!dateTo;
+  const isStatusFiltered = statusFilter.size > 0;
+  const isFiltered = isDateFiltered || isStatusFiltered;
+
+  const toggleStatus = (s: InvoiceStatus) => {
+    setStatusFilter(prev => {
+      const next = new Set(prev);
+      if (next.has(s)) next.delete(s);
+      else next.add(s);
+      return next;
+    });
+  };
 
   const filtered = (invoices ?? []).filter(inv => {
-    if (!isFiltered) return true;
-    const created = parseISO(inv.created_at);
-    if (dateFrom && dateTo) {
-      return isWithinInterval(created, {
-        start: startOfDay(parseISO(dateFrom)),
-        end: endOfDay(parseISO(dateTo)),
-      });
+    if (isStatusFiltered && !statusFilter.has(inv.status)) return false;
+    if (isDateFiltered) {
+      const created = parseISO(inv.created_at);
+      if (dateFrom && dateTo) {
+        return isWithinInterval(created, {
+          start: startOfDay(parseISO(dateFrom)),
+          end: endOfDay(parseISO(dateTo)),
+        });
+      }
+      if (dateFrom) return created >= startOfDay(parseISO(dateFrom));
+      if (dateTo) return created <= endOfDay(parseISO(dateTo));
     }
-    if (dateFrom) return created >= startOfDay(parseISO(dateFrom));
-    if (dateTo) return created <= endOfDay(parseISO(dateTo));
     return true;
   });
 
-  const clearFilter = () => {
+  const clearDateFilter = () => {
     setDateFrom('');
     setDateTo('');
-    setFilterOpen(false);
+    setDateFilterOpen(false);
+  };
+
+  const clearStatusFilter = () => {
+    setStatusFilter(new Set());
+    setStatusFilterOpen(false);
+  };
+
+  const clearAll = () => {
+    clearDateFilter();
+    clearStatusFilter();
+  };
+
+  const statusFilterLabel = () => {
+    if (statusFilter.size === 0) return 'Status';
+    if (statusFilter.size === 1) return STATUS_LABELS[[...statusFilter][0]];
+    return `${statusFilter.size} statuses`;
   };
 
   return (
@@ -144,17 +182,65 @@ export default function InvoicesPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Date filter */}
-            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            {/* Status filter */}
+            <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
               <PopoverTrigger asChild>
                 <Button
-                  variant={isFiltered ? 'default' : 'outline'}
+                  variant={isStatusFiltered ? 'default' : 'outline'}
+                  size="sm"
+                  className="gap-2"
+                  data-testid="button-invoice-status-filter"
+                >
+                  <ListFilter className="w-4 h-4" />
+                  {statusFilterLabel()}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-52 p-3 space-y-2" align="end">
+                <p className="text-sm font-semibold mb-1">Filter by status</p>
+                {ALL_STATUSES.map(s => (
+                  <div key={s} className="flex items-center gap-2.5">
+                    <Checkbox
+                      id={`status-filter-${s}`}
+                      checked={statusFilter.has(s)}
+                      onCheckedChange={() => toggleStatus(s)}
+                      data-testid={`checkbox-status-${s}`}
+                    />
+                    <label
+                      htmlFor={`status-filter-${s}`}
+                      className="flex items-center gap-2 cursor-pointer select-none text-sm"
+                    >
+                      <span className={cn('inline-flex px-1.5 py-0.5 rounded text-xs font-semibold', STATUS_VARIANTS[s])}>
+                        {STATUS_LABELS[s]}
+                      </span>
+                    </label>
+                  </div>
+                ))}
+                {isStatusFiltered && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full gap-2 mt-1"
+                    onClick={clearStatusFilter}
+                    data-testid="button-status-filter-clear"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    Clear
+                  </Button>
+                )}
+              </PopoverContent>
+            </Popover>
+
+            {/* Date filter */}
+            <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={isDateFiltered ? 'default' : 'outline'}
                   size="sm"
                   className="gap-2"
                   data-testid="button-invoice-filter"
                 >
                   <CalendarRange className="w-4 h-4" />
-                  {isFiltered ? (
+                  {isDateFiltered ? (
                     <span>
                       {dateFrom && dateTo
                         ? `${format(parseISO(dateFrom), 'd MMM')} – ${format(parseISO(dateTo), 'd MMM yyyy')}`
@@ -163,7 +249,7 @@ export default function InvoicesPage() {
                         : `Until ${format(parseISO(dateTo), 'd MMM yyyy')}`}
                     </span>
                   ) : (
-                    'Filter by date'
+                    'Date'
                   )}
                 </Button>
               </PopoverTrigger>
@@ -195,21 +281,21 @@ export default function InvoicesPage() {
                     />
                   </div>
                 </div>
-                {isFiltered && (
-                  <Button variant="ghost" size="sm" className="w-full gap-2" onClick={clearFilter} data-testid="button-invoice-filter-clear">
+                {isDateFiltered && (
+                  <Button variant="ghost" size="sm" className="w-full gap-2" onClick={clearDateFilter} data-testid="button-invoice-filter-clear">
                     <X className="w-3.5 h-3.5" />
-                    Clear filter
+                    Clear dates
                   </Button>
                 )}
               </PopoverContent>
             </Popover>
 
-            {/* Clear badge when filter is active */}
+            {/* Clear all badge */}
             {isFiltered && (
               <button
-                onClick={clearFilter}
+                onClick={clearAll}
                 className="p-1.5 rounded hover:bg-muted transition-colors"
-                title="Clear date filter"
+                title="Clear all filters"
                 data-testid="button-invoice-filter-clear-badge"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
@@ -235,6 +321,9 @@ export default function InvoicesPage() {
         {isFiltered && !isLoading && (
           <p className="text-sm text-muted-foreground mb-4">
             Showing <span className="font-medium text-foreground">{filtered.length}</span> of {invoices?.length ?? 0} invoices
+            {isStatusFiltered && (
+              <span> · {[...statusFilter].map(s => STATUS_LABELS[s]).join(', ')}</span>
+            )}
           </p>
         )}
 
@@ -267,12 +356,12 @@ export default function InvoicesPage() {
               <Receipt className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
                 {isFiltered
-                  ? 'No invoices match the selected date range.'
+                  ? 'No invoices match the selected filters.'
                   : 'No invoices yet. Invoices are created from within a project.'}
               </p>
               {isFiltered && (
-                <button onClick={clearFilter} className="text-sm text-primary font-medium mt-2 hover:opacity-70 transition-opacity">
-                  Clear filter
+                <button onClick={clearAll} className="text-sm text-primary font-medium mt-2 hover:opacity-70 transition-opacity">
+                  Clear filters
                 </button>
               )}
             </div>
