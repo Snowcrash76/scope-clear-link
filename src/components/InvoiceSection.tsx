@@ -130,7 +130,8 @@ export function InvoiceSection({
     if (success) setEditingInvRef(null);
   };
 
-  const [invoiceType, setInvoiceType] = useState<'staged' | 'final' | 'deposit'>('staged');
+  const [invoiceType, setInvoiceType] = useState<'staged' | 'final' | 'deposit' | 'custom'>('staged');
+  const [customTypeLabel, setCustomTypeLabel] = useState('');
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
   const [notes, setNotes] = useState(defaultPaymentInstructions || '');
@@ -221,12 +222,15 @@ export function InvoiceSection({
     if (invoiceType === 'final' || Object.keys(selectedItems).length === 0) {
       // For final invoice or if no items selected, use percentage of quote
       const amount = quoteTotal * (percentage / 100);
+      const description = invoiceType === 'final'
+        ? 'Final Payment'
+        : invoiceType === 'deposit'
+        ? `Deposit (${percentage}%)`
+        : invoiceType === 'custom'
+        ? (customTypeLabel.trim() || 'Custom Invoice')
+        : `Progress Payment (${percentage}%)`;
       lineItems = [{
-        description: invoiceType === 'final' 
-          ? 'Final Payment' 
-          : invoiceType === 'deposit'
-          ? `Deposit (${percentage}%)`
-          : `Progress Payment (${percentage}%)`,
+        description,
         quantity: 1,
         unitPrice: amount / (1 + taxRate / 100), // Remove tax for subtotal
       }];
@@ -266,7 +270,7 @@ export function InvoiceSection({
     }
 
     await onCreateInvoice({
-      type: invoiceType,
+      type: invoiceType === 'custom' ? 'staged' : invoiceType,
       quoteId: quote?.id,
       taxRate,
       dueDate: dueDate ? new Date(dueDate) : undefined,
@@ -280,6 +284,7 @@ export function InvoiceSection({
     setSelectedItems({});
     setCustomDescription('');
     setCustomAmount('');
+    setCustomTypeLabel('');
     setNotes('');
     setTerms(defaultTerms || '');
     setDueDate('');
@@ -561,16 +566,25 @@ export function InvoiceSection({
             {/* Invoice Type */}
             <div className="space-y-2">
               <Label>Invoice Type</Label>
-              <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final' | 'deposit')}>
-                <SelectTrigger>
+              <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final' | 'deposit' | 'custom')}>
+                <SelectTrigger data-testid="select-invoice-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="deposit">Deposit</SelectItem>
                   <SelectItem value="staged">Progress Payment</SelectItem>
                   <SelectItem value="final">Final Invoice</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
+              {invoiceType === 'custom' && (
+                <Input
+                  value={customTypeLabel}
+                  onChange={e => setCustomTypeLabel(e.target.value)}
+                  placeholder="e.g. Retention, Variation Invoice, Mobilisation..."
+                  data-testid="input-custom-invoice-type"
+                />
+              )}
             </div>
 
             {/* Payment Amount */}
