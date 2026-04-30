@@ -736,6 +736,82 @@ export function QuoteSection({
           </div>
         </div>
 
+        {/* Actions (Trade View) */}
+        {isTradeView && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              View Quote
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+            {quote!.status === 'draft' && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button size="sm" onClick={handleSendQuote}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send to Client
+                </Button>
+              </>
+            )}
+            {quote!.status === 'sent' && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportToXero}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export to Xero
+                </Button>
+              </>
+            )}
+            {quote!.status === 'approved' && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleExportToXero}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export to Xero
+                </Button>
+              </>
+            )}
+            {(quote!.status === 'declined' || quote!.status === 'revised') && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button size="sm" onClick={handleReviseQuote}>
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Create Revised Quote
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Client View - View and Download buttons */}
+        {!isTradeView && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
+              <Eye className="w-4 h-4 mr-2" />
+              View Quote
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+          </div>
+        )}
+
         {/* Included Items — scope + custom line items merged (no variation duplicates) */}
         {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
           <div className="border rounded-lg divide-y mb-4">
@@ -817,85 +893,6 @@ export function QuoteSection({
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-muted-foreground">Valid until:</span>
             <span>{format(quote!.validUntil, 'dd MMM yyyy')}</span>
-          </div>
-        )}
-
-
-        {/* Actions (Trade View) */}
-        {isTradeView && (
-          <div className="mt-6 flex flex-wrap gap-3">
-            {/* View and Download buttons - always available */}
-            <Button variant="outline" onClick={() => setIsViewModalOpen(true)}>
-              <Eye className="w-4 h-4 mr-2" />
-              View Quote
-            </Button>
-            <Button variant="outline" onClick={handleDownloadPDF}>
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
-            
-            {quote!.status === 'draft' && (
-              <>
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Quote
-                </Button>
-                <Button onClick={handleSendQuote}>
-                  <Send className="w-4 h-4 mr-2" />
-                  Send to Client
-                </Button>
-              </>
-            )}
-            {quote!.status === 'sent' && (
-              <>
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Quote
-                </Button>
-                <Button variant="outline" onClick={handleExportToXero}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Export to Xero
-                </Button>
-              </>
-            )}
-            {quote!.status === 'approved' && (
-              <>
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Quote
-                </Button>
-                <Button variant="outline" onClick={handleExportToXero}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Export to Xero
-                </Button>
-              </>
-            )}
-            {(quote!.status === 'declined' || quote!.status === 'revised') && (
-              <>
-                <Button variant="outline" onClick={() => setIsEditing(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Quote
-                </Button>
-                <Button onClick={handleReviseQuote}>
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Create Revised Quote
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Client View - View and Download buttons */}
-        {!isTradeView && (
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button variant="outline" onClick={() => setIsViewModalOpen(true)}>
-              <Eye className="w-4 h-4 mr-2" />
-              View Quote
-            </Button>
-            <Button variant="outline" onClick={handleDownloadPDF}>
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
           </div>
         )}
       </Card>
