@@ -443,8 +443,10 @@ export async function handleSendScopeChangeNotification(
   const supabase = getSupabaseAdmin();
   const { projectId, changeType, itemTitle } = body;
 
-  if (!projectId || !changeType || !itemTitle) {
-    throw new Error('projectId, changeType and itemTitle are required');
+  const allowedChangeTypes = ['added', 'updated', 'removed'] as const;
+  if (!projectId || !itemTitle) throw new Error('projectId and itemTitle are required');
+  if (!allowedChangeTypes.includes(changeType as typeof allowedChangeTypes[number])) {
+    throw new Error(`changeType must be one of: ${allowedChangeTypes.join(', ')}`);
   }
 
   const { data: project, error: projectError } = await supabase

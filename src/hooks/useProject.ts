@@ -364,7 +364,11 @@ export function useProject(projectId: string | undefined) {
   };
 
   const deleteScopeItem = async (itemId: string) => {
-    const itemTitle = project?.scopeItems.find(i => i.id === itemId)?.title ?? '';
+    let itemTitle = project?.scopeItems.find(i => i.id === itemId)?.title ?? '';
+    if (!itemTitle) {
+      const { data } = await supabase.from('scope_items').select('title').eq('id', itemId).single();
+      itemTitle = data?.title ?? '';
+    }
     try {
       const { error } = await supabase
         .from('scope_items')
