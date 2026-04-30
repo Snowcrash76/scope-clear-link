@@ -359,7 +359,7 @@ export function QuoteSection({
                 <div className="p-3 bg-muted/50">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Lock className="w-3.5 h-3.5" />
-                    From Scope of Works (read-only)
+                    From Scope of Works
                   </span>
                 </div>
                 {includedItems.map(item => (
@@ -408,7 +408,7 @@ export function QuoteSection({
             <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
               <div className="px-3 py-2 border-b border-approved/20 flex items-center gap-2">
                 <Lock className="w-3.5 h-3.5 text-approved" />
-                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations (read-only)</span>
+                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
               </div>
               {approvedChanges.map(change => (
                 <div key={change.id} className="p-3">
