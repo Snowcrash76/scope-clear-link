@@ -246,7 +246,7 @@ export default function ClientProjectView() {
               </TabsTrigger>
               <TabsTrigger value="scope" className="gap-2">
                 <Package className="w-4 h-4 hidden sm:block" />
-                Scope
+                Scope of Works
               </TabsTrigger>
               <TabsTrigger value="changes" className="gap-2" data-testid="tab-variations">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
@@ -271,7 +271,7 @@ export default function ClientProjectView() {
           {/* Scope Tab */}
           <TabsContent value="scope" className="space-y-4 animate-fade-in">
             <div>
-              <h2 className="font-heading text-xl font-bold">Project Scope</h2>
+              <h2 className="font-heading text-xl font-bold">Scope of Works</h2>
               <p className="text-sm text-muted-foreground">
                 What's included, excluded, and assumed for this project
               </p>

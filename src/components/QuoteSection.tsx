@@ -393,7 +393,7 @@ export function QuoteSection({
                 <div className="p-3 bg-muted/50">
                   <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Lock className="w-3.5 h-3.5" />
-                    From Scope (read-only)
+                    From Scope of Works (read-only)
                   </span>
                 </div>
                 {includedItems.map(item => (
@@ -419,12 +419,12 @@ export function QuoteSection({
                     data-testid="button-navigate-to-scope"
                   >
                     <MoveRight className="w-3.5 h-3.5 shrink-0" />
-                    Line items are managed in the Scope tab
+                    Line items are managed in the Scope of Works tab
                   </button>
                 ) : (
                   <div className="p-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <MoveRight className="w-3.5 h-3.5 shrink-0" />
-                    Line items are managed in the Scope tab
+                    Line items are managed in the Scope of Works tab
                   </div>
                 )}
               </>

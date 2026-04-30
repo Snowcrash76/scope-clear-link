@@ -277,7 +277,7 @@ export default function ProjectManage() {
   const handleSaveScopeItem = async (itemData: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => {
     const success = await saveScopeItem(itemData);
     if (success) {
-      toast.success(itemData.id ? 'Scope item updated' : 'Scope item added');
+      toast.success(itemData.id ? 'Scope of works item updated' : 'Scope of works item added');
       setEditingScopeItem(undefined);
       setIsAddingScopeItem(false);
     }
@@ -286,7 +286,7 @@ export default function ProjectManage() {
   const handleDeleteScopeItem = async (itemId: string) => {
     const success = await deleteScopeItem(itemId);
     if (success) {
-      toast.success('Scope item deleted');
+      toast.success('Scope of works item deleted');
       setEditingScopeItem(undefined);
     }
   };
@@ -598,7 +598,7 @@ export default function ProjectManage() {
                 )}
               </TabsTrigger>
               <TabsTrigger value="scope">
-                Scope
+                Scope of Works
                 <Badge variant="secondary" className="ml-2">
                   {project.scopeItems.length}
                 </Badge>
@@ -619,7 +619,7 @@ export default function ProjectManage() {
           {/* Scope Tab */}
           <TabsContent value="scope" className="mt-0 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-heading text-lg font-semibold">Project Scope</h2>
+              <h2 className="font-heading text-lg font-semibold">Scope of Works</h2>
               <Button onClick={() => setIsAddingScopeItem(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item

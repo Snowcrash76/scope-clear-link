@@ -87,12 +87,12 @@ export function EditScopeItemModal({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-heading">
-            {isEditing ? 'Edit Scope Item' : 'Add Scope Item'}
+            {isEditing ? 'Edit Scope of Works Item' : 'Add Scope of Works Item'}
           </DialogTitle>
           <DialogDescription>
             {isEditing 
-              ? 'Update the scope item details.'
-              : 'Add a new item to the project scope.'
+              ? 'Update the scope of works item details.'
+              : 'Add a new item to the scope of works.'
             }
           </DialogDescription>
         </DialogHeader>

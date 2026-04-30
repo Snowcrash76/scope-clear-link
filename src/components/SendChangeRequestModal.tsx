@@ -112,7 +112,7 @@ export function SendChangeRequestModal({
 
           {scopeItems.length > 0 && (
             <div className="space-y-2">
-              <Label>Related Scope Item (optional)</Label>
+              <Label>Related Scope of Works Item (optional)</Label>
               <Select value={selectedScopeItem} onValueChange={setSelectedScopeItem}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a scope item..." />
