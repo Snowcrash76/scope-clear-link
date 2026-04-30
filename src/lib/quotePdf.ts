@@ -293,7 +293,8 @@ export function generateQuotePDF(
   });
 
   // Custom (non-variation) quote line items — also exclude items whose cost matches an approved variation
-  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
+  const baseQuoteLineItems = quoteLineItems.filter(item => !item.isVariation && !approvedChangeCosts.has(item.cost));
+  const variationLineItems = quoteLineItems.filter(item => item.isVariation);
   baseQuoteLineItems.forEach(item => {
     allItems.push({
       description: item.title,
@@ -368,7 +369,7 @@ export function generateQuotePDF(
 
   // Approved Variations section
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
-  if (approvedChanges.length > 0) {
+  if (approvedChanges.length > 0 || variationLineItems.length > 0) {
     if (yPos > 230) {
       doc.addPage();
       yPos = 20;
@@ -381,19 +382,34 @@ export function generateQuotePDF(
     doc.text('Approved Variations', margin, yPos);
     yPos += 6;
 
-    const variationData = approvedChanges.map(cr => {
-      const desc = cr.title;
-      const details = cr.description || '';
-      const displayDesc = details ? `${desc}\n${details}` : desc;
-      const amount = cr.costImpact;
-      return [
-        displayDesc,
-        '1.00',
-        amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
-        '10%',
-        amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
-      ];
-    });
+    const variationData = [
+      ...approvedChanges.map(cr => {
+        const desc = cr.title;
+        const details = cr.description || '';
+        const displayDesc = details ? `${desc}\n${details}` : desc;
+        const amount = cr.costImpact;
+        return [
+          displayDesc,
+          '1.00',
+          amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+          '10%',
+          amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+        ];
+      }),
+      ...variationLineItems.map(item => {
+        const desc = item.title;
+        const details = stripHtml(item.description || '');
+        const displayDesc = details ? `${desc}\n${details}` : desc;
+        const amount = item.cost || 0;
+        return [
+          displayDesc,
+          '1.00',
+          amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+          '10%',
+          amount.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
+        ];
+      }),
+    ];
 
     autoTable(doc, {
       startY: yPos,

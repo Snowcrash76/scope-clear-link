@@ -40,6 +40,7 @@ export interface QuoteLineItem {
   description?: string;
   cost: number;
   sortOrder: number;
+  isVariation: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

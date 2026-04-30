@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { RichTextEditor, RichTextContent, htmlToText } from '@/components/RichTextEditor';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { 
@@ -49,8 +50,8 @@ interface QuoteSectionProps {
   logoUrl?: string;
   // Quote line items (custom items added directly to quote)
   quoteLineItems?: QuoteLineItem[];
-  onAddLineItem?: (item: { title: string; description?: string; cost: number }) => Promise<string | null>;
-  onUpdateLineItem?: (itemId: string, data: Partial<{ title: string; description: string; cost: number }>) => Promise<boolean>;
+  onAddLineItem?: (item: { title: string; description?: string; cost: number; isVariation?: boolean }) => Promise<string | null>;
+  onUpdateLineItem?: (itemId: string, data: Partial<{ title: string; description: string; cost: number; isVariation: boolean }>) => Promise<boolean>;
   onDeleteLineItem?: (itemId: string) => Promise<boolean>;
   onCreateQuote: (data: {
     subtotal: number;
@@ -121,12 +122,14 @@ export function QuoteSection({
   const [newItemTitle, setNewItemTitle] = useState('');
   const [newItemDescription, setNewItemDescription] = useState('');
   const [newItemCost, setNewItemCost] = useState('');
+  const [newItemIsVariation, setNewItemIsVariation] = useState(false);
   
   // Editing existing line item
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editItemTitle, setEditItemTitle] = useState('');
   const [editItemDescription, setEditItemDescription] = useState('');
   const [editItemCost, setEditItemCost] = useState('');
+  const [editItemIsVariation, setEditItemIsVariation] = useState(false);
 
   // Sync state when quote prop changes (fix for editing not working)
   useEffect(() => {
@@ -148,8 +151,9 @@ export function QuoteSection({
   const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1));
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
-  // Add custom quote line items — exclude variation duplicates (by title prefix or matching cost)
-  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
+  // Split custom quote line items into base items and variation items
+  const baseQuoteLineItems = quoteLineItems.filter(item => !item.isVariation && !approvedChangeCosts.has(item.cost));
+  const variationLineItems = quoteLineItems.filter(item => item.isVariation);
   const customItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
   const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
@@ -247,12 +251,14 @@ export function QuoteSection({
       title: newItemTitle.trim(),
       description: newItemDescription.trim() || undefined,
       cost,
+      isVariation: newItemIsVariation,
     });
     
     if (result) {
       setNewItemTitle('');
       setNewItemDescription('');
       setNewItemCost('');
+      setNewItemIsVariation(false);
       setIsAddingItem(false);
       toast.success('Line item added');
     }
@@ -263,6 +269,7 @@ export function QuoteSection({
     setEditItemTitle(item.title);
     setEditItemDescription(item.description || '');
     setEditItemCost(item.cost.toString());
+    setEditItemIsVariation(item.isVariation);
   };
 
   const handleSaveEditItem = async () => {
@@ -272,6 +279,7 @@ export function QuoteSection({
       title: editItemTitle.trim(),
       description: editItemDescription.trim(),
       cost: parseFloat(editItemCost) || 0,
+      isVariation: editItemIsVariation,
     });
     
     if (success) {
@@ -420,6 +428,165 @@ export function QuoteSection({
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* Custom Line Items — editable, with variation toggle (only when editing an existing quote) */}
+          {isEditing && onAddLineItem && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+                  Additional Items
+                </h4>
+                {!isAddingItem && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsAddingItem(true)}
+                    data-testid="button-add-line-item"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" />
+                    Add Item
+                  </Button>
+                )}
+              </div>
+
+              {/* Existing custom line items */}
+              {quoteLineItems.length > 0 && (
+                <div className="border rounded-lg divide-y">
+                  {quoteLineItems.map(item => (
+                    <div key={item.id} className="p-3">
+                      {editingItemId === item.id ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <Input
+                              value={editItemTitle}
+                              onChange={e => setEditItemTitle(e.target.value)}
+                              placeholder="Item title"
+                              data-testid={`input-edit-item-title-${item.id}`}
+                            />
+                            <Input
+                              type="number"
+                              value={editItemCost}
+                              onChange={e => setEditItemCost(e.target.value)}
+                              placeholder="Cost"
+                              data-testid={`input-edit-item-cost-${item.id}`}
+                            />
+                          </div>
+                          <Textarea
+                            value={editItemDescription}
+                            onChange={e => setEditItemDescription(e.target.value)}
+                            placeholder="Description (optional)"
+                            rows={2}
+                            data-testid={`input-edit-item-desc-${item.id}`}
+                          />
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`edit-variation-${item.id}`}
+                              checked={editItemIsVariation}
+                              onCheckedChange={v => setEditItemIsVariation(!!v)}
+                              data-testid={`checkbox-edit-variation-${item.id}`}
+                            />
+                            <label htmlFor={`edit-variation-${item.id}`} className="text-sm text-muted-foreground cursor-pointer select-none">
+                              Flag as variation
+                            </label>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={handleSaveEditItem} data-testid={`button-save-item-${item.id}`}>Save</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingItemId(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium">{item.title}</span>
+                              {item.isVariation && (
+                                <Badge variant="outline" className="text-xs border-amber-400/60 text-amber-600 dark:text-amber-400">
+                                  Variation
+                                </Badge>
+                              )}
+                            </div>
+                            {item.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{htmlToText(item.description)}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-sm font-medium whitespace-nowrap">
+                              ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditItem(item)}
+                              className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+                              data-testid={`button-edit-item-${item.id}`}
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteItem(item.id)}
+                              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                              data-testid={`button-delete-item-${item.id}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new item form */}
+              {isAddingItem && (
+                <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <Input
+                      value={newItemTitle}
+                      onChange={e => setNewItemTitle(e.target.value)}
+                      placeholder="Item title"
+                      autoFocus
+                      data-testid="input-new-item-title"
+                    />
+                    <Input
+                      type="number"
+                      value={newItemCost}
+                      onChange={e => setNewItemCost(e.target.value)}
+                      placeholder="Cost"
+                      data-testid="input-new-item-cost"
+                    />
+                  </div>
+                  <Textarea
+                    value={newItemDescription}
+                    onChange={e => setNewItemDescription(e.target.value)}
+                    placeholder="Description (optional)"
+                    rows={2}
+                    data-testid="input-new-item-description"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="new-item-variation"
+                      checked={newItemIsVariation}
+                      onCheckedChange={v => setNewItemIsVariation(!!v)}
+                      data-testid="checkbox-new-item-variation"
+                    />
+                    <label htmlFor="new-item-variation" className="text-sm text-muted-foreground cursor-pointer select-none">
+                      Flag as variation
+                    </label>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleAddLineItem} disabled={!newItemTitle.trim()} data-testid="button-confirm-add-item">
+                      Add Item
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => { setIsAddingItem(false); setNewItemTitle(''); setNewItemDescription(''); setNewItemCost(''); setNewItemIsVariation(false); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -715,7 +882,7 @@ export function QuoteSection({
         )}
 
         {/* Approved Variations — separate green section */}
-        {approvedChanges.length > 0 && (
+        {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
           <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-6">
             <div className="px-3 py-2 border-b border-approved/20">
               <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
@@ -733,6 +900,19 @@ export function QuoteSection({
                   change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                 )}>
                   {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            ))}
+            {variationLineItems.map(item => (
+              <div key={item.id} className="p-3 flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                  <span className="text-sm font-medium">{item.title}</span>
+                  {item.description && (
+                    <RichTextContent html={item.description} className="text-xs mt-0.5" />
+                  )}
+                </div>
+                <span className="text-sm font-medium whitespace-nowrap text-approved">
+                  +${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                 </span>
               </div>
             ))}

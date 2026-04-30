@@ -123,7 +123,8 @@ export default function ClientProjectView() {
   const assumptionItems = project.scopeItems.filter(item => item.category === 'assumption');
 
   // Calculate live totals — variation duplicates filtered out; costs come from approvedChanges
-  const baseQuoteLineItems = quoteLineItems.filter(item => !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost));
+  const baseQuoteLineItems = quoteLineItems.filter(item => !item.isVariation && !approvedChangeCosts.has(item.cost));
+  const variationLineItems = quoteLineItems.filter(item => item.isVariation);
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   const changesImpact = approvedChanges.reduce((sum, cr) => sum + cr.costImpact, 0);
   const customItemsTotal = baseQuoteLineItems.reduce((sum, item) => sum + (item.cost || 0), 0);
@@ -414,7 +415,7 @@ export default function ClientProjectView() {
                 )}
 
                 {/* Approved Variations — separate green section */}
-                {approvedChanges.length > 0 && (
+                {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
                   <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
                     <div className="px-3 py-2 border-b border-approved/20">
                       <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
@@ -432,6 +433,19 @@ export default function ClientProjectView() {
                           change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                         )}>
                           {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                    {variationLineItems.map(item => (
+                      <div key={item.id} className="p-3 flex justify-between items-start">
+                        <div className="flex-1 pr-4">
+                          <p className="text-sm font-medium">{item.title}</p>
+                          {item.description && (
+                            <RichTextContent html={item.description} className="text-xs mt-0.5" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium whitespace-nowrap text-approved">
+                          +${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
                     ))}

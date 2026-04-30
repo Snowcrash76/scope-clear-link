@@ -178,7 +178,8 @@ export default function ClientQuote() {
     n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const approvedChangeCosts = new Set(changeRequests.map(cr => cr.cost_impact).filter((c): c is number => c !== null));
-  const baseLineItems = lineItems.filter(li => !isVariationItem(li.title) && !approvedChangeCosts.has(li.cost));
+  const baseLineItems = lineItems.filter(li => !li.is_variation && !approvedChangeCosts.has(li.cost));
+  const variationLineItems = lineItems.filter(li => li.is_variation);
 
   if (loading) {
     return (
@@ -333,7 +334,7 @@ export default function ClientQuote() {
         )}
 
         {/* Approved Variations — separate green section */}
-        {lineItems.filter(li => isVariationItem(li.title)).length > 0 && (
+        {variationLineItems.length > 0 && (
           <Card className="overflow-hidden border-approved/30">
             <div className="px-4 py-3 border-b bg-approved/5">
               <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-approved">
@@ -341,14 +342,14 @@ export default function ClientQuote() {
               </h2>
             </div>
             <div className="divide-y divide-approved/10">
-              {lineItems.filter(li => isVariationItem(li.title)).map((li) => (
+              {variationLineItems.map((li) => (
                 <div key={li.id} className="flex items-start justify-between gap-3 px-4 py-3">
                   <div>
                     <p className="font-medium" data-testid={`text-variation-title-${li.id}`}>
-                      {cleanVariationTitle(li.title)}
+                      {li.title}
                     </p>
-                    {stripVariationMeta(li.description) && (
-                      <RichTextContent html={stripVariationMeta(li.description)} className="mt-0.5" />
+                    {li.description && (
+                      <RichTextContent html={li.description} className="mt-0.5" />
                     )}
                   </div>
                   <p className="font-medium whitespace-nowrap tabular-nums text-approved">
