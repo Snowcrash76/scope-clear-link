@@ -258,10 +258,12 @@ export default function ClientProjectView() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="stages" className="gap-2">
-                <TrendingUp className="w-4 h-4 hidden sm:block" />
-                Stages
-              </TabsTrigger>
+              {project.stages?.length > 0 && (
+                <TabsTrigger value="stages" className="gap-2">
+                  <TrendingUp className="w-4 h-4 hidden sm:block" />
+                  Stages
+                </TabsTrigger>
+              )}
               <TabsTrigger value="documents" className="gap-2">
                 <FolderOpen className="w-4 h-4 hidden sm:block" />
                 Documents
@@ -766,21 +768,23 @@ export default function ClientProjectView() {
           </TabsContent>
 
           {/* Stages Tab */}
-          <TabsContent value="stages" className="space-y-4 animate-fade-in">
-            <div>
-              <h2 className="font-heading text-xl font-bold">Project Stages</h2>
-              <p className="text-sm text-muted-foreground">
-                See where your project is at and what's coming next
-              </p>
-            </div>
+          {project.stages?.length > 0 && (
+            <TabsContent value="stages" className="space-y-4 animate-fade-in">
+              <div>
+                <h2 className="font-heading text-xl font-bold">Project Stages</h2>
+                <p className="text-sm text-muted-foreground">
+                  See where your project is at and what's coming next
+                </p>
+              </div>
 
-            <Card className="p-4 sm:p-6">
-              <ProjectTimeline 
-                stages={project.stages} 
-                currentStageIndex={project.currentStageIndex}
-              />
-            </Card>
-          </TabsContent>
+              <Card className="p-4 sm:p-6">
+                <ProjectTimeline 
+                  stages={project.stages} 
+                  currentStageIndex={project.currentStageIndex}
+                />
+              </Card>
+            </TabsContent>
+          )}
 
           {/* Documents Tab */}
           <TabsContent value="documents" className="space-y-4 animate-fade-in">
