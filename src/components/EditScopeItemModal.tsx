@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { RichTextEditor } from '@/components/RichTextEditor';
 import { MultiImageUpload } from '@/components/MultiImageUpload';
 import {
   Dialog,
@@ -138,13 +138,12 @@ export function EditScopeItemModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
-              id="description"
-              placeholder="Detailed description of what this includes..."
+            <Label>Description</Label>
+            <RichTextEditor
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="min-h-[100px]"
+              onChange={setDescription}
+              placeholder="Detailed description of what this includes..."
+              minHeight="100px"
             />
           </div>
 
