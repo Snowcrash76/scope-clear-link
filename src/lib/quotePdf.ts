@@ -237,29 +237,33 @@ export function generateQuotePDF(
     col2Y += 4;
   }
 
-  // Column 3: Business contact details — centred under the logo
+  // Column 3: Business contact details — right-aligned to the right margin
+  const col3RightX = pageWidth - margin;
+  const col3MaxW = logoRenderW + 10;
   let col3Y = infoStartY;
   if (project.tradeBusinessName) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...textColor);
-    doc.text(project.tradeBusinessName, col3X, col3Y, { align: 'center' });
+    doc.text(project.tradeBusinessName, col3RightX, col3Y, { align: 'right' });
     col3Y += 5;
   }
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...mutedColor);
   if (project.tradeAddress) {
-    const addrLines = doc.splitTextToSize(project.tradeAddress, col3W);
-    doc.text(addrLines, col3X, col3Y, { align: 'center' });
-    col3Y += addrLines.length * 4.2;
+    const addrLines = doc.splitTextToSize(project.tradeAddress, col3MaxW);
+    addrLines.forEach((line: string) => {
+      doc.text(line, col3RightX, col3Y, { align: 'right' });
+      col3Y += 4.2;
+    });
   }
   if (project.tradePhone) {
-    doc.text(`Ph: ${project.tradePhone}`, col3X, col3Y, { align: 'center' });
+    doc.text(`Ph: ${project.tradePhone}`, col3RightX, col3Y, { align: 'right' });
     col3Y += 4.2;
   }
   if (project.tradeWebsite) {
-    doc.text(project.tradeWebsite, col3X, col3Y, { align: 'center' });
+    doc.text(project.tradeWebsite, col3RightX, col3Y, { align: 'right' });
     col3Y += 4.2;
   }
 
