@@ -3,6 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Project, ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 
+// Fire-and-forget: notify client when a scope item is added, updated, or removed.
+const sendScopeChangeNotification = async (
+  projectId: string,
+  changeType: 'added' | 'updated' | 'removed',
+  itemTitle: string
+) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+    fetch('/api/send-scope-change-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ projectId, changeType, itemTitle }),
+    }).catch(() => {});
+  } catch {
+    // Non-blocking — never surface to the user
+  }
+};
+
 // Helper function to send change notification emails.
 // Works for both authenticated (trade) and unauthenticated (client) callers.
 const sendChangeNotification = async (
@@ -317,6 +336,7 @@ export function useProject(projectId: string | undefined) {
           .eq('id', itemData.id);
 
         if (error) throw error;
+        sendScopeChangeNotification(projectId, 'updated', itemData.title);
       } else {
         const { error } = await supabase
           .from('scope_items')
@@ -331,6 +351,7 @@ export function useProject(projectId: string | undefined) {
           });
 
         if (error) throw error;
+        sendScopeChangeNotification(projectId, 'added', itemData.title);
       }
 
       await fetchProject();
@@ -343,6 +364,7 @@ export function useProject(projectId: string | undefined) {
   };
 
   const deleteScopeItem = async (itemId: string) => {
+    const itemTitle = project?.scopeItems.find(i => i.id === itemId)?.title ?? '';
     try {
       const { error } = await supabase
         .from('scope_items')
@@ -351,6 +373,7 @@ export function useProject(projectId: string | undefined) {
 
       if (error) throw error;
 
+      if (projectId && itemTitle) sendScopeChangeNotification(projectId, 'removed', itemTitle);
       await fetchProject();
       return true;
     } catch (error) {

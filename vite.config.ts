@@ -120,6 +120,23 @@ export default defineConfig(({ mode }) => ({
             return;
           }
 
+          if (req.url === "/api/send-scope-change-notification" && req.method === "POST") {
+            try {
+              const { validateSupabaseJwt, handleSendScopeChangeNotification } = await import("./server/emailHandlers");
+              const userId = await validateSupabaseJwt(req.headers["authorization"]);
+              const raw = await readBody(req);
+              const body = JSON.parse(raw) as Parameters<typeof handleSendScopeChangeNotification>[0];
+              const result = await handleSendScopeChangeNotification(body, userId);
+              sendJson(res, 200, { success: true, result });
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              const status = message === "Unauthorized" ? 401 : message === "No client email on project" ? 400 : 500;
+              console.error("[email-api] send-scope-change-notification:", message);
+              sendJson(res, status, { error: message });
+            }
+            return;
+          }
+
           if (req.url === "/api/get-signed-upload-url" && req.method === "POST") {
             try {
               const { handleGetSignedUploadUrl } = await import("./server/emailHandlers");

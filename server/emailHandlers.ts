@@ -433,6 +433,77 @@ export async function handleQuoteNotification(body: {
 }
 
 // ---------------------------------------------------------------------------
+// Scope change notification
+// ---------------------------------------------------------------------------
+
+export async function handleSendScopeChangeNotification(
+  body: { projectId: string; changeType: 'added' | 'updated' | 'removed'; itemTitle: string },
+  authenticatedUserId: string
+) {
+  const supabase = getSupabaseAdmin();
+  const { projectId, changeType, itemTitle } = body;
+
+  if (!projectId || !changeType || !itemTitle) {
+    throw new Error('projectId, changeType and itemTitle are required');
+  }
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', authenticatedUserId)
+    .single();
+  if (projectError || !project) throw new Error('Project not found or access denied');
+
+  if (!project.client_email) throw new Error('No client email on project');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', authenticatedUserId)
+    .single();
+
+  const baseUrl = getSiteUrl();
+  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
+  const clientName = project.client_name || 'there';
+  const projectName = project.name;
+
+  const actionLabels: Record<string, string> = {
+    added: 'added to',
+    updated: 'updated in',
+    removed: 'removed from',
+  };
+  const actionLabel = actionLabels[changeType] ?? 'changed in';
+
+  const subject = `[${projectName}] Scope of Works updated`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#374151;max-width:600px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);padding:32px;border-radius:12px 12px 0 0;text-align:center">
+    <h1 style="color:white;margin:0;font-size:24px">Scope of Works Updated</h1>
+  </div>
+  <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+    <p style="color:#6b7280;margin-bottom:24px">Hi ${clientName},</p>
+    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has made a change to the Scope of Works for your project <strong>${projectName}</strong>.</p>
+    <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
+      <p style="margin:0 0 4px 0;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:0.05em">Item ${actionLabel} scope</p>
+      <h3 style="margin:0;color:#1f2937">${itemTitle}</h3>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Project</a>
+    </div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
+    <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
+      This email was sent regarding project: ${projectName}
+    </p>
+  </div>
+</body></html>`;
+
+  return sendViaResend(project.client_email, subject, html);
+}
+
+// ---------------------------------------------------------------------------
 // Client document upload helpers
 // ---------------------------------------------------------------------------
 
