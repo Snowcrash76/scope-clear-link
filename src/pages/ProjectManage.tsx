@@ -938,6 +938,7 @@ export default function ProjectManage() {
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}
               onReviseQuote={reviseQuote}
+              onNavigateToScope={() => setActiveTab('scope')}
             />
           </TabsContent>
 

@@ -23,6 +23,7 @@ import {
   Pencil,
   Check,
   X,
+  MoveRight,
 } from 'lucide-react';
 import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
@@ -70,6 +71,7 @@ interface QuoteSectionProps {
   onSendQuote: (quoteId: string) => Promise<boolean>;
   onReviseQuote: (quoteId: string) => Promise<boolean>;
   isTradeView?: boolean;
+  onNavigateToScope?: () => void;
 }
 
 export function QuoteSection({
@@ -96,6 +98,7 @@ export function QuoteSection({
   onSendQuote,
   onReviseQuote,
   isTradeView = true,
+  onNavigateToScope,
 }: QuoteSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -408,6 +411,22 @@ export function QuoteSection({
                     </div>
                   </div>
                 ))}
+                {onNavigateToScope ? (
+                  <button
+                    type="button"
+                    onClick={onNavigateToScope}
+                    className="w-full p-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    data-testid="button-navigate-to-scope"
+                  >
+                    <MoveRight className="w-3.5 h-3.5 shrink-0" />
+                    Line items are managed in the Scope tab
+                  </button>
+                ) : (
+                  <div className="p-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <MoveRight className="w-3.5 h-3.5 shrink-0" />
+                    Line items are managed in the Scope tab
+                  </div>
+                )}
               </>
             )}
 
