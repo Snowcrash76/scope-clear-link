@@ -183,8 +183,22 @@ export default function ProjectManage() {
   const [dismissedVariationIds, setDismissedVariationIds] = useState<Set<string>>(() => {
     if (!id) return new Set();
     const v = localStorage.getItem(`notif-variation-update-${id}`);
-    return v ? new Set(JSON.parse(v) as string[]) : new Set();
+    if (!v) return new Set();
+    try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
   });
+
+  // Rehydrate dismiss state if the project ID changes without a full remount
+  useEffect(() => {
+    if (!id) return;
+    const actionVal = localStorage.getItem(`notif-action-required-${id}`);
+    setDismissedActionCount(actionVal !== null ? parseInt(actionVal, 10) : -1);
+    const varVal = localStorage.getItem(`notif-variation-update-${id}`);
+    if (varVal) {
+      try { setDismissedVariationIds(new Set(JSON.parse(varVal) as string[])); } catch { setDismissedVariationIds(new Set()); }
+    } else {
+      setDismissedVariationIds(new Set());
+    }
+  }, [id]);
 
   const [tradeProfileInfo, setTradeProfileInfo] = useState<{
     address: string;
