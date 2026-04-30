@@ -428,6 +428,10 @@ export function QuoteSection({
                   </div>
                 </div>
               ))}
+              <div className="p-3 border-t border-approved/20 flex items-center gap-2 text-xs text-muted-foreground">
+                <MoveRight className="w-3.5 h-3.5 shrink-0" />
+                Approved variations are managed in the Variations tab
+              </div>
             </div>
           )}
 
