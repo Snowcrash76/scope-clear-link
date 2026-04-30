@@ -340,23 +340,9 @@ export function QuoteSection({
 
         {/* Line Items Preview */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
-              Line Items
-            </h4>
-            {onAddLineItem && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsAddingItem(true)}
-                disabled={isAddingItem}
-                data-testid="button-add-line-item"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Add Item
-              </Button>
-            )}
-          </div>
+          <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">
+            Line Items
+          </h4>
           
           {/* Approved Variations — separate green section above the editable items */}
           {approvedChanges.length > 0 && (
@@ -431,13 +417,18 @@ export function QuoteSection({
             )}
 
             {/* Custom Quote Line Items (editable) */}
-            {(baseQuoteLineItems.length > 0 || isAddingItem) && (
+            {(baseQuoteLineItems.length > 0 || isAddingItem || !!onAddLineItem) && (
               <>
                 <div className="p-3 bg-primary/5">
                   <span className="text-sm font-medium text-primary">
-                    Custom Line Items
+                    Additional Items
                   </span>
                 </div>
+                {baseQuoteLineItems.length === 0 && !isAddingItem && (
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">No additional items yet.</p>
+                  </div>
+                )}
                 {baseQuoteLineItems.map(item => (
                   <div key={item.id} className="p-3">
                     {editingItemId === item.id ? (
@@ -505,6 +496,21 @@ export function QuoteSection({
                   </div>
                 ))}
                 
+                {/* Add Item button — anchored to this section */}
+                {onAddLineItem && !isAddingItem && (
+                  <div className="p-3 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsAddingItem(true)}
+                      data-testid="button-add-line-item"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Add Item
+                    </Button>
+                  </div>
+                )}
+
                 {/* Add new item form */}
                 {isAddingItem && (
                   <div className="p-3 space-y-3 bg-secondary/30">
@@ -546,9 +552,9 @@ export function QuoteSection({
               </>
             )}
             
-            {includedItems.length === 0 && approvedChanges.length === 0 && baseQuoteLineItems.length === 0 && !isAddingItem && (
+            {includedItems.length === 0 && approvedChanges.length === 0 && !onAddLineItem && baseQuoteLineItems.length === 0 && (
               <div className="p-6 text-center">
-                <p className="text-sm text-muted-foreground">No line items yet. Add scope items or custom line items.</p>
+                <p className="text-sm text-muted-foreground">No line items yet.</p>
               </div>
             )}
           </div>
