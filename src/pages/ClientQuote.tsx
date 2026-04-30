@@ -178,8 +178,11 @@ export default function ClientQuote() {
     n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const approvedChangeCosts = new Set(changeRequests.map(cr => cr.cost_impact).filter((c): c is number => c !== null));
-  const baseLineItems = lineItems.filter(li => !li.is_variation && !approvedChangeCosts.has(li.cost));
-  const variationLineItems = lineItems.filter(li => li.is_variation);
+  // Use is_variation column; fall back to title heuristic for rows not yet migrated
+  const isItemVariation = (li: typeof lineItems[number]) =>
+    li.is_variation ?? isVariationItem(li.title ?? '');
+  const baseLineItems = lineItems.filter(li => !isItemVariation(li) && !approvedChangeCosts.has(li.cost));
+  const variationLineItems = lineItems.filter(li => isItemVariation(li));
 
   if (loading) {
     return (
