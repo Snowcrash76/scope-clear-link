@@ -516,6 +516,18 @@ export function InvoiceSection({
                               <XCircle className="w-4 h-4" />
                             </Button>
                           )}
+                          {invoice.status === 'cancelled' && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => onDeleteInvoice(invoice.id)}
+                              title="Delete invoice"
+                              data-testid={`button-delete-invoice-${invoice.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          )}
                           {(invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'overdue') && (
                             <Button 
                               size="sm" 
