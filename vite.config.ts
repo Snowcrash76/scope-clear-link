@@ -52,16 +52,17 @@ export default defineConfig(({ mode }) => ({
           if (req.url === "/api/send-change-notification" && req.method === "POST") {
             try {
               const { validateSupabaseJwt, handleChangeNotification } = await import("./server/emailHandlers");
-              const userId = await validateSupabaseJwt(req.headers["authorization"]);
+              // Auth is optional: authenticated = trade-originated, unauthenticated = client-originated
+              let userId: string | undefined;
+              try { userId = await validateSupabaseJwt(req.headers["authorization"]); } catch { /* unauthenticated */ }
               const raw = await readBody(req);
               const body = JSON.parse(raw) as Record<string, unknown>;
               const result = await handleChangeNotification(body as Parameters<typeof handleChangeNotification>[0], userId);
               sendJson(res, 200, { success: true, result });
             } catch (err: unknown) {
               const message = errorMessage(err);
-              const status = message === "Unauthorized" ? 401 : 500;
               console.error("[email-api] send-change-notification:", message);
-              sendJson(res, status, { error: message });
+              sendJson(res, 500, { error: message });
             }
             return;
           }
@@ -95,6 +96,25 @@ export default defineConfig(({ mode }) => ({
                 : message === "Client email not set on project" ? 400
                 : 500;
               console.error("[email-api] send-quote-to-client:", message);
+              sendJson(res, status, { error: message });
+            }
+            return;
+          }
+
+          if (req.url === "/api/send-invoice-to-client" && req.method === "POST") {
+            try {
+              const { validateSupabaseJwt, handleSendInvoiceToClient } = await import("./server/emailHandlers");
+              const userId = await validateSupabaseJwt(req.headers["authorization"]);
+              const raw = await readBody(req);
+              const body = JSON.parse(raw) as Parameters<typeof handleSendInvoiceToClient>[0];
+              const result = await handleSendInvoiceToClient(body, userId);
+              sendJson(res, 200, { success: true, result });
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              const status = message === "Unauthorized" ? 401
+                : message === "Client email not set on project" ? 400
+                : 500;
+              console.error("[email-api] send-invoice-to-client:", message);
               sendJson(res, status, { error: message });
             }
             return;
