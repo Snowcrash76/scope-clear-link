@@ -26,6 +26,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { QuoteSection } from '@/components/QuoteSection';
 import { InvoiceSection } from '@/components/InvoiceSection';
 import { useProject } from '@/hooks/useProject';
@@ -61,6 +68,8 @@ import {
   RefreshCw,
   AlertCircle,
   X,
+  MoreVertical,
+  RotateCcw,
 } from 'lucide-react';
 import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
@@ -516,6 +525,36 @@ export default function ProjectManage() {
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+
+              {/* Project actions menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" data-testid="button-project-actions-menu">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  {project.status !== 'completed' ? (
+                    <DropdownMenuItem
+                      onClick={() => updateProjectStatus('completed')}
+                      className="gap-2"
+                      data-testid="menu-item-mark-completed"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-approved" />
+                      Mark as Completed
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => updateProjectStatus('in_progress')}
+                      className="gap-2"
+                      data-testid="menu-item-mark-in-progress"
+                    >
+                      <RotateCcw className="w-4 h-4" />
+                      Mark as In Progress
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
