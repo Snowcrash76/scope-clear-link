@@ -254,14 +254,19 @@ export function useInvoices(projectId: string | undefined) {
         description: 'Your client has been emailed the invoice.',
       });
     } catch (emailErr) {
-      const msg = emailErr instanceof Error ? emailErr.message : '';
+      const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
+      console.error('Invoice email error:', msg);
       if (msg.includes('Client email not set')) {
         toast.warning('Invoice marked as sent', {
-          description: 'No client email on file — update the client details to deliver this invoice by email.',
+          description: 'No client email on file — add a client email in the project details to deliver invoices by email.',
+        });
+      } else if (msg.includes('verify a domain') || msg.includes('testing emails') || msg.includes('403')) {
+        toast.warning('Invoice marked as sent', {
+          description: 'Email delivery requires a verified sender domain in Resend — invoices are saved but emails are paused until this is configured.',
         });
       } else {
         toast.warning('Invoice marked as sent', {
-          description: 'Could not send the email notification — check the client email address.',
+          description: `Email could not be delivered: ${msg}`,
         });
       }
     }
