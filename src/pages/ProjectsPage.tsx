@@ -4,7 +4,13 @@ import { AppShell } from '@/components/AppShell';
 import { useProjects } from '@/hooks/useProjects';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, FolderOpen, User, GitBranch, ChevronRight } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Search, FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
 
@@ -45,7 +51,7 @@ function ProjectInitial({ name }: { name: string }) {
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
-  const { projects, loading } = useProjects();
+  const { projects, loading, updateProjectStatus } = useProjects();
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
@@ -170,7 +176,38 @@ export default function ProjectsPage() {
                         <span className="text-xs font-semibold text-muted-foreground">{completed}/{total}</span>
                       </div>
                     )}
-                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={e => e.stopPropagation()}
+                          className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground flex-shrink-0"
+                          data-testid={`button-project-menu-${project.id}`}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-52" onClick={e => e.stopPropagation()}>
+                        {project.status !== 'completed' ? (
+                          <DropdownMenuItem
+                            className="gap-2"
+                            onSelect={() => updateProjectStatus(project.id, 'completed')}
+                            data-testid={`menu-mark-completed-${project.id}`}
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-approved" />
+                            Mark as Completed
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            className="gap-2"
+                            onSelect={() => updateProjectStatus(project.id, 'in_progress')}
+                            data-testid={`menu-mark-in-progress-${project.id}`}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                            Mark as In Progress
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 );
               })}
