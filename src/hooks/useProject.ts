@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Project, ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 
-// Helper function to send change notification emails
+// Helper function to send change notification emails.
+// Works for both authenticated (trade) and unauthenticated (client) callers.
 const sendChangeNotification = async (
   projectId: string,
   changeRequestId: string,
@@ -16,16 +17,13 @@ const sendChangeNotification = async (
 ) => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      console.warn('sendChangeNotification: no active session, skipping email');
-      return;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
     }
     const res = await fetch('/api/send-change-notification', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
+      headers,
       body: JSON.stringify({
         projectId,
         changeRequestId,
@@ -40,8 +38,6 @@ const sendChangeNotification = async (
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       console.error('Failed to send notification:', err);
-    } else {
-      console.log('Notification sent successfully');
     }
   } catch (error) {
     console.error('Error sending notification:', error);

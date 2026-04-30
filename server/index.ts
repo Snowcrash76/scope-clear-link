@@ -1,20 +1,24 @@
 import express from 'express';
 import path from 'path';
-import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, validateSupabaseJwt } from './emailHandlers';
+import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, validateSupabaseJwt } from './emailHandlers';
 
 const app = express();
 app.use(express.json());
 
 app.post('/api/send-change-notification', async (req, res) => {
   try {
-    const userId = await validateSupabaseJwt(req.headers['authorization']);
+    // Auth is optional: authenticated = trade-originated, unauthenticated = client-originated
+    let userId: string | undefined;
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      try { userId = await validateSupabaseJwt(authHeader); } catch { /* unauthenticated */ }
+    }
     const result = await handleChangeNotification(req.body, userId);
     res.json({ success: true, result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message === 'Unauthorized' ? 401 : 500;
     console.error('[email] send-change-notification:', message);
-    res.status(status).json({ error: message });
+    res.status(500).json({ error: message });
   }
 });
 
@@ -40,6 +44,21 @@ app.post('/api/send-quote-to-client', async (req, res) => {
       : message === 'Client email not set on project' ? 400
       : 500;
     console.error('[email] send-quote-to-client:', message);
+    res.status(status).json({ error: message });
+  }
+});
+
+app.post('/api/send-invoice-to-client', async (req, res) => {
+  try {
+    const userId = await validateSupabaseJwt(req.headers['authorization']);
+    const result = await handleSendInvoiceToClient(req.body, userId);
+    res.json({ success: true, result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const status = message === 'Unauthorized' ? 401
+      : message === 'Client email not set on project' ? 400
+      : 500;
+    console.error('[email] send-invoice-to-client:', message);
     res.status(status).json({ error: message });
   }
 });

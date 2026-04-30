@@ -74,22 +74,16 @@ export async function handleChangeNotification(
     changeTitle, changeDescription, costImpact, timeImpact,
   } = body;
 
-  // For unauthenticated (client) calls, restrict to 'created' notifications only.
-  // Approval/decline notifications can only be sent by authenticated owners.
-  if (!authenticatedUserId && notificationType !== 'created') {
-    throw new Error('Unauthorized: only authenticated users can send approval/decline notifications');
-  }
-
-  // Fetch project
+  // Fetch project — authenticated callers must own it, unauthenticated callers just need it to exist
   const projectQuery = supabase.from('projects').select('*').eq('id', projectId);
   if (authenticatedUserId) {
-    // Trade: must own the project
     projectQuery.eq('user_id', authenticatedUserId);
   }
   const { data: project, error: projectError } = await projectQuery.single();
   if (projectError || !project) throw new Error('Project not found or access denied');
 
-  // For unauthenticated calls, verify the change request belongs to this project
+  // For unauthenticated (client) calls, verify the change request belongs to this project.
+  // This is the security gate — prevents spoofed notifications for unrelated projects.
   if (!authenticatedUserId) {
     const { data: cr, error: crError } = await supabase
       .from('change_requests').select('id').eq('id', changeRequestId).eq('project_id', projectId).single();
@@ -252,6 +246,88 @@ export async function handleSendQuoteToClient(
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
       This email was sent on behalf of ${tradeName} regarding project: ${projectName}
+    </p>
+  </div>
+</body></html>`;
+
+  await sendViaResend(project.client_email, subject, html);
+  return { clientName: project.client_name };
+}
+
+export async function handleSendInvoiceToClient(
+  body: { projectId: string; invoiceId: string },
+  authenticatedUserId: string
+) {
+  const supabase = getSupabaseAdmin();
+  const { projectId, invoiceId } = body;
+
+  if (!projectId || !invoiceId) throw new Error('projectId and invoiceId are required');
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', authenticatedUserId)
+    .single();
+  if (projectError || !project) throw new Error('Project not found or access denied');
+  if (!project.client_email) throw new Error('Client email not set on project');
+
+  const { data: invoice, error: invoiceError } = await supabase
+    .from('invoices')
+    .select('*')
+    .eq('id', invoiceId)
+    .eq('project_id', projectId)
+    .single();
+  if (invoiceError || !invoice) throw new Error('Invoice not found');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', authenticatedUserId)
+    .single();
+
+  const baseUrl = getSiteUrl();
+  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
+  const clientName = project.client_name || 'there';
+  const projectName = project.name;
+  const invoiceNumber = invoice.invoice_number;
+  const total = invoice.total ?? 0;
+  const dueDate = invoice.due_date;
+
+  const fmt = (n: number) => n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const subject = `[${projectName}] Invoice ${invoiceNumber} from ${tradeName}`;
+
+  const dueDateHtml = dueDate
+    ? `<p style="margin:4px 0;color:#6b7280;font-size:13px">Due: <strong>${new Date(dueDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></p>`
+    : '';
+
+  const typeLabel = invoice.type === 'deposit' ? 'Deposit Invoice' : invoice.type === 'staged' ? 'Progress Invoice' : 'Final Invoice';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#374151;max-width:600px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);padding:32px;border-radius:12px 12px 0 0;text-align:center">
+    <h1 style="color:white;margin:0;font-size:24px">New Invoice</h1>
+  </div>
+  <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+    <p style="color:#6b7280;margin-bottom:24px">Hi ${clientName},</p>
+    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has sent you an invoice for <strong>${projectName}</strong>.</p>
+    <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
+      <p style="margin:0 0 4px 0;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:0.05em">${typeLabel}</p>
+      <h3 style="margin:0 0 8px 0;color:#1f2937">${invoiceNumber}</h3>
+      <p style="margin:4px 0;font-size:22px;font-weight:700;color:#1f2937">$${fmt(total)}</p>
+      ${dueDateHtml}
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="${projectUrl}#invoices" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Invoice</a>
+    </div>
+    <p style="text-align:center;margin-top:20px;color:#6b7280;font-size:14px">
+      You can view this invoice and track your project on your <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">project page</a>.
+    </p>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
+    <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
+      This invoice was sent on behalf of ${tradeName} regarding project: ${projectName}
     </p>
   </div>
 </body></html>`;

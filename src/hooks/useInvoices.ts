@@ -198,7 +198,7 @@ export function useInvoices(projectId: string | undefined) {
     }
   };
 
-  const updateInvoiceStatus = async (invoiceId: string, status: Invoice['status']) => {
+  const updateInvoiceStatus = async (invoiceId: string, status: Invoice['status'], silent = false) => {
     try {
       const updateData: Record<string, unknown> = { status };
       
@@ -218,7 +218,7 @@ export function useInvoices(projectId: string | undefined) {
       if (error) throw error;
 
       await fetchInvoices();
-      toast.success(`Invoice marked as ${status}`);
+      if (!silent) toast.success(`Invoice marked as ${status}`);
       return true;
     } catch (error) {
       console.error('Error updating invoice status:', error);
@@ -228,7 +228,45 @@ export function useInvoices(projectId: string | undefined) {
   };
 
   const sendInvoice = async (invoiceId: string) => {
-    return updateInvoiceStatus(invoiceId, 'sent');
+    const ok = await updateInvoiceStatus(invoiceId, 'sent', true); // silent — toast handled below
+    if (!ok || !projectId) {
+      if (!ok) toast.error('Failed to send invoice');
+      return ok;
+    }
+
+    // Send email to client
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return ok;
+
+      const res = await fetch('/api/send-invoice-to-client', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ projectId, invoiceId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Email failed');
+      const clientName = json.result?.clientName;
+      toast.success(`Invoice sent to ${clientName || 'client'}`, {
+        description: 'Your client has been emailed the invoice.',
+      });
+    } catch (emailErr) {
+      const msg = emailErr instanceof Error ? emailErr.message : '';
+      if (msg.includes('Client email not set')) {
+        toast.warning('Invoice marked as sent', {
+          description: 'No client email on file — update the client details to deliver this invoice by email.',
+        });
+      } else {
+        toast.warning('Invoice marked as sent', {
+          description: 'Could not send the email notification — check the client email address.',
+        });
+      }
+    }
+
+    return ok;
   };
 
   const markAsPaid = async (invoiceId: string) => {
