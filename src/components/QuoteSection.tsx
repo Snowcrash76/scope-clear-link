@@ -344,34 +344,6 @@ export function QuoteSection({
             Line Items
           </h4>
           
-          {/* Approved Variations — separate green section above the editable items */}
-          {approvedChanges.length > 0 && (
-            <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-3">
-              <div className="px-3 py-2 border-b border-approved/20 flex items-center gap-2">
-                <Lock className="w-3.5 h-3.5 text-approved" />
-                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations (read-only)</span>
-              </div>
-              {approvedChanges.map(change => (
-                <div key={change.id} className="p-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 pr-4">
-                      <span className="text-sm font-medium">{change.title}</span>
-                      {stripVariationMeta(change.description) && (
-                        <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(change.description))}</p>
-                      )}
-                    </div>
-                    <span className={cn(
-                      "font-medium whitespace-nowrap",
-                      change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                    )}>
-                      {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
           <div className="border rounded-lg divide-y">
             {/* Scope Items (read-only) */}
             {includedItems.length > 0 && (
@@ -558,6 +530,34 @@ export function QuoteSection({
               </div>
             )}
           </div>
+
+          {/* Approved Variations — below the editable items */}
+          {approvedChanges.length > 0 && (
+            <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
+              <div className="px-3 py-2 border-b border-approved/20 flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5 text-approved" />
+                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations (read-only)</span>
+              </div>
+              {approvedChanges.map(change => (
+                <div key={change.id} className="p-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1 pr-4">
+                      <span className="text-sm font-medium">{change.title}</span>
+                      {stripVariationMeta(change.description) && (
+                        <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(change.description))}</p>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "font-medium whitespace-nowrap",
+                      change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
+                    )}>
+                      {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Totals */}
