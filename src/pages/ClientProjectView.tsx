@@ -35,6 +35,7 @@ export default function ClientProjectView() {
     project,
     documents,
     loading,
+    refetch: refetchProject,
     createChangeRequest,
     updateChangeRequestStatus,
   } = useProject(id);
@@ -776,14 +777,11 @@ export default function ClientProjectView() {
               </p>
             </div>
 
-            {documents.length > 0 ? (
-              <ClientDocumentsSection documents={documents} />
-            ) : (
-              <Card className="p-8 text-center">
-                <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No documents uploaded yet.</p>
-              </Card>
-            )}
+            <ClientDocumentsSection
+              documents={documents}
+              projectId={id ?? ''}
+              onRefresh={refetchProject}
+            />
           </TabsContent>
         </Tabs>
       </main>

@@ -431,3 +431,60 @@ export async function handleQuoteNotification(body: {
 
   return sendViaResend(recipientEmail, subject, html);
 }
+
+// ---------------------------------------------------------------------------
+// Client document upload helpers
+// ---------------------------------------------------------------------------
+
+export async function handleGetSignedUploadUrl(body: {
+  projectId: string;
+  fileName: string;
+}) {
+  const { projectId, fileName } = body;
+  if (!projectId || !fileName) throw new Error('projectId and fileName are required');
+
+  const admin = getSupabaseAdmin();
+
+  const { data: project, error: projErr } = await admin
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .single();
+  if (projErr || !project) throw new Error('Project not found');
+
+  const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const storagePath = `${projectId}/${Date.now()}-${safeName}`;
+
+  const { data, error } = await admin.storage
+    .from('project-documents')
+    .createSignedUploadUrl(storagePath);
+
+  if (error) throw new Error(`Storage error: ${error.message}`);
+
+  return { signedUrl: data.signedUrl, token: data.token, path: data.path };
+}
+
+export async function handleRecordClientDocument(body: {
+  projectId: string;
+  fileName: string;
+  filePath: string;
+  fileType?: string;
+  fileSize?: number;
+}) {
+  const { projectId, fileName, filePath, fileType, fileSize } = body;
+  if (!projectId || !fileName || !filePath) throw new Error('projectId, fileName and filePath are required');
+
+  const admin = getSupabaseAdmin();
+
+  const { error } = await admin.from('project_documents').insert({
+    project_id: projectId,
+    file_name: fileName,
+    file_url: filePath,
+    file_type: fileType || null,
+    file_size: fileSize || null,
+    display_name: null,
+  });
+
+  if (error) throw new Error(`DB error: ${error.message}`);
+  return { ok: true };
+}

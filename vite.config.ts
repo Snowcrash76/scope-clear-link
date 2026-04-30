@@ -120,6 +120,36 @@ export default defineConfig(({ mode }) => ({
             return;
           }
 
+          if (req.url === "/api/get-signed-upload-url" && req.method === "POST") {
+            try {
+              const { handleGetSignedUploadUrl } = await import("./server/emailHandlers");
+              const raw = await readBody(req);
+              const body = JSON.parse(raw) as Parameters<typeof handleGetSignedUploadUrl>[0];
+              const result = await handleGetSignedUploadUrl(body);
+              sendJson(res, 200, result);
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              console.error("[email-api] get-signed-upload-url:", message);
+              sendJson(res, message === "Project not found" ? 404 : 500, { error: message });
+            }
+            return;
+          }
+
+          if (req.url === "/api/record-client-document" && req.method === "POST") {
+            try {
+              const { handleRecordClientDocument } = await import("./server/emailHandlers");
+              const raw = await readBody(req);
+              const body = JSON.parse(raw) as Parameters<typeof handleRecordClientDocument>[0];
+              const result = await handleRecordClientDocument(body);
+              sendJson(res, 200, result);
+            } catch (err: unknown) {
+              const message = errorMessage(err);
+              console.error("[email-api] record-client-document:", message);
+              sendJson(res, 500, { error: message });
+            }
+            return;
+          }
+
           next();
         });
       },

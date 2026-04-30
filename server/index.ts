@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, validateSupabaseJwt } from './emailHandlers';
+import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, validateSupabaseJwt } from './emailHandlers';
 
 const app = express();
 app.use(express.json());
@@ -60,6 +60,28 @@ app.post('/api/send-invoice-to-client', async (req, res) => {
       : 500;
     console.error('[email] send-invoice-to-client:', message);
     res.status(status).json({ error: message });
+  }
+});
+
+app.post('/api/get-signed-upload-url', async (req, res) => {
+  try {
+    const result = await handleGetSignedUploadUrl(req.body);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[email] get-signed-upload-url:', message);
+    res.status(message === 'Project not found' ? 404 : 500).json({ error: message });
+  }
+});
+
+app.post('/api/record-client-document', async (req, res) => {
+  try {
+    const result = await handleRecordClientDocument(req.body);
+    res.json(result);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[email] record-client-document:', message);
+    res.status(500).json({ error: message });
   }
 });
 
