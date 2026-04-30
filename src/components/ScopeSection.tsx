@@ -118,8 +118,6 @@ export function ScopeSection({
 
       {isExpanded && (
         <div className="px-4 sm:px-5 pb-4 sm:pb-5 space-y-3 animate-fade-in">
-          <p className="text-sm text-muted-foreground -mt-1 mb-2">{description}</p>
-
           {items.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">No items in this section.</p>
           )}
