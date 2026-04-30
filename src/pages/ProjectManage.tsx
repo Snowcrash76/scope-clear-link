@@ -60,6 +60,7 @@ import {
   ChevronRight,
   RefreshCw,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
@@ -173,6 +174,18 @@ export default function ProjectManage() {
   });
   const [defaultTerms, setDefaultTerms] = useState<string>('');
   const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
+  // Dismissed notification state — persisted per project in localStorage
+  const [dismissedActionCount, setDismissedActionCount] = useState<number>(() => {
+    if (!id) return -1;
+    const v = localStorage.getItem(`notif-action-required-${id}`);
+    return v !== null ? parseInt(v, 10) : -1;
+  });
+  const [dismissedVariationIds, setDismissedVariationIds] = useState<Set<string>>(() => {
+    if (!id) return new Set();
+    const v = localStorage.getItem(`notif-variation-update-${id}`);
+    return v ? new Set(JSON.parse(v) as string[]) : new Set();
+  });
+
   const [tradeProfileInfo, setTradeProfileInfo] = useState<{
     address: string;
     phone: string;
@@ -387,6 +400,21 @@ export default function ProjectManage() {
     cr => cr.resolvedAt && (Date.now() - cr.resolvedAt.getTime()) < RECENTLY_RESOLVED_MS
   );
 
+  // Derived visibility — reappears automatically when new items arrive
+  const showActionRequired = pendingClientRequests.length > 0 && pendingClientRequests.length > dismissedActionCount;
+  const showVariationUpdate = recentlyResolvedChanges.length > 0 && recentlyResolvedChanges.some(cr => !dismissedVariationIds.has(cr.id));
+
+  const dismissActionRequired = () => {
+    const count = pendingClientRequests.length;
+    localStorage.setItem(`notif-action-required-${id}`, String(count));
+    setDismissedActionCount(count);
+  };
+  const dismissVariationUpdate = () => {
+    const ids = recentlyResolvedChanges.map(cr => cr.id);
+    localStorage.setItem(`notif-variation-update-${id}`, JSON.stringify(ids));
+    setDismissedVariationIds(new Set(ids));
+  };
+
   const groupedScopeItems = {
     // Exclude variation items from the included list — they appear in the Approved Variations section
     included: project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title)),
@@ -481,30 +509,38 @@ export default function ProjectManage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Notification banners */}
-        {(pendingClientRequests.length > 0 || recentlyResolvedChanges.length > 0) && (
+        {(showActionRequired || showVariationUpdate) && (
           <div className="space-y-3 mb-6">
-            {pendingClientRequests.length > 0 && (
+            {showActionRequired && (
               <Card className="p-4 bg-pending/5 border-pending/30">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-pending/20 flex-shrink-0">
                     <AlertCircle className="w-5 h-5 text-pending-foreground" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       Your client has submitted {pendingClientRequests.length} change {pendingClientRequests.length > 1 ? 'requests' : 'request'} that {pendingClientRequests.length > 1 ? 'need' : 'needs'} your response — see the Variations tab.
                     </p>
                   </div>
+                  <button
+                    onClick={dismissActionRequired}
+                    data-testid="button-dismiss-action-required"
+                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Dismiss notification"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </Card>
             )}
-            {recentlyResolvedChanges.length > 0 && (
+            {showVariationUpdate && (
               <Card className="p-4 bg-approved/5 border-approved/20">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-approved/10 flex-shrink-0">
                     <CheckCircle2 className="w-5 h-5 text-approved" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <h3 className="font-heading font-semibold text-approved">Variation Update</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       {(() => {
@@ -517,6 +553,14 @@ export default function ProjectManage() {
                       })()}
                     </p>
                   </div>
+                  <button
+                    onClick={dismissVariationUpdate}
+                    data-testid="button-dismiss-variation-update"
+                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Dismiss notification"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </Card>
             )}
