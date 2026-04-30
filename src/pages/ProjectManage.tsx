@@ -439,7 +439,7 @@ export default function ProjectManage() {
   return (
     <AppShell>
       {/* Project sub-header */}
-      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-0 z-20">
+      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-14 lg:top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex items-start gap-3">
@@ -462,12 +462,12 @@ export default function ProjectManage() {
                     <User className="w-3.5 h-3.5" />
                     {project.clientName}
                   </span>
-                  <span className="flex items-center gap-1">
+                  <span className="hidden sm:flex items-center gap-1">
                     <Mail className="w-3.5 h-3.5" />
                     {project.clientEmail}
                   </span>
                   {project.clientAddress && (
-                    <span className="flex items-center gap-1" data-testid="text-client-address">
+                    <span className="hidden sm:flex items-center gap-1" data-testid="text-client-address">
                       <MapPin className="w-3.5 h-3.5" />
                       {project.clientAddress}
                     </span>

@@ -496,7 +496,7 @@ export function AppShell({ children }: AppShellProps) {
                 <User className="w-4 h-4 text-primary" />
                 Business Details
               </h3>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="businessName" className="text-xs flex items-center gap-1"><Building2 className="w-3 h-3" /> Business Name</Label>
                   <Input id="businessName" value={settingsForm.businessName} onChange={e => setSettingsForm(f => ({ ...f, businessName: e.target.value }))} placeholder="Acme Electrical" />

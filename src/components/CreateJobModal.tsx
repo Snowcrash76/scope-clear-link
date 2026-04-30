@@ -351,7 +351,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
             <div className="space-y-4 p-4 rounded-lg bg-secondary/30">
               <h4 className="font-medium text-sm">Quote Settings</h4>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label className="text-sm text-muted-foreground flex items-center gap-1">
                     <Percent className="w-3.5 h-3.5" />
