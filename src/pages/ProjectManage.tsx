@@ -182,6 +182,7 @@ export default function ProjectManage() {
     assumption: false,
   });
   const [defaultTerms, setDefaultTerms] = useState<string>('');
+  const [defaultQuoteTerms, setDefaultQuoteTerms] = useState<string>('');
   const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
   // Dismissed notification state — persisted per project in localStorage
   const [dismissedActionCount, setDismissedActionCount] = useState<number>(() => {
@@ -232,6 +233,7 @@ export default function ProjectManage() {
       if (profile?.default_terms) {
         const parsed = parseDefaultTerms(profile.default_terms);
         setDefaultTerms(parsed.invoice);
+        setDefaultQuoteTerms(parsed.quote);
       }
       if (profile?.default_payment_instructions) {
         setDefaultPaymentInstructions(profile.default_payment_instructions);
@@ -970,6 +972,7 @@ export default function ProjectManage() {
               tradeAbn={tradeProfileInfo.abn}
               logoUrl={tradeProfileInfo.logoUrl}
               quoteLineItems={quoteLineItems}
+              defaultTerms={defaultQuoteTerms}
               onAddLineItem={addLineItem}
               onUpdateLineItem={updateLineItem}
               onDeleteLineItem={deleteLineItem}

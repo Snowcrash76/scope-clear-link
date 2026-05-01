@@ -71,6 +71,7 @@ interface QuoteSectionProps {
   }>) => Promise<boolean>;
   onSendQuote: (quoteId: string) => Promise<boolean>;
   onReviseQuote: (quoteId: string) => Promise<boolean>;
+  defaultTerms?: string;
   isTradeView?: boolean;
   onNavigateToScope?: () => void;
 }
@@ -91,6 +92,7 @@ export function QuoteSection({
   tradeAbn = '',
   logoUrl = '',
   quoteLineItems = [],
+  defaultTerms,
   onAddLineItem,
   onUpdateLineItem,
   onDeleteLineItem,
@@ -106,7 +108,7 @@ export function QuoteSection({
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [notes, setNotes] = useState(quote?.notes ?? '');
-  const [terms, setTerms] = useState(quote?.terms ?? '');
+  const [terms, setTerms] = useState(quote?.terms || defaultTerms || '');
   const [validUntil, setValidUntil] = useState<string>(
     quote?.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : ''
   );
@@ -136,11 +138,18 @@ export function QuoteSection({
     if (quote) {
       setTaxRate(quote.taxRate ?? 10);
       setNotes(quote.notes ?? '');
-      setTerms(quote.terms ?? '');
+      setTerms(quote.terms || defaultTerms || '');
       setValidUntil(quote.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : '');
       setQuoteRef(quote.reference ?? '');
     }
   }, [quote]);
+
+  // When business defaults load asynchronously, seed terms if the quote has none
+  useEffect(() => {
+    if (defaultTerms && !quote?.terms) {
+      setTerms(defaultTerms);
+    }
+  }, [defaultTerms]);
 
   // Build approved-variation cost set first so all filters can use it
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');

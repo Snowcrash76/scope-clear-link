@@ -423,6 +423,7 @@ export function AppShell({ children }: AppShellProps) {
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         onCreateJob={handleCreateJob}
+        defaultQuoteTerms={settingsForm.quoteTerms}
       />
 
       {/* Settings Modal */}

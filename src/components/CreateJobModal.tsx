@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -44,9 +44,10 @@ interface CreateJobModalProps {
       terms: string;
     };
   }) => void;
+  defaultQuoteTerms?: string;
 }
 
-export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobModalProps) {
+export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTerms }: CreateJobModalProps) {
   const [step, setStep] = useState(1);
   
   // Step 1: Job Details
@@ -68,7 +69,12 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
   const [taxRate, setTaxRate] = useState(10); // Default 10% GST
   const [validUntil, setValidUntil] = useState<Date | undefined>(addDays(new Date(), 30));
   const [notes, setNotes] = useState('');
-  const [terms, setTerms] = useState('');
+  const [terms, setTerms] = useState(defaultQuoteTerms ?? '');
+
+  // Seed terms from business defaults when they load asynchronously
+  useEffect(() => {
+    if (defaultQuoteTerms) setTerms(defaultQuoteTerms);
+  }, [defaultQuoteTerms]);
 
   const resetForm = () => {
     setStep(1);
@@ -88,7 +94,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob }: CreateJobMod
     setTaxRate(10);
     setValidUntil(addDays(new Date(), 30));
     setNotes('');
-    setTerms('');
+    setTerms(defaultQuoteTerms ?? '');
   };
 
   const handleClose = () => {
