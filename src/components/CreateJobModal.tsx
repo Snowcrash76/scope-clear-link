@@ -71,9 +71,10 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
   const [notes, setNotes] = useState('');
   const [terms, setTerms] = useState(defaultQuoteTerms ?? '');
 
-  // Seed terms from business defaults when they load asynchronously
+  // Seed terms from business defaults when they load asynchronously,
+  // but only if the user hasn't already typed something
   useEffect(() => {
-    if (defaultQuoteTerms) setTerms(defaultQuoteTerms);
+    if (defaultQuoteTerms) setTerms(prev => prev || defaultQuoteTerms);
   }, [defaultQuoteTerms]);
 
   const resetForm = () => {
