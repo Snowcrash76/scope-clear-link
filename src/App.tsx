@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import ClientProjectView from "./pages/ClientProjectView";
+import DemoProjectView from "./pages/DemoProjectView";
 import ClientQuote from "./pages/ClientQuote";
 import TradeDashboard from "./pages/TradeDashboard";
 import ProjectManage from "./pages/ProjectManage";
@@ -37,7 +38,7 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/demo" element={<ClientProjectView />} />
+            <Route path="/demo" element={<DemoProjectView />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
                 <TradeDashboard />
