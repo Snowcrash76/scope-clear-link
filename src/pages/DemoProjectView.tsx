@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ProjectHeader } from '@/components/ProjectHeader';
 import { ScopeSection } from '@/components/ScopeSection';
-import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { InvoiceViewModal } from '@/components/InvoiceViewModal';
@@ -13,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Invoice } from '@/types/project';
-import { Package, RefreshCw, TrendingUp, FileText, Eye, Download, Receipt, FolderOpen, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Package, RefreshCw, TrendingUp, FileText, Eye, Download, Receipt, FolderOpen, ArrowRight, CheckCircle2, DollarSign, Clock, MessageSquarePlus, Info } from 'lucide-react';
 import { cn, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
 import { DEMO_PROJECT, DEMO_QUOTE, DEMO_QUOTE_LINE_ITEMS, DEMO_INVOICES } from '@/data/demoProject';
@@ -343,14 +342,93 @@ export default function DemoProjectView() {
                   Track all modifications to the original scope
                 </p>
               </div>
-              <Button variant="outline" disabled title="Not available in demo">
+              <Button variant="outline" disabled>
                 Request a Change
               </Button>
+            </div>
+
+            {/* Demo notice */}
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/60 border text-sm text-muted-foreground">
+              <Info className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>In a live project, clients can approve or decline variations and submit new requests directly from this page.</span>
             </div>
 
             {(() => {
               const approved = project.changeRequests.filter(cr => cr.status === 'approved');
               const awaiting = project.changeRequests.filter(cr => cr.status === 'pending' || cr.status === 'awaiting_client');
+
+              const renderReadOnlyCard = (request: typeof project.changeRequests[0]) => {
+                const isApproved = request.status === 'approved';
+                const isPending = request.status === 'pending' || request.status === 'awaiting_client';
+                return (
+                  <Card key={request.id} className={cn(
+                    "overflow-hidden",
+                    isPending && "ring-2 ring-pending/50",
+                    isApproved && "border-approved/40 bg-approved/5"
+                  )}>
+                    <div className="p-4 sm:p-5 space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-secondary">
+                            {request.type === 'client_request'
+                              ? <MessageSquarePlus className="w-4 h-4 text-primary" />
+                              : <RefreshCw className="w-4 h-4 text-muted-foreground" />}
+                          </div>
+                          <div>
+                            <Badge variant="secondary" className="text-xs mb-1">
+                              {request.type === 'client_request' ? 'Client Request' : 'Substitution'}
+                            </Badge>
+                            <h3 className="font-heading font-semibold">{request.title}</h3>
+                          </div>
+                        </div>
+                        <span className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded-full",
+                          isApproved ? "bg-approved/15 text-approved" : "bg-pending/15 text-pending-foreground"
+                        )}>
+                          {isApproved ? 'Approved' : 'Awaiting Response'}
+                        </span>
+                      </div>
+
+                      <p className="text-sm text-muted-foreground leading-relaxed">{request.description}</p>
+
+                      <div className="flex flex-wrap gap-3">
+                        <div className={cn(
+                          "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm",
+                          request.costImpact > 0 ? "bg-warning/10 text-warning-foreground" : "bg-secondary text-muted-foreground"
+                        )}>
+                          <DollarSign className="w-4 h-4" />
+                          <span className="font-medium">
+                            {request.costImpact === 0 ? 'Cost TBC' : `+$${request.costImpact.toLocaleString()}`}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-secondary text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span className="font-medium">
+                            {request.timeImpact === 0 ? 'No delay' : `+${request.timeImpact} day${request.timeImpact > 1 ? 's' : ''}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        Submitted {format(request.createdAt, 'MMM d, yyyy')}
+                        {request.resolvedAt ? ` • Resolved ${format(request.resolvedAt, 'MMM d, yyyy')}` : ''}
+                      </p>
+
+                      {isApproved && (
+                        <div className="pt-2 border-t flex items-center gap-2 text-sm text-approved">
+                          <CheckCircle2 className="w-4 h-4" />
+                          Variation approved and added to the project scope
+                        </div>
+                      )}
+                      {isPending && request.type === 'client_request' && (
+                        <div className="pt-2 border-t text-sm text-muted-foreground">
+                          Your trade is reviewing this request
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              };
 
               return (
                 <div className="space-y-8">
@@ -362,17 +440,7 @@ export default function DemoProjectView() {
                           {awaiting.length}
                         </span>
                       </div>
-                      {awaiting.map(request => (
-                        <ChangeRequestCard
-                          key={request.id}
-                          request={request}
-                          viewerRole="client"
-                          onApprove={() => {}}
-                          onDecline={() => {}}
-                          isApprovedOptimistically={false}
-                          isDeclinedOptimistically={false}
-                        />
-                      ))}
+                      {awaiting.map(renderReadOnlyCard)}
                     </div>
                   )}
                   {approved.length > 0 && (
@@ -383,17 +451,7 @@ export default function DemoProjectView() {
                           {approved.length}
                         </span>
                       </div>
-                      {approved.map(request => (
-                        <ChangeRequestCard
-                          key={request.id}
-                          request={request}
-                          viewerRole="client"
-                          onApprove={() => {}}
-                          onDecline={() => {}}
-                          isApprovedOptimistically={false}
-                          isDeclinedOptimistically={false}
-                        />
-                      ))}
+                      {approved.map(renderReadOnlyCard)}
                     </div>
                   )}
                 </div>
