@@ -515,6 +515,7 @@ export default function DemoProjectView() {
         scopeItems={project.scopeItems}
         changeRequests={project.changeRequests}
         quoteLineItems={quoteLineItems}
+        isDemo
         projectInfo={tradeProjectInfo}
       />
 

@@ -31,6 +31,7 @@ interface QuoteViewModalProps {
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
   quoteLineItems?: QuoteLineItem[];
+  isDemo?: boolean;
   projectInfo: {
     name: string;
     clientName: string;
@@ -53,6 +54,7 @@ export function QuoteViewModal({
   scopeItems,
   changeRequests,
   quoteLineItems = [],
+  isDemo = false,
   projectInfo,
 }: QuoteViewModalProps) {
   const excludedItems = scopeItems.filter(item => item.category === 'excluded');
@@ -325,7 +327,7 @@ export function QuoteViewModal({
 
           {/* Download Button */}
           <div className="flex justify-end pt-4">
-            <Button onClick={handleDownloadPDF} className="gap-2">
+            <Button onClick={handleDownloadPDF} className="gap-2" disabled={isDemo} title={isDemo ? 'Not available in demo' : undefined}>
               <Download className="w-4 h-4" />
               Download PDF
             </Button>
