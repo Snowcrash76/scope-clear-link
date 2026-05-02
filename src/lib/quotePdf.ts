@@ -383,7 +383,7 @@ export function generateQuotePDF(
     doc.setTextColor(34, 197, 94); // green-500 approximation
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11);
-    doc.text('Approved Variations', margin, yPos);
+    doc.text('Approved Extras & Changes', margin, yPos);
     yPos += 6;
 
     const variationData = [

@@ -179,7 +179,7 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
           {recentlyResolved > 0 && (
             <div className="flex items-center gap-1.5 text-sm text-approved">
               <CheckCircle2 className="w-4 h-4" />
-              <span>{recentlyResolved} variation{recentlyResolved > 1 ? 's' : ''} resolved</span>
+              <span>{recentlyResolved} extra{recentlyResolved > 1 ? 's' : ''} &amp; change{recentlyResolved > 1 ? 's' : ''} resolved</span>
             </div>
           )}
           
@@ -199,7 +199,7 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>
                   {pendingChanges > 0 
-                    ? `${pendingChanges} variation${pendingChanges > 1 ? 's' : ''} awaiting approval`
+                    ? `${pendingChanges} extra${pendingChanges > 1 ? 's' : ''} & change${pendingChanges > 1 ? 's' : ''} awaiting approval`
                     : `${unacknowledgedItems} item${unacknowledgedItems > 1 ? 's' : ''} to acknowledge`
                   }
                 </span>
@@ -209,7 +209,7 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
               <div className="flex items-center gap-2 p-2 rounded-lg bg-approved/10 text-approved text-sm">
                 <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
                 <span>
-                  {recentlyResolved} variation{recentlyResolved > 1 ? 's' : ''} recently resolved — check Variations
+                  {recentlyResolved} extra{recentlyResolved > 1 ? 's' : ''} &amp; change{recentlyResolved > 1 ? 's' : ''} recently resolved — check Extras &amp; Changes
                 </span>
               </div>
             )}

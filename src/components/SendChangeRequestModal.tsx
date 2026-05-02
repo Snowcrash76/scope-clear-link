@@ -80,9 +80,9 @@ export function SendChangeRequestModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Send Variation</DialogTitle>
+          <DialogTitle className="font-heading">Send Extra or Change</DialogTitle>
           <DialogDescription>
-            Notify the client about a required variation or substitution for approval.
+            Notify the client about an extra or change for approval.
           </DialogDescription>
         </DialogHeader>
 
