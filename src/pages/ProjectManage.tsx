@@ -10,8 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ImageDisplay } from '@/components/ImageUpload';
-import { MultiImageDisplay } from '@/components/MultiImageUpload';
-import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { RespondToClientModal } from '@/components/RespondToClientModal';
@@ -49,7 +47,6 @@ import {
   Send, 
   Plus,
   Package,
-  Ban,
   AlertTriangle,
   Pencil,
   User,
@@ -63,8 +60,6 @@ import {
   Loader2,
   FileText,
   Receipt,
-  ChevronDown,
-  ChevronRight,
   RefreshCw,
   AlertCircle,
   X,
@@ -163,8 +158,6 @@ export default function ProjectManage() {
   // Check for tab query param (e.g., from job creation)
   const initialTab = searchParams.get('tab') || 'quote';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
-  const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
   const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
   const [respondingToRequest, setRespondingToRequest] = useState<ChangeRequest | null>(null);
@@ -176,11 +169,6 @@ export default function ProjectManage() {
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
   const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    included: true,
-    excluded: false,
-    assumption: false,
-  });
   const [defaultTerms, setDefaultTerms] = useState<string>('');
   const [defaultQuoteTerms, setDefaultQuoteTerms] = useState<string>('');
   const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
@@ -275,31 +263,20 @@ export default function ProjectManage() {
     );
   }
 
-  const categoryConfig = {
-    included: { icon: Package, color: 'text-approved', bgColor: 'bg-approved/10', label: 'Included', subtle: false },
-    excluded: { icon: Ban, color: 'text-muted-foreground', bgColor: 'bg-muted/30', label: 'Excluded', subtle: true },
-    assumption: { icon: AlertTriangle, color: 'text-muted-foreground', bgColor: 'bg-muted/30', label: 'Assumption', subtle: true },
-  };
-
-  const toggleSection = (category: string) => {
-    setExpandedSections(prev => ({ ...prev, [category]: !prev[category] }));
-  };
-
   const handleSaveScopeItem = async (itemData: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => {
     const success = await saveScopeItem(itemData);
     if (success) {
-      toast.success(itemData.id ? 'Scope of works item updated' : 'Scope of works item added');
-      setEditingScopeItem(undefined);
-      setIsAddingScopeItem(false);
+      toast.success(itemData.id ? 'Item updated' : 'Item added');
     }
+    return success;
   };
 
   const handleDeleteScopeItem = async (itemId: string) => {
     const success = await deleteScopeItem(itemId);
     if (success) {
-      toast.success('Scope of works item deleted');
-      setEditingScopeItem(undefined);
+      toast.success('Item deleted');
     }
+    return success;
   };
 
   const handleSendChangeRequest = async (requestData: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => {
@@ -438,13 +415,6 @@ export default function ProjectManage() {
     const ids = recentlyResolvedChanges.map(cr => cr.id);
     localStorage.setItem(`notif-variation-update-${id}`, JSON.stringify(ids));
     setDismissedVariationIds(new Set(ids));
-  };
-
-  const groupedScopeItems = {
-    // Exclude variation items from the included list — they appear in the Approved Variations section
-    included: project.scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title)),
-    excluded: project.scopeItems.filter(item => item.category === 'excluded'),
-    assumption: project.scopeItems.filter(item => item.category === 'assumption'),
   };
 
   return (
@@ -638,12 +608,6 @@ export default function ProjectManage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="scope">
-                Scope of Works
-                <Badge variant="secondary" className="ml-2">
-                  {project.scopeItems.length}
-                </Badge>
-              </TabsTrigger>
               <TabsTrigger value="changes">
                 Variations
                 {pendingClientRequests.length > 0 && (
@@ -656,130 +620,6 @@ export default function ProjectManage() {
               <TabsTrigger value="documents">Documents</TabsTrigger>
             </TabsList>
           </div>
-
-          {/* Scope Tab */}
-          <TabsContent value="scope" className="mt-0 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="font-heading text-lg font-semibold">Scope of Works</h2>
-              <Button onClick={() => setIsAddingScopeItem(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Item
-              </Button>
-            </div>
-
-          {(['included', 'excluded', 'assumption'] as const).map((category) => {
-              const items = groupedScopeItems[category];
-              const config = categoryConfig[category];
-              const Icon = config.icon;
-              const isExpanded = expandedSections[category];
-              
-              return (
-                <Card key={category} className={cn("overflow-hidden", config.subtle && "border-border")}>
-                  <div 
-                    className={cn(
-                      "px-4 py-3 border-b flex items-center gap-2 cursor-pointer select-none transition-colors hover:bg-secondary/30",
-                      config.bgColor
-                    )}
-                    onClick={() => toggleSection(category)}
-                  >
-                    {isExpanded ? (
-                      <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    )}
-                    <Icon className={cn("w-5 h-5", config.color)} />
-                    <h3 className={cn("font-heading font-semibold", config.subtle && "text-muted-foreground")}>{config.label}</h3>
-                    <Badge variant="secondary" className="ml-auto">
-                      {items.length}
-                    </Badge>
-                  </div>
-                  
-                  {isExpanded && (
-                    <>
-                      {items.length === 0 ? (
-                        <div className="p-6 text-center">
-                          <p className="text-sm text-muted-foreground mb-3">No {config.label.toLowerCase()} items yet</p>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setIsAddingScopeItem(true);
-                            }}
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add {config.label} Item
-                          </Button>
-                        </div>
-                      ) : (
-                        <div className="divide-y">
-                          {items.map((item) => (
-                            <div 
-                              key={item.id}
-                              className="p-4 hover:bg-secondary/30 transition-colors cursor-pointer group"
-                              onClick={() => setEditingScopeItem(item)}
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium">{cleanVariationTitle(item.title)}</h4>
-                                    {item.acknowledged && (
-                                      <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
-                                    )}
-                                  </div>
-                                  {stripVariationMeta(item.description) && (
-                                    <RichTextContent html={stripVariationMeta(item.description)} className="mt-1" />
-                                  )}
-                                  {item.imageUrls && item.imageUrls.length > 0 ? (
-                                    <div className="mt-3">
-                                      <MultiImageDisplay paths={item.imageUrls} />
-                                    </div>
-                                  ) : item.imageUrl ? (
-                                    <div className="mt-3">
-                                      <ImageDisplay src={item.imageUrl} alt={item.title} className="max-w-[200px]" />
-                                    </div>
-                                  ) : null}
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  {item.cost != null && item.cost > 0 && (
-                                    <span className="text-primary font-medium whitespace-nowrap">
-                                      ${item.cost.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                  )}
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon"
-                                    className="text-muted-foreground hover:text-foreground transition-colors"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingScopeItem(item);
-                                    }}
-                                  >
-                                    <Pencil className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                    </>
-                  )}
-              </Card>
-              );
-            })}
-
-            {project.scopeItems.length === 0 && (
-              <Card className="p-12 text-center">
-                <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">No scope items yet</p>
-                <Button onClick={() => setIsAddingScopeItem(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add First Item
-                </Button>
-              </Card>
-            )}
-          </TabsContent>
 
           {/* Changes Tab */}
           <TabsContent value="changes" className="mt-0 space-y-6">
@@ -980,7 +820,8 @@ export default function ProjectManage() {
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}
               onReviseQuote={reviseQuote}
-              onNavigateToScope={() => setActiveTab('scope')}
+              onSaveScopeItem={handleSaveScopeItem}
+              onDeleteScopeItem={handleDeleteScopeItem}
             />
           </TabsContent>
 
@@ -1044,19 +885,6 @@ export default function ProjectManage() {
       </main>
 
       {/* Modals */}
-      <EditScopeItemModal
-        open={isAddingScopeItem || !!editingScopeItem}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsAddingScopeItem(false);
-            setEditingScopeItem(undefined);
-          }
-        }}
-        item={editingScopeItem}
-        onSave={handleSaveScopeItem}
-        onDelete={editingScopeItem ? handleDeleteScopeItem : undefined}
-      />
-
       <SendChangeRequestModal
         open={isSendingChangeRequest}
         onOpenChange={setIsSendingChangeRequest}

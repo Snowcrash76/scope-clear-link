@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CheckCircle2, XCircle, FileText, Loader2, AlertCircle, Calendar } from 'lucide-react';
+import { ExclusionsPanel } from '@/components/ExclusionsPanel';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
@@ -27,6 +28,7 @@ type ProjectRow = Database['public']['Tables']['projects']['Row'];
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type QuoteLineItemRow = Database['public']['Tables']['quote_line_items']['Row'];
 type ChangeRequestRow = Database['public']['Tables']['change_requests']['Row'];
+type ScopeItemRow = Database['public']['Tables']['scope_items']['Row'];
 
 export default function ClientQuote() {
   const { token } = useParams<{ token: string }>();
@@ -34,6 +36,7 @@ export default function ClientQuote() {
   const [quote, setQuote] = useState<QuoteRow | null>(null);
   const [lineItems, setLineItems] = useState<QuoteLineItemRow[]>([]);
   const [changeRequests, setChangeRequests] = useState<ChangeRequestRow[]>([]);
+  const [scopeItems, setScopeItems] = useState<ScopeItemRow[]>([]);
   const [project, setProject] = useState<ProjectRow | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -66,7 +69,7 @@ export default function ClientQuote() {
 
         setQuote(quoteRow);
 
-        const [lineItemsRes, projectRes, changeRequestsRes] = await Promise.all([
+        const [lineItemsRes, projectRes, changeRequestsRes, scopeItemsRes] = await Promise.all([
           supabase
             .from('quote_line_items')
             .select('*')
@@ -82,6 +85,11 @@ export default function ClientQuote() {
             .select('*')
             .eq('project_id', quoteRow.project_id)
             .eq('status', 'approved'),
+          supabase
+            .from('scope_items')
+            .select('*')
+            .eq('project_id', quoteRow.project_id)
+            .order('created_at', { ascending: true }),
         ]);
 
         if (lineItemsRes.data) {
@@ -90,6 +98,10 @@ export default function ClientQuote() {
 
         if (changeRequestsRes.data) {
           setChangeRequests(changeRequestsRes.data);
+        }
+
+        if (scopeItemsRes.data) {
+          setScopeItems(scopeItemsRes.data);
         }
 
         if (projectRes.data) {
@@ -394,6 +406,19 @@ export default function ClientQuote() {
             <RichTextContent html={quote.notes} />
           </Card>
         )}
+
+        {/* Exclusions & Assumptions */}
+        {(() => {
+          const excluded = scopeItems.filter(i => i.category === 'excluded');
+          const assumptions = scopeItems.filter(i => i.category === 'assumption');
+          if (excluded.length === 0 && assumptions.length === 0) return null;
+          return (
+            <ExclusionsPanel
+              excludedItems={excluded.map(i => ({ id: i.id, title: i.title, description: i.description ?? '' }))}
+              assumptionItems={assumptions.map(i => ({ id: i.id, title: i.title, description: i.description ?? '' }))}
+            />
+          );
+        })()}
 
         {/* Terms */}
         {quote.terms && (

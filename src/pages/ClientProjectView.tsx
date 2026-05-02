@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ProjectHeader } from '@/components/ProjectHeader';
 import { ActionRequired } from '@/components/ActionRequired';
-import { ScopeSection } from '@/components/ScopeSection';
+import { ExclusionsPanel } from '@/components/ExclusionsPanel';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { RequestChangeButton } from '@/components/RequestChangeButton';
@@ -22,7 +22,7 @@ import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { toast } from 'sonner';
-import { Package, RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2 } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice, ScopeItem } from '@/types/project';
@@ -245,10 +245,6 @@ export default function ClientProjectView() {
                 <Receipt className="w-4 h-4 hidden sm:block" />
                 Invoices
               </TabsTrigger>
-              <TabsTrigger value="scope" className="gap-2">
-                <Package className="w-4 h-4 hidden sm:block" />
-                Scope of Works
-              </TabsTrigger>
               <TabsTrigger value="changes" className="gap-2" data-testid="tab-variations">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
                 Variations
@@ -270,47 +266,6 @@ export default function ClientProjectView() {
               </TabsTrigger>
             </TabsList>
           </div>
-
-          {/* Scope Tab */}
-          <TabsContent value="scope" className="space-y-4 animate-fade-in">
-            <div>
-              <h2 className="font-heading text-xl font-bold">Scope of Works</h2>
-              <p className="text-sm text-muted-foreground">
-                What's included, excluded, and assumed for this project
-              </p>
-            </div>
-
-            <ScopeSection
-              title="Quoted Items"
-              description="Work and materials covered in your original quote"
-              category="included"
-              items={includedItems}
-            />
-
-            {variationScopeItems.length > 0 && (
-              <ScopeSection
-                title="Approved Variations"
-                description="Additional work added and agreed to after the original quote"
-                category="included"
-                items={variationScopeItems}
-                isVariationSection
-              />
-            )}
-
-            <ScopeSection
-              title="What's Not Included"
-              description="Items outside the scope of this project"
-              category="excluded"
-              items={excludedItems}
-            />
-
-            <ScopeSection
-              title="Our Assumptions"
-              description="Conditions we're expecting — if different, we'll discuss"
-              category="assumption"
-              items={assumptionItems}
-            />
-          </TabsContent>
 
           {/* Quote Tab */}
           <TabsContent value="quote" className="space-y-4 animate-fade-in">
@@ -523,6 +478,13 @@ export default function ClientProjectView() {
                 <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No quote available yet.</p>
               </Card>
+            )}
+
+            {(excludedItems.length > 0 || assumptionItems.length > 0) && (
+              <ExclusionsPanel
+                excludedItems={excludedItems}
+                assumptionItems={assumptionItems}
+              />
             )}
           </TabsContent>
 

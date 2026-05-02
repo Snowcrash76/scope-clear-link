@@ -26,6 +26,7 @@ interface EditScopeItemModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item?: ScopeItem;
+  defaultCategory?: 'included' | 'excluded' | 'assumption';
   onSave: (item: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => void;
   onDelete?: (id: string) => void;
 }
@@ -33,14 +34,15 @@ interface EditScopeItemModalProps {
 export function EditScopeItemModal({ 
   open, 
   onOpenChange, 
-  item, 
+  item,
+  defaultCategory,
   onSave,
   onDelete 
 }: EditScopeItemModalProps) {
   const [title, setTitle] = useState(item?.title || '');
   const [description, setDescription] = useState(item?.description || '');
   const [category, setCategory] = useState<'included' | 'excluded' | 'assumption'>(
-    item?.category || 'included'
+    item?.category || defaultCategory || 'included'
   );
   const [imageUrls, setImageUrls] = useState<string[]>(
     item?.imageUrls || (item?.imageUrl ? [item.imageUrl] : [])
@@ -76,11 +78,11 @@ export function EditScopeItemModal({
     if (open) {
       setTitle(item?.title || '');
       setDescription(item?.description || '');
-      setCategory(item?.category || 'included');
+      setCategory(item?.category || defaultCategory || 'included');
       setImageUrls(item?.imageUrls || (item?.imageUrl ? [item.imageUrl] : []));
       setCost(item?.cost?.toString() || '');
     }
-  }, [open, item]);
+  }, [open, item, defaultCategory]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

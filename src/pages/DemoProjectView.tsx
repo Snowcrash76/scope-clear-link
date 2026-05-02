@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ProjectHeader } from '@/components/ProjectHeader';
-import { ScopeSection } from '@/components/ScopeSection';
+import { ExclusionsPanel } from '@/components/ExclusionsPanel';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { InvoiceViewModal } from '@/components/InvoiceViewModal';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Invoice } from '@/types/project';
-import { Package, RefreshCw, TrendingUp, FileText, Eye, Download, Receipt, FolderOpen, ArrowRight, CheckCircle2, DollarSign, Clock, MessageSquarePlus, Info } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Eye, Download, Receipt, FolderOpen, ArrowRight, CheckCircle2, DollarSign, Clock, MessageSquarePlus, Info } from 'lucide-react';
 import { cn, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
 import { DEMO_PROJECT, DEMO_QUOTE, DEMO_QUOTE_LINE_ITEMS, DEMO_INVOICES } from '@/data/demoProject';
@@ -98,10 +98,6 @@ export default function DemoProjectView() {
               <TabsTrigger value="invoices" className="gap-2">
                 <Receipt className="w-4 h-4 hidden sm:block" />
                 Invoices
-              </TabsTrigger>
-              <TabsTrigger value="scope" className="gap-2">
-                <Package className="w-4 h-4 hidden sm:block" />
-                Scope of Works
               </TabsTrigger>
               <TabsTrigger value="changes" className="gap-2">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
@@ -219,6 +215,14 @@ export default function DemoProjectView() {
                 </div>
               </div>
             </Card>
+
+            {/* Exclusions & Assumptions — read-only collapsible panel */}
+            {(excludedItems.length > 0 || assumptionItems.length > 0) && (
+              <ExclusionsPanel
+                excludedItems={excludedItems}
+                assumptionItems={assumptionItems}
+              />
+            )}
           </TabsContent>
 
           {/* Invoices Tab */}
@@ -294,43 +298,6 @@ export default function DemoProjectView() {
                 );
               })}
             </div>
-          </TabsContent>
-
-          {/* Scope Tab */}
-          <TabsContent value="scope" className="space-y-4 animate-fade-in">
-            <div>
-              <h2 className="font-heading text-xl font-bold">Scope of Works</h2>
-              <p className="text-sm text-muted-foreground">
-                What's included, excluded, and assumed for this project
-              </p>
-            </div>
-            <ScopeSection
-              title="Quoted Items"
-              description="Work and materials covered in your original quote"
-              category="included"
-              items={includedItems}
-            />
-            {variationScopeItems.length > 0 && (
-              <ScopeSection
-                title="Approved Variations"
-                description="Additional work added and agreed to after the original quote"
-                category="included"
-                items={variationScopeItems}
-                isVariationSection
-              />
-            )}
-            <ScopeSection
-              title="What's Not Included"
-              description="Items outside the scope of this project"
-              category="excluded"
-              items={excludedItems}
-            />
-            <ScopeSection
-              title="Our Assumptions"
-              description="Conditions we're expecting — if different, we'll discuss"
-              category="assumption"
-              items={assumptionItems}
-            />
           </TabsContent>
 
           {/* Variations Tab */}

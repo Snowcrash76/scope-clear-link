@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RichTextEditor, RichTextContent, htmlToText } from '@/components/RichTextEditor';
+import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { 
   FileText, 
@@ -25,6 +26,11 @@ import {
   Check,
   X,
   MoveRight,
+  Package,
+  Ban,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
@@ -73,7 +79,8 @@ interface QuoteSectionProps {
   onReviseQuote: (quoteId: string) => Promise<boolean>;
   defaultTerms?: string;
   isTradeView?: boolean;
-  onNavigateToScope?: () => void;
+  onSaveScopeItem?: (item: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => Promise<boolean | void>;
+  onDeleteScopeItem?: (itemId: string) => Promise<boolean | void>;
 }
 
 export function QuoteSection({
@@ -101,11 +108,17 @@ export function QuoteSection({
   onSendQuote,
   onReviseQuote,
   isTradeView = true,
-  onNavigateToScope,
+  onSaveScopeItem,
+  onDeleteScopeItem,
 }: QuoteSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  // Scope item editing (inline from Quote tab)
+  const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
+  const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
+  const [addScopeItemCategory, setAddScopeItemCategory] = useState<'included' | 'excluded' | 'assumption'>('included');
+  const [isExclusionsOpen, setIsExclusionsOpen] = useState(false);
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [notes, setNotes] = useState(quote?.notes ?? '');
   const [terms, setTerms] = useState(quote?.terms || defaultTerms || '');
@@ -158,6 +171,8 @@ export function QuoteSection({
 
   // Calculate totals from scope items — exclude variation duplicates (by title prefix or matching cost)
   const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1));
+  const excludedScopeItems = scopeItems.filter(item => item.category === 'excluded');
+  const assumptionScopeItems = scopeItems.filter(item => item.category === 'assumption');
   const scopeSubtotal = includedItems.reduce((sum, item) => sum + (item.cost || 0), 0);
   
   // Split custom quote line items into base items and variation items
@@ -362,52 +377,56 @@ export function QuoteSection({
           </h4>
           
           <div className="border rounded-lg divide-y">
-            {/* Scope Items (read-only) */}
-            {includedItems.length > 0 && (
-              <>
-                <div className="p-3 bg-muted/50">
-                  <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5" />
-                    From Scope of Works
-                  </span>
+            {/* Included scope items header with add button for trade */}
+            <div className="p-3 bg-muted/50 flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Package className="w-3.5 h-3.5" />
+                Included Items
+              </span>
+              {isTradeView && onSaveScopeItem && (
+                <button
+                  type="button"
+                  onClick={() => { setAddScopeItemCategory('included'); setIsAddingScopeItem(true); }}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  data-testid="button-add-scope-item-included"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add item
+                </button>
+              )}
+            </div>
+
+            {includedItems.map(item => (
+              <div key={item.id} className="p-3 bg-muted/20">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 pr-4">
+                    <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                    {stripVariationMeta(item.description) && (
+                      <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(item.description))}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium whitespace-nowrap">
+                      ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </span>
+                    {isTradeView && onSaveScopeItem && (
+                      <button
+                        type="button"
+                        onClick={() => setEditingScopeItem(item)}
+                        className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+                        data-testid={`button-edit-scope-item-${item.id}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {includedItems.map(item => (
-                  <div key={item.id} className="p-3 bg-muted/20">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
-                        {stripVariationMeta(item.description) && (
-                          <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(item.description))}</p>
-                        )}
-                      </div>
-                      <span className="font-medium whitespace-nowrap">
-                        ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-                {onNavigateToScope ? (
-                  <button
-                    type="button"
-                    onClick={onNavigateToScope}
-                    className="w-full p-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    data-testid="button-navigate-to-scope"
-                  >
-                    <MoveRight className="w-3.5 h-3.5 shrink-0" />
-                    Line items are managed in the Scope of Works tab
-                  </button>
-                ) : (
-                  <div className="p-3 flex items-center gap-2 text-xs text-muted-foreground">
-                    <MoveRight className="w-3.5 h-3.5 shrink-0" />
-                    Line items are managed in the Scope of Works tab
-                  </div>
-                )}
-              </>
-            )}
+              </div>
+            ))}
 
             {includedItems.length === 0 && approvedChanges.length === 0 && (
               <div className="p-6 text-center">
-                <p className="text-sm text-muted-foreground">No scope items yet. Add items in the Scope of Works tab.</p>
+                <p className="text-sm text-muted-foreground">No included items yet.</p>
               </div>
             )}
           </div>
@@ -863,8 +882,21 @@ export function QuoteSection({
         )}
 
         {/* Included Items — scope + custom line items merged (no variation duplicates) */}
-        {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
+        {(includedItems.length > 0 || baseQuoteLineItems.length > 0 || (isTradeView && onSaveScopeItem)) && (
           <div className="border rounded-lg divide-y mb-4">
+            {isTradeView && onSaveScopeItem && (
+              <div className="px-3 py-2 bg-muted/30 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setAddScopeItemCategory('included'); setIsAddingScopeItem(true); }}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                  data-testid="button-add-scope-item-read"
+                >
+                  <Plus className="w-3 h-3" />
+                  Add included item
+                </button>
+              </div>
+            )}
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex justify-between items-start">
                 <div className="flex-1 pr-4">
@@ -873,9 +905,21 @@ export function QuoteSection({
                     <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                   )}
                 </div>
-                <span className="text-sm font-medium whitespace-nowrap">
-                  ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                  </span>
+                  {isTradeView && onSaveScopeItem && (
+                    <button
+                      type="button"
+                      onClick={() => setEditingScopeItem(item)}
+                      className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
+                      data-testid={`button-edit-scope-item-read-${item.id}`}
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {baseQuoteLineItems.map(item => (
@@ -960,6 +1004,139 @@ export function QuoteSection({
         )}
       </Card>
 
+      {/* Exclusions & Assumptions — collapsible card below the quote */}
+      {(excludedScopeItems.length > 0 || assumptionScopeItems.length > 0 || (isTradeView && onSaveScopeItem)) && (
+        <div className="border rounded-lg overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setIsExclusionsOpen(v => !v)}
+            className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/40 transition-colors"
+            data-testid="button-toggle-exclusions"
+          >
+            <div className="flex items-center gap-2">
+              <Ban className="w-4 h-4 text-muted-foreground" />
+              <span className="font-medium text-sm">Exclusions & Assumptions</span>
+              {(excludedScopeItems.length + assumptionScopeItems.length) > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {excludedScopeItems.length + assumptionScopeItems.length}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {isExclusionsOpen ? (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+          </button>
+
+          {isExclusionsOpen && (
+            <div className="border-t divide-y">
+              {/* Excluded items section */}
+              {(excludedScopeItems.length > 0 || (isTradeView && onSaveScopeItem)) && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <Ban className="w-3.5 h-3.5" />
+                      Not Included
+                    </span>
+                    {isTradeView && onSaveScopeItem && (
+                      <button
+                        type="button"
+                        onClick={() => { setAddScopeItemCategory('excluded'); setIsAddingScopeItem(true); }}
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        data-testid="button-add-excluded-item"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add
+                      </button>
+                    )}
+                  </div>
+                  {excludedScopeItems.length === 0 && (
+                    <div className="px-4 py-3">
+                      <p className="text-sm text-muted-foreground italic">No exclusions added.</p>
+                    </div>
+                  )}
+                  {excludedScopeItems.map(item => (
+                    <div key={item.id} className="px-4 py-3 flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {htmlToText(stripVariationMeta(item.description))}
+                          </p>
+                        )}
+                      </div>
+                      {isTradeView && onSaveScopeItem && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingScopeItem(item)}
+                          className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors flex-shrink-0"
+                          data-testid={`button-edit-excluded-item-${item.id}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Assumptions section */}
+              {(assumptionScopeItems.length > 0 || (isTradeView && onSaveScopeItem)) && (
+                <>
+                  <div className="px-4 py-2 bg-muted/30 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      Assumptions
+                    </span>
+                    {isTradeView && onSaveScopeItem && (
+                      <button
+                        type="button"
+                        onClick={() => { setAddScopeItemCategory('assumption'); setIsAddingScopeItem(true); }}
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                        data-testid="button-add-assumption-item"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add
+                      </button>
+                    )}
+                  </div>
+                  {assumptionScopeItems.length === 0 && (
+                    <div className="px-4 py-3">
+                      <p className="text-sm text-muted-foreground italic">No assumptions added.</p>
+                    </div>
+                  )}
+                  {assumptionScopeItems.map(item => (
+                    <div key={item.id} className="px-4 py-3 flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        {item.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {htmlToText(stripVariationMeta(item.description))}
+                          </p>
+                        )}
+                      </div>
+                      {isTradeView && onSaveScopeItem && (
+                        <button
+                          type="button"
+                          onClick={() => setEditingScopeItem(item)}
+                          className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors flex-shrink-0"
+                          data-testid={`button-edit-assumption-item-${item.id}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Quote View Modal */}
       {quote && (
         <QuoteViewModal
@@ -970,6 +1147,30 @@ export function QuoteSection({
           changeRequests={changeRequests}
           quoteLineItems={quoteLineItems}
           projectInfo={projectInfo}
+        />
+      )}
+
+      {/* Scope Item Modal — opened when trade clicks edit/add from the Quote tab */}
+      {onSaveScopeItem && (
+        <EditScopeItemModal
+          open={isAddingScopeItem || !!editingScopeItem}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsAddingScopeItem(false);
+              setEditingScopeItem(undefined);
+            }
+          }}
+          item={editingScopeItem}
+          defaultCategory={isAddingScopeItem ? addScopeItemCategory : undefined}
+          onSave={async (itemData) => {
+            await onSaveScopeItem(itemData);
+            setIsAddingScopeItem(false);
+            setEditingScopeItem(undefined);
+          }}
+          onDelete={editingScopeItem && onDeleteScopeItem ? async (itemId) => {
+            await onDeleteScopeItem(itemId);
+            setEditingScopeItem(undefined);
+          } : undefined}
         />
       )}
     </div>
