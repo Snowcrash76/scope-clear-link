@@ -284,7 +284,7 @@ export default function ProjectManage() {
     // Trade creating change request → notify client
     const success = await createChangeRequest(requestData, 'client');
     if (success) {
-      toast.success('Variation sent to client');
+      toast.success('Extra & change sent to client');
       setIsSendingChangeRequest(false);
     }
   };
@@ -292,7 +292,7 @@ export default function ProjectManage() {
   const handleUpdateChangeRequest = async (requestData: ChangeRequest) => {
     const success = await updateChangeRequest(requestData);
     if (success) {
-      toast.success('Variation updated');
+      toast.success('Extra & change updated');
       setEditingChangeRequest(null);
     }
   };
@@ -300,7 +300,7 @@ export default function ProjectManage() {
   const handleDeleteChangeRequest = async (requestId: string) => {
     const success = await deleteChangeRequest(requestId);
     if (success) {
-      toast.success('Variation deleted');
+      toast.success('Extra & change deleted');
       setEditingChangeRequest(null);
     }
   };
@@ -546,7 +546,7 @@ export default function ProjectManage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Your client has submitted {pendingClientRequests.length} change {pendingClientRequests.length > 1 ? 'requests' : 'request'} that {pendingClientRequests.length > 1 ? 'need' : 'needs'} your response — see the Variations tab.
+                      Your client has submitted {pendingClientRequests.length} extra{pendingClientRequests.length > 1 ? 's' : ''} & change{pendingClientRequests.length > 1 ? 's' : ''} that {pendingClientRequests.length > 1 ? 'need' : 'needs'} your response — see the Extras & Changes tab.
                     </p>
                   </div>
                   <button
@@ -567,15 +567,15 @@ export default function ProjectManage() {
                     <CheckCircle2 className="w-5 h-5 text-approved" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-semibold text-approved">Variation Update</h3>
+                    <h3 className="font-heading font-semibold text-approved">Extras & Changes Update</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       {(() => {
                         const approvedCount = recentlyResolvedChanges.filter(cr => cr.status === 'approved').length;
                         const declinedCount = recentlyResolvedChanges.filter(cr => cr.status === 'declined').length;
                         const parts: string[] = [];
-                        if (approvedCount > 0) parts.push(`${approvedCount} variation${approvedCount > 1 ? 's' : ''} approved`);
-                        if (declinedCount > 0) parts.push(`${declinedCount} variation${declinedCount > 1 ? 's' : ''} declined`);
-                        return `${parts.join(' and ')} by your client recently — see the Variations tab for details.`;
+                        if (approvedCount > 0) parts.push(`${approvedCount} extra${approvedCount > 1 ? 's' : ''} & change${approvedCount > 1 ? 's' : ''} approved`);
+                        if (declinedCount > 0) parts.push(`${declinedCount} extra${declinedCount > 1 ? 's' : ''} & change${declinedCount > 1 ? 's' : ''} declined`);
+                        return `${parts.join(' and ')} by your client recently — see the Extras & Changes tab for details.`;
                       })()}
                     </p>
                   </div>
@@ -610,7 +610,7 @@ export default function ProjectManage() {
                 )}
               </TabsTrigger>
               <TabsTrigger value="changes">
-                Variations
+                Extras & Changes
                 {pendingClientRequests.length > 0 && (
                   <Badge variant="pending" className="ml-2">
                     {pendingClientRequests.length}
@@ -625,10 +625,10 @@ export default function ProjectManage() {
           {/* Changes Tab */}
           <TabsContent value="changes" className="mt-0 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-heading text-lg font-semibold">Variations</h2>
+              <h2 className="font-heading text-lg font-semibold">Extras & Changes</h2>
               <Button onClick={() => setIsSendingChangeRequest(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Send Variation
+                Send Extra & Change
               </Button>
             </div>
 
@@ -653,10 +653,10 @@ export default function ProjectManage() {
             {project.changeRequests.length === 0 ? (
               <Card className="p-12 text-center">
                 <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">No variations yet</p>
+                <p className="text-muted-foreground mb-4">No extras & changes yet</p>
                 <Button onClick={() => setIsSendingChangeRequest(true)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Send First Variation
+                  Send First Extra & Change
                 </Button>
               </Card>
             ) : (
@@ -705,7 +705,7 @@ export default function ProjectManage() {
                       <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 border border-approved/20">
                         <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
                         <p className="text-sm text-approved font-medium">
-                          {recentlyResolvedChanges.filter(cr => cr.status === 'approved').length} variation{recentlyResolvedChanges.filter(cr => cr.status === 'approved').length > 1 ? 's' : ''} approved in the last 72 hours — both parties notified by email.
+                          {recentlyResolvedChanges.filter(cr => cr.status === 'approved').length} extra{recentlyResolvedChanges.filter(cr => cr.status === 'approved').length > 1 ? 's' : ''} & change{recentlyResolvedChanges.filter(cr => cr.status === 'approved').length > 1 ? 's' : ''} approved in the last 72 hours — both parties notified by email.
                         </p>
                       </div>
                     )}

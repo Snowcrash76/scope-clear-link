@@ -89,7 +89,7 @@ function ProjectListItem({
           {resolvedVariations > 0 && (
             <span className="flex items-center gap-1">
               <GitBranch className="w-3 h-3" />
-              {resolvedVariations} variation{resolvedVariations > 1 ? 's' : ''} resolved
+              {resolvedVariations} extra{resolvedVariations > 1 ? 's' : ''} & change{resolvedVariations > 1 ? 's' : ''} resolved
             </span>
           )}
           {pendingVariations > 0 && (

@@ -216,7 +216,7 @@ export function ChangeRequestCard({
             <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 text-approved">
               <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
               <p className="text-sm font-medium">
-                Variation approved — your trade has been notified.
+                Approved — your trade has been notified.
               </p>
             </div>
           </div>
@@ -228,7 +228,7 @@ export function ChangeRequestCard({
             <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive">
               <X className="w-4 h-4 flex-shrink-0" />
               <p className="text-sm font-medium">
-                Variation declined — your trade has been notified.
+                Declined — your trade has been notified.
               </p>
             </div>
             {optimisticComment && (

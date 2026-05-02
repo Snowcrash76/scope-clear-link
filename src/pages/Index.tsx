@@ -159,7 +159,7 @@ export default function Index() {
                 </div>
                 <div>
                   <h3 className="font-heading font-semibold text-lg mb-1">
-                    Variation Approvals
+                    Extras & Changes
                   </h3>
                   <p className="text-muted-foreground">
                     Site issues, substitutions, client requests — all tracked with cost 

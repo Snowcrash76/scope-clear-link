@@ -149,7 +149,7 @@ async function fetchActivityEvents(userId: string): Promise<ActivityEvent[]> {
       projectId: cr.project_id,
       projectName: project.name,
       clientName: project.client_name,
-      description: `Variation raised — "${cr.title}" on ${project.name}`,
+      description: `Extra & change raised — "${cr.title}" on ${project.name}`,
       timestamp: new Date(cr.created_at),
     });
 
@@ -160,7 +160,7 @@ async function fetchActivityEvents(userId: string): Promise<ActivityEvent[]> {
         projectId: cr.project_id,
         projectName: project.name,
         clientName: project.client_name,
-        description: `Variation approved — "${cr.title}" on ${project.name}`,
+        description: `Extra & change approved — "${cr.title}" on ${project.name}`,
         timestamp: new Date(cr.resolved_at),
       });
     }
@@ -172,7 +172,7 @@ async function fetchActivityEvents(userId: string): Promise<ActivityEvent[]> {
         projectId: cr.project_id,
         projectName: project.name,
         clientName: project.client_name,
-        description: `Variation declined — "${cr.title}" on ${project.name}`,
+        description: `Extra & change declined — "${cr.title}" on ${project.name}`,
         timestamp: new Date(cr.resolved_at),
       });
     }

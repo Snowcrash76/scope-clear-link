@@ -384,7 +384,7 @@ export default function DemoProjectView() {
                       {isApproved && (
                         <div className="pt-2 border-t flex items-center gap-2 text-sm text-approved">
                           <CheckCircle2 className="w-4 h-4" />
-                          Variation approved and added to the project scope
+                          Approved and added to the job scope
                         </div>
                       )}
                       {isPending && request.type === 'client_request' && (

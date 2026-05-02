@@ -138,7 +138,7 @@ export default function ClientProjectView() {
   const handleApproveChange = (changeId: string) => {
     setOptimisticApprovedIds(prev => new Set(prev).add(changeId));
     updateChangeRequestStatus(changeId, 'approved', 'trade').then(success => {
-      if (success) toast.success('Variation approved — your trade has been notified.');
+      if (success) toast.success('Approved — your trade has been notified.');
     });
   };
 
@@ -148,7 +148,7 @@ export default function ClientProjectView() {
       isOpen: true,
       action: 'decline',
       changeId,
-      title: change?.title || 'Variation',
+      title: change?.title || 'Extra & change',
     });
   };
 
@@ -165,14 +165,14 @@ export default function ClientProjectView() {
     }
     setApprovalModal({ isOpen: false, action: 'decline', changeId: '', title: '' });
     const success = await updateChangeRequestStatus(changeId, 'declined', 'trade', comment);
-    if (success) toast.success('Variation declined — your trade has been notified.');
+    if (success) toast.success('Declined — your trade has been notified.');
   };
 
   const handleRequestChange = async (description: string, imageUrl?: string) => {
     // Client creating change request → notify trade
     const success = await createChangeRequest({
       type: 'client_request',
-      title: 'Variation',
+      title: 'Extra & change',
       description,
       costImpact: 0,
       timeImpact: 0,
@@ -180,7 +180,7 @@ export default function ClientProjectView() {
     }, 'trade');
     
     if (success) {
-      toast.success('Variation sent! Your trade will review and respond.');
+      toast.success('Sent! Your trade will review and respond.');
     }
   };
 
@@ -520,7 +520,7 @@ export default function ClientProjectView() {
                       {parts.join(' and ')} recently — you and your trade have both been notified by email.
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      See the variation cards below for details.
+                      See the extras & changes below for details.
                     </p>
                   </div>
                 </div>

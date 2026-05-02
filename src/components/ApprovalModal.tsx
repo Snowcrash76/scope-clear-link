@@ -58,7 +58,7 @@ export function ApprovalModal({
             ) : (
               <X className="w-5 h-5 text-declined" />
             )}
-            {isApprove ? 'Approve' : 'Decline'} Variation
+            {isApprove ? 'Approve' : 'Decline'} Extra & Change
           </DialogTitle>
           <DialogDescription>
             {isApprove 
