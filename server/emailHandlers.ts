@@ -258,7 +258,7 @@ export async function handleSendQuoteToClient(
       <a href="${quoteUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">${ctaText}</a>
     </div>
     <p style="text-align:center;margin-top:20px;color:#6b7280;font-size:14px">
-      You can also <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">view your project page</a> at any time to track progress and see any change requests.
+      You can also <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">view your project page</a> at any time to track progress, review the scope of work and see any change requests.
     </p>
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
