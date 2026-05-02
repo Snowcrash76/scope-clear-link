@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, validateSupabaseJwt } from './emailHandlers';
+import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
 const app = express();
 app.use(express.json());
@@ -84,6 +84,21 @@ app.post('/api/get-signed-upload-url', async (req, res) => {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[email] get-signed-upload-url:', message);
     res.status(message === 'Project not found' ? 404 : 500).json({ error: message });
+  }
+});
+
+app.post('/api/send-document-notification', async (req, res) => {
+  try {
+    const userId = await validateSupabaseJwt(req.headers['authorization']);
+    const result = await handleDocumentUploadNotification(req.body, userId);
+    res.json({ success: true, result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const status = message === 'Unauthorized' ? 401
+      : message === 'No client email on project' ? 400
+      : 500;
+    console.error('[email] send-document-notification:', message);
+    res.status(status).json({ error: message });
   }
 });
 

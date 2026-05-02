@@ -578,3 +578,66 @@ export async function handleRecordClientDocument(body: {
   if (error) throw new Error(`DB error: ${error.message}`);
   return { ok: true };
 }
+
+export async function handleDocumentUploadNotification(
+  body: { projectId: string; documentNames: string[] },
+  authenticatedUserId: string
+) {
+  const { projectId, documentNames } = body;
+  if (!projectId || !documentNames?.length) throw new Error('projectId and documentNames are required');
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', authenticatedUserId)
+    .single();
+  if (projectError || !project) throw new Error('Project not found or access denied');
+
+  if (!project.client_email) throw new Error('No client email on project');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', project.user_id)
+    .single();
+
+  const baseUrl = getSiteUrl();
+  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const tradeName = profile?.business_name || 'Your trade';
+  const clientName = project.client_name || 'there';
+  const count = documentNames.length;
+
+  const docsListHtml = documentNames
+    .map(n => `<li style="margin:4px 0;color:#374151">${n}</li>`)
+    .join('');
+
+  const subject = `[${project.name}] ${count === 1 ? 'A new document has' : `${count} new documents have`} been shared with you`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#374151;max-width:600px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);padding:32px;border-radius:12px 12px 0 0;text-align:center">
+    <h1 style="color:white;margin:0;font-size:24px">New Document${count > 1 ? 's' : ''} Shared</h1>
+  </div>
+  <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+    <p style="color:#6b7280;margin-bottom:24px">Hi ${clientName},</p>
+    <p style="margin-bottom:24px">${tradeName} has uploaded ${count === 1 ? 'a new document' : `${count} new documents`} to your job <strong>${project.name}</strong>.</p>
+    <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
+      <h4 style="margin:0 0 10px 0;color:#1f2937">Uploaded file${count > 1 ? 's' : ''}</h4>
+      <ul style="margin:0;padding-left:18px">${docsListHtml}</ul>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Job</a>
+    </div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
+    <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
+      This email was sent regarding job: ${project.name}<br>
+      If you have questions, please contact your trade directly.
+    </p>
+  </div>
+</body></html>`;
+
+  return sendViaResend(project.client_email, subject, html);
+}

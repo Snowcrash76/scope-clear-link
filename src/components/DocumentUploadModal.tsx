@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { sendDocumentUploadNotification } from '@/lib/documentNotification';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -103,10 +104,14 @@ export function DocumentUploadModal({
         if (dbError) throw dbError;
       }
 
+      const uploadedNames = files.map(({ file, displayName }) =>
+        displayName.trim() || file.name.replace(/\.[^/.]+$/, '')
+      );
       toast.success(`${files.length} document${files.length > 1 ? 's' : ''} uploaded`);
       setFiles([]);
       onOpenChange(false);
       onUploadComplete();
+      sendDocumentUploadNotification(projectId, uploadedNames);
     } catch (error) {
       console.error('Error uploading document:', error);
       toast.error('Failed to upload document');
