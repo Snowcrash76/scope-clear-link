@@ -146,10 +146,20 @@ export function InvoiceSection({
   }, [defaultTerms]);
 
   const [percentage, setPercentage] = useState(50);
+  const [invoiceAmountInput, setInvoiceAmountInput] = useState('');
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+
   const [customDescription, setCustomDescription] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Initialise dollar input when quoteTotal first becomes available
+  useEffect(() => {
+    if (quoteTotal > 0 && invoiceAmountInput === '') {
+      setInvoiceAmountInput((quoteTotal * percentage / 100).toFixed(2));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quoteTotal]);
 
   const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
@@ -220,8 +230,8 @@ export function InvoiceSection({
     }> = [];
 
     if (invoiceType === 'final' || Object.keys(selectedItems).length === 0) {
-      // For final invoice or if no items selected, use percentage of quote
-      const amount = quoteTotal * (percentage / 100);
+      // For final invoice or if no items selected, use the entered amount (falls back to percentage)
+      const amount = parseFloat(invoiceAmountInput) || quoteTotal * (percentage / 100);
       const description = invoiceType === 'final'
         ? 'Final Payment'
         : invoiceType === 'deposit'
@@ -588,7 +598,7 @@ export function InvoiceSection({
             </div>
 
             {/* Payment Amount */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>Amount ({percentage}% of quote)</Label>
               <div className="flex items-center gap-4">
                 <Input
@@ -597,12 +607,38 @@ export function InvoiceSection({
                   max="100"
                   step="5"
                   value={percentage}
-                  onChange={(e) => setPercentage(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const pct = parseInt(e.target.value);
+                    setPercentage(pct);
+                    setInvoiceAmountInput((quoteTotal * pct / 100).toFixed(2));
+                  }}
+                  className="flex-1"
+                  data-testid="slider-invoice-percentage"
+                />
+                <span className="text-sm text-muted-foreground w-12 text-right flex-shrink-0">
+                  {percentage}%
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">$</span>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={invoiceAmountInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setInvoiceAmountInput(val);
+                    const parsed = parseFloat(val);
+                    if (!isNaN(parsed) && quoteTotal > 0) {
+                      const pct = Math.round((parsed / quoteTotal) * 100);
+                      setPercentage(Math.max(0, Math.min(100, pct)));
+                    }
+                  }}
+                  placeholder="0.00"
+                  data-testid="input-invoice-amount"
                   className="flex-1"
                 />
-                <span className="font-medium w-24 text-right">
-                  ${((quoteTotal * percentage / 100)).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
               </div>
             </div>
 
