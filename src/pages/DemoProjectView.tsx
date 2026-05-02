@@ -101,7 +101,7 @@ export default function DemoProjectView() {
               </TabsTrigger>
               <TabsTrigger value="changes" className="gap-2">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
-                Variations
+                Extras & Changes
                 {pendingChanges.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
                     {pendingChanges.length}
@@ -178,7 +178,7 @@ export default function DemoProjectView() {
               {approvedChanges.length > 0 && (
                 <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
                   <div className="px-3 py-2 border-b border-approved/20">
-                    <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
+                    <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Extras & Changes</span>
                   </div>
                   {approvedChanges.map(change => (
                     <div key={change.id} className="p-3 flex justify-between items-start">
@@ -304,7 +304,7 @@ export default function DemoProjectView() {
           <TabsContent value="changes" className="space-y-4 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h2 className="font-heading text-xl font-bold">Changes & Variations</h2>
+                <h2 className="font-heading text-xl font-bold">Extras & Changes</h2>
                 <p className="text-sm text-muted-foreground">
                   Track all modifications to the original scope
                 </p>
@@ -317,7 +317,7 @@ export default function DemoProjectView() {
             {/* Demo notice */}
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/60 border text-sm text-muted-foreground">
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>In a live project, clients can approve or decline variations and submit new requests directly from this page.</span>
+              <span>In a live project, clients can approve or decline extras & changes and submit new requests directly from this page.</span>
             </div>
 
             {(() => {
@@ -461,7 +461,7 @@ export default function DemoProjectView() {
             <div>
               <h3 className="font-heading font-bold text-lg">Ready to set this up for your business?</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Give your clients a professional project portal — quotes, invoices, variations, and stages all in one place.
+                Give your clients a professional project portal — quotes, invoices, extras & changes, and stages all in one place.
               </p>
             </div>
             <Link to="/signup">
