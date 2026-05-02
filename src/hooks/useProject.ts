@@ -307,7 +307,7 @@ export function useProject(projectId: string | undefined) {
       setDocuments(projectDocuments);
     } catch (error) {
       console.error('Error fetching project:', error);
-      toast.error('Failed to load project');
+      toast.error('Failed to load job');
     } finally {
       setLoading(false);
     }
@@ -911,7 +911,7 @@ export function useProject(projectId: string | undefined) {
       return true;
     } catch (error) {
       console.error('Error updating project status:', error);
-      toast.error('Failed to update project status');
+      toast.error('Failed to update job status');
       return false;
     }
   };

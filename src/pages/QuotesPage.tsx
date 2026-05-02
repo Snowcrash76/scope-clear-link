@@ -75,13 +75,13 @@ export default function QuotesPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="font-heading text-2xl font-bold">Quotes</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">All quotes across your projects</p>
+          <p className="text-sm text-muted-foreground mt-0.5">All quotes across your jobs</p>
         </div>
 
         <div className="rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
           {/* Table header — desktop only */}
           <div className="hidden sm:grid sm:grid-cols-[1fr_140px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Project / Client</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job / Client</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quote #</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Total</span>

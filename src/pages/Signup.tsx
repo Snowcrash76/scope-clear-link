@@ -51,7 +51,7 @@ export default function Signup() {
             <Briefcase className="w-8 h-8 text-primary" />
           </div>
           <h1 className="font-heading text-2xl font-bold">Create your account</h1>
-          <p className="text-muted-foreground mt-1">Start managing your trade projects</p>
+          <p className="text-muted-foreground mt-1">Start managing your trade jobs</p>
         </div>
 
         <Card className="p-6">

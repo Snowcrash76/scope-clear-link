@@ -113,7 +113,7 @@ export default function ClientsPage() {
         .in('id', deleteClient.projectIds);
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ['/projects'] });
-      toast.success(`${deleteClient.name} and their projects removed`);
+      toast.success(`${deleteClient.name} and their jobs removed`);
       setDeleteClient(null);
     } catch {
       toast.error('Failed to delete client');

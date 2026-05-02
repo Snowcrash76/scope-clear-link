@@ -128,7 +128,7 @@ export default function Index() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold mb-4">
-              A living project page your clients actually use
+              A living job page your clients actually use
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               No client accounts. No app downloads. Just a persistent link that keeps 

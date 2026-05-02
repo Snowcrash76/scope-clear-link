@@ -34,7 +34,7 @@ export function useCreateProject() {
 
   const createProject = async (data: CreateProjectData): Promise<string | null> => {
     if (!user) {
-      toast.error('You must be logged in to create a project');
+      toast.error('You must be logged in to create a job');
       return null;
     }
 
@@ -107,7 +107,7 @@ export function useCreateProject() {
       return projectData.id;
     } catch (error) {
       console.error('Error creating project:', error);
-      toast.error('Failed to create project');
+      toast.error('Failed to create job');
       return null;
     }
   };

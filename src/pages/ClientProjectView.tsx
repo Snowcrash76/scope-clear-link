@@ -80,8 +80,8 @@ export default function ClientProjectView() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Project Not Found</h1>
-          <p className="text-muted-foreground mt-2">The project you're looking for doesn't exist.</p>
+          <h1 className="text-2xl font-bold text-foreground">Job Not Found</h1>
+          <p className="text-muted-foreground mt-2">The job you're looking for doesn't exist.</p>
         </div>
       </div>
     );
@@ -619,7 +619,7 @@ export default function ClientProjectView() {
             <div>
               <h2 className="font-heading text-xl font-bold">Invoices</h2>
               <p className="text-sm text-muted-foreground">
-                View and track your project invoices
+                View and track your job invoices
               </p>
             </div>
 
@@ -733,9 +733,9 @@ export default function ClientProjectView() {
           {project.stages?.length > 0 && (
             <TabsContent value="stages" className="space-y-4 animate-fade-in">
               <div>
-                <h2 className="font-heading text-xl font-bold">Project Stages</h2>
+                <h2 className="font-heading text-xl font-bold">Job Stages</h2>
                 <p className="text-sm text-muted-foreground">
-                  See where your project is at and what's coming next
+                  See where your job is at and what's coming next
                 </p>
               </div>
 
@@ -753,7 +753,7 @@ export default function ClientProjectView() {
             <div>
               <h2 className="font-heading text-xl font-bold">Documents</h2>
               <p className="text-sm text-muted-foreground">
-                Project files and attachments
+                Job files and attachments
               </p>
             </div>
 
@@ -800,7 +800,7 @@ export default function ClientProjectView() {
       {/* Footer */}
       <footer className="border-t mt-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center text-sm text-muted-foreground">
-          <p>This project page is provided by {project.tradeBusinessName}</p>
+          <p>This job page is provided by {project.tradeBusinessName}</p>
           <p className="mt-1">Questions? Contact {project.tradeName} directly.</p>
         </div>
       </footer>

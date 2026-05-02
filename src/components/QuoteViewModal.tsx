@@ -125,7 +125,7 @@ export function QuoteViewModal({
           {/* Project, Client & Quote Info */}
           <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
             <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Project</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Job</p>
               <p className="font-medium">{projectInfo.name}</p>
             </div>
             <div>

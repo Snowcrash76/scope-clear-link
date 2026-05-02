@@ -255,7 +255,7 @@ export default function ProjectManage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">Project not found</p>
+          <p className="text-muted-foreground mb-4">Job not found</p>
           <Button variant="outline" onClick={() => navigate('/dashboard')}>
             Back to Dashboard
           </Button>
@@ -377,7 +377,7 @@ export default function ProjectManage() {
   const handleSendToClient = async () => {
     const success = await updateProjectStatus('sent');
     if (success) {
-      toast.success('Project sent to client!');
+      toast.success('Job sent to client!');
     }
   };
 

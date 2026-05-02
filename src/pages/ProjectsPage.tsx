@@ -80,7 +80,7 @@ export default function ProjectsPage() {
           <div className="relative max-w-lg">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search projects or clients..."
+              placeholder="Search jobs or clients..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
@@ -92,7 +92,7 @@ export default function ProjectsPage() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
-          <h1 className="font-heading text-2xl font-bold">Projects</h1>
+          <h1 className="font-heading text-2xl font-bold">Jobs</h1>
           <p className="text-sm text-muted-foreground mt-0.5">All your jobs in one place</p>
         </div>
 

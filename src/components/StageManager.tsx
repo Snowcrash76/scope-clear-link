@@ -171,7 +171,7 @@ export function StageManager({
     <>
       <Card className="p-4 sm:p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-heading font-semibold text-lg">Project Stages</h3>
+          <h3 className="font-heading font-semibold text-lg">Job Stages</h3>
           {isEditable && (
             <Button size="sm" onClick={handleAddStage}>
               <Plus className="w-4 h-4 mr-1" />
@@ -183,7 +183,7 @@ export function StageManager({
         {stages.length === 0 ? (
           <div className="text-center py-8">
             <Circle className="w-12 h-12 mx-auto text-muted-foreground/30 mb-3" />
-            <p className="text-muted-foreground mb-4">This project has no stages</p>
+            <p className="text-muted-foreground mb-4">This job has no stages</p>
             {isEditable && (
               <Button variant="outline" onClick={handleAddStage}>
                 <Plus className="w-4 h-4 mr-2" />

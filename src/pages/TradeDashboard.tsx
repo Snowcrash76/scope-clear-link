@@ -284,7 +284,7 @@ export default function TradeDashboard() {
           <div className="relative max-w-lg">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search projects, quotes, or clients..."
+              placeholder="Search jobs, quotes, or clients..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
@@ -324,7 +324,7 @@ export default function TradeDashboard() {
         {/* Active projects */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-heading text-base font-semibold">Active Projects</h2>
+            <h2 className="font-heading text-base font-semibold">Active Jobs</h2>
             <button
               onClick={() => navigate('/dashboard')}
               className="text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"

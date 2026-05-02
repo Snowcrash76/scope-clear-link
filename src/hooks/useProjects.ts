@@ -153,7 +153,7 @@ export function useProjects() {
       setProjects(mappedProjects);
     } catch (error) {
       console.error('Error fetching projects:', error);
-      toast.error('Failed to load projects');
+      toast.error('Failed to load jobs');
     } finally {
       setLoading(false);
     }
@@ -185,7 +185,7 @@ export function useProjects() {
       return true;
     } catch (error) {
       console.error('Error updating project status:', error);
-      toast.error('Failed to update project status');
+      toast.error('Failed to update job status');
       return false;
     }
   };
@@ -233,7 +233,7 @@ export function useProjects() {
       return true;
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast.error('Failed to delete project');
+      toast.error('Failed to delete job');
       return false;
     }
   };

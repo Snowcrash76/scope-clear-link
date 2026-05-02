@@ -229,7 +229,7 @@ export default function DemoProjectView() {
           <TabsContent value="invoices" className="space-y-4 animate-fade-in">
             <div>
               <h2 className="font-heading text-xl font-bold">Invoices</h2>
-              <p className="text-sm text-muted-foreground">View and track your project invoices</p>
+              <p className="text-sm text-muted-foreground">View and track your job invoices</p>
             </div>
 
             <div className="space-y-4">
@@ -317,7 +317,7 @@ export default function DemoProjectView() {
             {/* Demo notice */}
             <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/60 border text-sm text-muted-foreground">
               <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>In a live project, clients can approve or decline extras & changes and submit new requests directly from this page.</span>
+              <span>In a live job, clients can approve or decline extras & changes and submit new requests directly from this page.</span>
             </div>
 
             {(() => {
@@ -429,9 +429,9 @@ export default function DemoProjectView() {
           {/* Stages Tab */}
           <TabsContent value="stages" className="space-y-4 animate-fade-in">
             <div>
-              <h2 className="font-heading text-xl font-bold">Project Stages</h2>
+              <h2 className="font-heading text-xl font-bold">Job Stages</h2>
               <p className="text-sm text-muted-foreground">
-                See where your project is at and what's coming next
+                See where your job is at and what's coming next
               </p>
             </div>
             <Card className="p-4 sm:p-6">
@@ -446,7 +446,7 @@ export default function DemoProjectView() {
           <TabsContent value="documents" className="space-y-4 animate-fade-in">
             <div>
               <h2 className="font-heading text-xl font-bold">Documents</h2>
-              <p className="text-sm text-muted-foreground">Shared files and project documents</p>
+              <p className="text-sm text-muted-foreground">Shared files and job documents</p>
             </div>
             <Card className="p-8 text-center">
               <FolderOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4" />

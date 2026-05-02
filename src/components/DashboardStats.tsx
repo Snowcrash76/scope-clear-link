@@ -33,7 +33,7 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
         data-testid="stat-active-projects"
       >
         <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">
-          Active Projects
+          Active Jobs
         </p>
         <p className="text-2xl font-heading font-bold text-zinc-900 mb-1">
           {activeProjects.length}

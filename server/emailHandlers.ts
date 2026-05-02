@@ -124,21 +124,21 @@ export async function handleChangeNotification(
       subject = `[${project.name}] New change request requires your attention`;
       heading = 'New Change Request';
       message = recipientType === 'client'
-        ? `${senderName} has submitted a change request for your project that requires your review.`
-        : `Your client ${senderName} has submitted a change request for the project.`;
+        ? `${senderName} has submitted a change request for your job that requires your review.`
+        : `Your client ${senderName} has submitted a change request for the job.`;
       actionText = 'Review Change Request';
       break;
     case 'approved':
       subject = `[${project.name}] Your change request was approved`;
       heading = 'Change Request Approved';
       message = `Great news! ${senderName} has approved your change request.`;
-      actionText = 'View Project';
+      actionText = 'View Job';
       break;
     case 'declined':
       subject = `[${project.name}] Your change request was declined`;
       heading = 'Change Request Declined';
       message = `${senderName} has declined your change request. Please review the details below.`;
-      actionText = 'View Project';
+      actionText = 'View Job';
       break;
     default:
       throw new Error('Invalid notification type');
@@ -172,7 +172,7 @@ export async function handleChangeNotification(
     </div>
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
-      This email was sent regarding project: ${project.name}<br>
+      This email was sent regarding job: ${project.name}<br>
       If you have questions, please contact the ${recipientType === 'client' ? 'trade' : 'client'} directly.
     </p>
   </div>
@@ -231,7 +231,7 @@ export async function handleSendQuoteToClient(
 
   const bodyText = isRevision
     ? `<strong>${tradeName}</strong> has revised your quote for <strong>${projectName}</strong>. Please review the changes and let them know if you're happy to proceed.`
-    : `<strong>${tradeName}</strong> has prepared a quote for your project <strong>${projectName}</strong>. You can review the full scope of work, accept or decline, and leave a comment.`;
+    : `<strong>${tradeName}</strong> has prepared a quote for your job <strong>${projectName}</strong>. You can review the full scope of work, accept or decline, and leave a comment.`;
 
   const ctaText = isRevision ? 'Review Updated Quote' : 'Review &amp; Accept Quote';
 
@@ -258,11 +258,11 @@ export async function handleSendQuoteToClient(
       <a href="${quoteUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">${ctaText}</a>
     </div>
     <p style="text-align:center;margin-top:20px;color:#6b7280;font-size:14px">
-      You can also <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">view your project page</a> at any time to track progress, review the scope of work and see any change requests.
+      You can also <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">view your job page</a> at any time to track progress, review the scope of work and see any change requests.
     </p>
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
-      This email was sent on behalf of ${tradeName} regarding project: ${projectName}
+      This email was sent on behalf of ${tradeName} regarding job: ${projectName}
     </p>
   </div>
 </body></html>`;
@@ -329,7 +329,7 @@ export async function handleSendInvoiceToClient(
   </div>
   <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
     <p style="color:#6b7280;margin-bottom:24px">Hi ${clientName},</p>
-    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has sent you an invoice for <strong>${projectName}</strong>.</p>
+    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has sent you an invoice for job <strong>${projectName}</strong>.</p>
     <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
       <p style="margin:0 0 4px 0;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:0.05em">${typeLabel}</p>
       <h3 style="margin:0 0 8px 0;color:#1f2937">${invoiceNumber}</h3>
@@ -340,11 +340,11 @@ export async function handleSendInvoiceToClient(
       <a href="${projectUrl}#invoices" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Invoice</a>
     </div>
     <p style="text-align:center;margin-top:20px;color:#6b7280;font-size:14px">
-      You can view this invoice and track your project on your <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">project page</a>.
+      You can view this invoice and track your job on your <a href="${projectUrl}" style="color:#3b82f6;text-decoration:none">job page</a>.
     </p>
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
-      This invoice was sent on behalf of ${tradeName} regarding project: ${projectName}
+      This invoice was sent on behalf of ${tradeName} regarding job: ${projectName}
     </p>
   </div>
 </body></html>`;
@@ -403,13 +403,13 @@ export async function handleQuoteNotification(body: {
   if (notificationType === 'approved') {
     subject = `[${projectName}] ${clientName} has accepted your quote`;
     heading = 'Quote Accepted';
-    message = `<strong>${clientName}</strong> has accepted your quote for <strong>${projectName}</strong>. You can now proceed with planning the work.`;
+    message = `<strong>${clientName}</strong> has accepted your quote for job <strong>${projectName}</strong>. You can now proceed with planning the work.`;
     statusColor = '#16a34a';
     statusIcon = '&#10003;';
   } else {
     subject = `[${projectName}] ${clientName} has declined your quote`;
     heading = 'Quote Declined';
-    message = `<strong>${clientName}</strong> has declined your quote for <strong>${projectName}</strong>.`;
+    message = `<strong>${clientName}</strong> has declined your quote for job <strong>${projectName}</strong>.`;
     statusColor = '#dc2626';
     statusIcon = '&#10005;';
   }
@@ -436,11 +436,11 @@ export async function handleQuoteNotification(body: {
     </div>
     ${commentHtml}
     <div style="text-align:center;margin-top:32px">
-      <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Project</a>
+      <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Job</a>
     </div>
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
-      This email was sent regarding project: ${projectName}<br>
+      This email was sent regarding job: ${projectName}<br>
       Client: ${clientName}
     </p>
   </div>
@@ -504,17 +504,17 @@ export async function handleSendScopeChangeNotification(
   </div>
   <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
     <p style="color:#6b7280;margin-bottom:24px">Hi ${clientName},</p>
-    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has made a change to the Scope of Works for your project <strong>${projectName}</strong>.</p>
+    <p style="margin-bottom:24px"><strong>${tradeName}</strong> has made a change to the Scope of Works for your job <strong>${projectName}</strong>.</p>
     <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
       <p style="margin:0 0 4px 0;color:#6b7280;font-size:13px;text-transform:uppercase;letter-spacing:0.05em">Item ${actionLabel} scope</p>
       <h3 style="margin:0;color:#1f2937">${itemTitle}</h3>
     </div>
     <div style="text-align:center;margin-top:32px">
-      <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Project</a>
+      <a href="${projectUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Job</a>
     </div>
     <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
     <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
-      This email was sent regarding project: ${projectName}
+      This email was sent regarding job: ${projectName}
     </p>
   </div>
 </body></html>`;

@@ -89,7 +89,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
           {/* Project Info */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Project</p>
+              <p className="text-sm text-muted-foreground">Job</p>
               <p className="font-medium">{project.name}</p>
             </div>
             <div>

@@ -83,7 +83,7 @@ const formatCurrency = (n: number | null) =>
   n == null ? '—' : `$${n.toLocaleString('en-AU', { minimumFractionDigits: 0 })}`;
 
 function exportInvoicesCSV(rows: InvoiceRow[]) {
-  const headers = ['Invoice #', 'Project', 'Client', 'Status', 'Total (AUD)', 'Due Date', 'Created Date'];
+  const headers = ['Invoice #', 'Job', 'Client', 'Status', 'Total (AUD)', 'Due Date', 'Created Date'];
   const csvRows = rows.map(inv => [
     inv.invoice_number,
     inv.projectName,
@@ -178,7 +178,7 @@ export default function InvoicesPage() {
         <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
           <div>
             <h1 className="font-heading text-2xl font-bold">Invoices</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">All invoices across your projects</p>
+            <p className="text-sm text-muted-foreground mt-0.5">All invoices across your jobs</p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -330,7 +330,7 @@ export default function InvoicesPage() {
         <div className="rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
           {/* Table header — desktop only */}
           <div className="hidden sm:grid sm:grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Project / Client</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job / Client</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invoice #</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Total</span>
