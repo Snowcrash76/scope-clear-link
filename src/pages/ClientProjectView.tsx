@@ -494,7 +494,7 @@ export default function ClientProjectView() {
               <div>
                 <h2 className="font-heading text-xl font-bold">Extras & Changes</h2>
                 <p className="text-sm text-muted-foreground">
-                  Track all modifications to the original scope
+                  Track all modifications to the original quote
                 </p>
               </div>
               <RequestChangeButton onSubmit={handleRequestChange} />
