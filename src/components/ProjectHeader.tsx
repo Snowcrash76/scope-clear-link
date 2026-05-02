@@ -11,7 +11,7 @@ interface ProjectHeaderProps {
 const statusConfig = {
   draft: { label: 'Draft', variant: 'secondary' as const },
   sent: { label: 'Awaiting Response', variant: 'pending' as const },
-  acknowledged: { label: 'Scope of Works Acknowledged', variant: 'success' as const },
+  acknowledged: { label: 'Quote Acknowledged', variant: 'success' as const },
   in_progress: { label: 'In Progress', variant: 'success' as const },
   completed: { label: 'Completed', variant: 'success' as const },
 };
