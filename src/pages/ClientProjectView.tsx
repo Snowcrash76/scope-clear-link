@@ -22,7 +22,7 @@ import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { toast } from 'sonner';
-import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2, X } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice, ScopeItem } from '@/types/project';
@@ -52,6 +52,12 @@ export default function ClientProjectView() {
   // survives any child re-renders or reconciliations.
   const [optimisticApprovedIds, setOptimisticApprovedIds] = useState<Set<string>>(new Set());
   const [optimisticDeclinedIds, setOptimisticDeclinedIds] = useState<Set<string>>(new Set());
+  const [dismissedDocIds, setDismissedDocIds] = useState<Set<string>>(() => {
+    if (!id) return new Set();
+    const v = localStorage.getItem(`notif-new-docs-client-${id}`);
+    if (!v) return new Set();
+    try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
+  });
   // Tracks comments left when declining, keyed by changeId, so the card can
   // show the comment immediately without waiting for a server refetch.
   const [optimisticDeclinedComments, setOptimisticDeclinedComments] = useState<Map<string, string>>(new Map());
@@ -221,6 +227,18 @@ export default function ClientProjectView() {
     setQuoteApprovalModal({ isOpen: false, action: 'approve' });
   };
 
+  const RECENTLY_UPLOADED_MS = 72 * 60 * 60 * 1000;
+  const recentlyUploadedDocs = documents.filter(
+    doc => (Date.now() - new Date(doc.created_at).getTime()) < RECENTLY_UPLOADED_MS
+  );
+  const showDocNotification = recentlyUploadedDocs.length > 0 && recentlyUploadedDocs.some(doc => !dismissedDocIds.has(doc.id));
+
+  const dismissDocNotification = () => {
+    const ids = recentlyUploadedDocs.map(doc => doc.id);
+    localStorage.setItem(`notif-new-docs-client-${id}`, JSON.stringify(ids));
+    setDismissedDocIds(new Set(ids));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <ProjectHeader project={project} />
@@ -263,6 +281,11 @@ export default function ClientProjectView() {
               <TabsTrigger value="documents" className="gap-2">
                 <FolderOpen className="w-4 h-4 hidden sm:block" />
                 Documents
+                {showDocNotification && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
+                    {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length}
+                  </span>
+                )}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -756,6 +779,32 @@ export default function ClientProjectView() {
                 Job files and attachments
               </p>
             </div>
+
+            {showDocNotification && (
+              <Card className="p-4 bg-primary/5 border-primary/20">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
+                    <FolderOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-heading font-semibold text-primary">New Documents</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length === 1
+                        ? '1 document was added recently.'
+                        : `${recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length} documents were added recently.`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={dismissDocNotification}
+                    data-testid="button-dismiss-doc-notification-client"
+                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Dismiss notification"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </Card>
+            )}
 
             <ClientDocumentsSection
               documents={documents}

@@ -65,6 +65,7 @@ import {
   X,
   MoreVertical,
   RotateCcw,
+  FolderOpen,
 } from 'lucide-react';
 import { cn, getClientProjectUrl, getQuoteShareUrl, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
@@ -185,6 +186,12 @@ export default function ProjectManage() {
     if (!v) return new Set();
     try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
   });
+  const [dismissedDocIds, setDismissedDocIds] = useState<Set<string>>(() => {
+    if (!id) return new Set();
+    const v = localStorage.getItem(`notif-new-docs-${id}`);
+    if (!v) return new Set();
+    try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
+  });
 
   // Rehydrate dismiss state if the project ID changes without a full remount
   useEffect(() => {
@@ -196,6 +203,12 @@ export default function ProjectManage() {
       try { setDismissedVariationIds(new Set(JSON.parse(varVal) as string[])); } catch { setDismissedVariationIds(new Set()); }
     } else {
       setDismissedVariationIds(new Set());
+    }
+    const docVal = localStorage.getItem(`notif-new-docs-${id}`);
+    if (docVal) {
+      try { setDismissedDocIds(new Set(JSON.parse(docVal) as string[])); } catch { setDismissedDocIds(new Set()); }
+    } else {
+      setDismissedDocIds(new Set());
     }
   }, [id]);
 
@@ -406,6 +419,10 @@ export default function ProjectManage() {
   // Derived visibility — reappears automatically when new items arrive
   const showActionRequired = pendingClientRequests.length > 0 && pendingClientRequests.length > dismissedActionCount;
   const showVariationUpdate = recentlyResolvedChanges.length > 0 && recentlyResolvedChanges.some(cr => !dismissedVariationIds.has(cr.id));
+  const recentlyUploadedDocs = documents.filter(
+    doc => (Date.now() - new Date(doc.created_at).getTime()) < RECENTLY_RESOLVED_MS
+  );
+  const showDocNotification = recentlyUploadedDocs.length > 0 && recentlyUploadedDocs.some(doc => !dismissedDocIds.has(doc.id));
 
   const dismissActionRequired = () => {
     const count = pendingClientRequests.length;
@@ -416,6 +433,11 @@ export default function ProjectManage() {
     const ids = recentlyResolvedChanges.map(cr => cr.id);
     localStorage.setItem(`notif-variation-update-${id}`, JSON.stringify(ids));
     setDismissedVariationIds(new Set(ids));
+  };
+  const dismissDocNotification = () => {
+    const ids = recentlyUploadedDocs.map(doc => doc.id);
+    localStorage.setItem(`notif-new-docs-${id}`, JSON.stringify(ids));
+    setDismissedDocIds(new Set(ids));
   };
 
   return (
@@ -535,7 +557,7 @@ export default function ProjectManage() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Notification banners */}
-        {(showActionRequired || showVariationUpdate) && (
+        {(showActionRequired || showVariationUpdate || showDocNotification) && (
           <div className="space-y-3 mb-6">
             {showActionRequired && (
               <Card className="p-4 bg-pending/5 border-pending/30">
@@ -552,6 +574,31 @@ export default function ProjectManage() {
                   <button
                     onClick={dismissActionRequired}
                     data-testid="button-dismiss-action-required"
+                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Dismiss notification"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </Card>
+            )}
+            {showDocNotification && (
+              <Card className="p-4 bg-primary/5 border-primary/20">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
+                    <FolderOpen className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-heading font-semibold text-primary">New Documents</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length === 1
+                        ? '1 document was uploaded recently — see the Documents tab.'
+                        : `${recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length} documents were uploaded recently — see the Documents tab.`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={dismissDocNotification}
+                    data-testid="button-dismiss-doc-notification"
                     className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                     aria-label="Dismiss notification"
                   >
@@ -618,7 +665,14 @@ export default function ProjectManage() {
                 )}
               </TabsTrigger>
               <TabsTrigger value="stages">Stages</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="documents">
+                Documents
+                {showDocNotification && (
+                  <Badge variant="pending" className="ml-2">
+                    {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length}
+                  </Badge>
+                )}
+              </TabsTrigger>
             </TabsList>
           </div>
 
