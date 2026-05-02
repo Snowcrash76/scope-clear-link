@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { sendClientDocumentUploadNotification } from '@/lib/documentNotification';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { 
@@ -120,8 +121,10 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
     }
     setUploading(false);
     if (successCount > 0) {
+      const uploadedNames = list.slice(0, successCount).map(f => f.name.replace(/\.[^/.]+$/, ''));
       toast.success(successCount === 1 ? 'Document uploaded' : `${successCount} documents uploaded`);
       onRefresh();
+      sendClientDocumentUploadNotification(projectId, uploadedNames);
     }
   };
 

@@ -641,3 +641,64 @@ export async function handleDocumentUploadNotification(
 
   return sendViaResend(project.client_email, subject, html);
 }
+
+export async function handleClientDocumentUploadNotification(
+  body: { projectId: string; documentNames: string[] }
+) {
+  const { projectId, documentNames } = body;
+  if (!projectId || !documentNames?.length) throw new Error('projectId and documentNames are required');
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: project, error: projectError } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single();
+  if (projectError || !project) throw new Error('Project not found');
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', project.user_id)
+    .single();
+
+  const tradeEmail = profile?.email;
+  if (!tradeEmail) throw new Error('No trade email found');
+
+  const baseUrl = getSiteUrl();
+  const manageUrl = `${baseUrl}/manage/${projectId}`;
+  const tradeName = profile?.contact_name || 'there';
+  const clientName = project.client_name || 'Your client';
+  const count = documentNames.length;
+
+  const docsListHtml = documentNames
+    .map(n => `<li style="margin:4px 0;color:#374151">${n}</li>`)
+    .join('');
+
+  const subject = `[${project.name}] ${clientName} uploaded ${count === 1 ? 'a document' : `${count} documents`}`;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;line-height:1.6;color:#374151;max-width:600px;margin:0 auto;padding:20px">
+  <div style="background:linear-gradient(135deg,#3b82f6 0%,#1d4ed8 100%);padding:32px;border-radius:12px 12px 0 0;text-align:center">
+    <h1 style="color:white;margin:0;font-size:24px">Client Uploaded Document${count > 1 ? 's' : ''}</h1>
+  </div>
+  <div style="background:white;padding:32px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px">
+    <p style="color:#6b7280;margin-bottom:24px">Hi ${tradeName},</p>
+    <p style="margin-bottom:24px">${clientName} has uploaded ${count === 1 ? 'a new document' : `${count} new documents`} to the job <strong>${project.name}</strong>.</p>
+    <div style="background:#f8f9fa;padding:20px;border-radius:8px;border-left:4px solid #3b82f6;margin:24px 0">
+      <h4 style="margin:0 0 10px 0;color:#1f2937">Uploaded file${count > 1 ? 's' : ''}</h4>
+      <ul style="margin:0;padding-left:18px">${docsListHtml}</ul>
+    </div>
+    <div style="text-align:center;margin-top:32px">
+      <a href="${manageUrl}" style="display:inline-block;background:#3b82f6;color:white;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:600">View Job</a>
+    </div>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:32px 0">
+    <p style="color:#9ca3af;font-size:12px;text-align:center;margin:0">
+      This email was sent regarding job: ${project.name}
+    </p>
+  </div>
+</body></html>`;
+
+  return sendViaResend(tradeEmail, subject, html);
+}

@@ -1,6 +1,6 @@
 import express from 'express';
 import path from 'path';
-import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
+import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
 const app = express();
 app.use(express.json());
@@ -99,6 +99,17 @@ app.post('/api/send-document-notification', async (req, res) => {
       : 500;
     console.error('[email] send-document-notification:', message);
     res.status(status).json({ error: message });
+  }
+});
+
+app.post('/api/send-client-document-notification', async (req, res) => {
+  try {
+    const result = await handleClientDocumentUploadNotification(req.body);
+    res.json({ success: true, result });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[email] send-client-document-notification:', message);
+    res.status(500).json({ error: message });
   }
 });
 
