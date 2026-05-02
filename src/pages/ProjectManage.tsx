@@ -156,7 +156,8 @@ export default function ProjectManage() {
   }, [activeQuote, quoteLineItems, project]);
 
   // Check for tab query param (e.g., from job creation)
-  const initialTab = searchParams.get('tab') || 'quote';
+  const rawTab = searchParams.get('tab') || 'quote';
+  const initialTab = rawTab === 'scope' ? 'quote' : rawTab;
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
   const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
