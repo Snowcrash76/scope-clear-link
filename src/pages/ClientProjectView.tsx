@@ -537,7 +537,13 @@ export default function ClientProjectView() {
 
             {/* Unified chronological activity feed — line item changes + change requests */}
             {(() => {
+              const quoteEvents = activeQuote ? [
+                { kind: 'quoteEvent' as const, id: 'qe-created', timestamp: activeQuote.createdAt, label: 'Quote issued' },
+                ...(activeQuote.approvedAt ? [{ kind: 'quoteEvent' as const, id: 'qe-approved', timestamp: activeQuote.approvedAt, label: 'Quote accepted' }] : []),
+                ...(activeQuote.declinedAt ? [{ kind: 'quoteEvent' as const, id: 'qe-declined', timestamp: activeQuote.declinedAt, label: 'Quote declined' }] : []),
+              ] : [];
               const feed = [
+                ...quoteEvents,
                 ...lineItemHistory.map(h => ({
                   kind: 'lineItem' as const,
                   id: `li-${h.id}`,
@@ -566,6 +572,21 @@ export default function ClientProjectView() {
               return (
                 <div className="space-y-4">
                   {feed.map(item => {
+                    if (item.kind === 'quoteEvent') {
+                      return (
+                        <div key={item.id} className="flex items-start gap-3 px-1">
+                          <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-1" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-muted-foreground">{item.label}</p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">
+                              {item.timestamp.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {' at '}
+                              {item.timestamp.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
                     if (item.kind === 'lineItem') {
                       return (
                         <div key={item.id} className="flex items-start gap-3 px-1">

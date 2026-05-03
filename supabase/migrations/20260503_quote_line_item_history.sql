@@ -1,3 +1,8 @@
+-- line_item_id intentionally has NO foreign key to quote_line_items.
+-- This is a deliberate design choice: history must survive item deletion.
+-- The quote_id FK to quotes ensures cascade-delete of the whole quote history
+-- when a quote is deleted, while individual item history is preserved across
+-- item deletions so that the audit trail is never broken.
 CREATE TABLE public.quote_line_item_history (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   line_item_id uuid NOT NULL,

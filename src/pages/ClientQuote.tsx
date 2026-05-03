@@ -88,7 +88,7 @@ export default function ClientQuote() {
             .from('change_requests')
             .select('*')
             .eq('project_id', quoteRow.project_id)
-            .eq('status', 'approved'),
+            .order('created_at', { ascending: true }),
           supabase
             .from('scope_items')
             .select('*')
@@ -193,7 +193,7 @@ export default function ClientQuote() {
   const fmt = (n: number) =>
     n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const approvedChangeCosts = new Set(changeRequests.map(cr => cr.cost_impact).filter((c): c is number => c !== null));
+  const approvedChangeCosts = new Set(changeRequests.filter(cr => cr.status === 'approved').map(cr => cr.cost_impact).filter((c): c is number => c !== null));
   // Use is_variation column; fall back to title heuristic for rows not yet migrated
   const isItemVariation = (li: typeof lineItems[number]) =>
     li.is_variation ?? isVariationItem(li.title ?? '');
@@ -525,6 +525,58 @@ export default function ClientQuote() {
             </div>
           </div>
         )}
+
+        {/* Unified activity feed — line item history + change requests + quote status events */}
+        {(() => {
+          const quoteEvents = quote ? [
+            { kind: 'quoteEvent' as const, id: 'qe-created', timestamp: new Date(quote.created_at), label: 'Quote issued' },
+            ...(quote.approved_at ? [{ kind: 'quoteEvent' as const, id: 'qe-approved', timestamp: new Date(quote.approved_at), label: 'Quote accepted' }] : []),
+            ...(quote.declined_at ? [{ kind: 'quoteEvent' as const, id: 'qe-declined', timestamp: new Date(quote.declined_at), label: 'Quote declined' }] : []),
+          ] : [];
+          const feed = [
+            ...quoteEvents,
+            ...changeRequests.map(cr => ({
+              kind: 'changeRequest' as const,
+              id: `cr-${cr.id}`,
+              timestamp: new Date(cr.resolved_at ?? cr.created_at),
+              label: cr.title,
+              status: cr.status,
+            })),
+            ...lineItemHistory.map(h => ({
+              kind: 'lineItem' as const,
+              id: `li-${h.id}`,
+              timestamp: h.createdAt,
+              label: formatHistoryEntry(h),
+            })),
+          ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+          if (feed.length === 0) return null;
+
+          return (
+            <Card className="overflow-hidden">
+              <div className="px-4 py-3 border-b bg-secondary/30">
+                <h2 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">Activity</h2>
+              </div>
+              <div className="divide-y">
+                {feed.map(item => (
+                  <div key={item.id} className="px-4 py-3 flex items-start gap-3">
+                    {item.kind === 'quoteEvent'
+                      ? <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      : <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-muted-foreground">{item.label}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-0.5">
+                        {item.timestamp.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {' at '}
+                        {item.timestamp.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          );
+        })()}
 
         {/* Action buttons */}
         {isActionable && (
