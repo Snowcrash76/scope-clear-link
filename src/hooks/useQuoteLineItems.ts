@@ -38,10 +38,13 @@ async function insertHistory(
   }>
 ) {
   if (rows.length === 0) return;
-  try {
-    await supabase.from('quote_line_item_history').insert(rows);
-  } catch (err) {
-    console.warn('Failed to record line item history:', err);
+  // Supabase client returns { error } rather than throwing — check explicitly
+  const { error } = await supabase.from('quote_line_item_history').insert(rows);
+  if (error) {
+    const pgErr = error as { code?: string; message?: string };
+    // Silently skip only when the table hasn't been migrated yet (42P01)
+    if (pgErr.code === '42P01' || (pgErr.message ?? '').includes('does not exist')) return;
+    console.error('Failed to record line item history:', error);
   }
 }
 

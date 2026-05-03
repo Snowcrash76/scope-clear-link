@@ -43,7 +43,11 @@ export default function ClientQuote() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const { history: lineItemHistory } = useLineItemHistory(quote?.id, token ?? undefined);
+  const {
+    history: lineItemHistory,
+    changeRequests: activityChangeRequests,
+    quote: activityQuote,
+  } = useLineItemHistory(quote?.id, token ?? undefined);
   const [expandedHistoryItemId, setExpandedHistoryItemId] = useState<string | null>(null);
 
   const [actionModal, setActionModal] = useState<{
@@ -561,19 +565,26 @@ export default function ClientQuote() {
           </div>
         )}
 
-        {/* Unified activity feed — line item history + change requests + quote status events */}
+        {/* Unified activity feed — line item history + change requests + quote status events
+            Data is sourced from the hook's unified endpoint response ({ history, changeRequests, quote })
+            with a fallback to the locally-loaded quote for quote status events if the hook hasn't resolved yet. */}
         {(() => {
-          const quoteEvents = quote ? [
+          const aq = activityQuote;
+          const quoteEvents = aq ? [
+            { kind: 'quoteEvent' as const, id: 'qe-created', timestamp: aq.createdAt, label: 'Quote issued' },
+            ...(aq.approvedAt ? [{ kind: 'quoteEvent' as const, id: 'qe-approved', timestamp: aq.approvedAt, label: 'Quote accepted' }] : []),
+            ...(aq.declinedAt ? [{ kind: 'quoteEvent' as const, id: 'qe-declined', timestamp: aq.declinedAt, label: 'Quote declined' }] : []),
+          ] : (quote ? [
             { kind: 'quoteEvent' as const, id: 'qe-created', timestamp: new Date(quote.created_at), label: 'Quote issued' },
             ...(quote.approved_at ? [{ kind: 'quoteEvent' as const, id: 'qe-approved', timestamp: new Date(quote.approved_at), label: 'Quote accepted' }] : []),
             ...(quote.declined_at ? [{ kind: 'quoteEvent' as const, id: 'qe-declined', timestamp: new Date(quote.declined_at), label: 'Quote declined' }] : []),
-          ] : [];
+          ] : []);
           const feed = [
             ...quoteEvents,
-            ...changeRequests.map(cr => ({
+            ...activityChangeRequests.map(cr => ({
               kind: 'changeRequest' as const,
               id: `cr-${cr.id}`,
-              timestamp: new Date(cr.resolved_at ?? cr.created_at),
+              timestamp: cr.resolvedAt ?? cr.createdAt,
               label: cr.title,
               status: cr.status,
             })),

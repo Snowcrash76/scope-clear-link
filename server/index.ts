@@ -366,65 +366,102 @@ app.delete('/api/admin/invites/:id', async (req, res) => {
 });
 
 // GET /api/quotes/:quoteId/line-item-history
-// Accepts Bearer JWT (trade owner) or ?token= (client share token)
+// Accepts Bearer JWT (trade owner) or ?token= (client share token).
+// Returns a unified activity payload:
+//   { history: LineItemHistoryRow[], changeRequests: ChangeRequestRow[], quote: QuoteSummary }
+// The unified feed is assembled client-side by merging all three collections,
+// which keeps the endpoint simple and lets each consumer decide what to display.
 app.get('/api/quotes/:quoteId/line-item-history', async (req, res) => {
   try {
     const { quoteId } = req.params;
     const quoteToken = req.query.token as string | undefined;
     const sb = await getAdminSupabase();
 
+    // ── Auth ──────────────────────────────────────────────────────────────────
     let authorized = false;
+    let projectId: string | undefined;
 
     const authHeader = req.headers['authorization'];
     if (authHeader) {
       try {
         const userId = await validateSupabaseJwt(authHeader);
         if (userId) {
-          const { data: quoteRow } = await sb
+          const { data: q } = await sb
             .from('quotes')
             .select('project_id')
             .eq('id', quoteId)
             .single();
-          if (quoteRow) {
-            const { data: projectRow } = await sb
+          if (q) {
+            const { data: p } = await sb
               .from('projects')
               .select('user_id')
-              .eq('id', quoteRow.project_id)
+              .eq('id', q.project_id)
               .single();
-            if (projectRow?.user_id === userId) authorized = true;
+            if (p?.user_id === userId) {
+              authorized = true;
+              projectId = q.project_id;
+            }
           }
         }
       } catch { /* not authorized via JWT */ }
     }
 
     if (!authorized && quoteToken) {
-      const { data: quoteRow } = await sb
+      const { data: q } = await sb
         .from('quotes')
-        .select('id')
+        .select('id, project_id')
         .eq('id', quoteId)
         .eq('quote_token', quoteToken)
         .single();
-      if (quoteRow) authorized = true;
-    }
-
-    if (!authorized) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const { data, error } = await sb
-      .from('quote_line_item_history')
-      .select('*')
-      .eq('quote_id', quoteId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      const pgErr = error as { code?: string; message?: string };
-      if (pgErr.code === '42P01' || (pgErr.message ?? '').includes('does not exist')) {
-        return res.json([]);
+      if (q) {
+        authorized = true;
+        projectId = q.project_id;
       }
-      throw error;
     }
-    res.json(data || []);
+
+    if (!authorized) return res.status(401).json({ error: 'Unauthorized' });
+
+    // ── Fetch unified activity data in parallel ───────────────────────────────
+    const [quoteRes, histRes, crRes] = await Promise.all([
+      sb.from('quotes')
+        .select('id, status, created_at, approved_at, declined_at')
+        .eq('id', quoteId)
+        .single(),
+      sb.from('quote_line_item_history')
+        .select('*')
+        .eq('quote_id', quoteId)
+        .order('created_at', { ascending: true }),
+      projectId
+        ? sb.from('change_requests')
+            .select('id, title, status, cost_impact, created_at, resolved_at')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: true })
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+    // History table may not exist yet (pre-migration) — return empty gracefully
+    let history: unknown[] = [];
+    if (histRes.error) {
+      const pgErr = histRes.error as { code?: string; message?: string };
+      if (pgErr.code !== '42P01' && !(pgErr.message ?? '').includes('does not exist')) {
+        throw histRes.error;
+      }
+    } else {
+      history = histRes.data || [];
+    }
+
+    const q = quoteRes.data;
+    res.json({
+      history,
+      changeRequests: crRes.data || [],
+      quote: q ? {
+        id: q.id,
+        status: q.status,
+        createdAt: q.created_at,
+        approvedAt: q.approved_at ?? null,
+        declinedAt: q.declined_at ?? null,
+      } : null,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error('[history] line-item-history:', message);
