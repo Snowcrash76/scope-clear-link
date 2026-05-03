@@ -124,6 +124,50 @@ app.post('/api/record-client-document', async (req, res) => {
   }
 });
 
+// Invite code validation — called before signup to check the code is valid and unused
+app.post('/api/validate-invite-code', async (req, res) => {
+  const { code } = req.body as { code?: string };
+  if (!code) return res.status(400).json({ valid: false, error: 'No code provided' });
+
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabaseAdmin = createClient(
+    process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+
+  const { data, error } = await supabaseAdmin
+    .from('invite_codes')
+    .select('id, used_at')
+    .eq('code', code.trim().toUpperCase())
+    .maybeSingle();
+
+  if (error || !data) return res.json({ valid: false, error: 'Invalid invite code' });
+  if (data.used_at) return res.json({ valid: false, error: 'This invite code has already been used' });
+
+  return res.json({ valid: true, codeId: data.id });
+});
+
+// Mark invite code as used after successful signup
+app.post('/api/consume-invite-code', async (req, res) => {
+  const { codeId, email } = req.body as { codeId?: string; email?: string };
+  if (!codeId) return res.status(400).json({ success: false });
+
+  const { createClient } = await import('@supabase/supabase-js');
+  const supabaseAdmin = createClient(
+    process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+
+  await supabaseAdmin
+    .from('invite_codes')
+    .update({ used_by_email: email || null, used_at: new Date().toISOString() })
+    .eq('id', codeId);
+
+  return res.json({ success: true });
+});
+
 // Serve Vite-built frontend (files are in dist/client/ alongside dist/index.cjs)
 const clientDir = path.join(__dirname, 'client');
 app.use(express.static(clientDir));

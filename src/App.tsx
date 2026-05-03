@@ -20,6 +20,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import AdminInvites from "./pages/AdminInvites";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -71,6 +72,11 @@ const App = () => (
             } />
             <Route path="/project/:id" element={<ClientProjectView />} />
             <Route path="/quote/:token" element={<ClientQuote />} />
+            <Route path="/admin/invites" element={
+              <ProtectedRoute>
+                <AdminInvites />
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

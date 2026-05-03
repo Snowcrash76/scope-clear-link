@@ -16,26 +16,59 @@ export default function Signup() {
   const [password, setPassword] = useState('');
   const [businessName, setBusinessName] = useState('');
   const [contactName, setContactName] = useState('');
+  const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (password.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
     }
 
+    if (!inviteCode.trim()) {
+      toast.error('An invite code is required to create an account');
+      return;
+    }
+
     setLoading(true);
 
-    const { error } = await signUp(email, password, businessName, contactName);
-    
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-    } else {
+    try {
+      // Step 1: validate the invite code
+      const validateRes = await fetch('/api/validate-invite-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: inviteCode.trim() }),
+      });
+      const validateData = await validateRes.json();
+
+      if (!validateData.valid) {
+        toast.error(validateData.error || 'Invalid invite code');
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: create the account
+      const { error } = await signUp(email, password, businessName, contactName);
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+
+      // Step 3: mark the code as used (fire-and-forget, non-blocking)
+      fetch('/api/consume-invite-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ codeId: validateData.codeId, email }),
+      }).catch(() => {});
+
       toast.success('Account created! Welcome aboard.');
       navigate('/dashboard');
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -56,6 +89,23 @@ export default function Signup() {
 
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="inviteCode">Invite Code</Label>
+              <Input
+                id="inviteCode"
+                type="text"
+                placeholder="e.g. ABCD1234"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+                required
+                className="font-mono tracking-widest uppercase"
+                data-testid="input-invite-code"
+              />
+              <p className="text-xs text-muted-foreground">
+                You need an invite code to sign up. Contact us if you don't have one.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="businessName">Business Name</Label>
               <Input
