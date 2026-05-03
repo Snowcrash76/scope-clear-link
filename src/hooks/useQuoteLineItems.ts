@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isVariationItem } from '@/lib/utils';
@@ -30,24 +30,25 @@ type DbQuoteLineItem = {
 export function useQuoteLineItems(quoteId: string | undefined) {
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const revisedToastShown = useRef(false);
 
   // After every mutation, re-read all cost sources and write the correct
   // subtotal / tax_amount / total back to the quotes row.
-  // Mirrors the QuoteSection formula: scope items (included, non-variation,
-  // not already captured as an approved change) + approved change requests +
-  // custom quote line items (non-variation, not already captured as a change).
+  // Also marks the quote as 'revised' if it was previously sent or approved,
+  // so the trade is prompted to notify the client.
   const recalculateQuoteTotals = useCallback(async () => {
     if (!quoteId) return;
     try {
       const quoteRes = await supabase
         .from('quotes')
-        .select('tax_rate, project_id')
+        .select('tax_rate, project_id, status')
         .eq('id', quoteId)
         .single();
       if (quoteRes.error) throw quoteRes.error;
 
       const taxRate = Number(quoteRes.data?.tax_rate) || 0;
       const projectId = quoteRes.data?.project_id;
+      const currentStatus = quoteRes.data?.status as string;
 
       const [lineItemsRes, scopeItemsRes, changesRes] = await Promise.all([
         supabase.from('quote_line_items').select('cost, title, is_variation').eq('quote_id', quoteId),
@@ -64,7 +65,6 @@ export function useQuoteLineItems(quoteId: string | undefined) {
       const scopeSubtotal = (scopeItemsRes.data || [])
         .filter(item => !isVariationItem(item.title ?? '') && !approvedChangeCosts.has(Number(item.cost) || 0))
         .reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
-      // Use is_variation column; fall back to title heuristic for rows not yet migrated
       const customItemsTotal = (lineItemsRes.data || [])
         .filter(item => {
           const flagged = (item as { is_variation?: boolean }).is_variation;
@@ -77,12 +77,25 @@ export function useQuoteLineItems(quoteId: string | undefined) {
       const taxAmount = subtotal * (taxRate / 100);
       const total = subtotal + taxAmount;
 
+      const needsRevision = currentStatus === 'sent' || currentStatus === 'approved';
+
       const { error: updateError } = await supabase
         .from('quotes')
-        .update({ subtotal, tax_amount: taxAmount, total })
+        .update({
+          subtotal,
+          tax_amount: taxAmount,
+          total,
+          ...(needsRevision ? { status: 'revised' } : {}),
+        })
         .eq('id', quoteId);
 
       if (updateError) throw updateError;
+
+      if (needsRevision && !revisedToastShown.current) {
+        revisedToastShown.current = true;
+        toast.info('Quote saved — notify the client to request their re-approval.');
+        setTimeout(() => { revisedToastShown.current = false; }, 5000);
+      }
     } catch (err) {
       console.error('Error recalculating quote totals:', err);
     }
