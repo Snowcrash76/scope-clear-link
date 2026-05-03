@@ -140,7 +140,6 @@ export function useInvoices(projectId: string | undefined) {
     const channel = supabase
       .channel(`invoices-${projectId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices', filter: `project_id=eq.${projectId}` }, debouncedRefetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items', filter: `invoice_id=eq.${projectId}` }, debouncedRefetch)
       .subscribe();
 
     return () => {
