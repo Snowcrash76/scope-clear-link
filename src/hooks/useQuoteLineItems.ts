@@ -39,7 +39,7 @@ async function insertHistory(
 ) {
   if (rows.length === 0) return;
   try {
-    await (supabase.from('quote_line_item_history') as any).insert(rows);
+    await supabase.from('quote_line_item_history').insert(rows);
   } catch (err) {
     console.warn('Failed to record line item history:', err);
   }

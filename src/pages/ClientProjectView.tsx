@@ -44,7 +44,7 @@ export default function ClientProjectView() {
   const { activeQuote, refetch: refetchQuotes } = useQuotes(id);
   const { invoices, loading: invoicesLoading } = useInvoices(id);
   const { lineItems: quoteLineItems } = useQuoteLineItems(activeQuote?.id);
-  const { history: lineItemHistory } = useLineItemHistory(activeQuote?.id);
+  const { history: lineItemHistory } = useLineItemHistory(activeQuote?.id, activeQuote?.quoteToken ?? undefined);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
 
@@ -525,59 +525,6 @@ export default function ClientProjectView() {
               <RequestChangeButton onSubmit={handleRequestChange} />
             </div>
 
-            {/* Quote line item change audit log */}
-            {lineItemHistory.length > 0 && (
-              <div className="border rounded-lg overflow-hidden">
-                <div className="px-4 py-2.5 bg-muted/40 border-b flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Quote line item changes</span>
-                  <span className="text-xs text-muted-foreground ml-auto">{lineItemHistory.length} change{lineItemHistory.length !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="divide-y">
-                  {[...lineItemHistory].reverse().map(h => (
-                    <div key={h.id} className="px-4 py-3 flex items-start gap-3">
-                      <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm">{formatHistoryEntry(h)}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          {' at '}
-                          {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Notification for recently resolved variations */}
-            {(() => {
-              const recentlyResolved = project.changeRequests.filter(cr => {
-                if (!cr.resolvedAt || cr.status === 'pending' || cr.status === 'awaiting_client') return false;
-                return (Date.now() - cr.resolvedAt.getTime()) < 72 * 60 * 60 * 1000;
-              });
-              if (recentlyResolved.length === 0) return null;
-              const approvedCount = recentlyResolved.filter(cr => cr.status === 'approved').length;
-              const declinedCount = recentlyResolved.filter(cr => cr.status === 'declined').length;
-              const parts: string[] = [];
-              if (approvedCount > 0) parts.push(`${approvedCount} approved`);
-              if (declinedCount > 0) parts.push(`${declinedCount} declined`);
-              return (
-                <div className="flex items-start gap-3 p-4 rounded-lg bg-approved/10 border border-approved/20">
-                  <CheckCircle2 className="w-5 h-5 text-approved flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-approved">
-                      {parts.join(' and ')} recently — you and your trade have both been notified by email.
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      See the extras & changes below for details.
-                    </p>
-                  </div>
-                </div>
-              );
-            })()}
-
             {/* Show client's own quote-level comment here so it's in context */}
             {activeQuote?.clientComment && (
               <Card className="p-4 bg-secondary/40 border-dashed">
@@ -588,78 +535,66 @@ export default function ClientProjectView() {
               </Card>
             )}
 
+            {/* Unified chronological activity feed — line item changes + change requests */}
             {(() => {
-              // A card is "approved" when the server says so OR the client just tapped Approve
-              const approvedChanges = project.changeRequests.filter(
-                cr => optimisticApprovedIds.has(cr.id) || cr.status === 'approved'
-              );
-              const declinedChanges = project.changeRequests.filter(
-                cr => cr.status === 'declined' && !approvedChanges.includes(cr)
-              );
-              // Pending / awaiting trade response — not yet resolved
-              const awaitingChanges = project.changeRequests.filter(
-                cr => !approvedChanges.includes(cr) && cr.status !== 'declined'
-              );
+              const feed = [
+                ...lineItemHistory.map(h => ({
+                  kind: 'lineItem' as const,
+                  id: `li-${h.id}`,
+                  timestamp: h.createdAt,
+                  entry: h,
+                  request: undefined,
+                })),
+                ...project.changeRequests.map(cr => ({
+                  kind: 'changeRequest' as const,
+                  id: `cr-${cr.id}`,
+                  timestamp: cr.resolvedAt ?? cr.createdAt,
+                  entry: undefined,
+                  request: cr,
+                })),
+              ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
-              const renderCard = (request: typeof project.changeRequests[0]) => (
-                <ChangeRequestCard
-                  key={request.id}
-                  request={request}
-                  viewerRole="client"
-                  onApprove={handleApproveChange}
-                  onDecline={handleDeclineChange}
-                  isApprovedOptimistically={optimisticApprovedIds.has(request.id)}
-                  isDeclinedOptimistically={optimisticDeclinedIds.has(request.id)}
-                  optimisticComment={optimisticDeclinedComments.get(request.id)}
-                />
-              );
-
-              if (project.changeRequests.length === 0) {
+              if (feed.length === 0) {
                 return (
                   <Card className="p-8 text-center">
                     <RefreshCw className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No changes requested yet.</p>
+                    <p className="text-muted-foreground">No changes yet.</p>
                   </Card>
                 );
               }
 
               return (
-                <div className="space-y-8">
-                  {awaitingChanges.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-heading font-semibold text-base">Awaiting Response</h3>
-                        <span className="text-xs font-medium bg-pending/15 text-pending-foreground px-2 py-0.5 rounded-full">
-                          {awaitingChanges.length}
-                        </span>
-                      </div>
-                      {awaitingChanges.map(renderCard)}
-                    </div>
-                  )}
-
-                  {approvedChanges.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-heading font-semibold text-base">Approved</h3>
-                        <span className="text-xs font-medium bg-approved/15 text-approved px-2 py-0.5 rounded-full">
-                          {approvedChanges.length}
-                        </span>
-                      </div>
-                      {approvedChanges.map(renderCard)}
-                    </div>
-                  )}
-
-                  {declinedChanges.length > 0 && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-heading font-semibold text-base">Declined</h3>
-                        <span className="text-xs font-medium bg-destructive/15 text-destructive px-2 py-0.5 rounded-full">
-                          {declinedChanges.length}
-                        </span>
-                      </div>
-                      {declinedChanges.map(renderCard)}
-                    </div>
-                  )}
+                <div className="space-y-4">
+                  {feed.map(item => {
+                    if (item.kind === 'lineItem') {
+                      return (
+                        <div key={item.id} className="flex items-start gap-3 px-1">
+                          <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-1" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-muted-foreground">{formatHistoryEntry(item.entry!)}</p>
+                            <p className="text-xs text-muted-foreground/70 mt-0.5">
+                              {item.timestamp.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {' at '}
+                              {item.timestamp.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    const cr = item.request!;
+                    return (
+                      <ChangeRequestCard
+                        key={item.id}
+                        request={cr}
+                        viewerRole="client"
+                        onApprove={handleApproveChange}
+                        onDecline={handleDeclineChange}
+                        isApprovedOptimistically={optimisticApprovedIds.has(cr.id)}
+                        isDeclinedOptimistically={optimisticDeclinedIds.has(cr.id)}
+                        optimisticComment={optimisticDeclinedComments.get(cr.id)}
+                      />
+                    );
+                  })}
                 </div>
               );
             })()}

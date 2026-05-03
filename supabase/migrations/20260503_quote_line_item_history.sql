@@ -35,13 +35,7 @@ WITH CHECK (
   )
 );
 
-CREATE POLICY "Public can read history for shared quotes"
-ON public.quote_line_item_history
-FOR SELECT
-USING (
-  EXISTS (
-    SELECT 1 FROM public.quotes q
-    WHERE q.id = quote_line_item_history.quote_id
-    AND q.quote_token IS NOT NULL
-  )
-);
+-- Client access to history is handled exclusively through the API endpoint
+-- (GET /api/quotes/:quoteId/line-item-history?token=...) which validates
+-- possession of the exact quote token before reading rows. No direct
+-- anonymous Supabase access is granted.

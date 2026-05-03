@@ -411,13 +411,19 @@ app.get('/api/quotes/:quoteId/line-item-history', async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { data, error } = await (sb as any)
+    const { data, error } = await sb
       .from('quote_line_item_history')
       .select('*')
       .eq('quote_id', quoteId)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      const pgErr = error as { code?: string; message?: string };
+      if (pgErr.code === '42P01' || (pgErr.message ?? '').includes('does not exist')) {
+        return res.json([]);
+      }
+      throw error;
+    }
     res.json(data || []);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
