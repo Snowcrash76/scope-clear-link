@@ -168,6 +168,153 @@ app.post('/api/consume-invite-code', async (req, res) => {
   return res.json({ success: true });
 });
 
+// ─── Admin helpers ────────────────────────────────────────────────────────────
+
+async function getAdminSupabase() {
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(
+    process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co',
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
+
+async function requireAdmin(authHeader: string | undefined): Promise<void> {
+  if (!authHeader?.startsWith('Bearer ')) throw new Error('Unauthorized');
+  const token = authHeader.slice(7);
+  const sb = await getAdminSupabase();
+  const { data: { user }, error } = await sb.auth.getUser(token);
+  if (error || !user?.email) throw new Error('Unauthorized');
+  const adminEmail = process.env.VITE_ADMIN_EMAIL;
+  if (!adminEmail || user.email !== adminEmail) throw new Error('Forbidden');
+}
+
+// GET /api/admin/stats — platform-wide aggregate counts
+app.get('/api/admin/stats', async (req, res) => {
+  try {
+    await requireAdmin(req.headers['authorization']);
+    const sb = await getAdminSupabase();
+
+    const [
+      { count: totalUsers },
+      { data: projectRows },
+      { data: quoteRows },
+      { data: invoiceRows },
+      { count: unusedCodes },
+    ] = await Promise.all([
+      sb.from('profiles').select('*', { count: 'exact', head: true }),
+      sb.from('projects').select('status'),
+      sb.from('quotes').select('status'),
+      sb.from('invoices').select('status, total'),
+      sb.from('invite_codes').select('*', { count: 'exact', head: true }).is('used_at', null),
+    ]);
+
+    const projectsByStatus = (projectRows || []).reduce<Record<string, number>>((acc, r) => {
+      acc[r.status] = (acc[r.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const quotesApproved = (quoteRows || []).filter(q => q.status === 'approved').length;
+    const quotesSent = (quoteRows || []).filter(q => ['sent','approved','declined'].includes(q.status)).length;
+    const invoicesPaid = (invoiceRows || []).filter(i => i.status === 'paid').length;
+    const totalRevenue = (invoiceRows || [])
+      .filter(i => i.status === 'paid')
+      .reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
+
+    res.json({
+      totalUsers: totalUsers ?? 0,
+      projectsByStatus,
+      quotesSent,
+      quotesApproved,
+      invoicesPaid,
+      totalRevenue,
+      unusedInviteCodes: unusedCodes ?? 0,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
+  }
+});
+
+// GET /api/admin/users — all trade accounts with project counts
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    await requireAdmin(req.headers['authorization']);
+    const sb = await getAdminSupabase();
+
+    const { data: profiles, error } = await sb
+      .from('profiles')
+      .select('id, user_id, email, business_name, contact_name, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    // Get project counts per user
+    const { data: projectCounts } = await sb
+      .from('projects')
+      .select('user_id');
+
+    const countMap = (projectCounts || []).reduce<Record<string, number>>((acc, p) => {
+      acc[p.user_id] = (acc[p.user_id] || 0) + 1;
+      return acc;
+    }, {});
+
+    const users = (profiles || []).map(p => ({
+      ...p,
+      projectCount: countMap[p.user_id] || 0,
+    }));
+
+    res.json(users);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
+  }
+});
+
+// GET /api/admin/activity — 50 most recent platform events
+app.get('/api/admin/activity', async (req, res) => {
+  try {
+    await requireAdmin(req.headers['authorization']);
+    const sb = await getAdminSupabase();
+
+    const [{ data: signups }, { data: projects }] = await Promise.all([
+      sb.from('profiles')
+        .select('id, email, business_name, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50),
+      sb.from('projects')
+        .select('id, name, client_name, user_id, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50),
+    ]);
+
+    const events = [
+      ...(signups || []).map(s => ({
+        type: 'signup' as const,
+        id: `signup-${s.id}`,
+        title: s.business_name || s.email,
+        subtitle: s.email,
+        createdAt: s.created_at,
+      })),
+      ...(projects || []).map(p => ({
+        type: 'project' as const,
+        id: `project-${p.id}`,
+        title: p.name,
+        subtitle: `Client: ${p.client_name || 'No client'}`,
+        createdAt: p.created_at,
+      })),
+    ]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 50);
+
+    res.json(events);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
+  }
+});
+
+// ─── Static frontend ───────────────────────────────────────────────────────────
 // Serve Vite-built frontend (files are in dist/client/ alongside dist/index.cjs)
 const clientDir = path.join(__dirname, 'client');
 app.use(express.static(clientDir));

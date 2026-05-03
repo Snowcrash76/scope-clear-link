@@ -893,7 +893,7 @@ export function QuoteSection({
                   data-testid="button-add-scope-item-read"
                 >
                   <Plus className="w-3 h-3" />
-                  Add included item
+                  Include item
                 </button>
               </div>
             )}
