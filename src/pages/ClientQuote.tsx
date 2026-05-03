@@ -396,21 +396,56 @@ export default function ClientQuote() {
               </h2>
             </div>
             <div className="divide-y divide-approved/10">
-              {variationLineItems.map((li) => (
-                <div key={li.id} className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div>
-                    <p className="font-medium" data-testid={`text-variation-title-${li.id}`}>
-                      {li.title}
-                    </p>
-                    {li.description && (
-                      <RichTextContent html={li.description} className="mt-0.5" />
+              {variationLineItems.map((li) => {
+                const itemHistory = lineItemHistory.filter(h => h.lineItemId === li.id);
+                const isExpanded = expandedHistoryItemId === li.id;
+                return (
+                  <div key={li.id}>
+                    <div className="flex items-start justify-between gap-3 px-4 py-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium" data-testid={`text-variation-title-${li.id}`}>
+                            {li.title}
+                          </p>
+                          {itemHistory.length > 0 && (
+                            <button
+                              onClick={() => setExpandedHistoryItemId(isExpanded ? null : li.id)}
+                              className="text-approved/60 hover:text-approved transition-colors flex-shrink-0"
+                              title={`${itemHistory.length} change${itemHistory.length !== 1 ? 's' : ''}`}
+                              data-testid={`button-history-${li.id}`}
+                            >
+                              <Clock className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                        {li.description && (
+                          <RichTextContent html={li.description} className="mt-0.5" />
+                        )}
+                      </div>
+                      <p className="font-medium whitespace-nowrap tabular-nums text-approved">
+                        +${fmt(li.cost)}
+                      </p>
+                    </div>
+                    {isExpanded && itemHistory.length > 0 && (
+                      <div className="mx-4 mb-3 rounded-md bg-muted/30 border divide-y text-xs">
+                        {[...itemHistory].reverse().map(h => (
+                          <div key={h.id} className="px-3 py-2 flex items-start gap-2">
+                            <Clock className="w-3 h-3 text-muted-foreground flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p>{formatHistoryEntry(h)}</p>
+                              <p className="text-muted-foreground mt-0.5">
+                                {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {' at '}
+                                {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <p className="font-medium whitespace-nowrap tabular-nums text-approved">
-                    +${fmt(li.cost)}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         )}

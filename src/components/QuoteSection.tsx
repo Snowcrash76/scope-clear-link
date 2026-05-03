@@ -1043,19 +1043,60 @@ export function QuoteSection({
                 </span>
               </div>
             ))}
-            {variationLineItems.map(item => (
-              <div key={item.id} className="p-3 flex justify-between items-start">
-                <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{item.title}</span>
-                  {item.description && (
-                    <RichTextContent html={item.description} className="text-xs mt-0.5" />
+            {variationLineItems.map(item => {
+              const itemHistory = lineItemHistory.filter(h => h.lineItemId === item.id);
+              const isExpanded = expandedHistoryItemId === item.id;
+              return (
+                <div key={item.id} className="p-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 pr-2 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-sm font-medium">{item.title}</span>
+                        {itemHistory.length > 0 && isTradeView && (
+                          <button
+                            type="button"
+                            onClick={() => setExpandedHistoryItemId(isExpanded ? null : item.id)}
+                            className={cn(
+                              'p-1 rounded transition-colors',
+                              isExpanded
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                            )}
+                            title="View change history"
+                            data-testid={`button-item-history-${item.id}`}
+                          >
+                            <Clock className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                      {item.description && (
+                        <RichTextContent html={item.description} className="text-xs mt-0.5" />
+                      )}
+                    </div>
+                    <span className="text-sm font-medium whitespace-nowrap text-approved">
+                      +${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t border-dashed space-y-1">
+                      {itemHistory.map(h => (
+                        <div key={h.id} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
+                          <div className="flex-1 min-w-0">
+                            <span>{formatHistoryEntry(h)}</span>
+                            <span className="ml-2 opacity-60">
+                              {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {' '}
+                              {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <span className="text-sm font-medium whitespace-nowrap text-approved">
-                  +${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
