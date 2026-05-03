@@ -88,7 +88,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
     }
   }, [quoteId]);
 
-  const fetchLineItems = useCallback(async () => {
+  const fetchLineItems = useCallback(async (showLoading = true) => {
     if (!quoteId) {
       setLineItems([]);
       setLoading(false);
@@ -96,7 +96,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
     }
 
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
       const { data, error } = await supabase
         .from('quote_line_items')
@@ -130,6 +130,34 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   useEffect(() => {
     fetchLineItems();
   }, [fetchLineItems]);
+
+  // Polling fallback: silently refresh every 10s
+  useEffect(() => {
+    if (!quoteId) return;
+    const interval = setInterval(() => fetchLineItems(false), 10000);
+    return () => clearInterval(interval);
+  }, [quoteId, fetchLineItems]);
+
+  // Real-time subscription for quote_line_items table
+  useEffect(() => {
+    if (!quoteId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchLineItems(false), 300);
+    };
+
+    const channel = supabase
+      .channel(`quote-line-items-${quoteId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quote_line_items', filter: `quote_id=eq.${quoteId}` }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [quoteId, fetchLineItems]);
 
   const addLineItem = async (itemData: {
     title: string;

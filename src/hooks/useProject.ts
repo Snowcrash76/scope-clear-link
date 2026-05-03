@@ -134,14 +134,14 @@ export function useProject(projectId: string | undefined) {
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchProject = useCallback(async () => {
+  const fetchProject = useCallback(async (showLoading = true) => {
     if (!projectId) {
       setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
@@ -316,6 +316,37 @@ export function useProject(projectId: string | undefined) {
   useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+
+  // Polling fallback: silently refresh every 10s
+  useEffect(() => {
+    if (!projectId) return;
+    const interval = setInterval(() => fetchProject(false), 10000);
+    return () => clearInterval(interval);
+  }, [projectId, fetchProject]);
+
+  // Real-time subscriptions for project core tables (scope, changes, stages, project row)
+  useEffect(() => {
+    if (!projectId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchProject(false), 300);
+    };
+
+    const channel = supabase
+      .channel(`project-core-${projectId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `id=eq.${projectId}` }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scope_items', filter: `project_id=eq.${projectId}` }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'change_requests', filter: `project_id=eq.${projectId}` }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_stages', filter: `project_id=eq.${projectId}` }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, fetchProject]);
 
   // Lightweight document-only refresh — no full project reload, no loading flash
   const fetchDocumentsOnly = useCallback(async () => {

@@ -42,14 +42,14 @@ export function useInvoices(projectId: string | undefined) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchInvoices = useCallback(async () => {
+  const fetchInvoices = useCallback(async (showLoading = true) => {
     if (!projectId) {
       setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices')
@@ -119,6 +119,35 @@ export function useInvoices(projectId: string | undefined) {
   useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
+
+  // Polling fallback: silently refresh every 10s
+  useEffect(() => {
+    if (!projectId) return;
+    const interval = setInterval(() => fetchInvoices(false), 10000);
+    return () => clearInterval(interval);
+  }, [projectId, fetchInvoices]);
+
+  // Real-time subscription for invoices table
+  useEffect(() => {
+    if (!projectId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchInvoices(false), 300);
+    };
+
+    const channel = supabase
+      .channel(`invoices-${projectId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoices', filter: `project_id=eq.${projectId}` }, debouncedRefetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'invoice_line_items', filter: `invoice_id=eq.${projectId}` }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, fetchInvoices]);
 
   const generateInvoiceNumber = () => {
     const date = new Date();

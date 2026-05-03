@@ -33,14 +33,14 @@ export function useQuotes(projectId: string | undefined) {
   const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchQuotes = useCallback(async () => {
+  const fetchQuotes = useCallback(async (showLoading = true) => {
     if (!projectId) {
       setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
       const { data, error } = await supabase
         .from('quotes')
@@ -89,6 +89,34 @@ export function useQuotes(projectId: string | undefined) {
   useEffect(() => {
     fetchQuotes();
   }, [fetchQuotes]);
+
+  // Polling fallback: silently refresh every 10s
+  useEffect(() => {
+    if (!projectId) return;
+    const interval = setInterval(() => fetchQuotes(false), 10000);
+    return () => clearInterval(interval);
+  }, [projectId, fetchQuotes]);
+
+  // Real-time subscription for quotes table
+  useEffect(() => {
+    if (!projectId) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const debouncedRefetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => fetchQuotes(false), 300);
+    };
+
+    const channel = supabase
+      .channel(`quotes-${projectId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'quotes', filter: `project_id=eq.${projectId}` }, debouncedRefetch)
+      .subscribe();
+
+    return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, fetchQuotes]);
 
   const generateQuoteNumber = () => {
     const date = new Date();
