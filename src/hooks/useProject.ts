@@ -317,6 +317,65 @@ export function useProject(projectId: string | undefined) {
     fetchProject();
   }, [fetchProject]);
 
+  // Lightweight document-only refresh — no full project reload, no loading flash
+  const fetchDocumentsOnly = useCallback(async () => {
+    if (!projectId) return;
+    try {
+      const docsRes = await supabase
+        .from('project_documents')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      const rawDocuments = (docsRes.data || []) as ProjectDocument[];
+
+      const projectDocuments = await Promise.all(
+        rawDocuments.map(async (doc) => {
+          let filePath = doc.file_url;
+          if (doc.file_url.includes('/project-documents/')) {
+            filePath = doc.file_url.split('/project-documents/').pop() || doc.file_url;
+          }
+          const { data: signedData } = await supabase.storage
+            .from('project-documents')
+            .createSignedUrl(filePath, 60 * 60 * 24);
+          return {
+            ...doc,
+            file_url: signedData?.signedUrl || doc.file_url,
+          };
+        })
+      );
+
+      setDocuments(projectDocuments);
+    } catch (error) {
+      console.error('Error refreshing documents:', error);
+    }
+  }, [projectId]);
+
+  // Real-time subscription: refresh documents when any insert/update/delete occurs
+  useEffect(() => {
+    if (!projectId) return;
+
+    const channel = supabase
+      .channel(`project-documents-${projectId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_documents',
+          filter: `project_id=eq.${projectId}`,
+        },
+        () => {
+          fetchDocumentsOnly();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [projectId, fetchDocumentsOnly]);
+
   // Scope item operations
   const saveScopeItem = async (itemData: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => {
     if (!projectId) return false;
