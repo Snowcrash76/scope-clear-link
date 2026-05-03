@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -152,14 +152,7 @@ export function InvoiceSection({
   const [customDescription, setCustomDescription] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-
-  // Initialise dollar input when quoteTotal first becomes available
-  useEffect(() => {
-    if (quoteTotal > 0 && invoiceAmountInput === '') {
-      setInvoiceAmountInput((quoteTotal * percentage / 100).toFixed(2));
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quoteTotal]);
+  const amountInitialisedRef = useRef(false);
 
   const includedItems = scopeItems.filter(item => item.category === 'included' && !isVariationItem(item.title));
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
@@ -172,6 +165,14 @@ export function InvoiceSection({
   const liveSubtotal = liveScopeSubtotal + liveChangesImpact + liveCustomItemsTotal;
   const liveTaxAmount = liveSubtotal * ((quote?.taxRate ?? taxRate) / 100);
   const quoteTotal = quote ? liveSubtotal + liveTaxAmount : 0;
+
+  // Initialise dollar input once when quoteTotal first becomes available
+  useEffect(() => {
+    if (quoteTotal > 0 && !amountInitialisedRef.current) {
+      amountInitialisedRef.current = true;
+      setInvoiceAmountInput((quoteTotal * percentage / 100).toFixed(2));
+    }
+  }, [quoteTotal, percentage]);
 
   // Calculate totals
   const totalInvoiced = invoices.reduce((sum, inv) => sum + inv.total, 0);
@@ -599,7 +600,7 @@ export function InvoiceSection({
 
             {/* Payment Amount */}
             <div className="space-y-3">
-              <Label>Amount ({percentage}% of quote)</Label>
+              <Label>Amount</Label>
               <div className="flex items-center gap-4">
                 <Input
                   type="range"
