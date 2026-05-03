@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -14,11 +14,14 @@ import { toast } from 'sonner';
 import {
   Users, FolderOpen, FileText, Receipt, TicketCheck,
   Copy, Plus, Trash2, Loader2, ArrowLeft, UserCheck,
-  TrendingUp, Clock, Building2, Search,
+  TrendingUp, Building2, Search,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+
+const VALID_TABS = ['overview', 'users', 'invites', 'activity'] as const;
+type TabKey = typeof VALID_TABS[number];
 
 interface AdminStats {
   totalUsers: number;
@@ -57,12 +60,14 @@ interface InviteCode {
   created_at: string;
 }
 
-async function adminFetch(path: string) {
+async function adminFetch(path: string, options?: RequestInit) {
   const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch(path, {
+    ...options,
     headers: {
       'Content-Type': 'application/json',
       ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+      ...(options?.headers ?? {}),
     },
   });
   if (!res.ok) {
@@ -218,22 +223,15 @@ function UsersTab() {
 
 // ─── Invite codes tab ───────────────────────────────────────────────────────────
 function InviteCodesTab() {
-  const [codes, setCodes] = useState<InviteCode[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [label, setLabel] = useState('');
   const [count, setCount] = useState(1);
 
-  const fetchCodes = async () => {
-    const { data, error } = await supabase
-      .from('invite_codes')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (!error) setCodes((data || []) as InviteCode[]);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchCodes(); }, []);
+  const { data: codes = [], isLoading } = useQuery<InviteCode[]>({
+    queryKey: ['/api/admin/invites'],
+    queryFn: () => adminFetch('/api/admin/invites'),
+  });
 
   const generateCode = () => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -247,12 +245,15 @@ function InviteCodesTab() {
         code: generateCode(),
         label: label.trim() || null,
       }));
-      const { error } = await supabase.from('invite_codes').insert(rows);
-      if (error) throw error;
+      await adminFetch('/api/admin/invites', {
+        method: 'POST',
+        body: JSON.stringify({ codes: rows }),
+      });
       toast.success(`${count} invite code${count > 1 ? 's' : ''} created`);
       setLabel('');
       setCount(1);
-      await fetchCodes();
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/invites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
     } catch {
       toast.error('Failed to create codes');
     } finally {
@@ -261,12 +262,13 @@ function InviteCodesTab() {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('invite_codes').delete().eq('id', id);
-    if (error) {
-      toast.error('Failed to delete code');
-    } else {
-      setCodes(prev => prev.filter(c => c.id !== id));
+    try {
+      await adminFetch(`/api/admin/invites/${id}`, { method: 'DELETE' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/invites'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
       toast.success('Code deleted');
+    } catch {
+      toast.error('Failed to delete code');
     }
   };
 
@@ -312,7 +314,7 @@ function InviteCodesTab() {
         </Button>
       </Card>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-10">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
@@ -419,7 +421,14 @@ function ActivityTab() {
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const rawTab = searchParams.get('tab') ?? 'overview';
+  const tab: TabKey = VALID_TABS.includes(rawTab as TabKey) ? (rawTab as TabKey) : 'overview';
+
+  const setTab = (value: string) => {
+    setSearchParams(value === 'overview' ? {} : { tab: value }, { replace: true });
+  };
 
   const isAdmin = user?.email === ADMIN_EMAIL;
 

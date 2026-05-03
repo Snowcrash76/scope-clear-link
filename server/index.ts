@@ -185,7 +185,8 @@ async function requireAdmin(authHeader: string | undefined): Promise<void> {
   const sb = await getAdminSupabase();
   const { data: { user }, error } = await sb.auth.getUser(token);
   if (error || !user?.email) throw new Error('Unauthorized');
-  const adminEmail = process.env.VITE_ADMIN_EMAIL;
+  // Accept ADMIN_EMAIL (server-only) with fallback to VITE_ADMIN_EMAIL (shared)
+  const adminEmail = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL;
   if (!adminEmail || user.email !== adminEmail) throw new Error('Forbidden');
 }
 
@@ -308,6 +309,56 @@ app.get('/api/admin/activity', async (req, res) => {
       .slice(0, 50);
 
     res.json(events);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
+  }
+});
+
+// GET /api/admin/invites — list all invite codes
+app.get('/api/admin/invites', async (req, res) => {
+  try {
+    await requireAdmin(req.headers['authorization']);
+    const sb = await getAdminSupabase();
+    const { data, error } = await sb
+      .from('invite_codes')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
+  }
+});
+
+// POST /api/admin/invites — create one or many invite codes
+app.post('/api/admin/invites', async (req, res) => {
+  try {
+    await requireAdmin(req.headers['authorization']);
+    const { codes } = req.body as { codes: Array<{ code: string; label: string | null }> };
+    if (!Array.isArray(codes) || codes.length === 0) {
+      return res.status(400).json({ error: 'codes array is required' });
+    }
+    const sb = await getAdminSupabase();
+    const { data, error } = await sb.from('invite_codes').insert(codes).select();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
+  }
+});
+
+// DELETE /api/admin/invites/:id — delete an unused invite code
+app.delete('/api/admin/invites/:id', async (req, res) => {
+  try {
+    await requireAdmin(req.headers['authorization']);
+    const { id } = req.params;
+    const sb = await getAdminSupabase();
+    const { error } = await sb.from('invite_codes').delete().eq('id', id);
+    if (error) throw error;
+    res.json({ success: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     res.status(message === 'Forbidden' ? 403 : message === 'Unauthorized' ? 401 : 500).json({ error: message });
