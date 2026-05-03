@@ -29,6 +29,7 @@ import {
   Package,
   Ban,
   AlertTriangle,
+  AlertCircle,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -200,6 +201,7 @@ export function QuoteSection({
   const handleUpdateQuote = async () => {
     if (!quote) return;
     setIsSaving(true);
+    const needsRevision = quote.status === 'sent' || quote.status === 'approved';
     const success = await onUpdateQuote(quote.id, {
       reference: quoteRef.trim() || null,
       subtotal,
@@ -207,9 +209,15 @@ export function QuoteSection({
       notes,
       terms,
       validUntil: validUntil ? new Date(validUntil) : undefined,
+      ...(needsRevision ? { status: 'revised' } : {}),
     });
     setIsSaving(false);
-    if (success) setIsEditing(false);
+    if (success) {
+      setIsEditing(false);
+      if (needsRevision) {
+        toast.info('Quote saved — notify the client to request their re-approval.');
+      }
+    }
   };
 
   const handleSaveRef = async () => {
@@ -732,6 +740,18 @@ export function QuoteSection({
 
   return (
     <div className="space-y-6">
+      {/* Revised banner — trade view only */}
+      {isTradeView && quote!.status === 'revised' && (
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
+          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Client re-approval required</p>
+            <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+              This quote has been edited since it was last sent. Notify the client to request their re-approval.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Quote Header */}
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -852,7 +872,19 @@ export function QuoteSection({
                 </Button>
               </>
             )}
-            {(quote!.status === 'declined' || quote!.status === 'revised') && (
+            {quote!.status === 'revised' && (
+              <>
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Quote
+                </Button>
+                <Button size="sm" onClick={handleSendQuote}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Notify Client &amp; Request Approval
+                </Button>
+              </>
+            )}
+            {quote!.status === 'declined' && (
               <>
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />

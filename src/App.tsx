@@ -21,6 +21,7 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import AdminInvites from "./pages/AdminInvites";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -72,9 +73,14 @@ const App = () => (
             } />
             <Route path="/project/:id" element={<ClientProjectView />} />
             <Route path="/quote/:token" element={<ClientQuote />} />
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
             <Route path="/admin/invites" element={
               <ProtectedRoute>
-                <AdminInvites />
+                <AdminDashboard />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

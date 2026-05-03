@@ -439,6 +439,20 @@ export default function ClientQuote() {
         )}
 
         {/* Status banners */}
+        {quote.status === 'revised' && (
+          <div
+            className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+            data-testid="status-quote-revised"
+          >
+            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-800 dark:text-amber-300">Quote has been updated</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                Your tradesperson has made changes to this quote. You will be notified when your approval is required.
+              </p>
+            </div>
+          </div>
+        )}
         {quote.status === 'approved' && (
           <div
             className="flex items-center gap-3 p-4 rounded-lg bg-approved/10 border border-approved/20"

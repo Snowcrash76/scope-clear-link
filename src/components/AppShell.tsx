@@ -53,6 +53,8 @@ import type { Database } from '@/integrations/supabase/types';
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+
 export function parseDefaultTerms(raw: string | null): { quote: string; invoice: string } {
   if (!raw) return { quote: '', invoice: '' };
   try {
@@ -149,6 +151,22 @@ function SidebarInner({
             {label}
           </Link>
         ))}
+        {ADMIN_EMAIL && email === ADMIN_EMAIL && (
+          <Link
+            to="/admin"
+            onClick={() => onClose?.()}
+            className={cn(
+              'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
+              currentPath.startsWith('/admin')
+                ? 'border-l-4 border-amber-500 bg-zinc-800/50 text-amber-500'
+                : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg mx-1'
+            )}
+            data-testid="nav-admin"
+          >
+            <ShieldCheck className="w-4 h-4 flex-shrink-0" />
+            Admin
+          </Link>
+        )}
       </nav>
 
       {/* Bottom section */}
