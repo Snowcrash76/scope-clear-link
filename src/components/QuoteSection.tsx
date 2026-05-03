@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHistory';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +33,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronRight,
+  Clock,
 } from 'lucide-react';
 import { exportQuoteToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadQuotePDF } from '@/lib/quotePdf';
@@ -146,6 +148,10 @@ export function QuoteSection({
   const [editItemDescription, setEditItemDescription] = useState('');
   const [editItemCost, setEditItemCost] = useState('');
   const [editItemIsVariation, setEditItemIsVariation] = useState(false);
+
+  // Line item history (inline expansion)
+  const [expandedHistoryItemId, setExpandedHistoryItemId] = useState<string | null>(null);
+  const { history: lineItemHistory, refetch: refetchHistory } = useLineItemHistory(quote?.id);
 
   // Sync state when quote prop changes (fix for editing not working)
   useEffect(() => {
@@ -293,6 +299,7 @@ export function QuoteSection({
       setNewItemIsVariation(false);
       setIsAddingItem(false);
       toast.success('Line item added');
+      setTimeout(refetchHistory, 600);
     }
   };
 
@@ -317,6 +324,7 @@ export function QuoteSection({
     if (success) {
       setEditingItemId(null);
       toast.success('Line item updated');
+      setTimeout(refetchHistory, 600);
     }
   };
 
@@ -326,6 +334,7 @@ export function QuoteSection({
     const success = await onDeleteLineItem(itemId);
     if (success) {
       toast.success('Line item deleted');
+      setTimeout(refetchHistory, 600);
     }
   };
 
@@ -954,19 +963,61 @@ export function QuoteSection({
                 </div>
               </div>
             ))}
-            {baseQuoteLineItems.map(item => (
-              <div key={item.id} className="p-3 flex justify-between items-start">
-                <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
-                  {stripVariationMeta(item.description) && (
-                    <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
+            {baseQuoteLineItems.map(item => {
+              const itemHistory = lineItemHistory.filter(h => h.lineItemId === item.id);
+              const hasHistory = itemHistory.length > 0;
+              const isExpanded = expandedHistoryItemId === item.id;
+              return (
+                <div key={item.id} className="p-3">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="flex-1 pr-2 min-w-0">
+                      <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                      {stripVariationMeta(item.description) && (
+                        <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="text-sm font-medium whitespace-nowrap">
+                        ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </span>
+                      {hasHistory && isTradeView && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedHistoryItemId(isExpanded ? null : item.id)}
+                          className={cn(
+                            'p-1 rounded transition-colors',
+                            isExpanded
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                          title="View change history"
+                          data-testid={`button-item-history-${item.id}`}
+                        >
+                          <Clock className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {isExpanded && (
+                    <div className="mt-2 pt-2 border-t border-dashed space-y-1">
+                      {itemHistory.map(h => (
+                        <div key={h.id} className="flex items-start gap-2 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
+                          <div className="flex-1 min-w-0">
+                            <span>{formatHistoryEntry(h)}</span>
+                            <span className="ml-2 opacity-60">
+                              {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {' '}
+                              {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <span className="text-sm font-medium whitespace-nowrap">
-                  ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

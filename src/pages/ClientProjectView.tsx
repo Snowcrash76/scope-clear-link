@@ -21,8 +21,9 @@ import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
+import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHistory';
 import { toast } from 'sonner';
-import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2, X } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2, X, Clock } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice, ScopeItem } from '@/types/project';
@@ -43,6 +44,7 @@ export default function ClientProjectView() {
   const { activeQuote, refetch: refetchQuotes } = useQuotes(id);
   const { invoices, loading: invoicesLoading } = useInvoices(id);
   const { lineItems: quoteLineItems } = useQuoteLineItems(activeQuote?.id);
+  const { history: lineItemHistory } = useLineItemHistory(activeQuote?.id);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
 
@@ -522,6 +524,32 @@ export default function ClientProjectView() {
               </div>
               <RequestChangeButton onSubmit={handleRequestChange} />
             </div>
+
+            {/* Quote line item change audit log */}
+            {lineItemHistory.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="px-4 py-2.5 bg-muted/40 border-b flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Quote line item changes</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{lineItemHistory.length} change{lineItemHistory.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="divide-y">
+                  {[...lineItemHistory].reverse().map(h => (
+                    <div key={h.id} className="px-4 py-3 flex items-start gap-3">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{formatHistoryEntry(h)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {' at '}
+                          {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Notification for recently resolved variations */}
             {(() => {

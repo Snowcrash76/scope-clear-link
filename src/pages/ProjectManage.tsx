@@ -37,6 +37,7 @@ import { useProject } from '@/hooks/useProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
+import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHistory';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -113,6 +114,8 @@ export default function ProjectManage() {
     updateLineItem,
     deleteLineItem,
   } = useQuoteLineItems(activeQuote?.id);
+
+  const { history: lineItemHistory } = useLineItemHistory(activeQuote?.id);
 
   const {
     invoices,
@@ -685,6 +688,32 @@ export default function ProjectManage() {
                 Send Extra & Change
               </Button>
             </div>
+
+            {/* Quote line item change audit log */}
+            {lineItemHistory.length > 0 && (
+              <div className="border rounded-lg overflow-hidden">
+                <div className="px-4 py-2.5 bg-muted/40 border-b flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Quote line item changes</span>
+                  <span className="text-xs text-muted-foreground ml-auto">{lineItemHistory.length} change{lineItemHistory.length !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="divide-y">
+                  {[...lineItemHistory].reverse().map(h => (
+                    <div key={h.id} className="px-4 py-3 flex items-start gap-3">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{formatHistoryEntry(h)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {' at '}
+                          {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Client's comment on the quote — shown here so it's in context */}
             {activeQuote?.clientComment && (

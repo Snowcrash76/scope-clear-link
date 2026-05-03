@@ -365,6 +365,67 @@ app.delete('/api/admin/invites/:id', async (req, res) => {
   }
 });
 
+// GET /api/quotes/:quoteId/line-item-history
+// Accepts Bearer JWT (trade owner) or ?token= (client share token)
+app.get('/api/quotes/:quoteId/line-item-history', async (req, res) => {
+  try {
+    const { quoteId } = req.params;
+    const quoteToken = req.query.token as string | undefined;
+    const sb = await getAdminSupabase();
+
+    let authorized = false;
+
+    const authHeader = req.headers['authorization'];
+    if (authHeader) {
+      try {
+        const userId = await validateSupabaseJwt(authHeader);
+        if (userId) {
+          const { data: quoteRow } = await sb
+            .from('quotes')
+            .select('project_id')
+            .eq('id', quoteId)
+            .single();
+          if (quoteRow) {
+            const { data: projectRow } = await sb
+              .from('projects')
+              .select('user_id')
+              .eq('id', quoteRow.project_id)
+              .single();
+            if (projectRow?.user_id === userId) authorized = true;
+          }
+        }
+      } catch { /* not authorized via JWT */ }
+    }
+
+    if (!authorized && quoteToken) {
+      const { data: quoteRow } = await sb
+        .from('quotes')
+        .select('id')
+        .eq('id', quoteId)
+        .eq('quote_token', quoteToken)
+        .single();
+      if (quoteRow) authorized = true;
+    }
+
+    if (!authorized) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { data, error } = await (sb as any)
+      .from('quote_line_item_history')
+      .select('*')
+      .eq('quote_id', quoteId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[history] line-item-history:', message);
+    res.status(500).json({ error: message });
+  }
+});
+
 // ─── Static frontend ───────────────────────────────────────────────────────────
 // Serve Vite-built frontend (files are in dist/client/ alongside dist/index.cjs)
 const clientDir = path.join(__dirname, 'client');

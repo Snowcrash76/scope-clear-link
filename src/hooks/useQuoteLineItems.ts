@@ -27,15 +27,29 @@ type DbQuoteLineItem = {
   updated_at: string;
 };
 
+async function insertHistory(
+  rows: Array<{
+    line_item_id: string;
+    quote_id: string;
+    field_changed: string;
+    old_value?: string | null;
+    new_value?: string | null;
+    changed_by?: string;
+  }>
+) {
+  if (rows.length === 0) return;
+  try {
+    await (supabase.from('quote_line_item_history') as any).insert(rows);
+  } catch (err) {
+    console.warn('Failed to record line item history:', err);
+  }
+}
+
 export function useQuoteLineItems(quoteId: string | undefined) {
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const revisedToastShown = useRef(false);
 
-  // After every mutation, re-read all cost sources and write the correct
-  // subtotal / tax_amount / total back to the quotes row.
-  // Also marks the quote as 'revised' if it was previously sent or approved,
-  // so the trade is prompted to notify the client.
   const recalculateQuoteTotals = useCallback(async () => {
     if (!quoteId) return;
     try {
@@ -144,14 +158,12 @@ export function useQuoteLineItems(quoteId: string | undefined) {
     fetchLineItems();
   }, [fetchLineItems]);
 
-  // Polling fallback: silently refresh every 10s
   useEffect(() => {
     if (!quoteId) return;
     const interval = setInterval(() => fetchLineItems(false), 10000);
     return () => clearInterval(interval);
   }, [quoteId, fetchLineItems]);
 
-  // Real-time subscription for quote_line_items table
   useEffect(() => {
     if (!quoteId) return;
 
@@ -198,7 +210,6 @@ export function useQuoteLineItems(quoteId: string | undefined) {
         .select()
         .single();
 
-      // If column not yet migrated, retry without is_variation
       if (res.error?.code === 'PGRST204' || res.error?.message?.includes('is_variation')) {
         const { is_variation: _, ...withoutFlag } = insertPayload;
         res = await supabase
@@ -210,8 +221,22 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       if (res.error) throw res.error;
 
-      await Promise.all([fetchLineItems(), recalculateQuoteTotals()]);
-      return res.data.id;
+      const newItemId = res.data.id;
+
+      await Promise.all([
+        fetchLineItems(),
+        recalculateQuoteTotals(),
+        insertHistory([{
+          line_item_id: newItemId,
+          quote_id: quoteId,
+          field_changed: 'added',
+          old_value: null,
+          new_value: `${itemData.title} — $${Number(itemData.cost).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`,
+          changed_by: 'trade',
+        }]),
+      ]);
+
+      return newItemId;
     } catch (error) {
       console.error('Error adding quote line item:', error);
       toast.error('Failed to add line item');
@@ -226,9 +251,11 @@ export function useQuoteLineItems(quoteId: string | undefined) {
     sortOrder: number;
     isVariation: boolean;
   }>) => {
+    const oldItem = lineItems.find(i => i.id === itemId);
+
     try {
       const updateData: Record<string, unknown> = {};
-      
+
       if (itemData.title !== undefined) updateData.title = itemData.title;
       if (itemData.description !== undefined) updateData.description = itemData.description;
       if (itemData.cost !== undefined) updateData.cost = itemData.cost;
@@ -240,7 +267,6 @@ export function useQuoteLineItems(quoteId: string | undefined) {
         .update(updateData as never)
         .eq('id', itemId);
 
-      // If column not yet migrated, retry without is_variation
       if (res.error?.code === 'PGRST204' || res.error?.message?.includes('is_variation')) {
         const { is_variation: _, ...withoutFlag } = updateData;
         res = await supabase
@@ -251,7 +277,57 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       if (res.error) throw res.error;
 
-      await Promise.all([fetchLineItems(), recalculateQuoteTotals()]);
+      const historyRows: Array<{
+        line_item_id: string;
+        quote_id: string;
+        field_changed: string;
+        old_value: string | null;
+        new_value: string | null;
+        changed_by: string;
+      }> = [];
+
+      if (oldItem) {
+        if (itemData.title !== undefined && itemData.title !== oldItem.title) {
+          historyRows.push({
+            line_item_id: itemId,
+            quote_id: quoteId,
+            field_changed: 'title',
+            old_value: oldItem.title,
+            new_value: itemData.title,
+            changed_by: 'trade',
+          });
+        }
+        if (itemData.cost !== undefined && itemData.cost !== oldItem.cost) {
+          historyRows.push({
+            line_item_id: itemId,
+            quote_id: quoteId,
+            field_changed: 'cost',
+            old_value: String(oldItem.cost),
+            new_value: String(itemData.cost),
+            changed_by: 'trade',
+          });
+        }
+        if (
+          itemData.description !== undefined &&
+          itemData.description !== (oldItem.description ?? '')
+        ) {
+          historyRows.push({
+            line_item_id: itemId,
+            quote_id: quoteId,
+            field_changed: 'description',
+            old_value: oldItem.description ?? null,
+            new_value: itemData.description || null,
+            changed_by: 'trade',
+          });
+        }
+      }
+
+      await Promise.all([
+        fetchLineItems(),
+        recalculateQuoteTotals(),
+        insertHistory(historyRows),
+      ]);
+
       return true;
     } catch (error) {
       console.error('Error updating quote line item:', error);
@@ -261,6 +337,8 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   };
 
   const deleteLineItem = async (itemId: string) => {
+    const oldItem = lineItems.find(i => i.id === itemId);
+
     try {
       const { error } = await supabase
         .from('quote_line_items')
@@ -269,7 +347,21 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       if (error) throw error;
 
-      await Promise.all([fetchLineItems(), recalculateQuoteTotals()]);
+      await Promise.all([
+        fetchLineItems(),
+        recalculateQuoteTotals(),
+        insertHistory([{
+          line_item_id: itemId,
+          quote_id: quoteId!,
+          field_changed: 'deleted',
+          old_value: oldItem
+            ? `${oldItem.title} — $${Number(oldItem.cost).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`
+            : null,
+          new_value: null,
+          changed_by: 'trade',
+        }]),
+      ]);
+
       return true;
     } catch (error) {
       console.error('Error deleting quote line item:', error);

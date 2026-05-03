@@ -179,6 +179,50 @@ export type Database = {
           },
         ]
       }
+      quote_line_item_history: {
+        Row: {
+          id: string
+          line_item_id: string
+          quote_id: string
+          field_changed: string
+          old_value: string | null
+          new_value: string | null
+          change_reason: string | null
+          changed_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          line_item_id: string
+          quote_id: string
+          field_changed: string
+          old_value?: string | null
+          new_value?: string | null
+          change_reason?: string | null
+          changed_by?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          line_item_id?: string
+          quote_id?: string
+          field_changed?: string
+          old_value?: string | null
+          new_value?: string | null
+          change_reason?: string | null
+          changed_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_line_item_history_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       invoices: {
         Row: {
           amount_paid: number | null
