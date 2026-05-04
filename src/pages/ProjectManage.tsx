@@ -685,7 +685,7 @@ export default function ProjectManage() {
               <h2 className="font-heading text-lg font-semibold">Extras & Changes</h2>
               <Button onClick={() => setIsSendingChangeRequest(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Send Extra & Change
+                + Add Extra or Change
               </Button>
             </div>
 

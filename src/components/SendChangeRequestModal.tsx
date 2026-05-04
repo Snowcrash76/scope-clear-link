@@ -80,7 +80,7 @@ export function SendChangeRequestModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-heading">Send Extra or Change</DialogTitle>
+          <DialogTitle className="font-heading">Add Extra or Change</DialogTitle>
           <DialogDescription>
             Notify the client about an extra or change for approval.
           </DialogDescription>
