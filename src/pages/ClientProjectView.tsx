@@ -60,6 +60,14 @@ export default function ClientProjectView() {
     if (!v) return new Set();
     try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
   });
+
+  // Tracks which sent invoice IDs the client has already acknowledged
+  const [seenInvoiceIds, setSeenInvoiceIds] = useState<Set<string>>(() => {
+    if (!id) return new Set();
+    const v = localStorage.getItem(`seen-invoices-client-${id}`);
+    if (!v) return new Set();
+    try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
+  });
   // Tracks comments left when declining, keyed by changeId, so the card can
   // show the comment immediately without waiting for a server refetch.
   const [optimisticDeclinedComments, setOptimisticDeclinedComments] = useState<Map<string, string>>(new Map());
@@ -241,6 +249,21 @@ export default function ClientProjectView() {
     setDismissedDocIds(new Set(ids));
   };
 
+  // New invoice notification — any sent/overdue invoice the client hasn't dismissed yet
+  const newSentInvoices = invoices.filter(
+    inv => (inv.status === 'sent' || inv.status === 'overdue') && !seenInvoiceIds.has(inv.id)
+  );
+  const showInvoiceNotification = newSentInvoices.length > 0;
+
+  const dismissInvoiceNotification = () => {
+    const allSentIds = invoices
+      .filter(inv => inv.status === 'sent' || inv.status === 'overdue')
+      .map(inv => inv.id);
+    const updated = new Set([...seenInvoiceIds, ...allSentIds]);
+    localStorage.setItem(`seen-invoices-client-${id}`, JSON.stringify([...updated]));
+    setSeenInvoiceIds(updated);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <ProjectHeader project={project} />
@@ -261,9 +284,14 @@ export default function ClientProjectView() {
                 <FileText className="w-4 h-4 hidden sm:block" />
                 Quote
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="gap-2">
+              <TabsTrigger value="invoices" className="gap-2" onClick={dismissInvoiceNotification}>
                 <Receipt className="w-4 h-4 hidden sm:block" />
                 Invoices
+                {showInvoiceNotification && (
+                  <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
+                    {newSentInvoices.length}
+                  </span>
+                )}
               </TabsTrigger>
               <TabsTrigger value="changes" className="gap-2" data-testid="tab-variations">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
@@ -629,6 +657,34 @@ export default function ClientProjectView() {
                 View and track your job invoices
               </p>
             </div>
+
+            {showInvoiceNotification && (
+              <Card className="p-4 bg-primary/5 border-primary/20">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
+                    <Receipt className="w-5 h-5 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-heading font-semibold text-primary">
+                      {newSentInvoices.length === 1 ? 'New Invoice' : `${newSentInvoices.length} New Invoices`}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {newSentInvoices.length === 1
+                        ? `${newSentInvoices[0].invoiceNumber} for $${(newSentInvoices[0].total || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })} has been sent to you.`
+                        : `${newSentInvoices.length} invoices have been sent to you.`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={dismissInvoiceNotification}
+                    data-testid="button-dismiss-invoice-notification"
+                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Dismiss notification"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </Card>
+            )}
 
             {invoicesLoading ? (
               <Card className="p-8 flex justify-center">
