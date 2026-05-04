@@ -6,9 +6,10 @@ interface ActionRequiredProps {
   pendingChanges: ChangeRequest[];
   viewerRole: 'client' | 'trade';
   quoteAwaitingApproval?: boolean;
+  newInvoiceCount?: number;
 }
 
-export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApproval }: ActionRequiredProps) {
+export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApproval, newInvoiceCount = 0 }: ActionRequiredProps) {
   const changesAwaitingApproval = pendingChanges.filter(change => {
     if (viewerRole === 'client') {
       // Client needs to act on:
@@ -20,7 +21,7 @@ export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApprov
     return change.type === 'client_request' && change.status === 'pending';
   });
   
-  const hasActions = changesAwaitingApproval.length > 0 || quoteAwaitingApproval;
+  const hasActions = changesAwaitingApproval.length > 0 || quoteAwaitingApproval || newInvoiceCount > 0;
 
   if (!hasActions) {
     return (
@@ -51,6 +52,9 @@ export function ActionRequired({ pendingChanges, viewerRole, quoteAwaitingApprov
         <div className="flex-1">
           <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {newInvoiceCount > 0 && (
+              <li>• You have {newInvoiceCount} new invoice{newInvoiceCount > 1 ? 's' : ''} — review {newInvoiceCount > 1 ? 'them' : 'it'} in the Invoices tab</li>
+            )}
             {quoteAwaitingApproval && (
               <li>• Your quote is ready — please review and approve or decline it in the Quote tab</li>
             )}

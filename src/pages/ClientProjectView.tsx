@@ -274,6 +274,7 @@ export default function ClientProjectView() {
           pendingChanges={pendingChanges}
           viewerRole="client"
           quoteAwaitingApproval={activeQuote?.status === 'sent'}
+          newInvoiceCount={newSentInvoices.length}
         />
 
         {/* Main Content Tabs */}
@@ -284,7 +285,7 @@ export default function ClientProjectView() {
                 <FileText className="w-4 h-4 hidden sm:block" />
                 Quote
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="gap-2" onClick={dismissInvoiceNotification}>
+              <TabsTrigger value="invoices" className="gap-2">
                 <Receipt className="w-4 h-4 hidden sm:block" />
                 Invoices
                 {showInvoiceNotification && (
