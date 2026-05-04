@@ -396,7 +396,7 @@ export default function ClientQuote() {
           <Card className="overflow-hidden border-approved/30">
             <div className="px-4 py-3 border-b bg-approved/5">
               <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-approved">
-                Approved Extras & Changes
+                Approved Variations
               </h2>
             </div>
             <div className="divide-y divide-approved/10">

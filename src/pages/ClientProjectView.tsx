@@ -164,7 +164,7 @@ export default function ClientProjectView() {
       isOpen: true,
       action: 'decline',
       changeId,
-      title: change?.title || 'Extra & change',
+      title: change?.title || 'Variation',
     });
   };
 
@@ -188,7 +188,7 @@ export default function ClientProjectView() {
     // Client creating change request → notify trade
     const success = await createChangeRequest({
       type: 'client_request',
-      title: 'Extra & change',
+      title: 'Variation',
       description,
       costImpact: 0,
       timeImpact: 0,
@@ -296,7 +296,7 @@ export default function ClientProjectView() {
               </TabsTrigger>
               <TabsTrigger value="changes" className="gap-2" data-testid="tab-variations">
                 <RefreshCw className="w-4 h-4 hidden sm:block" />
-                Extras & Changes
+                Variations
                 {pendingChanges.length > 0 && (
                   <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-pending text-pending-foreground">
                     {pendingChanges.length}
@@ -429,7 +429,7 @@ export default function ClientProjectView() {
                 {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
                   <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
                     <div className="px-3 py-2 border-b border-approved/20">
-                      <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Extras & Changes</span>
+                      <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
                     </div>
                     {approvedChanges.map(change => (
                       <div key={change.id} className="p-3 flex justify-between items-start">
@@ -546,7 +546,7 @@ export default function ClientProjectView() {
           <TabsContent value="changes" className="space-y-4 animate-fade-in">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h2 className="font-heading text-xl font-bold">Extras & Changes</h2>
+                <h2 className="font-heading text-xl font-bold">Variations</h2>
                 <p className="text-sm text-muted-foreground">
                   Track all modifications to the original quote
                 </p>

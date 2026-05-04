@@ -39,7 +39,7 @@ export function RespondToClientModal({
   // Reset form when request changes
   useEffect(() => {
     if (request) {
-      setTitle(request.title || 'Extra or Change');
+      setTitle(request.title || 'Variation');
       setDescription(request.description || '');
       setCostImpact(request.costImpact?.toString() || '0');
       setTimeImpact(request.timeImpact?.toString() || '0');
@@ -97,7 +97,7 @@ export function RespondToClientModal({
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Extra or change title"
+              placeholder="Variation title"
             />
           </div>
 

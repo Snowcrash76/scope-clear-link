@@ -453,7 +453,7 @@ export function QuoteSection({
             <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
               <div className="px-3 py-2 border-b border-approved/20 flex items-center gap-2">
                 <Lock className="w-3.5 h-3.5 text-approved" />
-                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Extras & Changes</span>
+                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
               </div>
               {approvedChanges.map(change => (
                 <div key={change.id} className="p-3">
@@ -475,7 +475,7 @@ export function QuoteSection({
               ))}
               <div className="p-3 border-t border-approved/20 flex items-center gap-2 text-xs text-muted-foreground">
                 <MoveRight className="w-3.5 h-3.5 shrink-0" />
-                Approved extras & changes are managed in the Extras & Changes tab
+                Approved variations are managed in the Variations tab
               </div>
             </div>
           )}
@@ -538,7 +538,7 @@ export function QuoteSection({
                               data-testid={`checkbox-edit-variation-${item.id}`}
                             />
                             <label htmlFor={`edit-variation-${item.id}`} className="text-sm text-muted-foreground cursor-pointer select-none">
-                              Flag as extra or change
+                              Flag as variation
                             </label>
                           </div>
                           <div className="flex gap-2">
@@ -553,7 +553,7 @@ export function QuoteSection({
                               <span className="text-sm font-medium">{item.title}</span>
                               {item.isVariation && (
                                 <Badge variant="outline" className="text-xs border-amber-400/60 text-amber-600 dark:text-amber-400">
-                                  Extra & Change
+                                  Variation
                                 </Badge>
                               )}
                             </div>
@@ -623,7 +623,7 @@ export function QuoteSection({
                       data-testid="checkbox-new-item-variation"
                     />
                     <label htmlFor="new-item-variation" className="text-sm text-muted-foreground cursor-pointer select-none">
-                      Flag as extra or change
+                      Flag as variation
                     </label>
                   </div>
                   <div className="flex gap-2">
@@ -1025,7 +1025,7 @@ export function QuoteSection({
         {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
           <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-6">
             <div className="px-3 py-2 border-b border-approved/20">
-              <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Extras & Changes</span>
+              <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
             </div>
             {approvedChanges.map(change => (
               <div key={change.id} className="p-3 flex justify-between items-start">

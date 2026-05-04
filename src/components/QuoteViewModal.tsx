@@ -202,7 +202,7 @@ export function QuoteViewModal({
           {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
             <div className="space-y-3">
               <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
-                Approved Extras & Changes
+                Approved Variations
               </h4>
               <div className="border rounded-lg divide-y border-approved/30 bg-approved/5">
                 {approvedChanges.map(change => (
