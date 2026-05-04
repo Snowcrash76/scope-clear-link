@@ -27,7 +27,7 @@ const sendScopeChangeNotification = async (
 const sendChangeNotification = async (
   projectId: string,
   changeRequestId: string,
-  notificationType: 'created' | 'approved' | 'declined',
+  notificationType: 'created' | 'approved' | 'declined' | 'updated' | 'deleted',
   recipientType: 'trade' | 'client',
   changeTitle: string,
   changeDescription: string,

@@ -52,6 +52,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const revisedToastShown = useRef(false);
+  const revisedEmailSent = useRef(false);
 
   const recalculateQuoteTotals = useCallback(async () => {
     if (!quoteId) return;
