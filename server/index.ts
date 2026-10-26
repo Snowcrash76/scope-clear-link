@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
-const app = express();
+export const app = express();
 app.use(express.json());
 
 app.post('/api/send-change-notification', async (req, res) => {
@@ -469,6 +469,7 @@ app.get('/api/quotes/:quoteId/line-item-history', async (req, res) => {
   }
 });
 
+export function startServer() {
 // ─── Static frontend ───────────────────────────────────────────────────────────
 // Serve Vite-built frontend (files are in dist/client/ alongside dist/index.cjs)
 const clientDir = path.join(__dirname, 'client');
@@ -486,3 +487,4 @@ const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
+}

@@ -78,6 +78,7 @@ function getInitials(name: string) {
 }
 
 interface SidebarInnerProps {
+  authEmail?: string;
   onNewJob: () => void;
   onOpenSettings: () => void;
   onSignOut: () => void;
@@ -89,6 +90,7 @@ interface SidebarInnerProps {
 }
 
 function SidebarInner({
+  authEmail,
   onNewJob,
   onOpenSettings,
   onSignOut,
@@ -151,7 +153,7 @@ function SidebarInner({
             {label}
           </Link>
         ))}
-        {ADMIN_EMAIL && email === ADMIN_EMAIL && (
+        {ADMIN_EMAIL && authEmail === ADMIN_EMAIL && (
           <Link
             to="/admin"
             onClick={() => onClose?.()}
@@ -395,6 +397,7 @@ export function AppShell({ children }: AppShellProps) {
   };
 
   const sidebarProps: SidebarInnerProps = {
+    authEmail: user?.email,
     onNewJob: () => setIsCreateModalOpen(true),
     onOpenSettings: openSettings,
     onSignOut: handleSignOut,

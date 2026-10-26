@@ -1,8 +1,8 @@
-import { defineConfig } from "vite";
+import { defineConfig, type ViteDevServer } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import type { IncomingMessage, ServerResponse } from "http";
+import type { IncomingMessage, ServerResponse, RequestListener } from "http";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL ?? "https://aswmcyldowvpugmfmykf.supabase.co";
 const SUPABASE_KEY = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzd21jeWxkb3d2cHVnbWZteWtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MzM1ODQsImV4cCI6MjA5MjUwOTU4NH0.4Fu1v4gPBEQPneT4bRWvdG8n4gWu9_GxQRj82OYsvyY";
@@ -41,11 +41,26 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     {
       name: "email-api",
-      configureServer(server) {
+      configureServer(server: ViteDevServer) {
         server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
           if (req.method === "OPTIONS") {
             res.writeHead(204);
             res.end();
+            return;
+          }
+
+          const requestPath = req.url?.split("?")[0] ?? "";
+          if (requestPath.startsWith("/api/admin/") ||
+              requestPath === "/api/validate-invite-code" ||
+              requestPath === "/api/consume-invite-code") {
+            try {
+              const { app } = await import("./server/index");
+              // Express decorates Node's request/response before dispatching routes.
+              (app as unknown as RequestListener)(req, res);
+            } catch (err: unknown) {
+              console.error("[admin-api]", errorMessage(err));
+              sendJson(res, 500, { error: "Unable to load the admin service" });
+            }
             return;
           }
 
@@ -57,7 +72,7 @@ export default defineConfig(({ mode }) => ({
               try { userId = await validateSupabaseJwt(req.headers["authorization"]); } catch { /* unauthenticated */ }
               const raw = await readBody(req);
               const body = JSON.parse(raw) as Record<string, unknown>;
-              const result = await handleChangeNotification(body as Parameters<typeof handleChangeNotification>[0], userId);
+              const result = await handleChangeNotification(body as unknown as Parameters<typeof handleChangeNotification>[0], userId);
               sendJson(res, 200, { success: true, result });
             } catch (err: unknown) {
               const message = errorMessage(err);
@@ -174,7 +189,7 @@ export default defineConfig(({ mode }) => ({
         // Build the production Express server after the frontend bundle is written
         const { build } = await import("esbuild");
         await build({
-          entryPoints: ["server/index.ts"],
+          entryPoints: ["server/start.ts"],
           bundle: true,
           outfile: "dist/index.cjs",
           format: "cjs",
