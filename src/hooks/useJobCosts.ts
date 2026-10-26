@@ -3,7 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { RECEIPT_BUCKET, MAX_RECEIPT_BYTES, RECEIPT_TYPES } from '../../shared/jobCosting';
 import type { JobCostInput, JobCostList, JobProfitability } from '../../shared/jobCosting';
+import type { ReceiptDuplicate, ReceiptScanResult } from '../../shared/receiptScanning';
+import type { PreparedReceipt } from '@/lib/receiptImages';
 export * from '../../shared/jobCosting';
+export * from '../../shared/receiptScanning';
+export { prepareReceiptForScan, validateReceiptFile } from '@/lib/receiptImages';
 
 async function costApi<T>(path: string, init?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -79,4 +83,21 @@ export async function uploadCostReceipt(jobId: string, file: File): Promise<stri
 export async function getCostReceiptUrl(costId: string): Promise<string> {
   const { url } = await costApi<{ url: string }>(`/api/job-costs/${costId}/receipt`);
   return url;
+}
+
+export function extractCostReceipt(jobId: string, receiptPath: string, prepared: PreparedReceipt): Promise<ReceiptScanResult> {
+  return costApi('/api/receipts/extract', {
+    method: 'POST',
+    body: JSON.stringify({ job_id: jobId, receipt_path: receiptPath, ...prepared }),
+    signal: AbortSignal.timeout(100000),
+  });
+}
+
+export async function findCostDuplicates(input: {
+  job_id: string; supplier: string; cost_date: string; amount_inc_gst: number; exclude_cost_id?: string;
+}): Promise<ReceiptDuplicate[]> {
+  const { duplicates } = await costApi<{ duplicates: ReceiptDuplicate[] }>('/api/job-costs/duplicates', {
+    method: 'POST', body: JSON.stringify(input),
+  });
+  return duplicates;
 }

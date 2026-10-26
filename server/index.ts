@@ -4,6 +4,9 @@ import { createJobCostRouter } from './jobCostRoutes';
 import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
 export const app = express();
+// Compressed scan images can exceed the default 100 KB JSON limit.
+app.use('/api/receipts', express.json({ limit: '8mb' }));
+app.use('/api/job-costs', express.json({ limit: '1mb' }));
 app.use(express.json());
 app.use('/api', createJobCostRouter());
 

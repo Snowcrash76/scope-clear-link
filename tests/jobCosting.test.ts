@@ -6,6 +6,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { calculateGst, jobCostInputSchema, profitability, type JobCost } from '../shared/jobCosting';
 import { summarizeJobs } from '../server/jobCostData';
 import { createJobCostRouter } from '../server/jobCostRoutes';
+import type { ReceiptExtractor } from '../server/receiptExtraction';
 
 const owner = '11111111-1111-4111-8111-111111111111';
 const otherOwner = '22222222-2222-4222-8222-222222222222';
@@ -84,7 +85,7 @@ test('margin thresholds handle zero, no accepted quote, low margin, boundary and
   assert.equal(profitability({ ...base, quotedExGst: 99 }, 'quoted').health, 'loss');
 });
 
-function fakeDatabase(options: { missing?: boolean } = {}) {
+export function fakeDatabase(options: { missing?: boolean } = {}) {
   const tables: Record<string, any[]> = {
     projects: [project, { ...project, id: otherJob, user_id: otherOwner }],
     quotes: [{ id: quoteId, project_id: jobId, quote_number: 'Q-1', status: 'approved', subtotal: 1000, created_at: '2026-01-01' }],
@@ -94,11 +95,16 @@ function fakeDatabase(options: { missing?: boolean } = {}) {
     job_costs: [{ ...cost }, { ...cost, id: otherCost, job_id: otherJob, created_by: otherOwner }],
   };
   let storageCalls = 0;
+  const files = new Map<string, Blob>();
   const fake = {
     auth: { getUser: async (token: string) => ({ data: { user: token === 'valid' ? { id: owner } : null }, error: null }) },
     storage: { from: () => ({
       createSignedUploadUrl: async () => { storageCalls++; return { data: { token: 'upload-test' }, error: null }; },
       createSignedUrl: async () => { storageCalls++; return { data: { signedUrl: 'https://example.test/receipt' }, error: null }; },
+      download: async (path: string) => {
+        storageCalls++;
+        return { data: files.get(path) ?? new Blob([path.endsWith('.pdf') ? '%PDF-1.7\n' : new Uint8Array([0xff, 0xd8, 0xff, 0xd9])]), error: null };
+      },
     }) },
     from(table: string) {
       let filters: [string, unknown][] = [];
@@ -124,6 +130,7 @@ function fakeDatabase(options: { missing?: boolean } = {}) {
         in: (k: string, v: unknown[]) => { inclusions.push([k, v]); return query; },
         order: () => query,
         range: (a: number, b: number) => { from = a; to = b; return query; },
+        limit: (n: number) => { to = n - 1; return query; },
         insert: (v: unknown) => { action = 'insert'; payload = v; return query; },
         update: (v: unknown) => { action = 'update'; payload = v; return query; },
         delete: () => { action = 'delete'; return query; },
@@ -134,14 +141,14 @@ function fakeDatabase(options: { missing?: boolean } = {}) {
       return query;
     },
   };
-  return { db: fake as unknown as SupabaseClient, tables, storageCalls: () => storageCalls };
+  return { db: fake as unknown as SupabaseClient, tables, files, storageCalls: () => storageCalls };
 }
 
-async function withApi(run: (request: (path: string, method?: string, body?: unknown, token?: string | null) => Promise<{ status: number; body: any }>, fake: ReturnType<typeof fakeDatabase>) => Promise<void>, missing = false) {
+export async function withApi(run: (request: (path: string, method?: string, body?: unknown, token?: string | null) => Promise<{ status: number; body: any }>, fake: ReturnType<typeof fakeDatabase>) => Promise<void>, missing = false, extractReceipt?: ReceiptExtractor) {
   const fake = fakeDatabase({ missing });
   const app = express();
-  app.use(express.json());
-  app.use('/api', createJobCostRouter(() => fake.db));
+  app.use(express.json({ limit: '8mb' }));
+  app.use('/api', createJobCostRouter(() => fake.db, { extractReceipt }));
   const server = app.listen(0, '127.0.0.1');
   await new Promise<void>(resolve => server.once('listening', resolve));
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/api`;

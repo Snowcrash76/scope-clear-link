@@ -18,17 +18,25 @@ export function calculateGst(amount: number, basis: 'ex' | 'inc', applies: boole
 
 const amountSchema = z.number().finite().min(0).max(999999999.99)
   .refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.0001, 'Use no more than two decimal places');
-const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+export const costDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
   .refine(value => {
     const date = new Date(value + 'T00:00:00Z');
     return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
   }, 'Enter a valid date');
 
+export const receiptLineItemSchema = z.object({
+  description: z.string().max(2000),
+  quantity: z.number().finite().min(-1000000).max(1000000).nullable(),
+  unit_price: z.number().finite().min(-999999999).max(999999999).nullable(),
+  amount: z.number().finite().min(-999999999).max(999999999).nullable(),
+}).strict();
+export type ReceiptLineItem = z.infer<typeof receiptLineItemSchema>;
+
 export const jobCostInputSchema = z.object({
   job_id: z.string().uuid(),
   supplier: z.string().trim().min(1, 'Enter a supplier').max(200),
   description: z.string().trim().min(1, 'Enter a description').max(5000),
-  cost_date: dateSchema,
+  cost_date: costDateSchema,
   category: z.enum(COST_CATEGORIES),
   amount_ex_gst: amountSchema,
   gst_amount: amountSchema,
@@ -39,6 +47,9 @@ export const jobCostInputSchema = z.object({
   status: z.enum(['draft', 'confirmed']),
   notes: z.string().trim().max(10000).default(''),
   quote_line_item_id: z.string().uuid().nullable().default(null),
+  // Optional for backwards-compatible manual saves before the scan migration.
+  receipt_line_items: z.array(receiptLineItemSchema).max(200).optional(),
+  receipt_confidence: z.enum(['high', 'medium', 'low']).nullable().optional(),
 }).strict().superRefine((value, ctx) => {
   if (Math.abs(money(value.amount_ex_gst + value.gst_amount) - value.amount_inc_gst) > 0.011)
     ctx.addIssue({ code: 'custom', path: ['amount_inc_gst'], message: 'Ex-GST plus GST must equal the total' });

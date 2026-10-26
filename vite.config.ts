@@ -52,6 +52,7 @@ export default defineConfig(({ mode }) => ({
           const requestPath = req.url?.split("?")[0] ?? "";
           if (requestPath.startsWith("/api/admin/") ||
               requestPath === "/api/job-profitability" ||
+              requestPath.startsWith("/api/receipts/") ||
               requestPath === "/api/job-costs" ||
               requestPath.startsWith("/api/job-costs/") ||
               requestPath === "/api/validate-invite-code" ||
