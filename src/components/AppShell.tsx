@@ -40,6 +40,7 @@ import {
   Users,
   KeyRound,
   ShieldCheck,
+  ChartNoAxesCombined,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PasswordInput } from '@/components/PasswordInput';
@@ -105,6 +106,7 @@ function SidebarInner({
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', active: currentPath === '/dashboard', testId: 'nav-dashboard' },
     { to: '/projects', icon: FolderOpen, label: 'Jobs', active: currentPath.startsWith('/projects') || currentPath.startsWith('/manage'), testId: 'nav-projects' },
+    { to: '/profitability', icon: ChartNoAxesCombined, label: 'Profitability', active: currentPath.startsWith('/profitability'), testId: 'nav-profitability' },
     { to: '/quotes', icon: FileText, label: 'Quotes', active: currentPath.startsWith('/quotes'), testId: 'nav-quotes' },
     { to: '/invoices', icon: Receipt, label: 'Invoices', active: currentPath.startsWith('/invoices'), testId: 'nav-invoices' },
     { to: '/clients', icon: Users, label: 'Clients', active: currentPath.startsWith('/clients'), testId: 'nav-clients' },

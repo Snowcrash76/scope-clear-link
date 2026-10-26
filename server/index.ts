@@ -1,9 +1,11 @@
 import express from 'express';
 import path from 'path';
+import { createJobCostRouter } from './jobCostRoutes';
 import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
 export const app = express();
 app.use(express.json());
+app.use('/api', createJobCostRouter());
 
 app.post('/api/send-change-notification', async (req, res) => {
   try {

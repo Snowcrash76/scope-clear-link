@@ -1,0 +1,1 @@
+- [Job costing boundaries](job-costing-boundaries.md) — keep expense tracking separate from existing quoting, invoicing and client workflows.

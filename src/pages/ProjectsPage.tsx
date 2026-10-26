@@ -13,6 +13,7 @@ import {
 import { Search, FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
+import { useJobProfitability, aud, profitability } from '@/hooks/useJobCosts';
 
 const STATUS_LABELS: Record<Project['status'], string> = {
   draft: 'Draft',
@@ -52,6 +53,8 @@ function ProjectInitial({ name }: { name: string }) {
 export default function ProjectsPage() {
   const navigate = useNavigate();
   const { projects, loading, updateProjectStatus } = useProjects();
+  const profitabilityQuery = useJobProfitability();
+  const profitabilityById = new Map((profitabilityQuery.data ?? []).map(job => [job.jobId, job]));
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
@@ -166,6 +169,19 @@ export default function ProjectsPage() {
                         <span className="flex items-center gap-1"><User className="w-3 h-3" />{project.clientName}</span>
                         {pending > 0 && <span className="flex items-center gap-1 text-warning font-medium"><GitBranch className="w-3 h-3" />{pending} pending</span>}
                         {resolved > 0 && <span className="flex items-center gap-1"><GitBranch className="w-3 h-3" />{resolved} resolved</span>}
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        {profitabilityQuery.isLoading ? <span className="h-5 w-24 animate-pulse rounded bg-muted" aria-label="Loading job profitability" /> :
+                          profitabilityQuery.isError ? <span className="text-xs text-muted-foreground">Profitability unavailable</span> :
+                          profitabilityById.has(project.id) ? (() => {
+                            const item = profitabilityById.get(project.id)!;
+                            const result = profitability(item, 'quoted');
+                            const tone = result.health === 'healthy' ? 'bg-emerald-100 text-emerald-800' : result.health === 'low' ? 'bg-amber-100 text-amber-900' : result.health === 'loss' ? 'bg-rose-100 text-rose-800' : 'bg-muted text-muted-foreground';
+                            return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`} data-testid={`profitability-badge-${project.id}`}>
+                              {result.profit === null ? 'Quote unavailable' : `${aud(result.profit)} · ${result.margin === null ? '—' : `${result.margin.toFixed(1)}%`}`}
+                            </span>;
+                          })() : <span className="text-xs text-muted-foreground">Profitability unavailable</span>}
+                        <button type="button" className="text-[11px] font-medium text-amber-800 underline-offset-2 hover:underline" onClick={e => { e.stopPropagation(); navigate('/profitability'); }}>See all profitability</button>
                       </div>
                     </div>
                     {total > 0 && (

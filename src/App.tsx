@@ -23,6 +23,7 @@ import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import { Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
+import ProfitabilityPage from "./components/job-costing/ProfitabilityPage";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +55,11 @@ const App = () => (
             <Route path="/projects" element={
               <ProtectedRoute>
                 <ProjectsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/profitability" element={
+              <ProtectedRoute>
+                <ProfitabilityPage />
               </ProtectedRoute>
             } />
             <Route path="/quotes" element={
