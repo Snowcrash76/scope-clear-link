@@ -9,11 +9,11 @@ Extract only visible receipt information. Missing or unreadable supplier, ABN, d
 
 **How to apply:** Disable external tools in the extraction request, validate structured output on the backend, and keep keys server-side. Do not assume AUD from a dollar sign or business context. Preserve inconsistent printed totals so the reviewer sees the actual discrepancy instead of silently correcting it. Mixed taxable and GST-free purchases may have valid GST below 10% of the entire subtotal.
 
-Default the Costs receipt review form to AUD, including when the receipt reader returns no currency.
+Treat all Costs receipts as AUD automatically; do not show the per-receipt Australian-dollar confirmation checkbox.
 
-**Why:** The user said AUD is the only currency they will use and asked for it as the default.
+**Why:** The user said AUD is the only currency they will use, then explicitly asked to remove the currency confirmation checkbox and assume AUD on all occasions.
 
-**How to apply:** Treat AUD as the user's form default, not extracted receipt data. Keep raw unreadable currency null in extraction results; preserve explicit foreign-currency detections and their warning rather than silently converting amounts.
+**How to apply:** Use AUD for all cost review/save paths, including editing and restoring receipt attachments, without a separate currency approval step. This is the user's costing policy, not extracted receipt data or currency conversion. Keep raw receipt extraction unchanged and retain the general receipt review before saving.
 
 Automatically calculate a blank Ex GST amount in the costing review form, without replacing a printed or entered subtotal.
 

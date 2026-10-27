@@ -16,9 +16,9 @@ export const receiptExtractionSchema = z.object({
   confidence: z.enum(['high', 'medium', 'low']),
 }).strict();
 export type ReceiptExtraction = z.infer<typeof receiptExtractionSchema>;
-// User-configured review default, not a claim about what the receipt reader saw.
-export function receiptCurrencyForReview(currency?: ReceiptExtraction['currency']): string {
-  return currency ?? 'AUD';
+// All receipt costs use AUD by user policy; raw extraction remains unchanged.
+export function receiptCurrencyForReview(_detectedCurrency?: ReceiptExtraction['currency']): 'AUD' {
+  return 'AUD';
 }
 export interface ReceiptScanResult {
   extraction: ReceiptExtraction;

@@ -113,11 +113,11 @@ test('provider failures and missing key give friendly errors without exposing pr
   await assert.rejects(invalid({ mediaType: 'image/jpeg', base64: jpeg }), /unreadable result/);
 });
 
-test('receipt review defaults to AUD without overwriting a detected foreign currency', () => {
+test('receipt costs always use AUD without per-receipt currency confirmation', () => {
   assert.equal(receiptCurrencyForReview(), 'AUD');
   assert.equal(receiptCurrencyForReview(null), 'AUD');
   assert.equal(receiptCurrencyForReview('AUD'), 'AUD');
-  assert.equal(receiptCurrencyForReview('USD'), 'USD');
+  assert.equal(receiptCurrencyForReview('USD'), 'AUD');
 });
 
 test('unreadable values stay null without calculating tax, identifying currency or inventing line items', async () => {
