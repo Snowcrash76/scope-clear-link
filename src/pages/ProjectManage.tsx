@@ -73,7 +73,6 @@ import { RichTextContent } from '@/components/RichTextEditor';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { JobCostsTab } from '@/components/job-costing/JobCostsTab';
-import { JobProfitabilityPanel } from '@/components/job-costing/JobProfitabilityPanel';
 
 export default function ProjectManage() {
   const { id } = useParams();
@@ -684,8 +683,6 @@ export default function ProjectManage() {
               </TabsTrigger>
             </TabsList>
           </div>
-
-          <JobProfitabilityPanel jobId={project.id} />
 
           <TabsContent value="costs" className="mt-0">
             <JobCostsTab jobId={project.id} />
