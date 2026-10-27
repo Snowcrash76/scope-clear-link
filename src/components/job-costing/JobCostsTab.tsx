@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle, FileText, Paperclip, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  useJobCosts, COST_CATEGORIES, calculateGst, jobCostInputSchema, aud,
+  useJobCosts, COST_CATEGORIES, calculateGst, completeMissingCostSubtotal, jobCostInputSchema, aud,
   uploadCostReceipt, getCostReceiptUrl, prepareReceiptForScan, extractCostReceipt,
   findCostDuplicates, receiptWarnings, validateReceiptFile,
 } from '@/hooks/useJobCosts';
@@ -85,8 +85,11 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   ), [costs, categoryFilter, statusFilter]);
   const totals = useMemo(() => filtered.reduce((acc, cost) => ({ ex: acc.ex + cost.amount_ex_gst, gst: acc.gst + cost.gst_amount, inc: acc.inc + cost.amount_inc_gst }), { ex: 0, gst: 0, inc: 0 }), [filtered]);
 
-  const currentEx = numberOrNull(form.amount_ex_gst);
-  const currentGst = numberOrNull(gstAmount);
+  const completedAmounts = completeMissingCostSubtotal(form.amount_ex_gst, form.amount_inc_gst, gstAmount, form.gst_applies);
+  const exGstAmount = completedAmounts.amount_ex_gst;
+  const effectiveGstAmount = completedAmounts.gst_amount;
+  const currentEx = numberOrNull(exGstAmount);
+  const currentGst = numberOrNull(effectiveGstAmount);
   const currentInc = numberOrNull(form.amount_inc_gst);
   const currentExtraction: ReceiptExtraction = {
     supplier: form.supplier.trim() || null,
@@ -105,6 +108,10 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
 
   const setAmount = (basis: 'ex' | 'inc', value: string, applies = form.gst_applies) => {
     if (scanUsed) {
+      // Keep displayed calculated GST when the reviewer starts editing the subtotal.
+      if (basis === 'ex' && !gstAmount.trim() && effectiveGstAmount.trim()) {
+        setGstAmount(effectiveGstAmount);
+      }
       const field = basis === 'ex' ? 'amount_ex_gst' : 'amount_inc_gst';
       setForm(current => ({ ...current, [field]: value }));
       setAmountBasis(basis);
@@ -294,11 +301,11 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         : 'Confirm that the receipt amounts are in Australian dollars before saving.');
       return;
     }
-    if (!form.amount_ex_gst.trim() || !form.amount_inc_gst.trim() || !gstAmount.trim()) {
-      setFieldErrors({ ...(!form.amount_ex_gst.trim() ? { amount_ex_gst: 'Enter an amount' } : {}), ...(!gstAmount.trim() ? { gst_amount: 'Enter the GST amount' } : {}), ...(!form.amount_inc_gst.trim() ? { amount_inc_gst: 'Enter an amount' } : {}) });
+    if (!exGstAmount.trim() || !form.amount_inc_gst.trim() || !effectiveGstAmount.trim()) {
+      setFieldErrors({ ...(!exGstAmount.trim() ? { amount_ex_gst: 'Enter an amount' } : {}), ...(!effectiveGstAmount.trim() ? { gst_amount: 'Enter the GST amount' } : {}), ...(!form.amount_inc_gst.trim() ? { amount_inc_gst: 'Enter an amount' } : {}) });
       setFormError('Enter all three amounts before saving.'); return;
     }
-    const ex = Number(form.amount_ex_gst), inc = Number(form.amount_inc_gst), gst = Number(gstAmount);
+    const ex = Number(exGstAmount), inc = Number(form.amount_inc_gst), gst = Number(effectiveGstAmount);
     const basePayload = {
       job_id: jobId, supplier: form.supplier, description: form.description, cost_date: form.cost_date, category: form.category,
       amount_ex_gst: ex, gst_amount: gst, amount_inc_gst: inc, gst_applies: form.gst_applies, reference_number: form.reference_number,
@@ -445,8 +452,8 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
             <div className="rounded-lg border bg-muted/20 p-3">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">Amounts <span className="text-xs font-normal text-muted-foreground">AUD</span></p><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={!form.gst_applies} onChange={e => { const applies = !e.target.checked; updateForm('gst_applies', applies); if (!scanUsed) setAmount(amountBasis, form[amountBasis === 'ex' ? 'amount_ex_gst' : 'amount_inc_gst'], applies); }} className="h-4 w-4 accent-amber-700" />GST-free cost</label></div>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Field label="Ex GST" id="cost-ex" error={fieldErrors.amount_ex_gst}><Input id="cost-ex" type="number" min="0" step="0.01" inputMode="decimal" value={form.amount_ex_gst} onChange={e => setAmount('ex', e.target.value)} /></Field>
-                <Field label="GST" id="cost-gst" error={fieldErrors.gst_amount}><Input id="cost-gst" type="number" min="0" step="0.01" inputMode="decimal" value={gstAmount} onChange={e => changeGst(e.target.value)} /><span className="text-[11px] text-muted-foreground">{scanUsed ? 'Editable scanned value' : 'Enter ex-GST or inc-GST; GST is calculated at 10%.'}</span></Field>
+                <Field label="Ex GST" id="cost-ex" error={fieldErrors.amount_ex_gst}><Input id="cost-ex" type="number" min="0" step="0.01" inputMode="decimal" value={exGstAmount} onChange={e => setAmount('ex', e.target.value)} />{!form.amount_ex_gst.trim() && exGstAmount && <span className="text-[11px] text-muted-foreground">Calculated from total and GST.</span>}</Field>
+                <Field label="GST" id="cost-gst" error={fieldErrors.gst_amount}><Input id="cost-gst" type="number" min="0" step="0.01" inputMode="decimal" value={effectiveGstAmount} onChange={e => changeGst(e.target.value)} /><span className="text-[11px] text-muted-foreground">{effectiveGstAmount !== gstAmount ? (form.gst_applies ? 'Calculated at 10% because no GST amount was provided.' : 'Calculated as GST-free.') : scanUsed ? 'Editable scanned value' : 'Enter ex-GST or inc-GST; GST is calculated at 10%.'}</span></Field>
                 <Field label="Inc GST" id="cost-inc" error={fieldErrors.amount_inc_gst}><Input id="cost-inc" type="number" min="0" step="0.01" inputMode="decimal" value={form.amount_inc_gst} onChange={e => setAmount('inc', e.target.value)} /></Field>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">{scanUsed ? 'Printed totals stay independent: editing one does not change the others. Check any mismatch against the receipt; scanned GST may not be 10%.' : 'Enter either ex-GST or inc-GST; the other amount and GST are calculated.'}</p>

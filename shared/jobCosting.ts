@@ -16,6 +16,21 @@ export function calculateGst(amount: number, basis: 'ex' | 'inc', applies: boole
   return { amount_ex_gst: ex, gst_amount: gst, amount_inc_gst: money(ex + gst) };
 }
 
+/** Complete a blank review subtotal without replacing a printed or entered amount. */
+export function completeMissingCostSubtotal(exGst: string, incGst: string, gst: string, gstApplies: boolean) {
+  const unchanged = { amount_ex_gst: exGst, gst_amount: gst };
+  if (exGst.trim() || !incGst.trim()) return unchanged;
+  const total = Number(incGst);
+  if (!Number.isFinite(total) || total < 0 || total > 999999999.99) return unchanged;
+  if (gst.trim()) {
+    const tax = Number(gst);
+    if (!Number.isFinite(tax) || tax < 0 || tax > total) return unchanged;
+    return { amount_ex_gst: money(total - tax).toFixed(2), gst_amount: gst };
+  }
+  const calculated = calculateGst(total, 'inc', gstApplies);
+  return { amount_ex_gst: calculated.amount_ex_gst.toFixed(2), gst_amount: calculated.gst_amount.toFixed(2) };
+}
+
 const amountSchema = z.number().finite().min(0).max(999999999.99)
   .refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 0.0001, 'Use no more than two decimal places');
 export const costDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')

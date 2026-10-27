@@ -14,3 +14,9 @@ Default the Costs receipt review form to AUD, including when the receipt reader 
 **Why:** The user said AUD is the only currency they will use and asked for it as the default.
 
 **How to apply:** Treat AUD as the user's form default, not extracted receipt data. Keep raw unreadable currency null in extraction results; preserve explicit foreign-currency detections and their warning rather than silently converting amounts.
+
+Automatically calculate a blank Ex GST amount in the costing review form, without replacing a printed or entered subtotal.
+
+**Why:** The user explicitly asked for the Ex GST box to be calculated and filled if blank.
+
+**How to apply:** This is review-form arithmetic, not receipt extraction. Prefer total minus the provided GST, including mixed-tax receipts. When GST is also missing, use the form's standard 10%/GST-free setting and label the calculation; keep the raw receipt extraction unchanged.

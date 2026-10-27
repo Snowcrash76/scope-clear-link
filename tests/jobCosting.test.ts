@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import type { AddressInfo } from 'node:net';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { calculateGst, jobCostInputSchema, profitability, type JobCost } from '../shared/jobCosting';
+import { calculateGst, completeMissingCostSubtotal, jobCostInputSchema, profitability, type JobCost } from '../shared/jobCosting';
 import { summarizeJobs } from '../server/jobCostData';
 import { createJobCostRouter } from '../server/jobCostRoutes';
 import type { ReceiptExtractor } from '../server/receiptExtraction';
@@ -32,6 +32,22 @@ test('AUD amounts recalculate correctly in both GST directions and GST-free', ()
   const amounts = calculateGst(19.99, 'inc', true);
   assert.equal(amounts.amount_inc_gst, 19.99);
   assert.equal(jobCostInputSchema.safeParse({ ...input, ...amounts }).success, true);
+});
+
+test('blank cost subtotals use the total and actual GST, with standard or GST-free defaults only when tax is missing', () => {
+  assert.deepEqual(completeMissingCostSubtotal('', '110', '10', true), { amount_ex_gst: '100.00', gst_amount: '10' });
+  assert.deepEqual(completeMissingCostSubtotal('', '110', '5', true), { amount_ex_gst: '105.00', gst_amount: '5' });
+  assert.deepEqual(completeMissingCostSubtotal('', '110', '0', true), { amount_ex_gst: '110.00', gst_amount: '0' });
+  assert.deepEqual(completeMissingCostSubtotal('', '110', '', true), { amount_ex_gst: '100.00', gst_amount: '10.00' });
+  assert.deepEqual(completeMissingCostSubtotal('', '110', '', false), { amount_ex_gst: '110.00', gst_amount: '0.00' });
+  assert.deepEqual(completeMissingCostSubtotal(' ', '19.99', '', true), { amount_ex_gst: '18.17', gst_amount: '1.82' });
+  assert.deepEqual(completeMissingCostSubtotal('', '0', '0', true), { amount_ex_gst: '0.00', gst_amount: '0' });
+  assert.deepEqual(completeMissingCostSubtotal('95', '110', '10', true), { amount_ex_gst: '95', gst_amount: '10' });
+  assert.deepEqual(completeMissingCostSubtotal('0', '110', '10', true), { amount_ex_gst: '0', gst_amount: '10' });
+  for (const [total, tax] of [['', ''], ['bad', '10'], ['-110', '10'], ['110', 'bad'], ['110', '-1'], ['10', '11'], ['Infinity', '0'], ['1e308', '']])
+    assert.deepEqual(completeMissingCostSubtotal('', total, tax, true), { amount_ex_gst: '', gst_amount: tax });
+  const completed = completeMissingCostSubtotal('', '110', '', true);
+  assert.equal(jobCostInputSchema.safeParse({ ...input, amount_ex_gst: Number(completed.amount_ex_gst), gst_amount: Number(completed.gst_amount) }).success, true);
 });
 
 test('validation rejects invalid amounts, unreconciled GST, dates, categories and audit-field tampering', () => {
