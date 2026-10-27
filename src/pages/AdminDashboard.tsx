@@ -17,6 +17,7 @@ import {
   TrendingUp, Building2, Search,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { InviteCodeSetupHelp } from '@/components/InviteCodeSetupHelp';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
@@ -227,10 +228,12 @@ function InviteCodesTab() {
   const [generating, setGenerating] = useState(false);
   const [label, setLabel] = useState('');
   const [count, setCount] = useState(1);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
-  const { data: codes = [], isLoading } = useQuery<InviteCode[]>({
+  const { data: codes = [], isLoading, error, refetch } = useQuery<InviteCode[]>({
     queryKey: ['/api/admin/invites'],
     queryFn: () => adminFetch('/api/admin/invites'),
+    retry: false,
   });
 
   const generateCode = () => {
@@ -239,6 +242,7 @@ function InviteCodesTab() {
   };
 
   const handleGenerate = async () => {
+    setGenerateError(null);
     setGenerating(true);
     try {
       const rows = Array.from({ length: count }, () => ({
@@ -254,8 +258,10 @@ function InviteCodesTab() {
       setCount(1);
       queryClient.invalidateQueries({ queryKey: ['/api/admin/invites'] });
       queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
-    } catch {
-      toast.error('Failed to create codes');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create codes';
+      setGenerateError(message);
+      toast.error(message);
     } finally {
       setGenerating(false);
     }
@@ -279,9 +285,13 @@ function InviteCodesTab() {
 
   const unused = codes.filter(c => !c.used_at);
   const used = codes.filter(c => c.used_at);
+  const errorMessage = generateError || (error instanceof Error ? error.message : null);
+  const setupRequired = errorMessage?.includes('Invite codes need database setup');
 
   return (
     <div className="space-y-6">
+      {errorMessage && <p role="alert" className="text-sm text-destructive">{errorMessage}</p>}
+      {setupRequired && <InviteCodeSetupHelp onRetry={() => { setGenerateError(null); void refetch(); }} />}
       <Card className="p-5 space-y-4">
         <h2 className="font-semibold">Generate new codes</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -308,7 +318,7 @@ function InviteCodesTab() {
             />
           </div>
         </div>
-        <Button onClick={handleGenerate} disabled={generating} variant="accent" data-testid="button-generate-codes">
+        <Button onClick={handleGenerate} disabled={generating || !!error} variant="accent" data-testid="button-generate-codes">
           {generating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
           Generate {count > 1 ? `${count} codes` : 'code'}
         </Button>
@@ -318,6 +328,8 @@ function InviteCodesTab() {
         <div className="flex justify-center py-10">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
+      ) : error ? (
+        !setupRequired && <Button variant="outline" onClick={() => void refetch()}>Retry loading codes</Button>
       ) : (
         <div className="space-y-5">
           <div>

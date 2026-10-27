@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { inviteErrorMessage } from '../shared/adminInvites';
 import { createJobCostRouter } from './jobCostRoutes';
 import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
@@ -329,7 +330,7 @@ app.get('/api/admin/invites', async (req, res) => {
       .from('invite_codes')
       .select('*')
       .order('created_at', { ascending: false });
-    if (error) throw error;
+    if (error) return res.status(503).json({ error: inviteErrorMessage(error) });
     res.json(data || []);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -347,7 +348,7 @@ app.post('/api/admin/invites', async (req, res) => {
     }
     const sb = await getAdminSupabase();
     const { data, error } = await sb.from('invite_codes').insert(codes).select();
-    if (error) throw error;
+    if (error) return res.status(503).json({ error: inviteErrorMessage(error) });
     res.json(data);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
