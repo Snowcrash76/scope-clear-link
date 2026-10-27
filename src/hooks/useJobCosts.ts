@@ -50,6 +50,7 @@ export function useJobCosts(jobId?: string) {
   return {
     costs: query.data?.costs ?? [],
     quoteLineItems: query.data?.quoteLineItems ?? [],
+    scopeLinkSetupRequired: query.data?.scopeLinkSetupRequired ?? false,
     loading: query.isLoading,
     error: query.error,
     refetch: query.refetch,

@@ -108,10 +108,12 @@ export function fakeDatabase(options: { missing?: boolean } = {}) {
     invoices: [{ id: 'i', project_id: jobId, status: 'sent', subtotal: 200 }],
     change_requests: [],
     quote_line_items: [{ id: itemId, quote_id: quoteId, title: 'Decking' }],
+    scope_items: [],
     job_costs: [{ ...cost }, { ...cost, id: otherCost, job_id: otherJob, created_by: otherOwner }],
   };
   let storageCalls = 0;
   const files = new Map<string, Blob>();
+  const schema = { scopeLinks: true };
   const fake = {
     auth: { getUser: async (token: string) => ({ data: { user: token === 'valid' ? { id: owner } : null }, error: null }) },
     storage: { from: () => ({
@@ -126,11 +128,14 @@ export function fakeDatabase(options: { missing?: boolean } = {}) {
       let filters: [string, unknown][] = [];
       let inclusions: [string, unknown[]][] = [];
       let action = 'select';
+      let selection = '*';
       let payload: any;
       let from = 0, to = Number.MAX_SAFE_INTEGER;
       const execute = () => {
         if (options.missing && table === 'job_costs')
           return { data: null, error: { code: 'PGRST205', message: 'Missing table' } };
+        if (!schema.scopeLinks && table === 'job_costs' && (selection === 'scope_item_id' || payload?.scope_item_id !== undefined))
+          return { data: null, error: { code: '42703', message: 'Missing scope_item_id column' } };
         const match = (row: any) => filters.every(([k, v]) => row[k] === v) && inclusions.every(([k, vs]) => vs.includes(row[k]));
         let data = (tables[table] ?? []).filter(match);
         if (action === 'insert') {
@@ -141,7 +146,7 @@ export function fakeDatabase(options: { missing?: boolean } = {}) {
         return { data: data.slice(from, to + 1), error: null };
       };
       const query: any = {
-        select: () => query,
+        select: (fields = '*') => { selection = fields; return query; },
         eq: (k: string, v: unknown) => { filters.push([k, v]); return query; },
         in: (k: string, v: unknown[]) => { inclusions.push([k, v]); return query; },
         order: () => query,
@@ -157,7 +162,7 @@ export function fakeDatabase(options: { missing?: boolean } = {}) {
       return query;
     },
   };
-  return { db: fake as unknown as SupabaseClient, tables, files, storageCalls: () => storageCalls };
+  return { db: fake as unknown as SupabaseClient, tables, files, schema, storageCalls: () => storageCalls };
 }
 
 export async function withApi(run: (request: (path: string, method?: string, body?: unknown, token?: string | null) => Promise<{ status: number; body: any }>, fake: ReturnType<typeof fakeDatabase>) => Promise<void>, missing = false, extractReceipt?: ReceiptExtractor) {

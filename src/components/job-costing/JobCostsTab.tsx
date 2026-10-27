@@ -25,14 +25,14 @@ import { receiptCurrencyForReview } from '../../../shared/receiptScanning';
 type FormState = {
   supplier: string; description: string; cost_date: string; category: typeof COST_CATEGORIES[number];
   amount_ex_gst: string; amount_inc_gst: string; gst_applies: boolean; reference_number: string;
-  notes: string; status: 'draft' | 'confirmed'; quote_line_item_id: string; receipt_image_url: string | null;
+  notes: string; status: 'draft' | 'confirmed'; quote_line_item_id: string; scope_item_id: string; receipt_image_url: string | null;
 };
 
 const localDate = () => {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 };
-const freshForm = (): FormState => ({ supplier: '', description: '', cost_date: localDate(), category: 'Materials', amount_ex_gst: '', amount_inc_gst: '', gst_applies: true, reference_number: '', notes: '', status: 'draft', quote_line_item_id: '', receipt_image_url: null });
+const freshForm = (): FormState => ({ supplier: '', description: '', cost_date: localDate(), category: 'Materials', amount_ex_gst: '', amount_inc_gst: '', gst_applies: true, reference_number: '', notes: '', status: 'draft', quote_line_item_id: '', scope_item_id: '', receipt_image_url: null });
 const errText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Please try again.';
 const numberOrNull = (value: string): number | null => value.trim() && Number.isFinite(Number(value)) ? Number(value) : null;
 const amountLooksValid = (value: number | null) => value !== null && value >= 0;
@@ -44,7 +44,7 @@ const descriptionFromReceipt = (extraction: ReceiptExtraction) => (extraction.li
   .slice(0, 5000);
 
 export function JobCostsTab({ jobId }: { jobId: string }) {
-  const { costs, quoteLineItems, loading, error, refetch, saveCost, deleteCost, saving, deleting } = useJobCosts(jobId);
+  const { costs, quoteLineItems, scopeLinkSetupRequired, loading, error, refetch, saveCost, deleteCost, saving, deleting } = useJobCosts(jobId);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [editing, setEditing] = useState<JobCost | null>(null);
@@ -172,15 +172,17 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
     resetReceiptFiles();
   };
   const startNew = () => {
+    void refetch();
     setEditing(null); setForm(freshForm()); setGstAmount('0.00'); setAmountBasis('ex');
     resetReceiptFiles(); setScanUsed(false); setScanConfidence(null); setScanReviewed(false); setLineItems([]); setReceiptAbn(''); setClearStoredScanData(false);
     setRemoveReceipt(false); setFormError(''); setFieldErrors({}); setDuplicates([]); setDuplicateError(''); setAcknowledgedDuplicateKey(''); setOpen(true);
   };
   const startEdit = (cost: JobCost) => {
+    void refetch();
     const storedLines = cost.receipt_line_items;
     const hasScanData = hasStoredScanData(cost);
     setEditing(cost);
-    setForm({ supplier: cost.supplier, description: cost.description, cost_date: cost.cost_date, category: cost.category, amount_ex_gst: cost.amount_ex_gst.toFixed(2), amount_inc_gst: cost.amount_inc_gst.toFixed(2), gst_applies: cost.gst_applies, reference_number: cost.reference_number, notes: cost.notes, status: cost.status, quote_line_item_id: cost.quote_line_item_id ?? '', receipt_image_url: cost.receipt_image_url });
+    setForm({ supplier: cost.supplier, description: cost.description, cost_date: cost.cost_date, category: cost.category, amount_ex_gst: cost.amount_ex_gst.toFixed(2), amount_inc_gst: cost.amount_inc_gst.toFixed(2), gst_applies: cost.gst_applies, reference_number: cost.reference_number, notes: cost.notes, status: cost.status, quote_line_item_id: cost.quote_line_item_id ?? '', scope_item_id: cost.scope_item_id ?? '', receipt_image_url: cost.receipt_image_url });
     setGstAmount(cost.gst_amount.toFixed(2)); setAmountBasis('ex'); resetReceiptFiles();
     setScanUsed(hasScanData); setScanConfidence(cost.receipt_confidence ?? null); setScanReviewed(true);
     setLineItems(hasScanData ? (storedLines ?? []).map(item => ({ ...item })) : []);
@@ -295,6 +297,8 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       job_id: jobId, supplier: form.supplier, description: form.description, cost_date: form.cost_date, category: form.category,
       amount_ex_gst: ex, gst_amount: gst, amount_inc_gst: inc, gst_applies: form.gst_applies, reference_number: form.reference_number,
       receipt_image_url: removeReceipt ? null : form.receipt_image_url, status: form.status, notes: form.notes, quote_line_item_id: form.quote_line_item_id || null,
+      // Do not require the new column for unrelated costs on older databases.
+      ...((form.scope_item_id || editing?.scope_item_id) ? { scope_item_id: form.scope_item_id || null } : {}),
     };
     const parsed = jobCostInputSchema.safeParse({
       ...basePayload,
@@ -405,7 +409,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-semibold">{cost.supplier}</h3><Badge variant={cost.status === 'confirmed' ? 'success' : 'secondary'}>{cost.status === 'confirmed' ? 'Confirmed' : 'Draft'}</Badge><Badge variant="outline">{cost.category}</Badge>{hasStoredScanData(cost) && <Badge variant="outline">{cost.receipt_confidence ?? 'unknown'} scan confidence</Badge>}</div>
                 <p className="mt-1 text-sm text-muted-foreground">{cost.description}</p>
-                <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"><span>{new Date(`${cost.cost_date}T00:00:00`).toLocaleDateString('en-AU')}</span>{cost.reference_number && <span>Ref {cost.reference_number}</span>}{cost.quote_line_item_id && <span>Linked to quote item</span>}</p>
+                <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"><span>{new Date(`${cost.cost_date}T00:00:00`).toLocaleDateString('en-AU')}</span>{cost.reference_number && <span>Ref {cost.reference_number}</span>}{(cost.quote_line_item_id || cost.scope_item_id) && <span>Linked to: {quoteLineItems.find(item => item.id === (cost.scope_item_id || cost.quote_line_item_id) && item.source === (cost.scope_item_id ? 'scope' : 'quote'))?.title || 'quote item'}</span>}</p>
                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums"><span>Ex GST <b>{aud(cost.amount_ex_gst)}</b></span><span>GST <b>{aud(cost.gst_amount)}</b></span><span>Inc GST <b>{aud(cost.amount_inc_gst)}</b></span></div>
                 {cost.status === 'draft' && <p className="mt-2 text-xs text-amber-800">Draft — excluded from job profit until confirmed.</p>}
                 {cost.notes && <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{cost.notes}</p>}
@@ -445,7 +449,21 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Reference (optional)" id="cost-reference" error={fieldErrors.reference_number}><Input id="cost-reference" maxLength={200} value={form.reference_number} onChange={e => updateForm('reference_number', e.target.value)} placeholder="Invoice or docket number" /></Field>
-              <Field label="Link to quote item (optional)" id="cost-quote-link" error={fieldErrors.quote_line_item_id}><Select value={form.quote_line_item_id || 'none'} onValueChange={value => updateForm('quote_line_item_id', value === 'none' ? '' : value)}><SelectTrigger id="cost-quote-link"><SelectValue placeholder="No linked item" /></SelectTrigger><SelectContent><SelectItem value="none">No linked item</SelectItem>{quoteLineItems.map(item => <SelectItem key={item.id} value={item.id}>{item.quote_number} · {item.title}</SelectItem>)}</SelectContent></Select><span className="text-[11px] text-muted-foreground">Quote item is for context only, not an expense estimate.</span></Field>
+              <Field label="Link to quote item (optional)" id="cost-quote-link" error={fieldErrors.quote_line_item_id || fieldErrors.scope_item_id}>
+                <Select value={form.scope_item_id ? `scope:${form.scope_item_id}` : form.quote_line_item_id || 'none'} onValueChange={value => setForm(current => ({
+                  ...current,
+                  quote_line_item_id: value === 'none' || value.startsWith('scope:') ? '' : value,
+                  scope_item_id: value.startsWith('scope:') ? value.slice(6) : '',
+                }))}>
+                  <SelectTrigger id="cost-quote-link"><SelectValue placeholder="No linked item" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No linked item</SelectItem>
+                    {quoteLineItems.map(item => <SelectItem key={`${item.source}:${item.id}`} value={item.source === 'scope' ? `scope:${item.id}` : item.id}>{item.quote_number} · {item.title}{item.source === 'scope' ? ' (included work)' : ''}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <span className="text-[11px] text-muted-foreground">{quoteLineItems.length ? 'Choose included work or a line item from this job’s quotes, then save the cost. This does not change the quote.' : 'No saved quote items found for this job. Save included work or a quote line item in Quotes, then reopen this form.'}</span>
+                {scopeLinkSetupRequired && form.scope_item_id && !isJobCostSetupError(formError) && <JobCostSetupHelp scopeLinksOnly />}
+              </Field>
             </div>
             <Field label="Notes (optional)" id="cost-notes" error={fieldErrors.notes}><Textarea id="cost-notes" maxLength={10000} rows={3} value={form.notes} onChange={e => updateForm('notes', e.target.value)} placeholder="Add a note for your records" /></Field>
             {scanUsed && <>
@@ -477,7 +495,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
             {duplicateError && <div role="alert" className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"><div className="flex flex-wrap items-center justify-between gap-2"><span>Duplicate check failed: {duplicateError}</span><Button type="button" variant="outline" size="sm" disabled={duplicateLoading || submitting} onClick={() => { setDuplicateError(''); setDuplicateRetry(value => value + 1); }}>Retry check</Button></div>{isJobCostSetupError(new Error(duplicateError)) && <JobCostSetupHelp />}</div>}
             {duplicateLoading && duplicateQueryKey && <p role="status" className="text-xs text-muted-foreground">Checking for matching costs…</p>}
             {(formError || Object.keys(fieldErrors).length > 0) && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{formError || 'Please correct the highlighted fields.'}</p>}
-            {formError && isJobCostSetupError(formError) && <JobCostSetupHelp />}
+            {formError && isJobCostSetupError(formError) && <JobCostSetupHelp scopeLinksOnly={formError.startsWith('Included-work linking')} />}
             <DialogFooter className="sticky bottom-[-1px] -mx-1 border-t bg-background/95 pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:pt-0"><Button type="button" variant="outline" disabled={submitting || scanBusy} onClick={closeForm}>Cancel</Button><Button type="submit" disabled={saving || submitting || scanBusy || duplicateLoading || !!duplicateError}>{scanBusy ? 'Scanning…' : submitting ? 'Saving…' : editing ? 'Save changes' : 'Add cost'}</Button></DialogFooter>
           </form>
         </DialogContent>

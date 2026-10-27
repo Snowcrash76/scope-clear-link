@@ -62,12 +62,15 @@ export const jobCostInputSchema = z.object({
   status: z.enum(['draft', 'confirmed']),
   notes: z.string().trim().max(10000).default(''),
   quote_line_item_id: z.string().uuid().nullable().default(null),
+  scope_item_id: z.string().uuid().nullable().optional(),
   // Optional for backwards-compatible manual saves before the scan migration.
   receipt_line_items: z.array(receiptLineItemSchema).max(200).optional(),
   receipt_confidence: z.enum(['high', 'medium', 'low']).nullable().optional(),
   receipt_abn: z.string().trim().max(50).nullable().optional(),
   receipt_currency: z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code').nullable().optional(),
 }).strict().superRefine((value, ctx) => {
+  if (value.quote_line_item_id && value.scope_item_id)
+    ctx.addIssue({ code: 'custom', path: ['scope_item_id'], message: 'Link a cost to one quote item only' });
   if (value.receipt_currency !== undefined && value.receipt_currency !== null && value.receipt_currency !== 'AUD')
     ctx.addIssue({ code: 'custom', path: ['receipt_currency'], message: 'Job costs must be in AUD. Foreign receipts cannot be saved as AUD without separate conversion.' });
   if (value.receipt_confidence && !value.receipt_currency)
@@ -86,8 +89,8 @@ export type JobCost = z.output<typeof jobCostInputSchema> & {
   created_at: string;
   updated_at: string;
 };
-export interface QuoteCostLink { id: string; title: string; quote_number: string }
-export interface JobCostList { costs: JobCost[]; quoteLineItems: QuoteCostLink[] }
+export interface QuoteCostLink { id: string; title: string; quote_number: string; source: 'quote' | 'scope' }
+export interface JobCostList { costs: JobCost[]; quoteLineItems: QuoteCostLink[]; scopeLinkSetupRequired: boolean }
 export interface JobProfitability {
   jobId: string;
   jobName: string;

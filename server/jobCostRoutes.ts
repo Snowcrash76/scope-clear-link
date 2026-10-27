@@ -2,7 +2,7 @@ import { Router, type Request } from 'express';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
-import { jobCostInputSchema, MAX_RECEIPT_BYTES, RECEIPT_BUCKET, RECEIPT_TYPES, type JobCost } from '../shared/jobCosting';
+import { jobCostInputSchema, MAX_RECEIPT_BYTES, RECEIPT_BUCKET, RECEIPT_TYPES, type JobCost, type QuoteCostLink } from '../shared/jobCosting';
 import { summarizeJobs } from './jobCostData';
 import { CostApiError, jobCostClient, checkDb, ownJob, allRows, createCostHandler } from './jobCostAccess';
 import { mountReceiptRoutes } from './receiptRoutes';
@@ -31,14 +31,26 @@ export function createJobCostRouter(
     const jobId = uuid.parse(req.query.jobId);
     await ownJob(db, userId, jobId);
     const costs = await allRows<JobCost>(() => db.from('job_costs').select('*').eq('job_id', jobId).order('cost_date', { ascending: false }).order('id'));
-    const { data: quotes, error } = await db.from('quotes').select('id, quote_number').eq('project_id', jobId);
-    checkDb(error);
-    const quoteLineItems: { id: string; title: string; quote_number: string }[] = [];
-    for (const quote of quotes ?? []) {
+    const quotes = await allRows<{ id: string; quote_number: string; status: string }>(() =>
+      db.from('quotes').select('id, quote_number, status').eq('project_id', jobId).order('created_at', { ascending: false }).order('id'));
+    const quoteLineItems: QuoteCostLink[] = [];
+    for (const quote of quotes) {
       const items = await allRows<{ id: string; title: string }>(() => db.from('quote_line_items').select('id, title').eq('quote_id', quote.id).order('id'));
-      quoteLineItems.push(...items.map(item => ({ ...item, quote_number: quote.quote_number })));
+      quoteLineItems.push(...items.map(item => ({ id: item.id, title: item.title, source: 'quote' as const, quote_number: quote.quote_number })));
     }
-    return { costs: costs.map(normalizeCost), quoteLineItems };
+    // Included work is stored separately but is displayed in the job's quote too.
+    const activeQuote = quotes.find(quote => quote.status !== 'declined') ?? quotes[0];
+    const includedWork = activeQuote
+      ? await allRows<{ id: string; title: string }>(() => db.from('scope_items').select('id, title').eq('project_id', jobId).eq('category', 'included').order('created_at').order('id'))
+      : [];
+    quoteLineItems.push(...includedWork.map(item => ({ id: item.id, title: item.title, source: 'scope' as const, quote_number: activeQuote.quote_number })));
+    let scopeLinkSetupRequired = false;
+    if (includedWork.length) {
+      const { error: setupError } = await db.from('job_costs').select('scope_item_id').limit(0);
+      if (setupError && ['42703', 'PGRST204'].includes(setupError.code ?? '')) scopeLinkSetupRequired = true;
+      else checkDb(setupError);
+    }
+    return { costs: costs.map(normalizeCost), quoteLineItems, scopeLinkSetupRequired };
   }));
 
   async function writeCost(req: Request, db: SupabaseClient, userId: string, id?: string) {
@@ -55,6 +67,16 @@ export function createJobCostRouter(
       const { data: quote, error: quoteError } = await db.from('quotes').select('project_id').eq('id', item.quote_id).maybeSingle();
       checkDb(quoteError);
       if (quote?.project_id !== input.job_id) throw new CostApiError(400, 'Choose a quote line from this job.');
+    }
+    if (input.scope_item_id) {
+      const { data: item, error } = await db.from('scope_items').select('project_id, category').eq('id', input.scope_item_id).maybeSingle();
+      checkDb(error);
+      if (!item || item.project_id !== input.job_id || item.category !== 'included')
+        throw new CostApiError(400, 'Choose an included quote item from this job.');
+      const { error: setupError } = await db.from('job_costs').select('scope_item_id').limit(0);
+      if (setupError && ['42703', 'PGRST204'].includes(setupError.code ?? ''))
+        throw new CostApiError(503, 'Included-work linking needs database setup. Copy setup SQL below, run it in Supabase, then save again.');
+      checkDb(setupError);
     }
     if (input.receipt_image_url) {
       const path = input.receipt_image_url;

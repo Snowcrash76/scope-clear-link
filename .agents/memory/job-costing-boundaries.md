@@ -9,6 +9,12 @@ Job costing must only read existing quote, invoice and client logic for its calc
 
 **How to apply:** Keep cost persistence, validation and reporting separate. If an existing financial workflow needs a change, raise it separately rather than silently changing it to suit a profitability calculation.
 
+Do not duplicate included quote work into a second set of quote items just to make it selectable in costing.
+
+**Why:** That would change the quoting workflow and could count the same work twice in quote totals. Cost links should reference the existing work instead.
+
+**How to apply:** Extend costing-only references when necessary; leave the quote's existing items and pricing unchanged.
+
 Do not show the job profitability/cost breakdown as a persistent panel above all job tabs.
 
 **Why:** The user explicitly asked to remove that shared panel because it appeared across every page in the jobs section.
