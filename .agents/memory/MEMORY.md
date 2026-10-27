@@ -1,3 +1,4 @@
 - [Job costing boundaries](job-costing-boundaries.md) — keep expense tracking separate from existing quoting, invoicing and client workflows.
 - [Receipt transcription rules](receipt-transcription.md) — receipt scans must not enrich or guess missing information; preserve printed values for explicit review.
 - [Visual theme](visual-theme.md) — the user wants this app to have a white background rather than a dark theme.
+- [Addition variations](addition-variations.md) — extra materials or work belong to an Addition variation, not a substitution or a change to the original price.

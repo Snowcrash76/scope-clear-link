@@ -11,7 +11,9 @@ export interface ScopeItem {
 
 export interface ChangeRequest {
   id: string;
-  type: 'client_request' | 'site_issue' | 'substitution';
+  type: 'client_request' | 'site_issue' | 'substitution' | 'addition';
+  relatedScopeItemId?: string;
+  relatedQuoteLineItemId?: string;
   title: string;
   description: string;
   reason?: string;

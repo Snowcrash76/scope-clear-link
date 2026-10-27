@@ -19,15 +19,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChangeRequest } from '@/types/project';
+import { ChangeRequest, ScopeItem, QuoteLineItem } from '@/types/project';
 import { AlertTriangle, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { AdditionSetupHelp } from '@/components/AdditionSetupHelp';
+import { VariationQuoteItemSelect } from '@/components/VariationQuoteItemSelect';
+import { variationItemLinks, variationItemValue } from '@/lib/variationItems';
 
 interface EditChangeRequestModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   request: ChangeRequest | null;
-  onSave: (request: ChangeRequest) => void;
+  onSave: (request: ChangeRequest) => Promise<boolean>;
   onDelete?: (id: string) => void;
+  scopeItems?: ScopeItem[];
+  quoteItems?: QuoteLineItem[];
 }
 
 export function EditChangeRequestModal({ 
@@ -36,8 +41,13 @@ export function EditChangeRequestModal({
   request,
   onSave,
   onDelete,
+  scopeItems = [],
+  quoteItems = [],
 }: EditChangeRequestModalProps) {
-  const [type, setType] = useState<'site_issue' | 'substitution' | 'client_request'>('site_issue');
+  const [type, setType] = useState<ChangeRequest['type']>('site_issue');
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [selectedItem, setSelectedItem] = useState('none');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [reason, setReason] = useState('');
@@ -47,6 +57,8 @@ export function EditChangeRequestModal({
 
   useEffect(() => {
     if (request) {
+      setSaveFailed(false);
+      setSelectedItem(variationItemValue(request));
       setType(request.type);
       setTitle(request.title);
       setDescription(request.description);
@@ -67,20 +79,28 @@ export function EditChangeRequestModal({
     setImageUrl(undefined);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (request && title.trim() && description.trim()) {
-      onSave({
-        ...request,
-        type,
-        title: title.trim(),
-        description: description.trim(),
-        reason: reason.trim() || undefined,
-        costImpact: parseFloat(costImpact) || 0,
-        timeImpact: parseInt(timeImpact) || 0,
-        imageUrl,
-      });
-      resetForm();
-      onOpenChange(false);
+      setSaving(true);
+      setSaveFailed(false);
+      try {
+        const success = await onSave({
+          ...request,
+          ...((selectedItem !== 'none' || request.relatedScopeItemId || request.relatedQuoteLineItemId) ? variationItemLinks(selectedItem) : {}),
+          type,
+          title: title.trim(),
+          description: description.trim(),
+          reason: reason.trim() || undefined,
+          costImpact: parseFloat(costImpact) || 0,
+          timeImpact: parseInt(timeImpact) || 0,
+          imageUrl,
+        });
+        if (!success) { setSaveFailed(true); return; }
+        resetForm();
+        onOpenChange(false);
+      } catch {
+        setSaveFailed(true);
+      } finally { setSaving(false); }
     }
   };
 
@@ -117,6 +137,8 @@ export function EditChangeRequestModal({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="addition">Addition — extra materials or work</SelectItem>
+                {request.type === 'client_request' && <SelectItem value="client_request">Client Request</SelectItem>}
                 <SelectItem value="site_issue">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-warning" />
@@ -132,6 +154,14 @@ export function EditChangeRequestModal({
               </SelectContent>
             </Select>
           </div>
+
+          {saveFailed && (type === 'addition' || selectedItem !== 'none') ? <AdditionSetupHelp saveFailed /> : type === 'addition' && (
+            <details className="text-sm">
+              <summary className="cursor-pointer text-muted-foreground">One-time Addition database setup</summary>
+              <AdditionSetupHelp />
+            </details>
+          )}
+          <VariationQuoteItemSelect value={selectedItem} onChange={setSelectedItem} scopeItems={scopeItems} quoteItems={quoteItems} />
 
           <div className="space-y-2">
             <Label htmlFor="edit-title">Title</Label>
@@ -213,7 +243,7 @@ export function EditChangeRequestModal({
           </Button>
           <Button 
             onClick={handleSave}
-            disabled={!title.trim() || !description.trim()}
+            disabled={saving || !title.trim() || !description.trim()}
           >
             <Pencil className="w-4 h-4 mr-2" />
             Save Changes

@@ -1,3 +1,4 @@
+import { variationItemTitle } from '@/lib/variationItems';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -634,6 +635,7 @@ export default function ClientProjectView() {
                     const cr = item.request!;
                     return (
                       <ChangeRequestCard
+                        relatedItemTitle={variationItemTitle(cr, project.scopeItems, quoteLineItems)}
                         key={item.id}
                         request={cr}
                         viewerRole="client"

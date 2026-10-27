@@ -35,7 +35,9 @@ type DbScopeItem = {
 type DbChangeRequest = {
   id: string;
   project_id: string;
-  type: 'client_request' | 'site_issue' | 'substitution';
+  type: 'client_request' | 'site_issue' | 'substitution' | 'addition';
+  related_scope_item_id?: string | null;
+  related_quote_line_item_id?: string | null;
   title: string;
   description: string;
   reason: string | null;
@@ -131,6 +133,8 @@ export function useProjects() {
             .map(c => ({
               id: c.id,
               type: c.type,
+              relatedScopeItemId: c.related_scope_item_id || undefined,
+              relatedQuoteLineItemId: c.related_quote_line_item_id || undefined,
               title: c.title,
               description: c.description,
               reason: c.reason || undefined,

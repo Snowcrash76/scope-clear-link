@@ -39,6 +39,7 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHistory';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
+import { variationItemTitle } from '@/lib/variationItems';
 import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
@@ -304,6 +305,7 @@ export default function ProjectManage() {
       toast.success('Variation sent to client');
       setIsSendingChangeRequest(false);
     }
+    return success;
   };
 
   const handleUpdateChangeRequest = async (requestData: ChangeRequest) => {
@@ -312,6 +314,7 @@ export default function ProjectManage() {
       toast.success('Variation updated');
       setEditingChangeRequest(null);
     }
+    return success;
   };
 
   const handleDeleteChangeRequest = async (requestId: string) => {
@@ -802,6 +805,7 @@ export default function ProjectManage() {
                         <ChangeRequestCard
                           key={item.id}
                           request={cr}
+                          relatedItemTitle={variationItemTitle(cr, project.scopeItems, quoteLineItems)}
                           viewerRole="trade"
                           onRespond={handleRespondToClient}
                         />
@@ -810,6 +814,7 @@ export default function ProjectManage() {
                     return (
                       <ChangeRequestItem
                         key={item.id}
+                        relatedItemTitle={variationItemTitle(cr, project.scopeItems, quoteLineItems)}
                         request={cr}
                         onEdit={() => setEditingChangeRequest(cr)}
                         isNew={recentlyResolvedChanges.some(r => r.id === cr.id)}
@@ -969,6 +974,7 @@ export default function ProjectManage() {
         onOpenChange={setIsSendingChangeRequest}
         onSend={handleSendChangeRequest}
         scopeItems={project.scopeItems}
+        quoteItems={quoteLineItems}
       />
 
       <EditChangeRequestModal
@@ -977,6 +983,8 @@ export default function ProjectManage() {
           if (!open) setEditingChangeRequest(null);
         }}
         request={editingChangeRequest}
+        scopeItems={project.scopeItems}
+        quoteItems={quoteLineItems}
         onSave={handleUpdateChangeRequest}
         onDelete={handleDeleteChangeRequest}
       />
@@ -1045,11 +1053,12 @@ export default function ProjectManage() {
   );
 }
 
-function ChangeRequestItem({ request, onEdit, isNew }: { request: ChangeRequest; onEdit?: () => void; isNew?: boolean }) {
+function ChangeRequestItem({ request, onEdit, isNew, relatedItemTitle }: { request: ChangeRequest; onEdit?: () => void; isNew?: boolean; relatedItemTitle?: string }) {
   const typeConfig = {
     client_request: { icon: User, label: 'Client Request', color: 'text-primary' },
     site_issue: { icon: AlertTriangle, label: 'Site Issue', color: 'text-warning' },
     substitution: { icon: Package, label: 'Substitution', color: 'text-muted-foreground' },
+    addition: { icon: Package, label: 'Addition', color: 'text-primary' },
   };
 
   const config = typeConfig[request.type];
@@ -1099,6 +1108,7 @@ function ChangeRequestItem({ request, onEdit, isNew }: { request: ChangeRequest;
         )}
         <h4 className="font-medium">{request.title}</h4>
       </div>
+      {relatedItemTitle && <p className="text-sm text-muted-foreground mb-2">Related quote item: {relatedItemTitle}</p>}
       <p className="text-sm text-muted-foreground mb-3">{request.description}</p>
 
       {request.imageUrl && (

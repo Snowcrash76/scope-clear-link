@@ -67,6 +67,8 @@ export type Database = {
       }
       change_requests: {
         Row: {
+          related_scope_item_id: string | null
+          related_quote_line_item_id: string | null
           cost_impact: number | null
           created_at: string
           description: string
@@ -82,6 +84,8 @@ export type Database = {
           type: Database["public"]["Enums"]["change_request_type"]
         }
         Insert: {
+          related_scope_item_id?: string | null
+          related_quote_line_item_id?: string | null
           cost_impact?: number | null
           created_at?: string
           description: string
@@ -97,6 +101,8 @@ export type Database = {
           type?: Database["public"]["Enums"]["change_request_type"]
         }
         Update: {
+          related_scope_item_id?: string | null
+          related_quote_line_item_id?: string | null
           cost_impact?: number | null
           created_at?: string
           description?: string
@@ -688,7 +694,7 @@ export type Database = {
         | "approved"
         | "declined"
         | "awaiting_client"
-      change_request_type: "client_request" | "site_issue" | "substitution"
+      change_request_type: "client_request" | "site_issue" | "substitution" | "addition"
       invoice_status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
       invoice_type: "staged" | "final" | "deposit"
       project_status: "draft" | "sent" | "in_progress" | "completed"
@@ -828,7 +834,7 @@ export const Constants = {
         "declined",
         "awaiting_client",
       ],
-      change_request_type: ["client_request", "site_issue", "substitution"],
+      change_request_type: ["client_request", "site_issue", "substitution", "addition"],
       invoice_status: ["draft", "sent", "paid", "overdue", "cancelled"],
       invoice_type: ["staged", "final", "deposit"],
       project_status: ["draft", "sent", "in_progress", "completed"],

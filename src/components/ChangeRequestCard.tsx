@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 
 interface ChangeRequestCardProps {
   request: ChangeRequest;
+  relatedItemTitle?: string;
   onApprove?: (id: string) => void;
   onDecline?: (id: string) => void;
   onRespond?: (id: string) => void;
@@ -32,6 +33,12 @@ interface ChangeRequestCardProps {
 }
 
 const typeConfig = {
+  addition: {
+    icon: MessageSquarePlus,
+    label: 'Addition',
+    color: 'text-primary',
+    bgColor: 'bg-primary/5',
+  },
   client_request: {
     icon: MessageSquarePlus,
     label: 'Client Request',
@@ -54,6 +61,7 @@ const typeConfig = {
 
 export function ChangeRequestCard({ 
   request, 
+  relatedItemTitle,
   onApprove, 
   onDecline,
   onRespond,
@@ -110,6 +118,7 @@ export function ChangeRequestCard({
       isApprovedOptimistically && "ring-2 ring-approved/40"
     )}>
       <div className="p-4 sm:p-5">
+        {relatedItemTitle && <p className="text-sm text-muted-foreground mb-3">Related quote item: {relatedItemTitle}</p>}
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">

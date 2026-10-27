@@ -343,7 +343,7 @@ export default function DemoProjectView() {
                           </div>
                           <div>
                             <Badge variant="secondary" className="text-xs mb-1">
-                              {request.type === 'client_request' ? 'Client Request' : 'Substitution'}
+                              {request.type === 'client_request' ? 'Client Request' : request.type === 'addition' ? 'Addition' : request.type === 'site_issue' ? 'Site Issue' : 'Substitution'}
                             </Badge>
                             <h3 className="font-heading font-semibold">{request.title}</h3>
                           </div>

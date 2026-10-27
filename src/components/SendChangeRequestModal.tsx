@@ -19,23 +19,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ChangeRequest, ScopeItem } from '@/types/project';
-import { AlertTriangle, RefreshCw, MessageSquarePlus, Package } from 'lucide-react';
+import { ChangeRequest, ScopeItem, QuoteLineItem } from '@/types/project';
+import { AlertTriangle, RefreshCw, MessageSquarePlus } from 'lucide-react';
+import { AdditionSetupHelp } from '@/components/AdditionSetupHelp';
+import { VariationQuoteItemSelect } from '@/components/VariationQuoteItemSelect';
+import { variationItemLinks } from '@/lib/variationItems';
 
 interface SendChangeRequestModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSend: (request: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => void;
+  onSend: (request: Omit<ChangeRequest, 'id' | 'status' | 'createdAt' | 'resolvedAt'>) => Promise<boolean>;
   scopeItems?: ScopeItem[];
+  quoteItems?: QuoteLineItem[];
 }
 
 export function SendChangeRequestModal({ 
   open, 
   onOpenChange, 
   onSend,
-  scopeItems = []
+  scopeItems = [],
+  quoteItems = [],
 }: SendChangeRequestModalProps) {
-  const [type, setType] = useState<'site_issue' | 'substitution'>('site_issue');
+  const [type, setType] = useState<'site_issue' | 'substitution' | 'addition'>('site_issue');
+  const [saving, setSaving] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [selectedScopeItem, setSelectedScopeItem] = useState<string>('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -45,6 +52,7 @@ export function SendChangeRequestModal({
   const [imageUrl, setImageUrl] = useState<string | undefined>();
 
   const resetForm = () => {
+    setSaveFailed(false);
     setType('site_issue');
     setSelectedScopeItem('');
     setTitle('');
@@ -55,19 +63,27 @@ export function SendChangeRequestModal({
     setImageUrl(undefined);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (title.trim() && description.trim()) {
-      onSend({
-        type,
-        title: title.trim(),
-        description: description.trim(),
-        reason: reason.trim() || undefined,
-        costImpact: parseFloat(costImpact) || 0,
-        timeImpact: parseInt(timeImpact) || 0,
-        imageUrl,
-      });
-      resetForm();
-      onOpenChange(false);
+      setSaving(true);
+      setSaveFailed(false);
+      try {
+        const success = await onSend({
+          type,
+          ...variationItemLinks(selectedScopeItem),
+          title: title.trim(),
+          description: description.trim(),
+          reason: reason.trim() || undefined,
+          costImpact: parseFloat(costImpact) || 0,
+          timeImpact: parseInt(timeImpact) || 0,
+          imageUrl,
+        });
+        if (!success) { setSaveFailed(true); return; }
+        resetForm();
+        onOpenChange(false);
+      } catch {
+        setSaveFailed(true);
+      } finally { setSaving(false); }
     }
   };
 
@@ -106,39 +122,26 @@ export function SendChangeRequestModal({
                     Substitution
                   </div>
                 </SelectItem>
+                <SelectItem value="addition">Addition — extra materials or work</SelectItem>
               </SelectContent>
           </Select>
           </div>
 
-          {scopeItems.length > 0 && (
-            <div className="space-y-2">
-              <Label>Related Quote Item (optional)</Label>
-              <Select value={selectedScopeItem} onValueChange={setSelectedScopeItem}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a scope item..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    <span className="text-muted-foreground">None</span>
-                  </SelectItem>
-                  {scopeItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-muted-foreground" />
-                        <span className="truncate max-w-[250px]">{item.title}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {type === 'addition' && <p className="text-sm text-muted-foreground">Add extra materials or work to an existing quote item. Enter only the additional cost, not the original item price.</p>}
+          {saveFailed && (type === 'addition' || (selectedScopeItem && selectedScopeItem !== 'none')) ? <AdditionSetupHelp saveFailed /> : type === 'addition' && (
+            <details className="text-sm">
+              <summary className="cursor-pointer text-muted-foreground">One-time Addition database setup</summary>
+              <AdditionSetupHelp />
+            </details>
           )}
+
+          <VariationQuoteItemSelect value={selectedScopeItem} onChange={setSelectedScopeItem} scopeItems={scopeItems} quoteItems={quoteItems} />
 
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
               id="title"
-              placeholder="e.g., Stormwater pipe discovered"
+              placeholder={type === 'addition' ? 'e.g., Extra timber for decking' : 'e.g., Stormwater pipe discovered'}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
@@ -206,7 +209,7 @@ export function SendChangeRequestModal({
           <Button 
             variant="accent"
             onClick={handleSend}
-            disabled={!title.trim() || !description.trim()}
+            disabled={saving || !title.trim() || !description.trim()}
           >
             <MessageSquarePlus className="w-4 h-4 mr-2" />
             Send to Client

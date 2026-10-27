@@ -93,7 +93,9 @@ type DbScopeItem = {
 type DbChangeRequest = {
   id: string;
   project_id: string;
-  type: 'client_request' | 'site_issue' | 'substitution';
+  type: 'client_request' | 'site_issue' | 'substitution' | 'addition';
+  related_scope_item_id?: string | null;
+  related_quote_line_item_id?: string | null;
   title: string;
   description: string;
   reason: string | null;
@@ -282,6 +284,8 @@ export function useProject(projectId: string | undefined) {
         changeRequests: changeRequestsWithSignedUrls.map(c => ({
           id: c.id,
           type: c.type,
+          relatedScopeItemId: c.related_scope_item_id || undefined,
+          relatedQuoteLineItemId: c.related_quote_line_item_id || undefined,
           title: c.title,
           description: c.description,
           reason: c.reason || undefined,
@@ -516,6 +520,8 @@ export function useProject(projectId: string | undefined) {
         .insert({
           project_id: projectId,
           type: requestData.type,
+          ...(requestData.relatedScopeItemId ? { related_scope_item_id: requestData.relatedScopeItemId } : {}),
+          ...(requestData.relatedQuoteLineItemId ? { related_quote_line_item_id: requestData.relatedQuoteLineItemId } : {}),
           title: requestData.title,
           description: requestData.description,
           reason: requestData.reason,
@@ -555,6 +561,8 @@ export function useProject(projectId: string | undefined) {
         .from('change_requests')
         .update({
           type: requestData.type,
+          ...((requestData.relatedScopeItemId !== undefined || requestData.relatedQuoteLineItemId !== undefined)
+            ? { related_scope_item_id: requestData.relatedScopeItemId || null, related_quote_line_item_id: requestData.relatedQuoteLineItemId || null } : {}),
           title: requestData.title,
           description: requestData.description,
           reason: requestData.reason,
