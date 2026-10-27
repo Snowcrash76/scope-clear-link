@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import setupSql from '../../../supabase/migrations/20261026000000_job_costing.sql?raw';
 import receiptScanningSql from '../../../supabase/migrations/20261026000001_receipt_scanning.sql?raw';
+import perplexityReceiptsSql from '../../../supabase/migrations/20261026000002_perplexity_receipts.sql?raw';
 
 export function isJobCostSetupError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? '');
@@ -14,7 +15,7 @@ export function JobCostSetupHelp() {
   const [copied, setCopied] = useState(false);
   const copySql = async () => {
     try {
-      await navigator.clipboard.writeText(`${setupSql.trim()}\n\n-- Receipt scanning support (safe to apply after the base setup)\n${receiptScanningSql.trim()}\n`);
+      await navigator.clipboard.writeText(`${setupSql.trim()}\n\n-- Receipt scanning support (safe to apply after the base setup)\n${receiptScanningSql.trim()}\n\n-- Perplexity receipt metadata support\n${perplexityReceiptsSql.trim()}\n`);
       setCopied(true);
       toast.success('Setup SQL copied');
       window.setTimeout(() => setCopied(false), 1800);
@@ -27,7 +28,7 @@ export function JobCostSetupHelp() {
     <div className="mt-3 rounded-lg border border-amber-300 bg-background/80 p-3">
       <p className="text-sm font-semibold text-foreground">Activate job costing</p>
       <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-        Apply the base job-costing setup and receipt-scanning migration in the Supabase SQL Editor, then return here and retry. Both scripts are safe to run on a fresh or existing setup.
+        Apply the base job-costing setup and both receipt-scanning migrations in the Supabase SQL Editor, then return here and retry. The scripts are safe to run on a fresh or existing setup.
       </p>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Button type="button" size="sm" variant="outline" onClick={copySql} data-testid="button-copy-job-costing-sql">

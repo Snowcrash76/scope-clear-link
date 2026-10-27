@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import {
   useJobCosts, COST_CATEGORIES, calculateGst, jobCostInputSchema, aud,
   uploadCostReceipt, getCostReceiptUrl, prepareReceiptForScan, extractCostReceipt,
-  findCostDuplicates, receiptWarnings, receiptDescription,
+  findCostDuplicates, receiptWarnings, validateReceiptFile,
 } from '@/hooks/useJobCosts';
 import type { JobCost, JobCostInput, ReceiptDuplicate, ReceiptExtraction, ReceiptLineItem } from '@/hooks/useJobCosts';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { JobCostSetupHelp, isJobCostSetupError } from '@/components/job-costing/JobCostSetupHelp';
 import { ReceiptScanControls } from '@/components/job-costing/ReceiptScanControls';
 import { ReceiptLineItemsEditor } from '@/components/job-costing/ReceiptLineItemsEditor';
+import { ReceiptReviewFields } from '@/components/job-costing/ReceiptReviewFields';
 
 type FormState = {
   supplier: string; description: string; cost_date: string; category: typeof COST_CATEGORIES[number];
@@ -34,7 +35,12 @@ const freshForm = (): FormState => ({ supplier: '', description: '', cost_date: 
 const errText = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Please try again.';
 const numberOrNull = (value: string): number | null => value.trim() && Number.isFinite(Number(value)) ? Number(value) : null;
 const amountLooksValid = (value: number | null) => value !== null && value >= 0;
-const hasStoredScanData = (cost: JobCost) => !!cost.receipt_confidence || (Array.isArray(cost.receipt_line_items) && cost.receipt_line_items.length > 0);
+const hasStoredScanData = (cost: JobCost) => !!cost.receipt_confidence || cost.receipt_abn != null || cost.receipt_currency != null || (Array.isArray(cost.receipt_line_items) && cost.receipt_line_items.length > 0);
+const descriptionFromReceipt = (extraction: ReceiptExtraction) => (extraction.line_items ?? [])
+  .map(item => !item.description ? '' : `${item.quantity === null ? '' : `${item.quantity} × `}${item.description}`)
+  .filter(Boolean)
+  .join('; ')
+  .slice(0, 5000);
 
 export function JobCostsTab({ jobId }: { jobId: string }) {
   const { costs, quoteLineItems, loading, error, refetch, saveCost, deleteCost, saving, deleting } = useJobCosts(jobId);
@@ -54,6 +60,9 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   const [scanConfidence, setScanConfidence] = useState<ReceiptExtraction['confidence'] | null>(null);
   const [scanReviewed, setScanReviewed] = useState(false);
   const [lineItems, setLineItems] = useState<ReceiptLineItem[]>([]);
+  const [receiptAbn, setReceiptAbn] = useState('');
+  const [receiptCurrency, setReceiptCurrency] = useState('');
+  const [currencyConfirmed, setCurrencyConfirmed] = useState(false);
   const [clearStoredScanData, setClearStoredScanData] = useState(false);
   const [removeReceipt, setRemoveReceipt] = useState(false);
   const [formError, setFormError] = useState('');
@@ -80,18 +89,26 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   const currentInc = numberOrNull(form.amount_inc_gst);
   const currentExtraction: ReceiptExtraction = {
     supplier: form.supplier.trim() || null,
+    abn: receiptAbn.trim() || null,
     date: form.cost_date || null,
     reference_number: form.reference_number.trim() || null,
-    line_items: lineItems,
+    currency: receiptCurrency.trim() || null,
+    line_items: lineItems.length ? lineItems : null,
     subtotal_ex_gst: currentEx,
     gst: currentGst,
     total_inc_gst: currentInc,
-    suggested_category: form.category,
+    suggested_category: form.category || null,
     confidence: scanConfidence ?? 'high',
   };
   const liveScanWarnings = scanUsed ? receiptWarnings(currentExtraction) : [];
 
   const setAmount = (basis: 'ex' | 'inc', value: string, applies = form.gst_applies) => {
+    if (scanUsed) {
+      const field = basis === 'ex' ? 'amount_ex_gst' : 'amount_inc_gst';
+      setForm(current => ({ ...current, [field]: value }));
+      setAmountBasis(basis);
+      return;
+    }
     const number = Number(value);
     const calc = calculateGst(Number.isFinite(number) ? number : 0, basis, applies);
     setAmountBasis(basis);
@@ -101,6 +118,12 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
 
   const onSelectFile = (file: File | null) => {
     if (file) {
+      try {
+        validateReceiptFile(file);
+      } catch (cause) {
+        setFormError(errText(cause));
+        return;
+      }
       // Selecting a file is not approval to overwrite the form. Keep all entered values;
       // hide old scan metadata until the selected receipt is actually scanned/replaced.
       if (scanUsed || (editing && hasStoredScanData(editing))) {
@@ -108,11 +131,15 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         setScanConfidence(null);
         setScanReviewed(false);
         setLineItems([]);
+        setReceiptAbn('');
+        setReceiptCurrency('');
+        setCurrencyConfirmed(false);
       }
       setFormError('');
       setFieldErrors({});
       setUploadedReceiptFile(null);
       setUploadedReceiptPath(null);
+      setRemoveReceipt(false);
       setPreviewFile(file);
       setSelectedFile(file);
       return;
@@ -123,6 +150,9 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       setScanUsed(true);
       setScanConfidence(editing.receipt_confidence ?? null);
       setLineItems((editing.receipt_line_items ?? []).map(item => ({ ...item })));
+      setReceiptAbn(editing.receipt_abn ?? '');
+      setReceiptCurrency(editing.receipt_currency ?? '');
+      setCurrencyConfirmed(editing.receipt_currency === 'AUD');
       setScanReviewed(true);
       setClearStoredScanData(false);
     }
@@ -140,7 +170,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   };
   const startNew = () => {
     setEditing(null); setForm(freshForm()); setGstAmount('0.00'); setAmountBasis('ex');
-    resetReceiptFiles(); setScanUsed(false); setScanConfidence(null); setScanReviewed(false); setLineItems([]); setClearStoredScanData(false);
+    resetReceiptFiles(); setScanUsed(false); setScanConfidence(null); setScanReviewed(false); setLineItems([]); setReceiptAbn(''); setReceiptCurrency(''); setCurrencyConfirmed(false); setClearStoredScanData(false);
     setRemoveReceipt(false); setFormError(''); setFieldErrors({}); setDuplicates([]); setDuplicateError(''); setAcknowledgedDuplicateKey(''); setOpen(true);
   };
   const startEdit = (cost: JobCost) => {
@@ -151,6 +181,9 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
     setGstAmount(cost.gst_amount.toFixed(2)); setAmountBasis('ex'); resetReceiptFiles();
     setScanUsed(hasScanData); setScanConfidence(cost.receipt_confidence ?? null); setScanReviewed(true);
     setLineItems(hasScanData ? (storedLines ?? []).map(item => ({ ...item })) : []);
+    setReceiptAbn(cost.receipt_abn ?? '');
+    setReceiptCurrency(cost.receipt_currency ?? '');
+    setCurrencyConfirmed(cost.receipt_currency === 'AUD');
     setClearStoredScanData(false);
     setRemoveReceipt(false); setFormError(''); setFieldErrors({}); setDuplicates([]); setDuplicateError(''); setAcknowledgedDuplicateKey(''); setOpen(true);
   };
@@ -179,18 +212,22 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       setForm(current => ({
         ...current,
         supplier: extraction.supplier ?? '',
+        // A null category is not a suggestion; keep the user's current selection.
+        category: extraction.suggested_category ?? current.category,
         cost_date: extraction.date ?? '',
         reference_number: extraction.reference_number ?? '',
-        category: extraction.suggested_category,
-        description: receiptDescription(extraction),
+        description: descriptionFromReceipt(extraction),
         amount_ex_gst: extraction.subtotal_ex_gst === null ? '' : extraction.subtotal_ex_gst.toFixed(2),
         amount_inc_gst: extraction.total_inc_gst === null ? '' : extraction.total_inc_gst.toFixed(2),
         gst_applies: extraction.gst === null ? current.gst_applies : extraction.gst !== 0,
         status: 'draft',
       }));
+      setReceiptAbn(extraction.abn ?? '');
+      setReceiptCurrency(extraction.currency ?? '');
+      setCurrencyConfirmed(false);
       setGstAmount(extraction.gst === null ? '' : extraction.gst.toFixed(2));
       setAmountBasis('ex');
-      setLineItems(extraction.line_items.map(item => ({ ...item })));
+      setLineItems((extraction.line_items ?? []).map(item => ({ ...item })));
       setScanConfidence(extraction.confidence);
       setScanUsed(true);
       setScanReviewed(false);
@@ -250,6 +287,12 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       setFormError('Review the scanned receipt fields and confirm before saving.');
       return;
     }
+    if (scanUsed && (receiptCurrency !== 'AUD' || !currencyConfirmed)) {
+      setFormError(receiptCurrency !== 'AUD'
+        ? 'Set the receipt currency to AUD only after verifying the amounts are in Australian dollars. ScopeClear does not convert foreign currency.'
+        : 'Confirm that the receipt amounts are in Australian dollars before saving.');
+      return;
+    }
     if (!form.amount_ex_gst.trim() || !form.amount_inc_gst.trim() || !gstAmount.trim()) {
       setFieldErrors({ ...(!form.amount_ex_gst.trim() ? { amount_ex_gst: 'Enter an amount' } : {}), ...(!gstAmount.trim() ? { gst_amount: 'Enter the GST amount' } : {}), ...(!form.amount_inc_gst.trim() ? { amount_inc_gst: 'Enter an amount' } : {}) });
       setFormError('Enter all three amounts before saving.'); return;
@@ -263,7 +306,8 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
     const parsed = jobCostInputSchema.safeParse({
       ...basePayload,
       ...(scanUsed ? { receipt_line_items: lineItems, receipt_confidence: scanConfidence } : {}),
-      ...(!scanUsed && clearStoredScanData ? { receipt_line_items: [], receipt_confidence: null } : {}),
+      ...(scanUsed ? { receipt_abn: receiptAbn.trim() || null, receipt_currency: receiptCurrency.trim() || null } : {}),
+      ...(!scanUsed && clearStoredScanData ? { receipt_line_items: [], receipt_confidence: null, receipt_abn: null, receipt_currency: null } : {}),
     });
     if (!parsed.success) {
       const flattened: Record<string, string> = {};
@@ -307,7 +351,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         payload = {
           ...payload,
           receipt_image_url: receiptPath,
-          ...(!scanUsed && editing && hasStoredScanData(editing) ? { receipt_line_items: [], receipt_confidence: null } : {}),
+          ...(!scanUsed && editing && hasStoredScanData(editing) ? { receipt_line_items: [], receipt_confidence: null, receipt_abn: null, receipt_currency: null } : {}),
         };
         setUploadedReceiptFile(selectedFile);
         setUploadedReceiptPath(receiptPath);
@@ -336,6 +380,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
 
   const changeGst = (value: string) => {
     setGstAmount(value);
+    if (scanUsed) return;
     const ex = numberOrNull(form.amount_ex_gst);
     setForm(current => ({ ...current, amount_inc_gst: value.trim() && ex !== null && Number.isFinite(Number(value)) ? (ex + Number(value)).toFixed(2) : '' }));
   };
@@ -403,7 +448,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                 <Field label="GST" id="cost-gst" error={fieldErrors.gst_amount}><Input id="cost-gst" type="number" min="0" step="0.01" inputMode="decimal" value={gstAmount} onChange={e => changeGst(e.target.value)} /><span className="text-[11px] text-muted-foreground">{scanUsed ? 'Editable scanned value' : 'Enter ex-GST or inc-GST; GST is calculated at 10%.'}</span></Field>
                 <Field label="Inc GST" id="cost-inc" error={fieldErrors.amount_inc_gst}><Input id="cost-inc" type="number" min="0" step="0.01" inputMode="decimal" value={form.amount_inc_gst} onChange={e => setAmount('inc', e.target.value)} /></Field>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">{scanUsed ? 'Scanned totals are kept as read. Editing ex-GST or inc-GST recalculates the other amount and GST; editing GST updates the total.' : 'Enter either ex-GST or inc-GST; the other amount and GST are calculated.'}</p>
+              <p className="mt-2 text-xs text-muted-foreground">{scanUsed ? 'Printed totals stay independent: editing one does not change the others. Check any mismatch against the receipt; scanned GST may not be 10%.' : 'Enter either ex-GST or inc-GST; the other amount and GST are calculated.'}</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Reference (optional)" id="cost-reference" error={fieldErrors.reference_number}><Input id="cost-reference" maxLength={200} value={form.reference_number} onChange={e => updateForm('reference_number', e.target.value)} placeholder="Invoice or docket number" /></Field>
@@ -414,6 +459,15 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               <section className="space-y-3 rounded-lg border border-amber-300 bg-amber-50/40 p-3" aria-label="Receipt scan review">
                 <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-semibold">Receipt scan review</p><p className="text-xs text-muted-foreground">Nothing is posted automatically. Check the original before saving.</p></div><Badge variant={scanConfidence === 'low' ? 'destructive' : 'secondary'}>{scanConfidence ?? 'unknown'} confidence</Badge></div>
                 {liveScanWarnings.length > 0 ? <ul className="list-disc space-y-1 pl-5 text-xs text-amber-950">{liveScanWarnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}</ul> : <p className="text-xs text-muted-foreground">The current values reconcile. Still confirm them against the receipt.</p>}
+                <ReceiptReviewFields
+                  abn={receiptAbn}
+                  currency={receiptCurrency}
+                  currencyConfirmed={currencyConfirmed}
+                  disabled={scanBusy || submitting}
+                  onAbnChange={setReceiptAbn}
+                  onCurrencyChange={value => { setReceiptCurrency(value); setCurrencyConfirmed(false); }}
+                  onCurrencyConfirmedChange={setCurrencyConfirmed}
+                />
                 <ReceiptLineItemsEditor items={lineItems} onChange={setLineItems} disabled={scanBusy || submitting} />
                 <label className="flex cursor-pointer items-start gap-2 border-t border-amber-200 pt-3 text-sm">
                   <input data-testid="checkbox-receipt-reviewed" type="checkbox" className="mt-0.5 h-4 w-4 accent-amber-700" checked={scanReviewed} disabled={scanBusy || submitting} onChange={event => setScanReviewed(event.target.checked)} />
@@ -421,9 +475,9 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                 </label>
               </section>
             </>}
-            {editing?.receipt_image_url && !removeReceipt && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2"><span className="flex items-center gap-2 text-xs"><Paperclip className="h-4 w-4" />Existing receipt attached</span><div className="flex gap-2"><Button type="button" variant="link" size="sm" className="h-7 px-1" disabled={openingReceipt === editing.id} onClick={() => viewReceipt(editing)}>{openingReceipt === editing.id ? 'Loading…' : 'View'}</Button><Button type="button" variant="ghost" size="sm" className="h-7 text-destructive" onClick={() => { setRemoveReceipt(true); if (hasStoredScanData(editing)) { setClearStoredScanData(true); setScanUsed(false); setScanConfidence(null); setLineItems([]); setScanReviewed(false); } }}>Remove</Button></div></div>}
-            {removeReceipt && <p className="text-xs text-amber-800">Existing attachment will be removed when saved. <button type="button" className="underline" onClick={() => { setRemoveReceipt(false); if (editing && hasStoredScanData(editing) && !uploadedReceiptPath) { setClearStoredScanData(false); setScanUsed(true); setScanConfidence(editing.receipt_confidence ?? null); setLineItems((editing.receipt_line_items ?? []).map(item => ({ ...item }))); setScanReviewed(true); } }}>Undo</button></p>}
-            {editing && !editing.receipt_image_url && <div className="space-y-2"><Label htmlFor="cost-receipt-edit">Receipt attachment (optional)</Label><label htmlFor="cost-receipt-edit" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed px-3 py-3 hover:bg-muted/30"><Paperclip className="h-5 w-5 text-muted-foreground" /><span className="min-w-0 flex-1 text-xs text-muted-foreground">{selectedFile ? selectedFile.name : 'Choose JPEG, PNG, WebP or PDF (max 10 MB)'}</span><span className="text-xs font-semibold text-amber-800">Browse</span></label><input id="cost-receipt-edit" className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event => { onSelectFile(event.target.files?.[0] ?? null); event.currentTarget.value = ''; }} />{selectedFile && <Button type="button" variant="ghost" size="sm" onClick={() => onSelectFile(null)}>Clear selected file</Button>}</div>}
+            {editing?.receipt_image_url && !removeReceipt && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2"><span className="flex items-center gap-2 text-xs"><Paperclip className="h-4 w-4" />Existing receipt attached</span><div className="flex gap-2"><Button type="button" variant="link" size="sm" className="h-7 px-1" disabled={openingReceipt === editing.id} onClick={() => viewReceipt(editing)}>{openingReceipt === editing.id ? 'Loading…' : 'View'}</Button><Button type="button" variant="ghost" size="sm" className="h-7 text-destructive" onClick={() => { setRemoveReceipt(true); if (hasStoredScanData(editing)) { setClearStoredScanData(true); setScanUsed(false); setScanConfidence(null); setLineItems([]); setReceiptAbn(''); setReceiptCurrency(''); setCurrencyConfirmed(false); setScanReviewed(false); } }}>Remove</Button></div></div>}
+            {removeReceipt && <p className="text-xs text-amber-800">Existing attachment will be removed when saved. <button type="button" className="underline" onClick={() => { setRemoveReceipt(false); if (editing && hasStoredScanData(editing) && !uploadedReceiptPath) { setClearStoredScanData(false); setScanUsed(true); setScanConfidence(editing.receipt_confidence ?? null); setLineItems((editing.receipt_line_items ?? []).map(item => ({ ...item }))); setReceiptAbn(editing.receipt_abn ?? ''); setReceiptCurrency(editing.receipt_currency ?? ''); setCurrencyConfirmed(editing.receipt_currency === 'AUD'); setScanReviewed(true); } }}>Undo</button></p>}
+            {editing && <div className="space-y-2"><Label htmlFor="cost-receipt-edit">{editing.receipt_image_url ? 'Replace receipt attachment' : 'Receipt attachment (optional)'}</Label><label htmlFor="cost-receipt-edit" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed px-3 py-3 hover:bg-muted/30"><Paperclip className="h-5 w-5 text-muted-foreground" /><span className="min-w-0 flex-1 text-xs text-muted-foreground">{selectedFile ? selectedFile.name : 'Choose JPEG, PNG, WebP or PDF (max 10 MB)'}</span><span className="text-xs font-semibold text-amber-800">Browse</span></label><input id="cost-receipt-edit" className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event => { onSelectFile(event.target.files?.[0] ?? null); event.currentTarget.value = ''; }} />{selectedFile && <Button type="button" variant="ghost" size="sm" onClick={() => onSelectFile(null)}>Clear selected file</Button>}</div>}
             {editing && <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">Created {new Date(editing.created_at).toLocaleString('en-AU')} · Updated {new Date(editing.updated_at).toLocaleString('en-AU')} · Creator {editing.created_by}</div>}
             {duplicates.length > 0 && <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50/70 p-3">
               <p className="text-sm font-semibold text-amber-950">Possible matching costs</p>

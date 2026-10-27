@@ -33,7 +33,7 @@ export function mountReceiptRoutes(router: Router, route: ReturnType<typeof crea
     if (!input.receipt_path.startsWith(prefix) || !/^[0-9a-f-]+\.(jpg|png|webp|pdf)$/.test(input.receipt_path.slice(prefix.length)))
       throw new CostApiError(400, 'Choose a receipt uploaded to this job.');
     // Verify schema setup before spending any money on extraction.
-    const { error: setupError } = await db.from('job_costs').select('receipt_line_items, receipt_confidence').eq('job_id', input.job_id).limit(0);
+    const { error: setupError } = await db.from('job_costs').select('receipt_line_items, receipt_confidence, receipt_abn, receipt_currency').eq('job_id', input.job_id).limit(0);
     checkDb(setupError);
     const now = Date.now();
     for (const [key, entry] of scans) if (entry.until < now && !entry.active) scans.delete(key);

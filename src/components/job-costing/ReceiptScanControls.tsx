@@ -67,7 +67,7 @@ export function ReceiptScanControls({ file, busy, uploaded, onFileChange, onScan
               <Button type="button" size="sm" onClick={onScan} disabled={busy} data-testid="button-scan-receipt"><ScanLine className="mr-2 h-4 w-4" />{busy ? 'Scanning…' : uploaded ? 'Scan again' : 'Scan receipt'}</Button>
             </div>
           </div>
-          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">When you press Scan, the receipt image is sent to Anthropic for reading. The original file is stored privately with this job.</p>
+          <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">When you press Scan, the receipt file is sent to Perplexity and the selected AI provider for reading. The original file is stored privately with this job.</p>
         </div>
       )}
       {error && <p role="alert" className="text-xs text-destructive">{error}</p>}

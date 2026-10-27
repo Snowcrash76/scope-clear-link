@@ -1,1 +1,2 @@
 - [Job costing boundaries](job-costing-boundaries.md) — keep expense tracking separate from existing quoting, invoicing and client workflows.
+- [Receipt transcription rules](receipt-transcription.md) — receipt scans must not enrich or guess missing information; preserve printed values for explicit review.

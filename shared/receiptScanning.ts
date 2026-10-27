@@ -4,13 +4,15 @@ import { COST_CATEGORIES, costDateSchema, receiptLineItemSchema, money } from '.
 const receiptAmount = z.number().finite().min(0).max(999999999.99).nullable();
 export const receiptExtractionSchema = z.object({
   supplier: z.string().max(200).nullable(),
+  abn: z.string().max(50).nullable(),
+  currency: z.string().regex(/^[A-Z]{3}$/).nullable(),
   date: costDateSchema.nullable(),
   reference_number: z.string().max(200).nullable(),
-  line_items: z.array(receiptLineItemSchema).max(200),
+  line_items: z.array(receiptLineItemSchema).max(200).nullable(),
   subtotal_ex_gst: receiptAmount,
   gst: receiptAmount,
   total_inc_gst: receiptAmount,
-  suggested_category: z.enum(COST_CATEGORIES),
+  suggested_category: z.enum(COST_CATEGORIES).nullable(),
   confidence: z.enum(['high', 'medium', 'low']),
 }).strict();
 export type ReceiptExtraction = z.infer<typeof receiptExtractionSchema>;
@@ -38,29 +40,34 @@ export function parseReceiptExtraction(text: string): ReceiptExtraction {
 }
 export function receiptWarnings(receipt: ReceiptExtraction): string[] {
   const warnings: string[] = [];
-  const { subtotal_ex_gst: ex, gst, total_inc_gst: total, line_items: items } = receipt;
+  const { subtotal_ex_gst: ex, gst, total_inc_gst: total } = receipt;
+  const items = receipt.line_items ?? [];
   let reconcile = false;
   const tolerance = Math.max(0.05, items.length * 0.01);
   if (ex !== null && gst !== null && total !== null && Math.abs(ex + gst - total) > tolerance)
-    reconcile = true;
-  if (ex !== null && gst !== null && gst !== 0 && Math.abs(gst - ex * 0.1) > Math.max(0.02, Math.abs(ex * 0.1) * 0.02))
     reconcile = true;
   if (items.length && ex !== null && items.every(item => item.amount !== null)) {
     if (Math.abs(items.reduce((sum, item) => sum + item.amount!, 0) - ex) > tolerance)
       reconcile = true;
   }
   if (reconcile) warnings.push("Totals don't reconcile, please check");
-  if (!receipt.supplier || !receipt.date || ex === null || gst === null || total === null)
-    warnings.push('Some receipt fields could not be read. Fill in the missing fields before saving.');
-  if (items.some(item => item.amount === null))
-    warnings.push('Some line item amounts could not be read. Please check them against the original receipt.');
+  const missing = [
+    !receipt.supplier && 'supplier', !receipt.abn && 'ABN', !receipt.date && 'receipt date',
+    !receipt.reference_number && 'receipt number', !receipt.currency && 'currency',
+    !items.length && 'line items', ex === null && 'subtotal', gst === null && 'GST', total === null && 'total',
+  ].filter(Boolean);
+  if (missing.length) warnings.push(`Missing or unreadable: ${missing.join(', ')}. Check the original; do not guess.`);
+  if (items.some(item => !item.description || item.amount === null || item.quantity === null || item.unit_price === null))
+    warnings.push('Some line item fields could not be read. Please check them against the original receipt.');
+  if (receipt.currency && receipt.currency !== 'AUD')
+    warnings.push('Job costing is in AUD. Convert this receipt separately before recording an AUD cost; no currency conversion is performed automatically.');
   if (receipt.confidence === 'low') warnings.push('Low-confidence scan. Check every field against the original receipt.');
   return warnings;
 }
 export function receiptDescription(receipt: ReceiptExtraction): string {
-  return receipt.line_items.map(item => {
+  return (receipt.line_items ?? []).map(item => {
     const quantity = item.quantity === null ? '' : `${item.quantity} × `;
-    return `${quantity}${item.description}`;
+    return `${quantity}${item.description ?? ''}`;
   }).join('; ').slice(0, 5000);
 }
 export function normalizeSupplier(supplier: string): string {

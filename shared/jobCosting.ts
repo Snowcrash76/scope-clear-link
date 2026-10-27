@@ -25,7 +25,7 @@ export const costDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-
   }, 'Enter a valid date');
 
 export const receiptLineItemSchema = z.object({
-  description: z.string().max(2000),
+  description: z.string().max(2000).nullable(),
   quantity: z.number().finite().min(-1000000).max(1000000).nullable(),
   unit_price: z.number().finite().min(-999999999).max(999999999).nullable(),
   amount: z.number().finite().min(-999999999).max(999999999).nullable(),
@@ -50,11 +50,17 @@ export const jobCostInputSchema = z.object({
   // Optional for backwards-compatible manual saves before the scan migration.
   receipt_line_items: z.array(receiptLineItemSchema).max(200).optional(),
   receipt_confidence: z.enum(['high', 'medium', 'low']).nullable().optional(),
+  receipt_abn: z.string().trim().max(50).nullable().optional(),
+  receipt_currency: z.string().regex(/^[A-Z]{3}$/, 'Use a three-letter currency code').nullable().optional(),
 }).strict().superRefine((value, ctx) => {
+  if (value.receipt_currency !== undefined && value.receipt_currency !== null && value.receipt_currency !== 'AUD')
+    ctx.addIssue({ code: 'custom', path: ['receipt_currency'], message: 'Job costs must be in AUD. Foreign receipts cannot be saved as AUD without separate conversion.' });
+  if (value.receipt_confidence && !value.receipt_currency)
+    ctx.addIssue({ code: 'custom', path: ['receipt_currency'], message: 'Confirm the receipt currency is AUD before saving' });
   if (Math.abs(money(value.amount_ex_gst + value.gst_amount) - value.amount_inc_gst) > 0.011)
     ctx.addIssue({ code: 'custom', path: ['amount_inc_gst'], message: 'Ex-GST plus GST must equal the total' });
   const expected = value.gst_applies ? money(value.amount_ex_gst * GST_RATE) : 0;
-  if (Math.abs(expected - value.gst_amount) > 0.011)
+  if (value.receipt_confidence ? (!value.gst_applies && value.gst_amount !== 0) : Math.abs(expected - value.gst_amount) > 0.011)
     ctx.addIssue({ code: 'custom', path: ['gst_amount'], message: 'GST must be 10% of the ex-GST amount, or zero for GST-free costs' });
 });
 

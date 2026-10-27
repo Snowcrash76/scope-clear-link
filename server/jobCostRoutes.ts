@@ -6,7 +6,7 @@ import { jobCostInputSchema, MAX_RECEIPT_BYTES, RECEIPT_BUCKET, RECEIPT_TYPES, t
 import { summarizeJobs } from './jobCostData';
 import { CostApiError, jobCostClient, checkDb, ownJob, allRows, createCostHandler } from './jobCostAccess';
 import { mountReceiptRoutes } from './receiptRoutes';
-import { extractReceiptWithAnthropic, type ReceiptExtractor } from './receiptExtraction';
+import { extractReceiptWithPerplexity, type ReceiptExtractor } from './receiptExtraction';
 const uuid = z.string().uuid();
 function normalizeCost(row: JobCost): JobCost {
   return { ...row, amount_ex_gst: Number(row.amount_ex_gst), gst_amount: Number(row.gst_amount), amount_inc_gst: Number(row.amount_inc_gst) };
@@ -25,7 +25,7 @@ export function createJobCostRouter(
 ) {
   const router = Router();
   const route = createCostHandler(createDb);
-  mountReceiptRoutes(router, route, options.extractReceipt ?? extractReceiptWithAnthropic);
+  mountReceiptRoutes(router, route, options.extractReceipt ?? extractReceiptWithPerplexity);
 
   router.get('/job-costs', route(async (req, db, userId) => {
     const jobId = uuid.parse(req.query.jobId);
