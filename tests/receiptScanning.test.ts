@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseReceiptExtraction, receiptWarnings, receiptDescription, type ReceiptExtraction } from '../shared/receiptScanning';
+import { parseReceiptExtraction, receiptWarnings, receiptDescription, receiptCurrencyForReview, type ReceiptExtraction } from '../shared/receiptScanning';
 import { jobCostInputSchema } from '../shared/jobCosting';
 import { createPerplexityReceiptExtractor, RECEIPT_MODEL, RECEIPT_SYSTEM_PROMPT, RECEIPT_JSON_SCHEMA } from '../server/receiptExtraction';
 import { decodeReceiptImage, detectReceiptType } from '../server/receiptRoutes';
@@ -111,6 +111,13 @@ test('provider failures and missing key give friendly errors without exposing pr
     request: (async () => new Response(JSON.stringify({ status: 'completed', output: [{ type: 'message', content: [{ type: 'output_text', text: 'not JSON' }] }] }))) as typeof fetch,
   });
   await assert.rejects(invalid({ mediaType: 'image/jpeg', base64: jpeg }), /unreadable result/);
+});
+
+test('receipt review defaults to AUD without overwriting a detected foreign currency', () => {
+  assert.equal(receiptCurrencyForReview(), 'AUD');
+  assert.equal(receiptCurrencyForReview(null), 'AUD');
+  assert.equal(receiptCurrencyForReview('AUD'), 'AUD');
+  assert.equal(receiptCurrencyForReview('USD'), 'USD');
 });
 
 test('unreadable values stay null without calculating tax, identifying currency or inventing line items', async () => {

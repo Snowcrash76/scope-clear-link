@@ -26,7 +26,7 @@ export function ReceiptReviewFields({
         <div className="space-y-1.5">
           <Label htmlFor="receipt-currency">Receipt currency</Label>
           <Input id="receipt-currency" data-testid="input-receipt-currency" value={currency} maxLength={3} disabled={disabled} onChange={event => onCurrencyChange(event.target.value.toUpperCase())} placeholder="Not read" autoCapitalize="characters" />
-          <p className="text-[11px] text-muted-foreground">Three-letter ISO code, when printed on the receipt.</p>
+          <p className="text-[11px] text-muted-foreground">Defaults to AUD. No currency conversion is applied.</p>
         </div>
       </div>
       {!isAud ? (

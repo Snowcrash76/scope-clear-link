@@ -20,6 +20,7 @@ import { JobCostSetupHelp, isJobCostSetupError } from '@/components/job-costing/
 import { ReceiptScanControls } from '@/components/job-costing/ReceiptScanControls';
 import { ReceiptLineItemsEditor } from '@/components/job-costing/ReceiptLineItemsEditor';
 import { ReceiptReviewFields } from '@/components/job-costing/ReceiptReviewFields';
+import { receiptCurrencyForReview } from '../../../shared/receiptScanning';
 
 type FormState = {
   supplier: string; description: string; cost_date: string; category: typeof COST_CATEGORIES[number];
@@ -61,7 +62,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   const [scanReviewed, setScanReviewed] = useState(false);
   const [lineItems, setLineItems] = useState<ReceiptLineItem[]>([]);
   const [receiptAbn, setReceiptAbn] = useState('');
-  const [receiptCurrency, setReceiptCurrency] = useState('');
+  const [receiptCurrency, setReceiptCurrency] = useState(receiptCurrencyForReview());
   const [currencyConfirmed, setCurrencyConfirmed] = useState(false);
   const [clearStoredScanData, setClearStoredScanData] = useState(false);
   const [removeReceipt, setRemoveReceipt] = useState(false);
@@ -132,7 +133,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         setScanReviewed(false);
         setLineItems([]);
         setReceiptAbn('');
-        setReceiptCurrency('');
+        setReceiptCurrency(receiptCurrencyForReview());
         setCurrencyConfirmed(false);
       }
       setFormError('');
@@ -151,7 +152,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       setScanConfidence(editing.receipt_confidence ?? null);
       setLineItems((editing.receipt_line_items ?? []).map(item => ({ ...item })));
       setReceiptAbn(editing.receipt_abn ?? '');
-      setReceiptCurrency(editing.receipt_currency ?? '');
+      setReceiptCurrency(receiptCurrencyForReview(editing.receipt_currency));
       setCurrencyConfirmed(editing.receipt_currency === 'AUD');
       setScanReviewed(true);
       setClearStoredScanData(false);
@@ -170,7 +171,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   };
   const startNew = () => {
     setEditing(null); setForm(freshForm()); setGstAmount('0.00'); setAmountBasis('ex');
-    resetReceiptFiles(); setScanUsed(false); setScanConfidence(null); setScanReviewed(false); setLineItems([]); setReceiptAbn(''); setReceiptCurrency(''); setCurrencyConfirmed(false); setClearStoredScanData(false);
+    resetReceiptFiles(); setScanUsed(false); setScanConfidence(null); setScanReviewed(false); setLineItems([]); setReceiptAbn(''); setReceiptCurrency(receiptCurrencyForReview()); setCurrencyConfirmed(false); setClearStoredScanData(false);
     setRemoveReceipt(false); setFormError(''); setFieldErrors({}); setDuplicates([]); setDuplicateError(''); setAcknowledgedDuplicateKey(''); setOpen(true);
   };
   const startEdit = (cost: JobCost) => {
@@ -182,7 +183,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
     setScanUsed(hasScanData); setScanConfidence(cost.receipt_confidence ?? null); setScanReviewed(true);
     setLineItems(hasScanData ? (storedLines ?? []).map(item => ({ ...item })) : []);
     setReceiptAbn(cost.receipt_abn ?? '');
-    setReceiptCurrency(cost.receipt_currency ?? '');
+    setReceiptCurrency(receiptCurrencyForReview(cost.receipt_currency));
     setCurrencyConfirmed(cost.receipt_currency === 'AUD');
     setClearStoredScanData(false);
     setRemoveReceipt(false); setFormError(''); setFieldErrors({}); setDuplicates([]); setDuplicateError(''); setAcknowledgedDuplicateKey(''); setOpen(true);
@@ -223,7 +224,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         status: 'draft',
       }));
       setReceiptAbn(extraction.abn ?? '');
-      setReceiptCurrency(extraction.currency ?? '');
+      setReceiptCurrency(receiptCurrencyForReview(extraction.currency));
       setCurrencyConfirmed(false);
       setGstAmount(extraction.gst === null ? '' : extraction.gst.toFixed(2));
       setAmountBasis('ex');
@@ -475,7 +476,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                 </label>
               </section>
             </>}
-            {editing?.receipt_image_url && !removeReceipt && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2"><span className="flex items-center gap-2 text-xs"><Paperclip className="h-4 w-4" />Existing receipt attached</span><div className="flex gap-2"><Button type="button" variant="link" size="sm" className="h-7 px-1" disabled={openingReceipt === editing.id} onClick={() => viewReceipt(editing)}>{openingReceipt === editing.id ? 'Loading…' : 'View'}</Button><Button type="button" variant="ghost" size="sm" className="h-7 text-destructive" onClick={() => { setRemoveReceipt(true); if (hasStoredScanData(editing)) { setClearStoredScanData(true); setScanUsed(false); setScanConfidence(null); setLineItems([]); setReceiptAbn(''); setReceiptCurrency(''); setCurrencyConfirmed(false); setScanReviewed(false); } }}>Remove</Button></div></div>}
+            {editing?.receipt_image_url && !removeReceipt && <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-muted/30 px-3 py-2"><span className="flex items-center gap-2 text-xs"><Paperclip className="h-4 w-4" />Existing receipt attached</span><div className="flex gap-2"><Button type="button" variant="link" size="sm" className="h-7 px-1" disabled={openingReceipt === editing.id} onClick={() => viewReceipt(editing)}>{openingReceipt === editing.id ? 'Loading…' : 'View'}</Button><Button type="button" variant="ghost" size="sm" className="h-7 text-destructive" onClick={() => { setRemoveReceipt(true); if (hasStoredScanData(editing)) { setClearStoredScanData(true); setScanUsed(false); setScanConfidence(null); setLineItems([]); setReceiptAbn(''); setReceiptCurrency(receiptCurrencyForReview()); setCurrencyConfirmed(false); setScanReviewed(false); } }}>Remove</Button></div></div>}
             {removeReceipt && <p className="text-xs text-amber-800">Existing attachment will be removed when saved. <button type="button" className="underline" onClick={() => { setRemoveReceipt(false); if (editing && hasStoredScanData(editing) && !uploadedReceiptPath) { setClearStoredScanData(false); setScanUsed(true); setScanConfidence(editing.receipt_confidence ?? null); setLineItems((editing.receipt_line_items ?? []).map(item => ({ ...item }))); setReceiptAbn(editing.receipt_abn ?? ''); setReceiptCurrency(editing.receipt_currency ?? ''); setCurrencyConfirmed(editing.receipt_currency === 'AUD'); setScanReviewed(true); } }}>Undo</button></p>}
             {editing && <div className="space-y-2"><Label htmlFor="cost-receipt-edit">{editing.receipt_image_url ? 'Replace receipt attachment' : 'Receipt attachment (optional)'}</Label><label htmlFor="cost-receipt-edit" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed px-3 py-3 hover:bg-muted/30"><Paperclip className="h-5 w-5 text-muted-foreground" /><span className="min-w-0 flex-1 text-xs text-muted-foreground">{selectedFile ? selectedFile.name : 'Choose JPEG, PNG, WebP or PDF (max 10 MB)'}</span><span className="text-xs font-semibold text-amber-800">Browse</span></label><input id="cost-receipt-edit" className="sr-only" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={event => { onSelectFile(event.target.files?.[0] ?? null); event.currentTarget.value = ''; }} />{selectedFile && <Button type="button" variant="ghost" size="sm" onClick={() => onSelectFile(null)}>Clear selected file</Button>}</div>}
             {editing && <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">Created {new Date(editing.created_at).toLocaleString('en-AU')} · Updated {new Date(editing.updated_at).toLocaleString('en-AU')} · Creator {editing.created_by}</div>}
