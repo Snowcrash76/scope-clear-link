@@ -44,7 +44,6 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PasswordInput } from '@/components/PasswordInput';
-import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -113,14 +112,14 @@ function SidebarInner({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900 text-zinc-100">
+    <div className="flex flex-col h-full bg-white text-zinc-800 border-r border-zinc-200">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-4 border-b border-zinc-800">
+      <div className="px-5 pt-6 pb-4 border-b border-zinc-200">
         <div className="flex items-center gap-2.5">
-          <span className="font-heading font-black text-xl tracking-tighter text-amber-500">ScopeClear</span>
+          <span className="font-heading font-black text-xl tracking-tighter text-amber-700">ScopeClear</span>
         </div>
         {businessName && (
-          <p className="text-xs text-zinc-500 mt-1 truncate">{businessName}</p>
+          <p className="text-xs text-zinc-600 mt-1 truncate">{businessName}</p>
         )}
       </div>
 
@@ -146,8 +145,8 @@ function SidebarInner({
             className={cn(
               'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
               active
-                ? 'border-l-4 border-amber-500 bg-zinc-800/50 text-amber-500'
-                : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg mx-1'
+                ? 'border-l-4 border-amber-500 bg-amber-50 text-amber-800'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg mx-1'
             )}
             data-testid={testId}
           >
@@ -162,8 +161,8 @@ function SidebarInner({
             className={cn(
               'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
               currentPath.startsWith('/admin')
-                ? 'border-l-4 border-amber-500 bg-zinc-800/50 text-amber-500'
-                : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 rounded-lg mx-1'
+                ? 'border-l-4 border-amber-500 bg-amber-50 text-amber-800'
+                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg mx-1'
             )}
             data-testid="nav-admin"
           >
@@ -174,11 +173,10 @@ function SidebarInner({
       </nav>
 
       {/* Bottom section */}
-      <div className="border-t border-zinc-800 pt-3 pb-5 space-y-0.5">
-        <ThemeToggle />
+      <div className="border-t border-zinc-200 pt-3 pb-5 space-y-0.5">
         <button
           onClick={() => act(onOpenSettings)}
-          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition-colors"
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
           data-testid="button-sidebar-settings"
         >
           <Settings className="w-4 h-4 flex-shrink-0" />
@@ -190,16 +188,16 @@ function SidebarInner({
               {getInitials(contactName)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate text-zinc-200">{contactName}</p>
-              {email && <p className="text-xs text-zinc-500 truncate">{email}</p>}
+              <p className="text-xs font-medium truncate text-zinc-800">{contactName}</p>
+              {email && <p className="text-xs text-zinc-600 truncate">{email}</p>}
             </div>
             <button
               onClick={() => act(onSignOut)}
               title="Sign out"
-              className="p-1.5 rounded hover:bg-zinc-800 transition-colors flex-shrink-0"
+              className="p-1.5 rounded hover:bg-zinc-100 transition-colors flex-shrink-0"
               data-testid="button-sidebar-sign-out"
             >
-              <LogOut className="w-3.5 h-3.5 text-zinc-500" />
+              <LogOut className="w-3.5 h-3.5 text-zinc-600" />
             </button>
           </div>
         )}
@@ -427,7 +425,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Page content */}
       <div className="flex-1 lg:pl-64 min-w-0 flex flex-col">
         {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-0 z-30">
+        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-200 bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}
             className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -628,7 +626,7 @@ export function AppShell({ children }: AppShellProps) {
                   </h3>
                   {emailSent ? (
                     <div className="space-y-2">
-                      <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700 dark:text-green-400">
+                      <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-sm text-green-700">
                         Confirmation link sent. Check your new email and click the link to confirm the change.
                       </div>
                       <button

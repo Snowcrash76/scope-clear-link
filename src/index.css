@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    /* Field Utility design system — warm off-white surfaces */
-    --background: 48 33% 97%;
+    /* ScopeClear fixed light theme */
+    --background: 0 0% 100%;
     --foreground: 30 10% 12%;
 
     --card: 0 0% 100%;
@@ -21,11 +21,11 @@
     --primary-foreground: 0 0% 100%;
 
     /* Warm cream secondary */
-    --secondary: 40 20% 94%;
+    --secondary: 40 20% 96%;
     --secondary-foreground: 30 10% 12%;
 
     /* Muted warm gray */
-    --muted: 40 15% 92%;
+    --muted: 40 15% 95%;
     --muted-foreground: 33 23% 26%;
 
     /* Bright amber accent for CTAs — #F4A100 */
@@ -50,21 +50,22 @@
     --approved: 158 44% 42%;
     --approved-foreground: 0 0% 100%;
 
-    /* Warm tan border — #D8C3AD */
-    --border: 31 36% 76%;
-    --input: 31 36% 76%;
+    /* Quiet warm-gray boundaries */
+    --border: 30 12% 86%;
+    --input: 30 12% 82%;
     --ring: 39 100% 26%;
+    color-scheme: light;
 
     --radius: 0.5rem;
 
-    /* Sidebar — charcoal zinc-900 */
-    --sidebar-background: 240 6% 10%;
-    --sidebar-foreground: 240 5% 91%;
+    /* Light navigation surfaces */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 30 10% 18%;
     --sidebar-primary: 40 100% 48%;
-    --sidebar-primary-foreground: 240 6% 10%;
-    --sidebar-accent: 240 4% 16%;
-    --sidebar-accent-foreground: 240 5% 91%;
-    --sidebar-border: 240 4% 16%;
+    --sidebar-primary-foreground: 30 10% 12%;
+    --sidebar-accent: 40 20% 96%;
+    --sidebar-accent-foreground: 30 10% 12%;
+    --sidebar-border: 30 12% 90%;
     --sidebar-ring: 40 100% 48%;
 
     /* Typography — Inter only */
@@ -77,66 +78,6 @@
     --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.08);
   }
 
-  .dark {
-    /* Field Utility dark mode — warm near-black surfaces (zinc-900/800 warm shift) */
-    --background: 24 8% 8%;
-    --foreground: 40 20% 91%;
-
-    --card: 24 6% 12%;
-    --card-foreground: 40 20% 91%;
-
-    --popover: 24 6% 12%;
-    --popover-foreground: 40 20% 91%;
-
-    /* Amber-brown primary — brightened for dark mode readability */
-    --primary: 39 100% 45%;
-    --primary-foreground: 24 8% 8%;
-
-    /* Warm dark secondary */
-    --secondary: 28 6% 18%;
-    --secondary-foreground: 40 20% 91%;
-
-    /* Warm muted dark */
-    --muted: 28 5% 15%;
-    --muted-foreground: 33 15% 55%;
-
-    /* Bright amber accent — unchanged */
-    --accent: 40 100% 48%;
-    --accent-foreground: 24 8% 8%;
-
-    /* Status colors */
-    --success: 142 52% 48%;
-    --success-foreground: 0 0% 100%;
-
-    --warning: 40 100% 48%;
-    --warning-foreground: 24 8% 8%;
-
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Pending state */
-    --pending: 43 96% 56%;
-    --pending-foreground: 24 8% 8%;
-
-    /* Approved state */
-    --approved: 158 44% 48%;
-    --approved-foreground: 0 0% 100%;
-
-    /* Warm dark borders */
-    --border: 28 7% 20%;
-    --input: 28 7% 20%;
-    --ring: 39 100% 45%;
-
-    /* Sidebar — charcoal-amber, consistent with light mode sidebar */
-    --sidebar-background: 24 8% 6%;
-    --sidebar-foreground: 40 20% 91%;
-    --sidebar-primary: 40 100% 48%;
-    --sidebar-primary-foreground: 24 8% 6%;
-    --sidebar-accent: 24 6% 12%;
-    --sidebar-accent-foreground: 40 20% 91%;
-    --sidebar-border: 24 5% 14%;
-    --sidebar-ring: 40 100% 48%;
-  }
 }
 
 @layer base {
