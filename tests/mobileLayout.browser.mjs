@@ -49,7 +49,11 @@ await build({
           saving: false, deleting: false }; }
           export async function uploadCostReceipt() { return 'synthetic/receipt.jpg'; }
           export async function prepareReceiptForScan() { return {}; }
-          export async function extractCostReceipt() { return { extraction: ${JSON.stringify(extraction)} }; }
+          export async function extractCostReceipt() {
+            window.__receiptScanCalls = (window.__receiptScanCalls || 0) + 1;
+            await new Promise(resolve => { window.__finishReceiptScan = resolve; });
+            return { extraction: ${JSON.stringify(extraction)} };
+          }
           export async function findCostDuplicates() { return []; }
           export async function getCostReceiptUrl() { return ''; }
         `;
@@ -105,6 +109,15 @@ try {
     });
     await check('camera photo selected');
     await page.getByTestId('button-scan-receipt').click();
+    await page.waitForFunction(() => typeof window.__finishReceiptScan === 'function');
+    assert.equal(await page.getByRole('status').filter({ hasText: 'Scanning receipt…' }).count(), 1);
+    assert.equal(await page.getByText(/Scanning/i).count(), 1, 'Only one scanning indicator is visible');
+    assert.equal(await page.getByRole('button', { name: 'Add cost', exact: true }).isDisabled(), true);
+    assert.equal(await page.getByTestId('button-scan-receipt').isDisabled(), true);
+    assert.equal(await page.evaluate(() => window.__receiptScanCalls), 1);
+    await check('single scanning indicator');
+    if (width === 360) await page.screenshot({ path: 'generated-artifacts/receipt-scanning-360.jpg' });
+    await page.evaluate(() => window.__finishReceiptScan());
     await page.getByLabel('Receipt scan review').waitFor();
     await check('scanned editable review');
     await page.getByRole('button', { name: 'Add row', exact: true }).click({ timeout: 5000 }).catch(async error => {

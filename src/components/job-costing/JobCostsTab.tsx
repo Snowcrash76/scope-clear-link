@@ -432,8 +432,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         <DialogContent className="max-h-[92dvh] min-w-0 [overflow-wrap:anywhere] overflow-y-auto sm:max-w-2xl" data-testid="dialog-job-cost">
           <DialogHeader><DialogTitle>{editing ? 'Edit job cost' : 'Add a job cost'}</DialogTitle><DialogDescription>Record the actual expense. Use draft while it needs checking; confirmed costs count towards profit.</DialogDescription></DialogHeader>
           <form onSubmit={handleSave} className="min-w-0 max-w-full space-y-4">
-            {!editing && <ReceiptScanControls file={previewFile} busy={scanBusy || submitting} uploaded={!!uploadedReceiptPath && uploadedReceiptFile === previewFile} onFileChange={onSelectFile} onScan={scanReceipt} />}
-            {scanBusy && <p role="status" className="rounded-md border border-amber-300 bg-amber-50/70 px-3 py-2 text-sm text-amber-900">Uploading original and scanning receipt…</p>}
+            {!editing && <ReceiptScanControls file={previewFile} busy={scanBusy || submitting} scanning={scanBusy} uploaded={!!uploadedReceiptPath && uploadedReceiptFile === previewFile} onFileChange={onSelectFile} onScan={scanReceipt} />}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Supplier" id="cost-supplier" error={fieldErrors.supplier}><Input id="cost-supplier" value={form.supplier} maxLength={200} onChange={e => updateForm('supplier', e.target.value)} placeholder="Supplier or crew" required /></Field>
               <Field label="Date" id="cost-date" error={fieldErrors.cost_date}><Input id="cost-date" type="date" value={form.cost_date} onChange={e => updateForm('cost_date', e.target.value)} required /></Field>
@@ -504,7 +503,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
             {duplicateLoading && duplicateQueryKey && <p role="status" className="text-xs text-muted-foreground">Checking for matching costs…</p>}
             {(formError || Object.keys(fieldErrors).length > 0) && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{formError || 'Please correct the highlighted fields.'}</p>}
             {formError && isJobCostSetupError(formError) && <JobCostSetupHelp scopeLinksOnly={formError.startsWith('Included-work linking')} />}
-            <DialogFooter className="sticky bottom-[-1px] -mx-1 gap-2 border-t bg-background/95 pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:pt-0"><Button type="button" variant="outline" className="min-h-11" disabled={submitting || scanBusy} onClick={closeForm}>Cancel</Button><Button type="submit" className="min-h-11" disabled={saving || submitting || scanBusy || duplicateLoading || !!duplicateError}>{scanBusy ? 'Scanning…' : submitting ? 'Saving…' : editing ? 'Save changes' : 'Add cost'}</Button></DialogFooter>
+            <DialogFooter className="sticky bottom-[-1px] -mx-1 gap-2 border-t bg-background/95 pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:pt-0"><Button type="button" variant="outline" className="min-h-11" disabled={submitting || scanBusy} onClick={closeForm}>Cancel</Button><Button type="submit" className="min-h-11" disabled={saving || submitting || scanBusy || duplicateLoading || !!duplicateError}>{submitting ? 'Saving…' : editing ? 'Save changes' : 'Add cost'}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

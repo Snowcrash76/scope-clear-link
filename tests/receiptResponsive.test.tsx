@@ -32,6 +32,16 @@ test('receipt line items keep description and line total readable in a shrinkabl
   }
 });
 
+test('receipt controls announce one scan status and do not call saving a scan', () => {
+  const file = new File(['synthetic'], 'receipt.jpg', { type: 'image/jpeg' });
+  const props = { file, uploaded: true, busy: true, onFileChange: () => {}, onScan: () => {} };
+  const scanning = renderToStaticMarkup(createElement(ReceiptScanControls, { ...props, scanning: true }));
+  assert.equal((scanning.match(/Scanning receipt/g) ?? []).length, 1);
+  assert.match(scanning, /role="status"/);
+  const saving = renderToStaticMarkup(createElement(ReceiptScanControls, { ...props, scanning: false }));
+  assert.doesNotMatch(saving, /Scanning/);
+});
+
 test('saved receipts show each individual item price and retain the independent bill total', () => {
   const html = renderToStaticMarkup(createElement(ReceiptItemsSummary, {
     items: [

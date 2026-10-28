@@ -6,12 +6,13 @@ import { validateReceiptFile } from '@/hooks/useJobCosts';
 type ReceiptScanControlsProps = {
   file: File | null;
   busy: boolean;
+  scanning?: boolean;
   uploaded: boolean;
   onFileChange: (file: File | null) => void;
   onScan: () => void;
 };
 
-export function ReceiptScanControls({ file, busy, uploaded, onFileChange, onScan }: ReceiptScanControlsProps) {
+export function ReceiptScanControls({ file, busy, scanning = false, uploaded, onFileChange, onScan }: ReceiptScanControlsProps) {
   const [previewUrl, setPreviewUrl] = useState('');
   const [error, setError] = useState('');
 
@@ -64,7 +65,7 @@ export function ReceiptScanControls({ file, busy, uploaded, onFileChange, onScan
             <span className="min-w-0 break-words text-xs text-muted-foreground">{file.name} · {(file.size / 1024 / 1024).toFixed(2)} MB</span>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
               {uploaded && <span className="text-[11px] text-muted-foreground">Original attached privately</span>}
-              <Button type="button" size="sm" className="min-h-11 w-full sm:w-auto" onClick={onScan} disabled={busy} data-testid="button-scan-receipt"><ScanLine className="mr-2 h-4 w-4" />{busy ? 'Scanning…' : uploaded ? 'Scan again' : 'Scan receipt'}</Button>
+              <Button type="button" size="sm" className="min-h-11 w-full sm:w-auto" onClick={onScan} disabled={busy} data-testid="button-scan-receipt"><ScanLine className="mr-2 h-4 w-4" />{scanning ? <span role="status" aria-live="polite">Scanning receipt…</span> : uploaded ? 'Scan again' : 'Scan receipt'}</Button>
             </div>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">When you press Scan, the receipt file is sent to Perplexity and the selected AI provider for reading. The original file is stored privately with this job.</p>
