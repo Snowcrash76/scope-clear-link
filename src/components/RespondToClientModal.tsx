@@ -175,13 +175,13 @@ export function RespondToClientModal({
 
           {/* Actions */}
           <div className="flex gap-3 pt-4 border-t">
-            <Button variant="outline" onClick={onClose} className="flex-1">
+            <Button variant="outline" onClick={onClose} className="min-h-11 flex-1">
               Cancel
             </Button>
             <Button 
               onClick={handleSubmit} 
               disabled={isSubmitting || !title.trim() || !description.trim()}
-              className="flex-1"
+              className="min-h-11 flex-1"
             >
               <Send className="w-4 h-4 mr-2" />
               {isSubmitting ? 'Sending...' : 'Send to Client'}

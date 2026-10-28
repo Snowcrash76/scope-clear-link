@@ -393,12 +393,12 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
           <Card key={String(label)} className="p-3 sm:p-4"><p className="text-[11px] font-medium text-muted-foreground sm:text-xs">{label}</p><p className="mt-1 truncate text-sm font-bold tabular-nums sm:text-lg">{error ? 'Unavailable' : aud(Number(value))}</p></Card>
         ))}
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Label htmlFor="cost-category-filter" className="text-xs text-muted-foreground">Category</Label>
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger id="cost-category-filter" className="h-9 w-[155px]" data-testid="select-cost-category-filter"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem>{COST_CATEGORIES.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent></Select>
-        <Label htmlFor="cost-status-filter" className="ml-1 text-xs text-muted-foreground">Status</Label>
-        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger id="cost-status-filter" className="h-9 w-[140px]" data-testid="select-cost-status-filter"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="draft">Drafts</SelectItem><SelectItem value="confirmed">Confirmed</SelectItem></SelectContent></Select>
-        <span className="ml-auto text-xs text-muted-foreground">{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
+      <div className="grid grid-cols-2 items-end gap-2 sm:flex sm:flex-wrap">
+        <div className="min-w-0 space-y-1"><Label htmlFor="cost-category-filter" className="text-xs text-muted-foreground">Category</Label>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger id="cost-category-filter" className="h-11 w-full sm:h-9 sm:w-[155px]" data-testid="select-cost-category-filter"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem>{COST_CATEGORIES.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent></Select></div>
+        <div className="min-w-0 space-y-1"><Label htmlFor="cost-status-filter" className="text-xs text-muted-foreground">Status</Label>
+        <Select value={statusFilter} onValueChange={setStatusFilter}><SelectTrigger id="cost-status-filter" className="h-11 w-full sm:h-9 sm:w-[140px]" data-testid="select-cost-status-filter"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="draft">Drafts</SelectItem><SelectItem value="confirmed">Confirmed</SelectItem></SelectContent></Select></div>
+        <span className="col-span-2 text-right text-xs text-muted-foreground sm:ml-auto">{filtered.length} {filtered.length === 1 ? 'entry' : 'entries'}</span>
       </div>
       {error && <Card className="border-amber-300 bg-amber-50/70 p-4"><div className="flex gap-3"><AlertCircle className="h-5 w-5 shrink-0 text-amber-700" /><div className="flex-1"><p className="text-sm font-semibold">Could not load job costs</p><p className="mt-1 text-sm text-muted-foreground">{errText(error)}</p>{isJobCostSetupError(error) && <JobCostSetupHelp />}<Button variant="outline" size="sm" className="mt-3" onClick={() => refetch()}><RefreshCw className="mr-2 h-3.5 w-3.5" />Retry</Button></div></div></Card>}
       {loading ? <Card className="animate-pulse space-y-3 p-5"><div className="h-5 w-1/3 rounded bg-muted" /><div className="h-12 rounded bg-muted/70" /><div className="h-12 rounded bg-muted/70" /></Card>
@@ -416,7 +416,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                 {hasStoredScanData(cost) && <Button variant="link" size="sm" className="mt-1 h-8 px-0" onClick={() => setLineItemsTarget(cost)} data-testid={`button-view-line-items-${cost.id}`}>View line items</Button>}
                 {cost.receipt_image_url && <Button variant="link" size="sm" className="mt-1 h-8 px-0" disabled={openingReceipt === cost.id} onClick={() => viewReceipt(cost)}><Paperclip className="mr-1.5 h-3.5 w-3.5" />{openingReceipt === cost.id ? 'Opening…' : 'View receipt'}</Button>}
               </div>
-              <div className="flex shrink-0 gap-1 sm:justify-end"><Button variant="ghost" size="sm" onClick={() => startEdit(cost)} aria-label={`Edit ${cost.supplier}`} data-testid={`button-edit-cost-${cost.id}`}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(cost)} aria-label={`Delete ${cost.supplier}`} data-testid={`button-delete-cost-${cost.id}`}><Trash2 className="h-4 w-4" /></Button></div>
+              <div className="flex shrink-0 gap-1 sm:justify-end"><Button variant="ghost" size="sm" className="min-h-11" onClick={() => startEdit(cost)} aria-label={`Edit ${cost.supplier}`} data-testid={`button-edit-cost-${cost.id}`}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button variant="ghost" size="icon" className="h-11 w-11 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(cost)} aria-label={`Delete ${cost.supplier}`} data-testid={`button-delete-cost-${cost.id}`}><Trash2 className="h-4 w-4" /></Button></div>
             </div>
           </Card>
         ))}</div>}
@@ -496,7 +496,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
             {duplicateLoading && duplicateQueryKey && <p role="status" className="text-xs text-muted-foreground">Checking for matching costs…</p>}
             {(formError || Object.keys(fieldErrors).length > 0) && <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">{formError || 'Please correct the highlighted fields.'}</p>}
             {formError && isJobCostSetupError(formError) && <JobCostSetupHelp scopeLinksOnly={formError.startsWith('Included-work linking')} />}
-            <DialogFooter className="sticky bottom-[-1px] -mx-1 border-t bg-background/95 pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:pt-0"><Button type="button" variant="outline" disabled={submitting || scanBusy} onClick={closeForm}>Cancel</Button><Button type="submit" disabled={saving || submitting || scanBusy || duplicateLoading || !!duplicateError}>{scanBusy ? 'Scanning…' : submitting ? 'Saving…' : editing ? 'Save changes' : 'Add cost'}</Button></DialogFooter>
+            <DialogFooter className="sticky bottom-[-1px] -mx-1 gap-2 border-t bg-background/95 pt-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:pt-0"><Button type="button" variant="outline" className="min-h-11" disabled={submitting || scanBusy} onClick={closeForm}>Cancel</Button><Button type="submit" className="min-h-11" disabled={saving || submitting || scanBusy || duplicateLoading || !!duplicateError}>{scanBusy ? 'Scanning…' : submitting ? 'Saving…' : editing ? 'Save changes' : 'Add cost'}</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

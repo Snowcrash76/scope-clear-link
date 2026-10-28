@@ -450,16 +450,16 @@ export default function ProjectManage() {
   return (
     <AppShell>
       {/* Project sub-header */}
-      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-14 lg:top-0 z-20">
+      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-16 lg:top-0 z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-3">
-              <Button variant="ghost" size="icon" className="mt-0.5 flex-shrink-0" onClick={() => navigate('/dashboard')}>
+            <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+              <Button variant="ghost" size="icon" className="mt-0.5 h-11 w-11 flex-shrink-0" aria-label="Back to dashboard" onClick={() => navigate('/dashboard')}>
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div>
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="font-heading text-xl sm:text-2xl font-bold">{project.name}</h1>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <h1 className="max-w-full break-words font-heading text-xl sm:text-2xl font-bold">{project.name}</h1>
                   <Badge variant={
                     project.status === 'draft' ? 'secondary' :
                     project.status === 'sent' ? 'pending' :
@@ -486,9 +486,9 @@ export default function ProjectManage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
               {project.status === 'draft' && (
-                <Button variant="accent" size="sm" onClick={handleSendToClient}>
+                <Button variant="accent" size="sm" className="min-h-11" aria-label="Send job to client" onClick={handleSendToClient}>
                   <Send className="w-4 h-4" />
                   <span className="hidden sm:inline ml-2">Send to Client</span>
                 </Button>
@@ -499,6 +499,8 @@ export default function ProjectManage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-11 w-11"
+                      aria-label="Copy client preview link"
                       onClick={handleCopyClientLink}
                       data-testid="button-copy-client-link"
                     >
@@ -516,6 +518,8 @@ export default function ProjectManage() {
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="h-11 w-11"
+                      aria-label="Preview client page"
                       onClick={() => window.open(getClientProjectUrl(project.id), '_blank', 'noopener,noreferrer')}
                       data-testid="button-preview-client-page"
                     >
@@ -531,7 +535,7 @@ export default function ProjectManage() {
               {/* Project actions menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" data-testid="button-project-actions-menu">
+                  <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Project actions" data-testid="button-project-actions-menu">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -650,11 +654,11 @@ export default function ProjectManage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
             <TabsList className="w-max sm:w-auto inline-flex flex-nowrap justify-start">
-              <TabsTrigger value="quote">
+              <TabsTrigger value="quote" className="min-h-11">
                 <FileText className="w-4 h-4 mr-1 hidden sm:block" />
                 Quote
               </TabsTrigger>
-              <TabsTrigger value="invoices">
+              <TabsTrigger value="invoices" className="min-h-11">
                 <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
                 Invoices
                 {invoices.length > 0 && (
@@ -663,11 +667,11 @@ export default function ProjectManage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="costs">
+              <TabsTrigger value="costs" className="min-h-11">
                 <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
                 Costs
               </TabsTrigger>
-              <TabsTrigger value="changes">
+              <TabsTrigger value="changes" className="min-h-11">
                 Variations
                 {pendingClientRequests.length > 0 && (
                   <Badge variant="pending" className="ml-2">
@@ -675,8 +679,8 @@ export default function ProjectManage() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="stages">Stages</TabsTrigger>
-              <TabsTrigger value="documents">
+              <TabsTrigger value="stages" className="min-h-11">Stages</TabsTrigger>
+              <TabsTrigger value="documents" className="min-h-11">
                 Documents
                 {showDocNotification && (
                   <Badge variant="pending" className="ml-2">
@@ -693,9 +697,9 @@ export default function ProjectManage() {
 
           {/* Changes Tab */}
           <TabsContent value="changes" className="mt-0 space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-heading text-lg font-semibold">Variations</h2>
-              <Button onClick={() => setIsSendingChangeRequest(true)}>
+              <Button className="min-h-11 w-full sm:w-auto" onClick={() => setIsSendingChangeRequest(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 + Add Variation
               </Button>

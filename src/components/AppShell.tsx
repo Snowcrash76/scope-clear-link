@@ -127,7 +127,7 @@ function SidebarInner({
       <div className="px-4 pt-5 pb-2">
         <button
           onClick={() => act(onNewJob)}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold text-sm transition-colors active:scale-95"
+          className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-zinc-900 font-bold text-sm transition-colors active:scale-95"
           data-testid="button-sidebar-new-job"
         >
           <Plus className="w-4 h-4" />
@@ -143,7 +143,7 @@ function SidebarInner({
             to={to}
             onClick={() => onClose?.()}
             className={cn(
-              'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
+              'flex min-h-11 items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
               active
                 ? 'border-l-4 border-amber-500 bg-amber-50 text-amber-800'
                 : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg mx-1'
@@ -159,7 +159,7 @@ function SidebarInner({
             to="/admin"
             onClick={() => onClose?.()}
             className={cn(
-              'flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
+              'flex min-h-11 items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
               currentPath.startsWith('/admin')
                 ? 'border-l-4 border-amber-500 bg-amber-50 text-amber-800'
                 : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg mx-1'
@@ -176,7 +176,7 @@ function SidebarInner({
       <div className="border-t border-zinc-200 pt-3 pb-5 space-y-0.5">
         <button
           onClick={() => act(onOpenSettings)}
-          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+          className="w-full min-h-11 flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
           data-testid="button-sidebar-settings"
         >
           <Settings className="w-4 h-4 flex-shrink-0" />
@@ -194,7 +194,7 @@ function SidebarInner({
             <button
               onClick={() => act(onSignOut)}
               title="Sign out"
-              className="p-1.5 rounded hover:bg-zinc-100 transition-colors flex-shrink-0"
+              className="h-11 w-11 rounded hover:bg-zinc-100 transition-colors flex-shrink-0 inline-flex items-center justify-center"
               data-testid="button-sidebar-sign-out"
             >
               <LogOut className="w-3.5 h-3.5 text-zinc-600" />
@@ -416,7 +416,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Mobile sidebar sheet */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="p-0 w-64 border-0">
+        <SheetContent side="left" className="p-0 w-[min(20rem,85vw)] max-w-none border-0">
           <SheetTitle className="sr-only">Navigation</SheetTitle>
           <SidebarInner {...sidebarProps} onClose={() => setMobileOpen(false)} />
         </SheetContent>
@@ -425,10 +425,11 @@ export function AppShell({ children }: AppShellProps) {
       {/* Page content */}
       <div className="flex-1 lg:pl-64 min-w-0 flex flex-col">
         {/* Mobile top bar */}
-        <div className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-zinc-200 bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-30">
+        <div className="lg:hidden flex h-16 shrink-0 items-center gap-3 px-4 py-2 border-b border-zinc-200 bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-30">
           <button
             onClick={() => setMobileOpen(true)}
-            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+            aria-label="Open navigation"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg hover:bg-muted transition-colors"
             data-testid="button-mobile-menu"
           >
             <Menu className="w-5 h-5" />

@@ -181,14 +181,14 @@ export default function InvoicesPage() {
             <p className="text-sm text-muted-foreground mt-0.5">All invoices across your jobs</p>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex w-full items-center gap-2 flex-wrap sm:w-auto sm:justify-end">
             {/* Status filter */}
             <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={isStatusFiltered ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="min-h-11 flex-1 gap-2 sm:flex-none"
                   data-testid="button-invoice-status-filter"
                 >
                   <ListFilter className="w-4 h-4" />
@@ -236,7 +236,7 @@ export default function InvoicesPage() {
                 <Button
                   variant={isDateFiltered ? 'default' : 'outline'}
                   size="sm"
-                  className="gap-2"
+                  className="min-h-11 flex-1 gap-2 sm:flex-none"
                   data-testid="button-invoice-filter"
                 >
                   <CalendarRange className="w-4 h-4" />
@@ -294,7 +294,7 @@ export default function InvoicesPage() {
             {isFiltered && (
               <button
                 onClick={clearAll}
-                className="p-1.5 rounded hover:bg-muted transition-colors"
+                className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-muted transition-colors"
                 title="Clear all filters"
                 data-testid="button-invoice-filter-clear-badge"
               >
@@ -306,7 +306,7 @@ export default function InvoicesPage() {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="min-h-11 w-full gap-2 sm:w-auto"
               disabled={isLoading || filtered.length === 0}
               onClick={() => exportInvoicesCSV(filtered)}
               data-testid="button-invoice-export-csv"
@@ -377,9 +377,9 @@ export default function InvoicesPage() {
                   {/* Mobile layout */}
                   <div className="flex items-center gap-3 px-4 py-3.5 sm:hidden">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{inv.projectName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{inv.clientName} · {format(parseISO(inv.created_at), 'd MMM yyyy')}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <p className="text-sm font-medium break-words">{inv.projectName}</p>
+                      <p className="text-xs text-muted-foreground break-words">{inv.clientName} · {format(parseISO(inv.created_at), 'd MMM yyyy')}</p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
                         <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold capitalize', STATUS_VARIANTS[inv.status])}>
                           {inv.status}
                         </span>

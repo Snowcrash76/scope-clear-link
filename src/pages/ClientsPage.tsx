@@ -187,14 +187,15 @@ export default function ClientsPage() {
                   <div className="flex items-center gap-3 px-4 py-3.5 sm:hidden">
                     <ClientInitial name={client.name} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{client.name}</p>
-                      {client.email && <p className="text-xs text-muted-foreground truncate">{client.email}</p>}
-                      {client.address && <p className="text-xs text-muted-foreground truncate">{client.address}</p>}
+                      <p className="text-sm font-medium break-words">{client.name}</p>
+                      {client.email && <p className="text-xs text-muted-foreground break-words">{client.email}</p>}
+                      {client.address && <p className="text-xs text-muted-foreground break-words">{client.address}</p>}
                     </div>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => openEdit(client)}
-                        className="p-1.5 rounded hover:bg-muted transition-colors"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-muted transition-colors"
+                        aria-label={`Edit ${client.name}`}
                         title="Edit client"
                         data-testid={`button-edit-client-${client.key}`}
                       >
@@ -202,7 +203,8 @@ export default function ClientsPage() {
                       </button>
                       <button
                         onClick={() => setDeleteClient(client)}
-                        className="p-1.5 rounded hover:bg-destructive/10 transition-colors"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-destructive/10 transition-colors"
+                        aria-label={`Delete ${client.name}`}
                         title="Delete client"
                         data-testid={`button-delete-client-${client.key}`}
                       >
@@ -289,8 +291,8 @@ export default function ClientsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditClient(null)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving || !editForm.name.trim()} data-testid="button-save-client">
+            <Button variant="outline" className="min-h-11" onClick={() => setEditClient(null)}>Cancel</Button>
+            <Button className="min-h-11" onClick={handleSave} disabled={saving || !editForm.name.trim()} data-testid="button-save-client">
               {saving ? 'Saving…' : 'Save changes'}
             </Button>
           </DialogFooter>
@@ -311,9 +313,10 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteClient(null)}>Cancel</Button>
+            <Button variant="outline" className="min-h-11" onClick={() => setDeleteClient(null)}>Cancel</Button>
             <Button
               variant="destructive"
+              className="min-h-11"
               onClick={handleDelete}
               disabled={deleting}
               data-testid="button-confirm-delete-client"

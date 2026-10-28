@@ -118,9 +118,9 @@ export default function QuotesPage() {
                   {/* Mobile layout */}
                   <div className="flex items-center gap-3 px-4 py-3.5 sm:hidden">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{q.projectName}</p>
-                      <p className="text-xs text-muted-foreground truncate">{q.clientName} · {format(new Date(q.created_at), 'd MMM yyyy')}</p>
-                      <div className="flex items-center gap-2 mt-1.5">
+                      <p className="text-sm font-medium break-words">{q.projectName}</p>
+                      <p className="text-xs text-muted-foreground break-words">{q.clientName} · {format(new Date(q.created_at), 'd MMM yyyy')}</p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
                         <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold capitalize', STATUS_VARIANTS[q.status])}>
                           {q.status}
                         </span>

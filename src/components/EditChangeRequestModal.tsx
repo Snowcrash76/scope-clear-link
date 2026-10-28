@@ -133,7 +133,7 @@ export function EditChangeRequestModal({
           <div className="space-y-2">
             <Label>Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
-              <SelectTrigger>
+              <SelectTrigger className="min-h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -232,16 +232,17 @@ export function EditChangeRequestModal({
             <Button 
               variant="destructive" 
               onClick={handleDelete}
-              className="sm:mr-auto"
+              className="min-h-11 sm:mr-auto"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete
             </Button>
           )}
-          <Button variant="ghost" onClick={handleClose}>
+          <Button variant="ghost" className="min-h-11" onClick={handleClose}>
             Cancel
           </Button>
           <Button 
+            className="min-h-11"
             onClick={handleSave}
             disabled={saving || !title.trim() || !description.trim()}
           >

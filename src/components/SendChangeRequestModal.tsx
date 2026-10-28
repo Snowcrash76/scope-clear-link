@@ -106,7 +106,7 @@ export function SendChangeRequestModal({
           <div className="space-y-2">
             <Label>Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as typeof type)}>
-              <SelectTrigger>
+            <SelectTrigger className="min-h-11">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -203,10 +203,11 @@ export function SendChangeRequestModal({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={handleClose}>
+            <Button variant="ghost" className="min-h-11" onClick={handleClose}>
             Cancel
           </Button>
-          <Button 
+            <Button
+              className="min-h-11"
             variant="accent"
             onClick={handleSend}
             disabled={saving || !title.trim() || !description.trim()}

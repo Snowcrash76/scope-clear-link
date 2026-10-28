@@ -75,26 +75,26 @@ function ProjectListItem({
       <ProjectInitial name={project.name} />
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="font-semibold text-sm truncate">{project.name}</span>
-          <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
+          <span className="min-w-0 font-semibold text-sm break-words">{project.name}</span>
+          <span className={cn('inline-flex max-w-full items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
             {STATUS_LABELS[project.status]}
           </span>
         </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <User className="w-3 h-3" />
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="min-w-0 flex items-start gap-1 break-words">
+            <User className="mt-0.5 w-3 h-3 flex-shrink-0" />
             {project.clientName}
           </span>
           {resolvedVariations > 0 && (
             <span className="flex items-center gap-1">
-              <GitBranch className="w-3 h-3" />
+              <GitBranch className="w-3 h-3 flex-shrink-0" />
               {resolvedVariations} extra{resolvedVariations > 1 ? 's' : ''} & change{resolvedVariations > 1 ? 's' : ''} resolved
             </span>
           )}
           {pendingVariations > 0 && (
             <span className="flex items-center gap-1 text-warning font-medium">
-              <GitBranch className="w-3 h-3" />
+              <GitBranch className="w-3 h-3 flex-shrink-0" />
               {pendingVariations} pending
             </span>
           )}
@@ -123,9 +123,9 @@ function ProjectListItem({
 
 function SupportWidget() {
   return (
-    <div className="fixed bottom-6 right-6 z-50 group">
+      <div className="fixed bottom-3 right-3 z-50 group sm:bottom-6 sm:right-6">
       <button
-        className="flex items-center gap-2 px-3 py-2 rounded-full shadow-lg text-xs font-medium transition-all duration-200 bg-zinc-900 text-zinc-100"
+        className="flex min-h-11 items-center gap-2 px-3 py-2 rounded-full shadow-lg text-xs font-medium transition-all duration-200 bg-zinc-900 text-zinc-100"
         style={{ boxShadow: '0 4px 16px -4px rgba(0,0,0,0.25)' }}
         data-testid="button-contact-support"
       >
@@ -256,7 +256,7 @@ export default function TradeDashboard() {
             />
           </div>
         </div>
-        <DialogFooter className="mt-2">
+          <DialogFooter className="mt-2 gap-2 sm:gap-0">
           <Button
             variant="outline"
             onClick={() => setShowExportDialog(false)}
@@ -308,7 +308,7 @@ export default function TradeDashboard() {
             size="sm"
             onClick={handleExportReport}
             disabled={isExporting || loading}
-            className="flex items-center gap-2 flex-shrink-0"
+            className="min-h-11 flex items-center gap-2 flex-shrink-0"
             data-testid="button-export-report"
           >
             <Download className="w-4 h-4" />
@@ -323,7 +323,7 @@ export default function TradeDashboard() {
 
         {/* Active projects */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between gap-2 mb-3">
             <h2 className="font-heading text-base font-semibold">Active Jobs</h2>
             <button
               onClick={() => navigate('/dashboard')}

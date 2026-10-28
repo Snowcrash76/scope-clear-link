@@ -100,13 +100,13 @@ export default function ProjectsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 mb-5 border-b">
+        <div className="mb-5 -mx-4 flex items-center gap-1 overflow-x-auto border-b px-4 [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0">
           {TABS.map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+                'flex min-h-11 shrink-0 items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
                 tab === t.key
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -159,16 +159,16 @@ export default function ProjectsPage() {
                   >
                     <ProjectInitial name={project.name} />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-semibold text-sm truncate">{project.name}</span>
-                        <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
+                        <span className="min-w-0 font-semibold text-sm break-words">{project.name}</span>
+                        <span className={cn('inline-flex max-w-full items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
                           {STATUS_LABELS[project.status]}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><User className="w-3 h-3" />{project.clientName}</span>
-                        {pending > 0 && <span className="flex items-center gap-1 text-warning font-medium"><GitBranch className="w-3 h-3" />{pending} pending</span>}
-                        {resolved > 0 && <span className="flex items-center gap-1"><GitBranch className="w-3 h-3" />{resolved} resolved</span>}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="min-w-0 flex items-start gap-1 break-words"><User className="mt-0.5 w-3 h-3 flex-shrink-0" />{project.clientName}</span>
+                        {pending > 0 && <span className="flex items-center gap-1 text-warning font-medium"><GitBranch className="w-3 h-3 flex-shrink-0" />{pending} pending</span>}
+                        {resolved > 0 && <span className="flex items-center gap-1"><GitBranch className="w-3 h-3 flex-shrink-0" />{resolved} resolved</span>}
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2">
                         {profitabilityQuery.isLoading ? <span className="h-5 w-24 animate-pulse rounded bg-muted" aria-label="Loading job profitability" /> :
@@ -196,7 +196,7 @@ export default function ProjectsPage() {
                       <DropdownMenuTrigger asChild>
                         <button
                           onClick={e => e.stopPropagation()}
-                          className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground flex-shrink-0"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground flex-shrink-0"
                           data-testid={`button-project-menu-${project.id}`}
                         >
                           <MoreVertical className="w-4 h-4" />
