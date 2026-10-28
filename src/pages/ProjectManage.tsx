@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ImageDisplay } from '@/components/ImageUpload';
 import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
@@ -15,6 +15,7 @@ import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { RespondToClientModal } from '@/components/RespondToClientModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
+import { JobSectionMenu } from '@/components/JobSectionMenu';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import {
   Dialog,
@@ -61,7 +62,6 @@ import {
   Copy,
   Loader2,
   FileText,
-  Receipt,
   RefreshCw,
   AlertCircle,
   X,
@@ -652,51 +652,24 @@ export default function ProjectManage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
-          <div className="w-full min-w-0 max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
-            <TabsList className="w-max inline-flex flex-nowrap justify-start">
-              <TabsTrigger value="quote" className="min-h-11">
-                <FileText className="w-4 h-4 mr-1 hidden sm:block" />
-                Quote
-              </TabsTrigger>
-              <TabsTrigger value="invoices" className="min-h-11">
-                <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
-                Invoices
-                {invoices.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">
-                    {invoices.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="costs" className="min-h-11">
-                <Receipt className="w-4 h-4 mr-1 hidden sm:block" />
-                Costs
-              </TabsTrigger>
-              <TabsTrigger value="changes" className="min-h-11">
-                Variations
-                {pendingClientRequests.length > 0 && (
-                  <Badge variant="pending" className="ml-2">
-                    {pendingClientRequests.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="stages" className="min-h-11">Stages</TabsTrigger>
-              <TabsTrigger value="documents" className="min-h-11">
-                Documents
-                {showDocNotification && (
-                  <Badge variant="pending" className="ml-2">
-                    {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-          </div>
+          <JobSectionMenu
+            value={activeTab}
+            onValueChange={setActiveTab}
+            invoiceCount={invoices.length}
+            pendingVariationCount={pendingClientRequests.length}
+            documentNotificationCount={
+              showDocNotification
+                ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
+                : 0
+            }
+          />
 
-          <TabsContent value="costs" className="mt-0">
+          <TabsContent value="costs" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Costs">
             <JobCostsTab jobId={project.id} />
           </TabsContent>
 
           {/* Changes Tab */}
-          <TabsContent value="changes" className="mt-0 space-y-6">
+          <TabsContent value="changes" className="mt-0 space-y-6" role="region" aria-labelledby={undefined} aria-label="Variations">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h2 className="font-heading text-lg font-semibold">Variations</h2>
               <Button className="min-h-11 w-full sm:w-auto" onClick={() => setIsSendingChangeRequest(true)}>
@@ -831,7 +804,7 @@ export default function ProjectManage() {
           </TabsContent>
 
           {/* Quote Tab */}
-          <TabsContent value="quote" className="mt-0 min-w-0 space-y-4">
+          <TabsContent value="quote" className="mt-0 min-w-0 space-y-4" role="region" aria-labelledby={undefined} aria-label="Quote">
             {activeQuote?.quoteToken && (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg bg-secondary/40 border border-border">
                 <div className="flex items-center gap-2 min-w-0">
@@ -916,7 +889,7 @@ export default function ProjectManage() {
           </TabsContent>
 
           {/* Invoices Tab */}
-          <TabsContent value="invoices" className="mt-0">
+          <TabsContent value="invoices" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Invoices">
             <InvoiceSection
               invoices={invoices}
               quote={activeQuote}
@@ -946,7 +919,7 @@ export default function ProjectManage() {
           </TabsContent>
 
           {/* Stages Tab */}
-          <TabsContent value="stages" className="mt-0">
+          <TabsContent value="stages" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Stages">
             <StageManager
               stages={project.stages}
               currentStageIndex={project.currentStageIndex}
@@ -964,7 +937,7 @@ export default function ProjectManage() {
           </TabsContent>
 
           {/* Documents Tab */}
-          <TabsContent value="documents" className="mt-0">
+          <TabsContent value="documents" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Documents">
             <DocumentsSection
               projectId={project.id}
               documents={documents}
