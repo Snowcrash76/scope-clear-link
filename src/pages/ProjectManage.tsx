@@ -566,7 +566,7 @@ export default function ProjectManage() {
         </div>
       </div>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Notification banners */}
         {(showActionRequired || showVariationUpdate || showDocNotification) && (
           <div className="space-y-3 mb-6">
@@ -651,9 +651,9 @@ export default function ProjectManage() {
           </div>
         )}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
-            <TabsList className="w-max sm:w-auto inline-flex flex-nowrap justify-start">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+          <div className="w-full min-w-0 max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0 mb-6">
+            <TabsList className="w-max inline-flex flex-nowrap justify-start">
               <TabsTrigger value="quote" className="min-h-11">
                 <FileText className="w-4 h-4 mr-1 hidden sm:block" />
                 Quote
@@ -831,9 +831,9 @@ export default function ProjectManage() {
           </TabsContent>
 
           {/* Quote Tab */}
-          <TabsContent value="quote" className="mt-0 space-y-4">
+          <TabsContent value="quote" className="mt-0 min-w-0 space-y-4">
             {activeQuote?.quoteToken && (
-              <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-secondary/40 border border-border">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg bg-secondary/40 border border-border">
                 <div className="flex items-center gap-2 min-w-0">
                   <ExternalLink className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <div className="min-w-0">
@@ -852,7 +852,7 @@ export default function ProjectManage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -862,6 +862,7 @@ export default function ProjectManage() {
                         description: 'Send this link to your client so they can review and accept the quote.',
                       });
                     }}
+                    className="w-full sm:w-auto"
                     data-testid="button-copy-quote-link"
                   >
                     <Copy className="w-4 h-4 mr-2" />
@@ -872,6 +873,7 @@ export default function ProjectManage() {
                     size="sm"
                     disabled={isRegeneratingToken}
                     onClick={() => setIsRegenerateConfirmOpen(true)}
+                    className="w-full sm:w-auto"
                     data-testid="button-regenerate-quote-link"
                   >
                     {isRegeneratingToken ? (

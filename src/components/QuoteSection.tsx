@@ -381,7 +381,7 @@ export function QuoteSection({
   // Creating new quote or editing
   if (isCreating || isEditing) {
     return (
-      <Card className="p-6 space-y-6">
+      <Card className="w-full min-w-0 p-4 sm:p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="font-heading text-lg font-semibold">
             {isCreating ? 'Create Quote' : 'Edit Quote'}
@@ -416,14 +416,14 @@ export function QuoteSection({
 
             {includedItems.map(item => (
               <div key={item.id} className="p-3 bg-muted/20">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1 pr-4">
-                    <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                  <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
+                    <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
                     {stripVariationMeta(item.description) && (
-                      <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(item.description))}</p>
+                      <p className="text-xs text-muted-foreground mt-1 break-words [overflow-wrap:anywhere]">{htmlToText(stripVariationMeta(item.description))}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full sm:w-auto items-center gap-2">
                     <span className="font-medium whitespace-nowrap">
                       ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </span>
@@ -458,15 +458,15 @@ export function QuoteSection({
               </div>
               {approvedChanges.map(change => (
                 <div key={change.id} className="p-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1 pr-4">
-                      <span className="text-sm font-medium">{change.title}</span>
+                  <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                    <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
+                      <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</span>
                       {stripVariationMeta(change.description) && (
-                        <p className="text-xs text-muted-foreground mt-1">{htmlToText(stripVariationMeta(change.description))}</p>
+                        <p className="text-xs text-muted-foreground mt-1 break-words [overflow-wrap:anywhere]">{htmlToText(stripVariationMeta(change.description))}</p>
                       )}
                     </div>
                     <span className={cn(
-                      "font-medium whitespace-nowrap",
+                      "font-medium whitespace-nowrap self-start",
                       change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                     )}>
                       {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
@@ -548,10 +548,10 @@ export function QuoteSection({
                           </div>
                         </div>
                       ) : (
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row items-start justify-between gap-2">
+                          <div className="w-full min-w-0 sm:flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-medium">{item.title}</span>
+                              <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</span>
                               {item.isVariation && (
                                 <Badge variant="outline" className="text-xs border-amber-400/60 text-amber-600 dark:text-amber-400">
                                   Variation
@@ -559,10 +559,10 @@ export function QuoteSection({
                               )}
                             </div>
                             {item.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{htmlToText(item.description)}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">{htmlToText(item.description)}</p>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 self-start">
                             <span className="text-sm font-medium whitespace-nowrap">
                               ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                             </span>
@@ -642,15 +642,15 @@ export function QuoteSection({
         </div>
 
         {/* Totals */}
-        <div className="space-y-3 border-t pt-4">
-          <div className="flex justify-between">
+        <div className="min-w-0 space-y-3 border-t pt-4">
+          <div className="flex justify-between gap-3">
             <span className="text-muted-foreground">Subtotal</span>
             <span className="font-medium">
               ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
             </span>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
             <Label htmlFor="taxRate" className="text-muted-foreground whitespace-nowrap">Tax Rate (%)</Label>
             <Input
               id="taxRate"
@@ -659,7 +659,7 @@ export function QuoteSection({
               onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
               className="w-24"
             />
-            <span className="ml-auto font-medium">
+            <span className="ml-auto font-medium whitespace-nowrap">
               ${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -723,7 +723,7 @@ export function QuoteSection({
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row gap-3 justify-end">
           <Button 
             variant="outline" 
             onClick={() => {
@@ -749,7 +749,7 @@ export function QuoteSection({
   const StatusIcon = config.icon;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 space-y-6">
       {/* Revised banner — trade view only */}
       {isTradeView && quote!.status === 'revised' && (
         <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
@@ -763,17 +763,17 @@ export function QuoteSection({
         </div>
       )}
       {/* Quote Header */}
-      <Card className="p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+      <Card className="w-full min-w-0 p-4 sm:p-6">
+        <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex min-w-0 items-start sm:items-center gap-3">
             <div className="p-2 rounded-lg bg-primary/10">
               <FileText className="w-5 h-5 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex flex-col gap-0.5">
-                <h3 className="font-heading font-semibold">{quote!.quoteNumber}</h3>
+                <h3 className="font-heading font-semibold break-words [overflow-wrap:anywhere]">{quote!.quoteNumber}</h3>
                 {editingRef ? (
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     <Input
                       value={quoteRef}
                       onChange={e => setQuoteRef(e.target.value)}
@@ -781,7 +781,7 @@ export function QuoteSection({
                         if (e.key === 'Enter') handleSaveRef();
                         if (e.key === 'Escape') { setEditingRef(false); setQuoteRef(quote!.reference ?? ''); }
                       }}
-                      className="h-6 text-xs w-44"
+                      className="h-7 text-xs w-full max-w-44"
                       autoFocus
                       placeholder="e.g. job address or note"
                       data-testid="input-quote-reference"
@@ -803,9 +803,9 @@ export function QuoteSection({
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1 group/ref">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1 group/ref">
                     {(quote!.reference || isTradeView) && (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="min-w-0 text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
                         {quote!.reference || <span className="italic opacity-60">Add reference</span>}
                       </p>
                     )}
@@ -827,7 +827,7 @@ export function QuoteSection({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 self-start sm:self-auto">
             <Badge variant={config.variant} className="gap-1.5">
               <StatusIcon className="w-3.5 h-3.5" />
               {config.label}
@@ -837,22 +837,22 @@ export function QuoteSection({
 
         {/* Actions (Trade View) */}
         {isTradeView && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
+          <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
+            <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
               <Eye className="w-4 h-4 mr-2" />
               View Quote
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+            <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
             {quote!.status === 'draft' && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button size="sm" onClick={handleSendQuote}>
+                <Button className="w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
                   <Send className="w-4 h-4 mr-2" />
                   Send to Client
                 </Button>
@@ -860,11 +860,11 @@ export function QuoteSection({
             )}
             {quote!.status === 'sent' && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportToXero}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportToXero}>
                   <FileText className="w-4 h-4 mr-2" />
                   Export to Xero
                 </Button>
@@ -872,11 +872,11 @@ export function QuoteSection({
             )}
             {quote!.status === 'approved' && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleExportToXero}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportToXero}>
                   <FileText className="w-4 h-4 mr-2" />
                   Export to Xero
                 </Button>
@@ -884,11 +884,11 @@ export function QuoteSection({
             )}
             {quote!.status === 'revised' && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button size="sm" onClick={handleSendQuote}>
+                <Button className="w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
                   <Send className="w-4 h-4 mr-2" />
                   Notify Client &amp; Request Approval
                 </Button>
@@ -896,11 +896,11 @@ export function QuoteSection({
             )}
             {quote!.status === 'declined' && (
               <>
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button size="sm" onClick={handleReviseQuote}>
+                <Button className="w-full sm:w-auto" size="sm" onClick={handleReviseQuote}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Create Revised Quote
                 </Button>
@@ -911,12 +911,12 @@ export function QuoteSection({
 
         {/* Client View - View and Download buttons */}
         {!isTradeView && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
+          <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
+            <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
               <Eye className="w-4 h-4 mr-2" />
               View Quote
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownloadPDF}>
+            <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
@@ -940,14 +940,14 @@ export function QuoteSection({
               </div>
             )}
             {includedItems.map(item => (
-              <div key={item.id} className="p-3 flex justify-between items-start">
-                <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+              <div key={item.id} className="p-3 flex flex-col sm:flex-row justify-between items-start gap-2">
+                <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
+                  <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
                   {stripVariationMeta(item.description) && (
-                    <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
+                    <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5 break-words [overflow-wrap:anywhere]" />
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2">
                   <span className="text-sm font-medium whitespace-nowrap">
                     ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                   </span>
@@ -970,14 +970,14 @@ export function QuoteSection({
               const isExpanded = expandedHistoryItemId === item.id;
               return (
                 <div key={item.id} className="p-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1 pr-2 min-w-0">
-                      <span className="text-sm font-medium">{cleanVariationTitle(item.title)}</span>
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                    <div className="w-full min-w-0 sm:flex-1 sm:pr-2">
+                      <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
                       {stripVariationMeta(item.description) && (
-                        <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
+                        <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5 break-words [overflow-wrap:anywhere]" />
                       )}
                     </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium whitespace-nowrap">
                         ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </span>
@@ -1029,11 +1029,11 @@ export function QuoteSection({
               <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
             </div>
             {approvedChanges.map(change => (
-              <div key={change.id} className="p-3 flex justify-between items-start">
-                <div className="flex-1 pr-4">
-                  <span className="text-sm font-medium">{change.title}</span>
+              <div key={change.id} className="p-3 flex flex-col sm:flex-row justify-between items-start gap-2">
+                <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
+                  <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</span>
                   {stripVariationMeta(change.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{htmlToText(stripVariationMeta(change.description))}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">{htmlToText(stripVariationMeta(change.description))}</p>
                   )}
                 </div>
                 <span className={cn(
@@ -1049,10 +1049,10 @@ export function QuoteSection({
               const isExpanded = expandedHistoryItemId === item.id;
               return (
                 <div key={item.id} className="p-3">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex-1 pr-2 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium">{item.title}</span>
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
+                    <div className="w-full min-w-0 sm:flex-1 sm:pr-2">
+                      <div className="flex min-w-0 items-center gap-1.5">
+                        <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</span>
                         {itemHistory.length > 0 && isTradeView && (
                           <button
                             type="button"
@@ -1071,7 +1071,7 @@ export function QuoteSection({
                         )}
                       </div>
                       {item.description && (
-                        <RichTextContent html={item.description} className="text-xs mt-0.5" />
+                        <RichTextContent html={item.description} className="text-xs mt-0.5 break-words [overflow-wrap:anywhere]" />
                       )}
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap text-approved">
