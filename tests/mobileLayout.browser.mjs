@@ -35,10 +35,17 @@ await build({
         }
         contents = contents.replace('export { prepareReceiptForScan, validateReceiptFile }', 'export { validateReceiptFile }');
         contents += `
-          export function useJobCosts() { return { costs: [], quoteLineItems: [{
-            id: 'synthetic-item', source: 'scope', title: '${'LongQuoteItem'.repeat(20)}', quote_number: 'QT-TEST'
+          import { useState as useFixtureState } from 'react';
+          export function useJobCosts() {
+            const [costs, setCosts] = useFixtureState([]);
+            return { costs, quoteLineItems: [{
+            id: '00000000-0000-4000-8000-000000000002', source: 'scope', title: '${'LongQuoteItem'.repeat(20)}', quote_number: 'QT-TEST'
           }], scopeLinkSetupRequired: false, loading: false, error: null,
-          refetch: async () => {}, saveCost: async () => {}, deleteCost: async () => {},
+          refetch: async () => {}, saveCost: async (input, id) => {
+            const record = {...input, id: id || 'synthetic-cost', created_at: '2026-10-28T00:00:00Z',
+              updated_at: '2026-10-28T00:00:00Z', created_by: 'synthetic-test-user'};
+            setCosts(current => [...current.filter(row => row.id !== record.id), record]);
+          }, deleteCost: async () => {},
           saving: false, deleting: false }; }
           export async function uploadCostReceipt() { return 'synthetic/receipt.jpg'; }
           export async function prepareReceiptForScan() { return {}; }
@@ -108,6 +115,26 @@ try {
     await check('quote dropdown');
     await page.getByRole('option').last().click();
     await check('long linked quote item selected');
+    await page.getByTestId('receipt-line-remove-1').click();
+    await page.getByTestId('receipt-line-description-0').fill('Edited timber receipt item');
+    await page.getByTestId('receipt-line-unit-price-0').fill('45');
+    await page.getByTestId('receipt-line-amount-0').fill('90');
+    assert.equal(await page.locator('#cost-inc').inputValue(), '110.00');
+    await page.getByTestId('checkbox-receipt-reviewed').check();
+    await page.getByRole('button', { name: 'Add cost', exact: true }).click();
+    await page.getByTestId('receipt-items-summary').waitFor();
+    assert.match(await page.getByTestId('receipt-summary-total').innerText(), /110\.00/);
+    assert.match(await page.getByTestId('receipt-summary-amount-0').innerText(), /90\.00/);
+    assert.equal(await page.getByTestId('receipt-summary-description-0').innerText(), 'Edited timber receipt item');
+    await check('saved itemised receipt and total');
+    await page.getByTestId('button-edit-cost-synthetic-cost').click();
+    assert.equal(await page.getByTestId('receipt-line-unit-price-0').inputValue(), '45');
+    assert.equal(await page.getByTestId('receipt-line-amount-0').inputValue(), '90');
+    await check('reopened receipt retains edited items');
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await page.getByTestId('button-view-line-items-synthetic-cost').click();
+    await page.getByTestId('receipt-items-summary').last().waitFor();
+    await check('saved receipt details modal');
     assert.deepEqual(errors, [], `${width}px browser errors`);
     if (width === 360) {
       await page.screenshot({ path: 'generated-artifacts/receipt-review-360.jpg' });

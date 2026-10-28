@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { JobCostSetupHelp, isJobCostSetupError } from '@/components/job-costing/JobCostSetupHelp';
 import { ReceiptScanControls } from '@/components/job-costing/ReceiptScanControls';
 import { ReceiptLineItemsEditor } from '@/components/job-costing/ReceiptLineItemsEditor';
+import { ReceiptItemsSummary } from '@/components/job-costing/ReceiptItemsSummary';
 import { ReceiptReviewFields } from '@/components/job-costing/ReceiptReviewFields';
 import { receiptCurrencyForReview } from '../../../shared/receiptScanning';
 
@@ -410,7 +411,11 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                 <div className="flex flex-wrap items-center gap-2"><h3 className="truncate font-semibold">{cost.supplier}</h3><Badge variant={cost.status === 'confirmed' ? 'success' : 'secondary'}>{cost.status === 'confirmed' ? 'Confirmed' : 'Draft'}</Badge><Badge variant="outline">{cost.category}</Badge>{hasStoredScanData(cost) && <Badge variant="outline">{cost.receipt_confidence ?? 'unknown'} scan confidence</Badge>}</div>
                 <p className="mt-1 text-sm text-muted-foreground">{cost.description}</p>
                 <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground"><span>{new Date(`${cost.cost_date}T00:00:00`).toLocaleDateString('en-AU')}</span>{cost.reference_number && <span>Ref {cost.reference_number}</span>}{(cost.quote_line_item_id || cost.scope_item_id) && <span>Linked to: {quoteLineItems.find(item => item.id === (cost.scope_item_id || cost.quote_line_item_id) && item.source === (cost.scope_item_id ? 'scope' : 'quote'))?.title || 'quote item'}</span>}</p>
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums"><span>Ex GST <b>{aud(cost.amount_ex_gst)}</b></span><span>GST <b>{aud(cost.gst_amount)}</b></span><span>Inc GST <b>{aud(cost.amount_inc_gst)}</b></span></div>
+                {cost.receipt_line_items?.length ? (
+                  <div className="mt-3">
+                    <ReceiptItemsSummary items={cost.receipt_line_items} subtotal={cost.amount_ex_gst} gst={cost.gst_amount} total={cost.amount_inc_gst} compact />
+                  </div>
+                ) : <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums"><span>Ex GST <b>{aud(cost.amount_ex_gst)}</b></span><span>GST <b>{aud(cost.gst_amount)}</b></span><span>Inc GST <b>{aud(cost.amount_inc_gst)}</b></span></div>}
                 {cost.status === 'draft' && <p className="mt-2 text-xs text-amber-800">Draft — excluded from job profit until confirmed.</p>}
                 {cost.notes && <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{cost.notes}</p>}
                 {hasStoredScanData(cost) && <Button variant="link" size="sm" className="mt-1 h-8 px-0" onClick={() => setLineItemsTarget(cost)} data-testid={`button-view-line-items-${cost.id}`}>View line items</Button>}
@@ -438,8 +443,12 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               <Field label="Category" id="cost-category" error={fieldErrors.category}><Select value={form.category} onValueChange={value => updateForm('category', value as FormState['category'])}><SelectTrigger id="cost-category"><SelectValue /></SelectTrigger><SelectContent>{COST_CATEGORIES.map(category => <SelectItem key={category} value={category}>{category}</SelectItem>)}</SelectContent></Select></Field>
               <Field label="Status" id="cost-status" error={fieldErrors.status}><Select value={form.status} onValueChange={value => updateForm('status', value as FormState['status'])}><SelectTrigger id="cost-status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="draft">Draft — not included in profit</SelectItem><SelectItem value="confirmed">Confirmed — included in profit</SelectItem></SelectContent></Select></Field>
             </div>
+            {scanUsed && <section aria-label="Receipt line items" className="min-w-0">
+              <ReceiptLineItemsEditor items={lineItems} onChange={items => { setLineItems(items); setScanReviewed(false); }} disabled={scanBusy || submitting} />
+              <p className="mt-2 text-xs text-muted-foreground">Item prices are recorded as printed and may include GST. Bill totals below are kept separately; editing an item does not overwrite the receipt total.</p>
+            </section>}
             <div className="rounded-lg border bg-muted/20 p-3">
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">Amounts <span className="text-xs font-normal text-muted-foreground">AUD</span></p><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={!form.gst_applies} onChange={e => { const applies = !e.target.checked; updateForm('gst_applies', applies); if (!scanUsed) setAmount(amountBasis, form[amountBasis === 'ex' ? 'amount_ex_gst' : 'amount_inc_gst'], applies); }} className="h-4 w-4 accent-amber-700" />GST-free cost</label></div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><p className="text-sm font-semibold">Bill totals <span className="text-xs font-normal text-muted-foreground">AUD</span></p><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={!form.gst_applies} onChange={e => { const applies = !e.target.checked; updateForm('gst_applies', applies); if (!scanUsed) setAmount(amountBasis, form[amountBasis === 'ex' ? 'amount_ex_gst' : 'amount_inc_gst'], applies); }} className="h-4 w-4 accent-amber-700" />GST-free cost</label></div>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Field label="Ex GST" id="cost-ex" error={fieldErrors.amount_ex_gst}><Input id="cost-ex" type="number" min="0" step="0.01" inputMode="decimal" value={exGstAmount} onChange={e => setAmount('ex', e.target.value)} />{!form.amount_ex_gst.trim() && exGstAmount && <span className="text-[11px] text-muted-foreground">Calculated from total and GST.</span>}</Field>
                 <Field label="GST" id="cost-gst" error={fieldErrors.gst_amount}><Input id="cost-gst" type="number" min="0" step="0.01" inputMode="decimal" value={effectiveGstAmount} onChange={e => changeGst(e.target.value)} /><span className="text-[11px] text-muted-foreground">{effectiveGstAmount !== gstAmount ? (form.gst_applies ? 'Calculated at 10% because no GST amount was provided.' : 'Calculated as GST-free.') : scanUsed ? 'Editable scanned value' : 'Enter ex-GST or inc-GST; GST is calculated at 10%.'}</span></Field>
@@ -476,7 +485,6 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                   disabled={scanBusy || submitting}
                   onAbnChange={setReceiptAbn}
                 />
-                <ReceiptLineItemsEditor items={lineItems} onChange={setLineItems} disabled={scanBusy || submitting} />
                 <label className="flex cursor-pointer items-start gap-2 border-t border-amber-200 pt-3 text-sm">
                   <input data-testid="checkbox-receipt-reviewed" type="checkbox" className="mt-0.5 h-4 w-4 accent-amber-700" checked={scanReviewed} disabled={scanBusy || submitting} onChange={event => setScanReviewed(event.target.checked)} />
                   <span>I reviewed the extracted details against the original receipt.</span>
@@ -521,7 +529,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
 
 function ReceiptLinesView({ cost }: { cost?: JobCost }) {
   if (!cost?.receipt_line_items) return <p className="text-sm text-muted-foreground">No stored receipt line items.</p>;
-  return <div className="min-w-0 space-y-2 [overflow-wrap:anywhere]"><p className="text-xs text-muted-foreground">{cost.receipt_confidence ?? 'Unknown'} scan confidence</p>{cost.receipt_line_items.map((item, index) => <div key={index} className="flex min-w-0 flex-wrap justify-between gap-2 border-b py-2 text-sm"><span className="min-w-0">{item.description || 'Unreadable item'}{item.quantity !== null ? ` · Qty ${item.quantity}` : ''}{item.unit_price !== null ? ` · Unit ${aud(item.unit_price)}` : ''}</span><span className="tabular-nums">{item.amount === null ? 'Unreadable amount' : aud(item.amount)}</span></div>)}</div>;
+  return <div className="min-w-0 space-y-3"><p className="text-xs text-muted-foreground">{cost.receipt_confidence ?? 'Unknown'} scan confidence</p><ReceiptItemsSummary items={cost.receipt_line_items} subtotal={cost.amount_ex_gst} gst={cost.gst_amount} total={cost.amount_inc_gst} /></div>;
 }
 
 function Field({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {

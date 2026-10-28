@@ -10,7 +10,7 @@ Never infer ABN, date, receipt number, currency, quantity, unit price, subtotal 
 Do not calculate missing amounts from other amounts. Preserve printed totals even when inconsistent.
 Use YYYY-MM-DD only for an unambiguous printed receipt date. Preserve receipt numbers and ABNs as strings.
 Use uppercase ISO currency codes only when the printed currency is unambiguous (e.g. AUD or A$); otherwise null.
-For line items, preserve printed descriptions, quantities, unit prices and amounts, including discounts.
+For line items, transcribe every visible purchase row as a separate line item in receipt order; do not combine products or return only a receipt summary. Preserve printed descriptions, quantities, unit prices and line amounts, including discounts. Keep unit price separate from the line amount; never calculate a missing quantity, unit price or line amount. Preserve GST-inclusive item prices as printed, without converting them to ex-GST.
 Never include subtotal, GST or total as purchase line items. If line items cannot be read, return null.
 Use an ex-GST subtotal only when explicitly identified; otherwise subtotal is null. Do not guess GST allocation of line items.
 Limit transcription to 200 line items; do not silently truncate a longer receipt. Return only the structured receipt data.`;

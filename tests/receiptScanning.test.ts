@@ -62,6 +62,18 @@ test('binary validation rejects fake MIME types and oversized/malformed base64',
   assert.throws(() => decodeReceiptImage(Buffer.alloc(6 * 1024 * 1024).toString('base64'), 'image/jpeg'));
 });
 
+test('GST-inclusive item prices reconcile with the printed total without changing receipt values', () => {
+  const receipt = { ...extracted, subtotal_ex_gst: 17.14, gst: 1.71, total_inc_gst: 18.85, line_items: [
+    { description: 'Adhesive', quantity: 1, unit_price: 10.575, amount: 10.58 },
+    { description: 'Steel post', quantity: 1, unit_price: 6.29, amount: 6.29 },
+    { description: 'Nozzle', quantity: 2, unit_price: 0.99, amount: 1.98 },
+  ] };
+  const before = JSON.stringify(receipt);
+  assert.deepEqual(receiptWarnings(receipt), []);
+  assert.equal(JSON.stringify(receipt), before);
+  assert.match(receiptWarnings({ ...receipt, line_items: [{ ...receipt.line_items[0], amount: 12 }] }).join(' '), /Totals don't reconcile/);
+});
+
 test('Perplexity uses vision, a strict receipt JSON schema, private authentication and explicitly no web tools', async () => {
   const requests: any[] = [];
   const extract = createPerplexityReceiptExtractor({

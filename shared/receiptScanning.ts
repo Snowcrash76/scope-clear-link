@@ -50,8 +50,13 @@ export function receiptWarnings(receipt: ReceiptExtraction): string[] {
   const tolerance = Math.max(0.05, items.length * 0.01);
   if (ex !== null && gst !== null && total !== null && Math.abs(ex + gst - total) > tolerance)
     reconcile = true;
-  if (items.length && ex !== null && items.every(item => item.amount !== null)) {
-    if (Math.abs(items.reduce((sum, item) => sum + item.amount!, 0) - ex) > tolerance)
+  if (items.length && (ex !== null || total !== null) && items.every(item => item.amount !== null)) {
+    const itemTotal = items.reduce((sum, item) => sum + item.amount!, 0);
+    // Receipts may print either GST-inclusive or ex-GST line amounts.
+    // Compare both printed totals without guessing or rewriting the item's tax basis.
+    const matchesEx = ex !== null && Math.abs(itemTotal - ex) <= tolerance;
+    const matchesInc = total !== null && Math.abs(itemTotal - total) <= tolerance;
+    if (!matchesEx && !matchesInc)
       reconcile = true;
   }
   if (reconcile) warnings.push("Totals don't reconcile, please check");

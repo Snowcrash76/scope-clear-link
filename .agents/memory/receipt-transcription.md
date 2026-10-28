@@ -20,3 +20,9 @@ Automatically calculate a blank Ex GST amount in the costing review form, withou
 **Why:** The user explicitly asked for the Ex GST box to be calculated and filled if blank.
 
 **How to apply:** This is review-form arithmetic, not receipt extraction. Prefer total minus the provided GST, including mixed-tax receipts. When GST is also missing, use the form's standard 10%/GST-free setting and label the calculation; keep the raw receipt extraction unchanged.
+
+Show individual receipt purchases and prices together with the overall receipt total, not only a combined description.
+
+**Why:** The user wants itemisation like their Tradify example, while explicitly retaining a total.
+
+**How to apply:** Keep the items editable and visible after saving. Preserve one receipt-level cost so itemisation does not double-count expenses. Item amounts may be printed inclusive or exclusive of GST; preserve them and check against the appropriate printed subtotal or total without assuming their tax basis.

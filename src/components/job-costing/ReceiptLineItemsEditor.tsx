@@ -21,20 +21,111 @@ export function ReceiptLineItemsEditor({ items, onChange, disabled = false }: Re
     }));
   };
   return (
-    <div className="min-w-0 max-w-full space-y-3">
+    <section className="min-w-0 max-w-full space-y-3" aria-labelledby="receipt-line-items-heading" data-testid="receipt-line-items-editor">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div><Label>Receipt line items</Label><p className="text-[11px] text-muted-foreground">Check each value against the original.</p></div>
-        <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onChange([...items, { description: '', quantity: null, unit_price: null, amount: null }])}><Plus className="mr-1.5 h-3.5 w-3.5" />Add row</Button>
-      </div>
-      {items.length === 0 ? <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">No line items were read. Add rows if they are useful for this record.</p> : items.map((item, index) => (
-        <div key={index} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 rounded-md border bg-background p-3 [&>div]:min-w-0 lg:grid-cols-[minmax(0,2fr)_minmax(0,.7fr)_minmax(0,.9fr)_minmax(0,.9fr)_auto] lg:items-end">
-          <div className="space-y-1"><Label htmlFor={`receipt-line-description-${index}`} className="text-xs">Description</Label><Input id={`receipt-line-description-${index}`} value={item.description ?? ''} maxLength={2000} disabled={disabled} onChange={event => update(index, 'description', event.target.value)} placeholder="Unreadable" /></div>
-          <div className="space-y-1"><Label htmlFor={`receipt-line-quantity-${index}`} className="text-xs">Qty</Label><Input id={`receipt-line-quantity-${index}`} type="number" step="any" disabled={disabled} value={display(item.quantity)} onChange={event => update(index, 'quantity', event.target.value)} placeholder="—" /></div>
-          <div className="space-y-1"><Label htmlFor={`receipt-line-unit-${index}`} className="text-xs">Unit price</Label><Input id={`receipt-line-unit-${index}`} type="number" step="0.01" disabled={disabled} value={display(item.unit_price)} onChange={event => update(index, 'unit_price', event.target.value)} placeholder="—" /></div>
-          <div className="space-y-1"><Label htmlFor={`receipt-line-amount-${index}`} className="text-xs">Amount</Label><Input id={`receipt-line-amount-${index}`} type="number" step="0.01" disabled={disabled} value={display(item.amount)} onChange={event => update(index, 'amount', event.target.value)} placeholder="Unreadable" /></div>
-          <Button type="button" variant="ghost" size="icon" disabled={disabled} onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove receipt line ${index + 1}`}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+        <div className="min-w-0">
+          <h3 id="receipt-line-items-heading" className="text-sm font-semibold text-foreground">Receipt line items</h3>
+          <p className="mt-0.5 text-xs text-muted-foreground">Check each value against the original receipt.</p>
         </div>
-      ))}
-    </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={disabled}
+          onClick={() => onChange([...items, { description: '', quantity: null, unit_price: null, amount: null }])}
+          data-testid="receipt-line-item-add"
+        >
+          <Plus className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+          Add row
+        </Button>
+      </div>
+      {items.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground" data-testid="receipt-line-items-empty">
+          No line items were read. Add rows if they are useful for this record.
+        </p>
+      ) : (
+        <ol className="min-w-0 space-y-2" aria-label="Editable receipt line items">
+          {items.map((item, index) => (
+            <li
+              key={index}
+              className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-3 rounded-lg border border-border bg-background p-3 shadow-sm shadow-foreground/[0.025] sm:grid-cols-[minmax(0,1fr)_auto]"
+              data-testid={`receipt-line-item-${index}`}
+            >
+              <div className="col-span-2 flex min-w-0 items-start gap-2 sm:col-span-1">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-semibold tabular-nums text-muted-foreground" aria-hidden="true">
+                  {index + 1}
+                </span>
+                <div className="min-w-0 flex-1 space-y-1">
+                  <Label htmlFor={`receipt-line-description-${index}`} className="text-xs text-muted-foreground">Product / description</Label>
+                  <Input
+                    id={`receipt-line-description-${index}`}
+                    value={item.description ?? ''}
+                    maxLength={2000}
+                    disabled={disabled}
+                    onChange={event => update(index, 'description', event.target.value)}
+                    placeholder="Description not read"
+                    className="min-w-0"
+                    data-testid={`receipt-line-description-${index}`}
+                  />
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="col-start-2 row-start-1 h-9 w-9 text-muted-foreground hover:text-destructive sm:col-start-2"
+                disabled={disabled}
+                onClick={() => onChange(items.filter((_, itemIndex) => itemIndex !== index))}
+                aria-label={`Remove receipt line ${index + 1}${item.description ? `: ${item.description}` : ''}`}
+                data-testid={`receipt-line-remove-${index}`}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden="true" />
+              </Button>
+              <div className="col-span-2 grid min-w-0 grid-cols-2 gap-2 sm:col-span-2 sm:grid-cols-3">
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor={`receipt-line-quantity-${index}`} className="text-xs text-muted-foreground">Quantity</Label>
+                  <Input
+                    id={`receipt-line-quantity-${index}`}
+                    type="number"
+                    step="any"
+                    disabled={disabled}
+                    value={display(item.quantity)}
+                    onChange={event => update(index, 'quantity', event.target.value)}
+                    placeholder="Not read"
+                    data-testid={`receipt-line-quantity-${index}`}
+                  />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <Label htmlFor={`receipt-line-unit-${index}`} className="text-xs text-muted-foreground">Unit price</Label>
+                  <Input
+                    id={`receipt-line-unit-${index}`}
+                    type="number"
+                    step="0.01"
+                    disabled={disabled}
+                    value={display(item.unit_price)}
+                    onChange={event => update(index, 'unit_price', event.target.value)}
+                    placeholder="Not read"
+                    data-testid={`receipt-line-unit-price-${index}`}
+                  />
+                </div>
+                <div className="col-span-2 min-w-0 space-y-1 sm:col-span-1">
+                  <Label htmlFor={`receipt-line-amount-${index}`} className="text-xs text-muted-foreground">Line total</Label>
+                  <Input
+                    id={`receipt-line-amount-${index}`}
+                    type="number"
+                    step="0.01"
+                    disabled={disabled}
+                    value={display(item.amount)}
+                    onChange={event => update(index, 'amount', event.target.value)}
+                    placeholder="Not read"
+                    data-testid={`receipt-line-amount-${index}`}
+                  />
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
