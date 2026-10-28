@@ -194,7 +194,7 @@ export default function TradeDashboard() {
   return (
     <>
     <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-      <DialogContent className="sm:max-w-sm" data-testid="dialog-export-report">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-sm" data-testid="dialog-export-report">
         <DialogHeader>
           <DialogTitle>Export Report</DialogTitle>
         </DialogHeader>
@@ -294,7 +294,7 @@ export default function TradeDashboard() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Page heading */}
         <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
           <div>
@@ -334,7 +334,7 @@ export default function TradeDashboard() {
             </button>
           </div>
 
-          <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
+          <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
             {loading ? (
               <div className="divide-y">
                 {Array.from({ length: 3 }).map((_, i) => (

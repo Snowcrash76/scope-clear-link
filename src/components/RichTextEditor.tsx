@@ -33,7 +33,7 @@ export function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none px-3 py-2',
+          class: 'prose prose-sm dark:prose-invert max-w-none min-w-0 break-words [overflow-wrap:anywhere] focus:outline-none px-3 py-2 [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto',
       },
     },
   });
@@ -81,7 +81,7 @@ export function RichTextEditor({
   return (
     <div
       className={cn(
-        'rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
+        'min-w-0 rounded-md border border-input bg-background ring-offset-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2',
         className
       )}
     >
@@ -148,8 +148,8 @@ export function RichTextContent({ html, className }: RichTextContentProps) {
   return (
     <div
       className={cn(
-        'prose prose-sm dark:prose-invert max-w-none text-muted-foreground',
-        '[&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0 [&_p]:my-0.5 [&_strong]:text-foreground',
+        'prose prose-sm dark:prose-invert max-w-none min-w-0 break-words [overflow-wrap:anywhere] text-muted-foreground',
+        '[&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0 [&_p]:my-0.5 [&_strong]:text-foreground [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto',
         className
       )}
       dangerouslySetInnerHTML={{ __html: html }}

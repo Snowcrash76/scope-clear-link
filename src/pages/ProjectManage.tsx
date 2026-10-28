@@ -1005,7 +1005,7 @@ export default function ProjectManage() {
 
       {/* Regenerate Quote Link Confirmation Dialog */}
       <Dialog open={isRegenerateConfirmOpen} onOpenChange={setIsRegenerateConfirmOpen}>
-        <DialogContent className="max-w-md" data-testid="dialog-regenerate-quote-link">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto" data-testid="dialog-regenerate-quote-link">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5 text-primary" />

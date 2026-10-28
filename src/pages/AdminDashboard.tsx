@@ -341,8 +341,8 @@ function InviteCodesTab() {
             ) : (
               <div className="space-y-2">
                 {unused.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border bg-card gap-3" data-testid={`row-code-${c.id}`}>
-                    <div className="min-w-0">
+                  <div key={c.id} className="flex min-w-0 flex-wrap items-center justify-between p-3 rounded-lg border bg-card gap-3" data-testid={`row-code-${c.id}`}>
+                    <div className="min-w-0 flex-1">
                       <span className="font-mono font-bold tracking-widest text-primary">{c.code}</span>
                       {c.label && <span className="ml-3 text-sm text-muted-foreground">{c.label}</span>}
                     </div>
@@ -367,8 +367,8 @@ function InviteCodesTab() {
               </h2>
               <div className="space-y-2">
                 {used.map(c => (
-                  <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/40 gap-3 opacity-70" data-testid={`row-code-used-${c.id}`}>
-                    <div className="min-w-0">
+                  <div key={c.id} className="flex min-w-0 flex-wrap items-center justify-between p-3 rounded-lg border bg-muted/40 gap-3 opacity-70" data-testid={`row-code-used-${c.id}`}>
+                    <div className="min-w-0 flex-1">
                       <span className="font-mono font-bold tracking-widest line-through text-muted-foreground">{c.code}</span>
                       {c.label && <span className="ml-3 text-sm text-muted-foreground">{c.label}</span>}
                       {c.used_by_email && (
@@ -409,7 +409,7 @@ function ActivityTab() {
   return (
     <div className="space-y-2">
       {events.map(event => (
-        <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card" data-testid={`row-activity-${event.id}`}>
+        <div key={event.id} className="flex min-w-0 items-center gap-3 p-3 rounded-lg border bg-card" data-testid={`row-activity-${event.id}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${event.type === 'signup' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
             {event.type === 'signup'
               ? <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -458,26 +458,28 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <div className="w-full min-w-0 max-w-5xl mx-auto px-4 py-8 space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} data-testid="button-back-dashboard">
             <ArrowLeft className="w-4 h-4" />
           </Button>
-          <div>
+          <div className="min-w-0">
             <h1 className="font-heading text-2xl font-bold">Admin</h1>
             <p className="text-sm text-muted-foreground">Platform overview and management</p>
           </div>
         </div>
 
         {/* Tabs */}
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
-            <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
-            <TabsTrigger value="invites" data-testid="tab-invites">Invite Codes</TabsTrigger>
-            <TabsTrigger value="activity" data-testid="tab-activity">Activity</TabsTrigger>
-          </TabsList>
+        <Tabs value={tab} onValueChange={setTab} className="min-w-0">
+          <div className="w-full min-w-0 overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain">
+            <TabsList className="grid w-max min-w-full grid-cols-4 sm:w-full">
+              <TabsTrigger value="overview" data-testid="tab-overview">Overview</TabsTrigger>
+              <TabsTrigger value="users" data-testid="tab-users">Users</TabsTrigger>
+              <TabsTrigger value="invites" data-testid="tab-invites">Invite Codes</TabsTrigger>
+              <TabsTrigger value="activity" data-testid="tab-activity">Activity</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="overview" className="mt-6">
             <OverviewTab />

@@ -169,7 +169,7 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-heading text-lg font-semibold">Documents</h2>
         <Button onClick={() => setUploadModalOpen(true)}>
           <Upload className="w-4 h-4 mr-2" />
@@ -185,7 +185,7 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
             return (
               <div 
                 key={doc.id}
-                className="p-4 flex items-center gap-4 hover:bg-secondary/30 transition-colors"
+                className="p-3 sm:p-4 flex min-w-0 flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 hover:bg-secondary/30 transition-colors"
               >
                 <div className={cn(
                   "w-10 h-10 rounded-lg flex items-center justify-center",
@@ -195,18 +195,18 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
                 )}>
                   <FileIcon className="w-5 h-5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{displayName(doc)}</p>
+                <div className="min-w-0 flex-1 basis-[calc(100%-3.5rem)] sm:basis-0">
+                  <p className="break-words [overflow-wrap:anywhere] font-medium">{displayName(doc)}</p>
                   <p className="text-sm text-muted-foreground">
                     {hasCustomName && (
-                      <span className="text-xs">{doc.file_name} • </span>
+                      <span className="break-words [overflow-wrap:anywhere] text-xs">{doc.file_name} • </span>
                     )}
                     {formatFileSize(doc.file_size)}
                     {doc.file_size && ' • '}
                     {format(new Date(doc.created_at), 'MMM d, yyyy')}
                   </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1">
                   <Button
                     variant="ghost"
                     size="icon"

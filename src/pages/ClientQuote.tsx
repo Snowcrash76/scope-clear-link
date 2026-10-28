@@ -256,18 +256,18 @@ export default function ClientQuote() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-10 space-y-6">
+      <div className="w-full min-w-0 max-w-2xl mx-auto px-4 py-10 space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <FileText className="w-5 h-5 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="font-heading text-xl font-bold" data-testid="text-quote-number">
                 {quote.quote_number}
               </h1>
-              <p className="text-sm text-muted-foreground">{project.name}</p>
+              <p className="text-sm text-muted-foreground break-words [overflow-wrap:anywhere]">{project.name}</p>
             </div>
           </div>
           <Badge variant={badgeVariant} className="flex-shrink-0 mt-1" data-testid="text-quote-status">
@@ -277,7 +277,7 @@ export default function ClientQuote() {
 
         {/* Business info */}
         {profile && (
-          <Card className="p-4 space-y-1">
+          <Card className="min-w-0 p-4 space-y-1">
             <div className="flex items-center gap-3">
               {logoUrl && (
                 <img
@@ -287,15 +287,15 @@ export default function ClientQuote() {
                 />
               )}
               <div>
-                <p className="font-semibold">{profile.business_name}</p>
+                <p className="break-words [overflow-wrap:anywhere] font-semibold">{profile.business_name}</p>
                 {profile.contact_name && (
-                  <p className="text-sm text-muted-foreground">{profile.contact_name}</p>
+                  <p className="break-words [overflow-wrap:anywhere] text-sm text-muted-foreground">{profile.contact_name}</p>
                 )}
               </div>
             </div>
             {(profile.business_address || profile.phone || profile.abn) && (
               <div className="text-sm text-muted-foreground space-y-0.5 pt-1">
-                {profile.business_address && <p>{profile.business_address}</p>}
+                {profile.business_address && <p className="break-words [overflow-wrap:anywhere]">{profile.business_address}</p>}
                 {profile.phone && <p>{profile.phone}</p>}
                 {profile.abn && <p>ABN: {profile.abn}</p>}
               </div>
@@ -308,12 +308,12 @@ export default function ClientQuote() {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
             Prepared for
           </p>
-          <p className="font-semibold" data-testid="text-client-name">
+          <p className="font-semibold break-words [overflow-wrap:anywhere]" data-testid="text-client-name">
             {project.client_name}
           </p>
-          <p className="text-sm text-muted-foreground">{project.client_email}</p>
+          <p className="text-sm text-muted-foreground break-words [overflow-wrap:anywhere]">{project.client_email}</p>
           {project.client_address && (
-            <p className="text-sm text-muted-foreground">{project.client_address}</p>
+            <p className="text-sm text-muted-foreground break-words [overflow-wrap:anywhere]">{project.client_address}</p>
           )}
         </Card>
 
@@ -332,7 +332,7 @@ export default function ClientQuote() {
 
         {/* Line items — base items only (variation duplicates excluded) */}
         {baseLineItems.length > 0 && (
-          <Card className="overflow-hidden">
+          <Card className="min-w-0 overflow-hidden">
             <div className="px-4 py-3 border-b bg-secondary/30">
               <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-muted-foreground">
                 Included Items
@@ -344,10 +344,10 @@ export default function ClientQuote() {
                 const isExpanded = expandedHistoryItemId === li.id;
                 return (
                   <div key={li.id}>
-                    <div className="flex items-start justify-between gap-3 px-4 py-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 px-4 py-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="font-medium" data-testid={`text-line-item-title-${li.id}`}>
+                          <p className="break-words [overflow-wrap:anywhere] font-medium" data-testid={`text-line-item-title-${li.id}`}>
                             {li.title}
                           </p>
                           {itemHistory.length > 0 && (
@@ -365,7 +365,7 @@ export default function ClientQuote() {
                           <RichTextContent html={stripVariationMeta(li.description)} className="mt-0.5" />
                         )}
                       </div>
-                      <p className="font-medium whitespace-nowrap tabular-nums">${fmt(li.cost)}</p>
+                      <p className="font-medium whitespace-nowrap tabular-nums sm:self-start">${fmt(li.cost)}</p>
                     </div>
                     {isExpanded && itemHistory.length > 0 && (
                       <div className="mx-4 mb-3 rounded-md bg-muted/30 border divide-y text-xs">
@@ -393,7 +393,7 @@ export default function ClientQuote() {
 
         {/* Approved Variations — separate green section */}
         {variationLineItems.length > 0 && (
-          <Card className="overflow-hidden border-approved/30">
+          <Card className="min-w-0 overflow-hidden border-approved/30">
             <div className="px-4 py-3 border-b bg-approved/5">
               <h2 className="font-heading font-semibold text-sm uppercase tracking-wide text-approved">
                 Approved Variations
@@ -405,10 +405,10 @@ export default function ClientQuote() {
                 const isExpanded = expandedHistoryItemId === li.id;
                 return (
                   <div key={li.id}>
-                    <div className="flex items-start justify-between gap-3 px-4 py-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 px-4 py-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="font-medium" data-testid={`text-variation-title-${li.id}`}>
+                          <p className="break-words [overflow-wrap:anywhere] font-medium" data-testid={`text-variation-title-${li.id}`}>
                             {li.title}
                           </p>
                           {itemHistory.length > 0 && (
@@ -426,7 +426,7 @@ export default function ClientQuote() {
                           <RichTextContent html={li.description} className="mt-0.5" />
                         )}
                       </div>
-                      <p className="font-medium whitespace-nowrap tabular-nums text-approved">
+                      <p className="font-medium whitespace-nowrap tabular-nums text-approved sm:self-start">
                         +${fmt(li.cost)}
                       </p>
                     </div>
@@ -659,7 +659,7 @@ export default function ClientQuote() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {actionModal.action === 'approve' ? 'Accept this quote?' : 'Decline this quote?'}

@@ -21,13 +21,13 @@ export function ReceiptLineItemsEditor({ items, onChange, disabled = false }: Re
     }));
   };
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between gap-2">
+    <div className="min-w-0 max-w-full space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <div><Label>Receipt line items</Label><p className="text-[11px] text-muted-foreground">Check each value against the original.</p></div>
         <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={() => onChange([...items, { description: '', quantity: null, unit_price: null, amount: null }])}><Plus className="mr-1.5 h-3.5 w-3.5" />Add row</Button>
       </div>
       {items.length === 0 ? <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">No line items were read. Add rows if they are useful for this record.</p> : items.map((item, index) => (
-        <div key={index} className="grid gap-2 rounded-md border bg-background p-3 sm:grid-cols-[minmax(0,2fr)_minmax(5rem,.7fr)_minmax(6rem,.9fr)_minmax(6rem,.9fr)_auto] sm:items-end">
+        <div key={index} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2 rounded-md border bg-background p-3 [&>div]:min-w-0 lg:grid-cols-[minmax(0,2fr)_minmax(0,.7fr)_minmax(0,.9fr)_minmax(0,.9fr)_auto] lg:items-end">
           <div className="space-y-1"><Label htmlFor={`receipt-line-description-${index}`} className="text-xs">Description</Label><Input id={`receipt-line-description-${index}`} value={item.description ?? ''} maxLength={2000} disabled={disabled} onChange={event => update(index, 'description', event.target.value)} placeholder="Unreadable" /></div>
           <div className="space-y-1"><Label htmlFor={`receipt-line-quantity-${index}`} className="text-xs">Qty</Label><Input id={`receipt-line-quantity-${index}`} type="number" step="any" disabled={disabled} value={display(item.quantity)} onChange={event => update(index, 'quantity', event.target.value)} placeholder="—" /></div>
           <div className="space-y-1"><Label htmlFor={`receipt-line-unit-${index}`} className="text-xs">Unit price</Label><Input id={`receipt-line-unit-${index}`} type="number" step="0.01" disabled={disabled} value={display(item.unit_price)} onChange={event => update(index, 'unit_price', event.target.value)} placeholder="—" /></div>

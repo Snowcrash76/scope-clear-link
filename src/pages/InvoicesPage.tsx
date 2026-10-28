@@ -173,7 +173,7 @@ export default function InvoicesPage() {
 
   return (
     <AppShell>
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Page heading + toolbar */}
         <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
           <div>
@@ -327,9 +327,9 @@ export default function InvoicesPage() {
           </p>
         )}
 
-        <div className="rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
+        <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
           {/* Table header — desktop only */}
-          <div className="hidden sm:grid sm:grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-2.5 border-b bg-muted/30">
+          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(90px,140px)_minmax(76px,100px)_minmax(84px,100px)_minmax(76px,100px)_16px] gap-3 lg:gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job / Client</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Invoice #</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</span>
@@ -393,12 +393,12 @@ export default function InvoicesPage() {
                   </div>
 
                   {/* Desktop layout */}
-                  <div className="hidden sm:grid sm:grid-cols-[1fr_140px_100px_100px_100px_40px] gap-4 px-4 py-3.5 items-center">
+                  <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(90px,140px)_minmax(76px,100px)_minmax(84px,100px)_minmax(76px,100px)_16px] gap-3 lg:gap-4 px-4 py-3.5 items-center">
                     <div>
-                      <p className="text-sm font-medium">{inv.projectName}</p>
-                      <p className="text-xs text-muted-foreground">{inv.clientName} · {format(parseISO(inv.created_at), 'd MMM yyyy')}</p>
+                      <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{inv.projectName}</p>
+                      <p className="text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">{inv.clientName} · {format(parseISO(inv.created_at), 'd MMM yyyy')}</p>
                     </div>
-                    <span className="text-sm text-muted-foreground font-mono">{inv.invoice_number}</span>
+                    <span className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-muted-foreground font-mono">{inv.invoice_number}</span>
                     <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold capitalize w-fit', STATUS_VARIANTS[inv.status])}>
                       {inv.status}
                     </span>

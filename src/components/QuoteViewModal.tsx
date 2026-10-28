@@ -100,14 +100,14 @@ export function QuoteViewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-3xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
                 <FileText className="w-5 h-5 text-primary" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <DialogTitle className="text-xl">{quote.quoteNumber}</DialogTitle>
                 <p className="text-sm text-muted-foreground">
                   Created {formatDate(quote.createdAt)}
@@ -123,12 +123,12 @@ export function QuoteViewModal({
 
         <div className="space-y-6 mt-4">
           {/* Project, Client & Quote Info */}
-          <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-lg bg-muted/50">
+            <div className="min-w-0 break-words [overflow-wrap:anywhere]">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Job</p>
               <p className="font-medium">{projectInfo.name}</p>
             </div>
-            <div>
+            <div className="min-w-0 break-words [overflow-wrap:anywhere]">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Client</p>
               <p className="font-medium">{projectInfo.clientName}</p>
               <p className="text-sm text-muted-foreground">{projectInfo.clientEmail}</p>
@@ -166,9 +166,9 @@ export function QuoteViewModal({
               <div className="border rounded-lg divide-y">
                 {includedItems.map(item => (
                   <div key={item.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-base font-semibold text-foreground">{item.title}</p>
+                    <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                      <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                        <p className="break-words [overflow-wrap:anywhere] text-base font-semibold text-foreground">{item.title}</p>
                         {stripVariationMeta(item.description) && (
                           <RichTextContent html={stripVariationMeta(item.description)} className="mt-1.5" />
                         )}
@@ -181,9 +181,9 @@ export function QuoteViewModal({
                 ))}
                 {baseQuoteLineItems.map(item => (
                   <div key={item.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-base font-semibold text-foreground">{item.title}</p>
+                    <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                      <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                        <p className="break-words [overflow-wrap:anywhere] text-base font-semibold text-foreground">{item.title}</p>
                         {stripVariationMeta(item.description) && (
                           <RichTextContent html={stripVariationMeta(item.description)} className="mt-1.5" />
                         )}
@@ -207,9 +207,9 @@ export function QuoteViewModal({
               <div className="border rounded-lg divide-y border-approved/30 bg-approved/5">
                 {approvedChanges.map(change => (
                   <div key={change.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-base font-semibold text-foreground">{change.title}</p>
+                    <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                      <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                        <p className="break-words [overflow-wrap:anywhere] text-base font-semibold text-foreground">{change.title}</p>
                         {stripVariationMeta(change.description) && (
                           <p className="text-sm text-muted-foreground mt-1.5 whitespace-pre-wrap">
                             {stripVariationMeta(change.description)}
@@ -227,9 +227,9 @@ export function QuoteViewModal({
                 ))}
                 {variationLineItems.map(item => (
                   <div key={item.id} className="p-4">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-base font-semibold text-foreground">{item.title}</p>
+                    <div className="flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                      <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                        <p className="break-words [overflow-wrap:anywhere] text-base font-semibold text-foreground">{item.title}</p>
                         {item.description && (
                           <RichTextContent html={item.description} className="mt-1.5" />
                         )}

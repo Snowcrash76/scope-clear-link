@@ -243,7 +243,7 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
               <div
                 key={doc.id}
                 data-testid={`client-document-row-${doc.id}`}
-                className="p-4 flex items-center gap-4 hover:bg-secondary/30 transition-colors"
+                className="p-3 sm:p-4 flex min-w-0 flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 hover:bg-secondary/30 transition-colors"
               >
                 <div className={cn(
                   "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
@@ -253,15 +253,15 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
                 )}>
                   <FileIcon className="w-5 h-5" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{doc.display_name || doc.file_name}</p>
+                <div className="min-w-0 flex-1 basis-[calc(100%-3.5rem)] sm:basis-0">
+                  <p className="break-words [overflow-wrap:anywhere] font-medium">{doc.display_name || doc.file_name}</p>
                   <p className="text-sm text-muted-foreground">
                     {formatFileSize(doc.file_size)}
                     {doc.file_size && ' • '}
                     {format(new Date(doc.created_at), 'MMM d, yyyy')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2">
                   <Button
                     variant="ghost"
                     size="icon"

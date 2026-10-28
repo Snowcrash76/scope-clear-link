@@ -451,7 +451,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Settings Modal */}
       <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Settings className="w-5 h-5 text-primary" />
@@ -477,7 +477,7 @@ export function AppShell({ children }: AppShellProps) {
                 <Building2 className="w-4 h-4 text-primary" />
                 Business Logo
               </h3>
-              <div className="flex items-start gap-4">
+              <div className="flex flex-col sm:flex-row items-start gap-4">
                 {(pendingLogoDataUrl || logoDataUrl) ? (
                   <div className="relative">
                     <img
@@ -501,7 +501,7 @@ export function AppShell({ children }: AppShellProps) {
                     <span className="text-xs text-muted-foreground">Upload logo</span>
                   </div>
                 )}
-                <div className="flex-1 space-y-1">
+                <div className="min-w-0 flex-1 space-y-1">
                   <Button variant="outline" size="sm" onClick={() => logoInputRef.current?.click()}>
                     <UploadCloud className="w-3.5 h-3.5 mr-1.5" />
                     {pendingLogoDataUrl || logoDataUrl ? 'Change logo' : 'Choose file'}
@@ -640,14 +640,14 @@ export function AppShell({ children }: AppShellProps) {
                     </div>
                   ) : (
                     <div className="space-y-1.5">
-                      <form onSubmit={handleChangeEmail} className="flex gap-2">
+                      <form onSubmit={handleChangeEmail} className="flex flex-col sm:flex-row gap-2">
                         <Input
                           type="email"
                           placeholder="New email address"
                           value={newEmail}
                           onChange={e => { setNewEmail(e.target.value); setEmailError(''); }}
                           required
-                          className={emailError ? 'flex-1 border-destructive focus-visible:ring-destructive' : 'flex-1'}
+                          className={emailError ? 'w-full min-w-0 flex-1 border-destructive focus-visible:ring-destructive' : 'w-full min-w-0 flex-1'}
                           data-testid="input-new-email"
                         />
                         <Button type="submit" disabled={emailSaving || !newEmail.trim()} data-testid="button-update-email">

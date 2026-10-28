@@ -120,19 +120,19 @@ export function ChangeRequestCard({
       <div className="p-4 sm:p-5">
         {relatedItemTitle && <p className="text-sm text-muted-foreground mb-3">Related quote item: {relatedItemTitle}</p>}
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+          <div className="flex min-w-0 items-center gap-3">
             <div className={cn("p-2 rounded-lg", config.bgColor)}>
               <Icon className={cn("w-4 h-4", config.color)} />
             </div>
-            <div>
+            <div className="min-w-0">
               <Badge variant="secondary" className="text-xs mb-1">
                 {config.label}
               </Badge>
-              <h3 className="font-heading font-semibold">{request.title}</h3>
+              <h3 className="break-words [overflow-wrap:anywhere] font-heading font-semibold">{request.title}</h3>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="ml-auto flex max-w-full flex-wrap items-center gap-2">
             {isRecentlyResolved && (
               <Badge variant="success" className="gap-1 text-xs">
                 <CheckCircle2 className="w-3 h-3" />
@@ -158,7 +158,7 @@ export function ChangeRequestCard({
         </div>
 
         {/* Description */}
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+        <p className="break-words [overflow-wrap:anywhere] text-sm text-muted-foreground leading-relaxed mb-4">
           {request.description}
         </p>
 

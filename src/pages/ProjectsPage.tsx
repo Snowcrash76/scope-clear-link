@@ -93,7 +93,7 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="font-heading text-2xl font-bold">Jobs</h1>
           <p className="text-sm text-muted-foreground mt-0.5">All your jobs in one place</p>
@@ -121,7 +121,7 @@ export default function ProjectsPage() {
           ))}
         </div>
 
-        <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
+        <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
           {loading ? (
             <div className="divide-y">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -153,7 +153,7 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={project.id}
-                    className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer group"
+                    className="flex min-w-0 items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer group"
                     onClick={() => navigate(`/manage/${project.id}`)}
                     data-testid={`project-row-${project.id}`}
                   >

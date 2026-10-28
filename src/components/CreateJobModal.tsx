@@ -172,7 +172,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleClose(); else onOpenChange(true); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-busy={saving}>
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto" aria-busy={saving}>
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             {step === 1 ? (

@@ -61,9 +61,9 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <DialogTitle className="text-xl font-bold">
               Invoice {invoice.invoiceNumber}
             </DialogTitle>
@@ -87,12 +87,12 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
           </div>
 
           {/* Project Info */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="min-w-0 break-words [overflow-wrap:anywhere]">
               <p className="text-sm text-muted-foreground">Job</p>
               <p className="font-medium">{project.name}</p>
             </div>
-            <div>
+            <div className="min-w-0 break-words [overflow-wrap:anywhere]">
               <p className="text-sm text-muted-foreground">Client</p>
               <p className="font-medium">{project.clientName}</p>
               <p className="text-sm text-muted-foreground">{project.clientEmail}</p>
@@ -100,7 +100,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
           </div>
 
           {/* Dates */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">Issued Date</p>
               <p className="font-medium">{format(invoice.createdAt, 'dd MMM yyyy')}</p>
@@ -126,14 +126,14 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
             <h4 className="font-semibold mb-3">Line Items</h4>
             <div className="space-y-2">
               {invoice.lineItems.map(item => (
-                <div key={item.id} className="flex justify-between items-start py-2 border-b last:border-b-0">
-                  <div className="flex-1">
+                <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between items-start gap-2 py-2 border-b last:border-b-0">
+                  <div className="min-w-0 flex-1">
                     <RichTextContent html={item.description} className="font-medium" />
                     <p className="text-sm text-muted-foreground">
                       {item.quantity} × ${item.unitPrice.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
-                  <p className="font-medium">
+                  <p className="font-medium whitespace-nowrap sm:pl-3">
                     ${item.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                   </p>
                 </div>

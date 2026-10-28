@@ -77,11 +77,11 @@ export function ScopeSection({
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          "w-full p-4 sm:p-5 flex items-center justify-between transition-colors",
+          "w-full min-w-0 p-4 sm:p-5 flex items-center justify-between gap-3 transition-colors",
           isSubtle ? "hover:bg-muted/50" : "hover:bg-secondary/50"
         )}
       >
-        <div className="flex items-center gap-3">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className={cn(
             "rounded-lg",
             isSubtle ? "p-1.5" : "p-2",
@@ -92,9 +92,9 @@ export function ScopeSection({
               config.color
             )} />
           </div>
-          <div className="text-left">
+          <div className="min-w-0 text-left">
             <h3 className={cn(
-              "font-heading font-semibold",
+              "break-words [overflow-wrap:anywhere] font-heading font-semibold",
               isSubtle ? "text-base text-muted-foreground" : "text-lg"
             )}>{title}</h3>
             {!isSubtle && (
@@ -102,7 +102,7 @@ export function ScopeSection({
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3">
           {isSubtle && !isExpanded && (
             <Badge variant="secondary" className="text-xs">
               {items.length} item{items.length !== 1 ? 's' : ''}
@@ -129,9 +129,9 @@ export function ScopeSection({
             >
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-medium text-foreground">{cleanVariationTitle(item.title)}</h4>
+                      <h4 className="break-words [overflow-wrap:anywhere] font-medium text-foreground">{cleanVariationTitle(item.title)}</h4>
                       {isVariationItem(item.title) && !isVariationSection && (
                         <Badge variant="secondary" className="text-xs" data-testid={`badge-variation-scope-${item.id}`}>
                           Variation

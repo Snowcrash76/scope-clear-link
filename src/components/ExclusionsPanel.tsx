@@ -22,10 +22,10 @@ export function ExclusionsPanel({ excludedItems, assumptionItems, defaultOpen = 
       <button
         type="button"
         onClick={() => setIsOpen(v => !v)}
-        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-muted/40 transition-colors"
+         className="w-full min-w-0 px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-muted/40 transition-colors"
         data-testid="button-toggle-exclusions"
       >
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Ban className="w-4 h-4 text-muted-foreground" />
           <span className="font-medium text-sm">Exclusions & Assumptions</span>
           <Badge variant="secondary" className="text-xs">
@@ -50,10 +50,10 @@ export function ExclusionsPanel({ excludedItems, assumptionItems, defaultOpen = 
                 </span>
               </div>
               {excludedItems.map(item => (
-                <div key={item.id} className="px-4 py-3">
-                  <p className="text-sm font-medium">{item.title}</p>
+                <div key={item.id} className="min-w-0 px-4 py-3">
+                  <p className="break-words [overflow-wrap:anywhere] text-sm font-medium">{item.title}</p>
                   {item.description && stripVariationMeta(item.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="break-words [overflow-wrap:anywhere] text-xs text-muted-foreground mt-0.5">
                       {htmlToText(stripVariationMeta(item.description))}
                     </p>
                   )}
@@ -70,10 +70,10 @@ export function ExclusionsPanel({ excludedItems, assumptionItems, defaultOpen = 
                 </span>
               </div>
               {assumptionItems.map(item => (
-                <div key={item.id} className="px-4 py-3">
-                  <p className="text-sm font-medium">{item.title}</p>
+                <div key={item.id} className="min-w-0 px-4 py-3">
+                  <p className="break-words [overflow-wrap:anywhere] text-sm font-medium">{item.title}</p>
                   {item.description && stripVariationMeta(item.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="break-words [overflow-wrap:anywhere] text-xs text-muted-foreground mt-0.5">
                       {htmlToText(stripVariationMeta(item.description))}
                     </p>
                   )}

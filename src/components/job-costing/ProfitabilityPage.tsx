@@ -25,7 +25,7 @@ export default function ProfitabilityPage() {
   }, [query.data, basis, sort]);
   const toggleSort = (key: SortKey) => setSort(current => ({ key, direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc' }));
 
-  return <AppShell><main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+  return <AppShell><main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 [overflow-wrap:anywhere] sm:px-6 sm:py-8">
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900"><CircleDollarSign className="h-3.5 w-3.5" />Job costing</div><h1 className="font-heading text-2xl font-bold">Profitability</h1><p className="mt-1 text-sm text-muted-foreground">See what confirmed expenses leave behind across your jobs.</p></div>
       <div className="flex w-fit rounded-lg border bg-background p-1" role="group" aria-label="Revenue basis">{(['quoted', 'invoiced'] as RevenueBasis[]).map(value => <button key={value} onClick={() => setBasis(value)} className={cn('rounded-md px-3 py-1.5 text-sm font-medium capitalize', basis === value ? 'bg-zinc-900 text-white' : 'text-muted-foreground hover:text-foreground')}>{value}</button>)}</div>
@@ -35,7 +35,7 @@ export default function ProfitabilityPage() {
       : query.isError ? <Card className="p-6"><h2 className="font-semibold">Could not load profitability</h2><p className="mt-2 text-sm text-muted-foreground">{query.error instanceof Error ? query.error.message : 'Please try again.'}</p>{isJobCostSetupError(query.error) && <JobCostSetupHelp />}<Button variant="outline" className="mt-4" onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></Card>
       : !rows.length ? <Card className="border-dashed px-5 py-12 text-center"><CircleDollarSign className="mx-auto mb-3 h-9 w-9 text-amber-800" /><h2 className="font-semibold">No job figures yet</h2><p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">Once jobs and their costing data are available, the comparison will appear here.</p></Card>
       : <>
-        <div className="hidden overflow-hidden rounded-xl border border-[#D8C3AD] bg-background shadow-card md:block">
+        <div className="hidden max-w-full overflow-x-auto rounded-xl border border-[#D8C3AD] bg-background shadow-card md:block">
           <table className="w-full text-left text-sm"><thead className="bg-muted/60 text-xs text-muted-foreground"><tr>{([
             ['name', 'Job'], ['revenue', basis === 'quoted' ? 'Accepted quote' : 'Issued invoices'], ['costs', 'Confirmed costs'], ['profit', 'Profit'], ['margin', 'Margin'],
           ] as [SortKey, string][]).map(([key, label]) => <th key={key} className="px-4 py-3"><button onClick={() => toggleSort(key)} className="inline-flex items-center gap-1.5 font-semibold hover:text-foreground" data-testid={`sort-${key}`}>{label}<ArrowDownUp className="h-3 w-3" /></button></th>)}</tr></thead>

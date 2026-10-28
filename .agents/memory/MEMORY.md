@@ -2,4 +2,4 @@
 - [Receipt transcription rules](receipt-transcription.md) — receipt scans must not enrich or guess missing information; preserve printed values for explicit review.
 - [Visual theme](visual-theme.md) — the user wants this app to have a white background rather than a dark theme.
 - [Addition variations](addition-variations.md) — extra materials or work belong to an Addition variation, not a substitution or a change to the original price.
-- [Phone layout verification](phone-layout-verification.md) — verify the actual quote component, not just public login/demo screens, when checking signed-in mobile layouts.
+- [Phone layout verification](phone-layout-verification.md) — verify actual signed-in components and attachment/review states, not just public pages or empty forms.

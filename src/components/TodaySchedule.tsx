@@ -50,12 +50,12 @@ function AppointmentRow({
         <span>{formatTime(appt.start_time)}</span>
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium leading-snug truncate">{appt.title}</p>
+        <p className="break-words [overflow-wrap:anywhere] text-sm font-medium leading-snug">{appt.title}</p>
         <p className="text-xs text-muted-foreground mt-0.5">
           {formatTime(appt.start_time)} – {formatTime(appt.end_time)}
         </p>
         {appt.notes && (
-          <p className="text-xs text-muted-foreground mt-0.5 italic truncate">{appt.notes}</p>
+          <p className="break-words [overflow-wrap:anywhere] text-xs text-muted-foreground mt-0.5 italic">{appt.notes}</p>
         )}
       </div>
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -243,8 +243,8 @@ export function TodaySchedule() {
   return (
     <div className="rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card flex flex-col" data-testid="today-schedule-panel">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-y-2 px-4 py-3 border-b border-border/60">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           <Calendar className="w-4 h-4 text-amber-600" />
           <h2 className="font-heading text-sm font-semibold">Today's Schedule</h2>
           {!loading && appointments.length > 0 && (
@@ -253,7 +253,7 @@ export function TodaySchedule() {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-muted-foreground">{dateLabel}</span>
           {!showForm && !editingId && (
             <button

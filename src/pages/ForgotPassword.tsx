@@ -40,7 +40,7 @@ export default function ForgotPassword() {
             </div>
             <h1 className="font-heading text-2xl font-bold">Check your email</h1>
             <p className="text-muted-foreground mt-2">
-              We've sent a password reset link to <strong>{email}</strong>
+               We've sent a password reset link to <strong className="break-words [overflow-wrap:anywhere]">{email}</strong>
             </p>
           </div>
 

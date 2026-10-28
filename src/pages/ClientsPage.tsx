@@ -139,7 +139,7 @@ export default function ClientsPage() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-6">
           <h1 className="font-heading text-2xl font-bold">Clients</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -147,9 +147,9 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
+        <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
           {/* Table header — desktop only */}
-          <div className="hidden sm:grid sm:grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-2.5 border-b bg-muted/30">
+          <div className="hidden sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,3fr)_72px] gap-3 lg:gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Name</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Email</span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Address</span>
@@ -214,15 +214,15 @@ export default function ClientsPage() {
                   </div>
 
                   {/* Desktop layout */}
-                  <div className="hidden sm:grid sm:grid-cols-[2fr_2fr_3fr_80px] gap-4 px-4 py-3.5 items-center">
+                  <div className="hidden sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,3fr)_72px] gap-3 lg:gap-4 px-4 py-3.5 items-center">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <ClientInitial name={client.name} />
-                      <span className="text-sm font-medium truncate">{client.name}</span>
+                      <span className="min-w-0 break-words [overflow-wrap:anywhere] text-sm font-medium">{client.name}</span>
                     </div>
-                    <span className="text-sm text-muted-foreground truncate">
+                    <span className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-muted-foreground">
                       {client.email || <span className="italic text-muted-foreground/40">—</span>}
                     </span>
-                    <span className="text-sm text-muted-foreground truncate">
+                    <span className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-muted-foreground">
                       {client.address || <span className="italic text-muted-foreground/40">—</span>}
                     </span>
                     <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
@@ -253,7 +253,7 @@ export default function ClientsPage() {
 
       {/* Edit dialog */}
       <Dialog open={!!editClient} onOpenChange={open => !open && setEditClient(null)}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Client</DialogTitle>
             <DialogDescription>
@@ -301,7 +301,7 @@ export default function ClientsPage() {
 
       {/* Delete confirmation dialog */}
       <Dialog open={!!deleteClient} onOpenChange={open => !open && setDeleteClient(null)}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Delete client?</DialogTitle>
             <DialogDescription>

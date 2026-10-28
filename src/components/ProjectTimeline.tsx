@@ -51,9 +51,9 @@ export function ProjectTimeline({ stages, currentStageIndex }: ProjectTimelinePr
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-2">
                 <h4 className={cn(
-                  "font-heading font-semibold",
+                  "break-words [overflow-wrap:anywhere] font-heading font-semibold",
                   isCurrent && "text-accent-foreground"
                 )}>
                   {stage.name}
@@ -64,7 +64,7 @@ export function ProjectTimeline({ stages, currentStageIndex }: ProjectTimelinePr
                   </span>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+              <p className="break-words [overflow-wrap:anywhere] text-sm text-muted-foreground mt-1 leading-relaxed">
                 {stage.description}
               </p>
             </div>

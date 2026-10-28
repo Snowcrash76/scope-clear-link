@@ -269,7 +269,7 @@ export default function ClientProjectView() {
     <div className="min-h-screen bg-background">
       <ProjectHeader project={project} />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <main className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* Action Required Banner */}
         <ActionRequired 
           pendingChanges={pendingChanges}
@@ -332,7 +332,7 @@ export default function ClientProjectView() {
             </div>
 
             {activeQuote && activeQuote.status !== 'draft' ? (
-              <Card className="p-6 space-y-6">
+              <Card className="min-w-0 p-4 sm:p-6 space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                   <div>
@@ -398,9 +398,9 @@ export default function ClientProjectView() {
                 {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
                   <div className="border rounded-lg divide-y">
                     {includedItems.map(item => (
-                      <div key={item.id} className="p-3 flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{item.title}</p>
+                      <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                        <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                          <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                           {stripVariationMeta(item.description) && (
                             <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                           )}
@@ -411,9 +411,9 @@ export default function ClientProjectView() {
                       </div>
                     ))}
                     {baseQuoteLineItems.map(item => (
-                      <div key={item.id} className="p-3 flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{item.title}</p>
+                      <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                        <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                          <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                           {stripVariationMeta(item.description) && (
                             <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                           )}
@@ -433,9 +433,9 @@ export default function ClientProjectView() {
                       <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
                     </div>
                     {approvedChanges.map(change => (
-                      <div key={change.id} className="p-3 flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{change.title}</p>
+                      <div key={change.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                        <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                          <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</p>
                           {stripVariationMeta(change.description) && (
                             <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(change.description)}</p>
                           )}
@@ -449,9 +449,9 @@ export default function ClientProjectView() {
                       </div>
                     ))}
                     {variationLineItems.map(item => (
-                      <div key={item.id} className="p-3 flex justify-between items-start">
-                        <div className="flex-1 pr-4">
-                          <p className="text-sm font-medium">{item.title}</p>
+                      <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                        <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                          <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                           {item.description && (
                             <RichTextContent html={item.description} className="text-xs mt-0.5" />
                           )}
@@ -702,7 +702,7 @@ export default function ClientProjectView() {
                       {/* Prominent heading from first line item */}
                       {firstLineItem && (
                         <div className="mb-4 pb-3 border-b">
-                          <h3 className="text-lg font-semibold text-primary border-l-4 border-primary pl-3">
+                      <h3 className="break-words [overflow-wrap:anywhere] text-lg font-semibold text-primary border-l-4 border-primary pl-3">
                             {firstLineItem.description}
                           </h3>
                         </div>
@@ -715,7 +715,7 @@ export default function ClientProjectView() {
                           </div>
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-medium">{invoice.invoiceNumber}</span>
+                              <span className="break-words [overflow-wrap:anywhere] font-medium">{invoice.invoiceNumber}</span>
                               <Badge variant={
                                 invoice.status === 'paid' ? 'success' :
                                 invoice.status === 'overdue' ? 'destructive' :
@@ -798,7 +798,7 @@ export default function ClientProjectView() {
           {/* Stages Tab */}
           {project.stages?.length > 0 && (
             <TabsContent value="stages" className="space-y-4 animate-fade-in">
-              <div>
+                          <div className="min-w-0">
                 <h2 className="font-heading text-xl font-bold">Job Stages</h2>
                 <p className="text-sm text-muted-foreground">
                   See where your job is at and what's coming next
@@ -891,9 +891,9 @@ export default function ClientProjectView() {
 
       {/* Footer */}
       <footer className="border-t mt-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center text-sm text-muted-foreground">
-          <p>This job page is provided by {project.tradeBusinessName}</p>
-          <p className="mt-1">Questions? Contact {project.tradeName} directly.</p>
+        <div className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center text-sm text-muted-foreground">
+          <p className="break-words [overflow-wrap:anywhere]">This job page is provided by {project.tradeBusinessName}</p>
+          <p className="mt-1 break-words [overflow-wrap:anywhere]">Questions? Contact {project.tradeName} directly.</p>
         </div>
       </footer>
     </div>

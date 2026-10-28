@@ -85,7 +85,7 @@ export function EditStageModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="w-[calc(100vw-2rem)] max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{stage ? 'Edit Stage' : 'Add Stage'}</DialogTitle>
         </DialogHeader>

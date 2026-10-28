@@ -196,8 +196,8 @@ export function StageManager({
             {stages.map((stage, index) => (
               <div 
                 key={stage.id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border transition-all",
+                 className={cn(
+                   "flex min-w-0 flex-wrap items-center gap-3 p-3 rounded-lg border transition-all",
                   stage.status === 'current' && "bg-primary/5 border-primary/30",
                   stage.status === 'completed' && "bg-approved/5 border-approved/30",
                   stage.status === 'upcoming' && "bg-secondary/50 border-border"
@@ -244,10 +244,10 @@ export function StageManager({
                 </div>
 
                 {/* Stage Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1 basis-[calc(100%-4rem)] sm:basis-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
                     <p className={cn(
-                      "font-medium",
+                      "break-words [overflow-wrap:anywhere] font-medium",
                       stage.status === 'upcoming' && "text-muted-foreground"
                     )}>
                       {stage.name}
@@ -275,7 +275,7 @@ export function StageManager({
                     })()}
                   </div>
                   {stage.description && (
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="break-words [overflow-wrap:anywhere] text-sm text-muted-foreground">
                       {stage.description}
                     </p>
                   )}
@@ -300,7 +300,7 @@ export function StageManager({
 
                 {/* Edit/Delete Actions */}
                 {isEditable && (
-                  <div className="flex items-center gap-1">
+                  <div className="ml-auto flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -324,7 +324,7 @@ export function StageManager({
                 )}
 
                 {/* Status Actions */}
-                <div className="flex-shrink-0 flex items-center gap-2">
+                <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
                   {/* Generate Invoice Button for completed stages with billing */}
                   {stage.status === 'completed' && hasBilling(stage) && !getStageInvoice(stage.id) && onGenerateStageInvoice && (
                     <Button 

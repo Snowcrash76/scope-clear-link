@@ -85,7 +85,7 @@ export default function DemoProjectView() {
 
       <ProjectHeader project={project} />
 
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+      <main className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
         {/* Tabs */}
         <Tabs defaultValue="quote" className="space-y-6">
@@ -126,7 +126,7 @@ export default function DemoProjectView() {
               <p className="text-sm text-muted-foreground">Review and download your quote</p>
             </div>
 
-            <Card className="p-6 space-y-6">
+            <Card className="min-w-0 p-4 sm:p-6 space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
@@ -159,9 +159,9 @@ export default function DemoProjectView() {
               {includedItems.length > 0 && (
                 <div className="border rounded-lg divide-y">
                   {includedItems.map(item => (
-                    <div key={item.id} className="p-3 flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-sm font-medium">{item.title}</p>
+                    <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                      <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                        <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                         {stripVariationMeta(item.description) && (
                           <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
                         )}
@@ -181,9 +181,9 @@ export default function DemoProjectView() {
                     <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
                   </div>
                   {approvedChanges.map(change => (
-                    <div key={change.id} className="p-3 flex justify-between items-start">
-                      <div className="flex-1 pr-4">
-                        <p className="text-sm font-medium">{change.title}</p>
+                    <div key={change.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
+                      <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
+                        <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</p>
                         {change.description && (
                           <p className="text-xs text-muted-foreground mt-0.5">{change.description}</p>
                         )}

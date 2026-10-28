@@ -38,7 +38,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
   const healthLabel = { healthy: 'On track', low: 'Tight margin', loss: 'Operating at a loss', unknown: 'Unavailable' }[result.health];
 
   return (
-    <Card className="mb-6 overflow-hidden border-[#D8C3AD] shadow-card" data-testid="job-profitability-panel">
+    <Card className="mb-6 min-w-0 [overflow-wrap:anywhere] border-[#D8C3AD] shadow-card" data-testid="job-profitability-panel">
       <div className="flex flex-col gap-4 border-b bg-[#F7F2EB] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <div className="flex items-center gap-2">
@@ -57,7 +57,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
       </div>
       <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-[1fr_1.15fr]">
         <div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-lg border bg-background p-3">
               <p className="text-xs text-muted-foreground">Accepted quote</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{job.quotedExGst === null ? 'Unavailable' : aud(job.quotedExGst)}</p>
@@ -66,12 +66,12 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
               <p className="text-xs text-muted-foreground">Issued invoices</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.invoicedExGst)}</p>
             </div>
-            <div className="col-span-2 rounded-lg border bg-background p-3">
+            <div className="rounded-lg border bg-background p-3 sm:col-span-2">
               <p className="text-xs text-muted-foreground">Confirmed costs</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.confirmedCostsExGst)}</p>
             </div>
           </div>
-          <div className={cn('mt-3 flex items-center justify-between gap-3 rounded-lg border px-3 py-3', healthStyles[result.health])}>
+          <div className={cn('mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-3', healthStyles[result.health])}>
             <div>
               <p className="text-xs font-medium">{healthLabel}</p>
               <p className="mt-0.5 text-xs opacity-80">Profit · {result.margin === null ? 'Margin unavailable' : `${result.margin.toFixed(1)}% margin`}</p>
@@ -92,7 +92,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
           )}
         </div>
         <div className="rounded-lg border bg-background p-3 sm:p-4">
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">Confirmed cost breakdown</h3>
             {job.draftCostsExGst > 0 && <span className="text-xs text-muted-foreground">{aud(job.draftCostsExGst)} draft excluded</span>}
           </div>

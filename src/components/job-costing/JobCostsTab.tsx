@@ -383,7 +383,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
   };
 
   return (
-    <section className="space-y-4" data-testid="job-costs-tab">
+    <section className="min-w-0 max-w-full space-y-4 [overflow-wrap:anywhere]" data-testid="job-costs-tab">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div><h2 className="font-heading text-lg font-semibold">Job costs</h2><p className="mt-1 text-sm text-muted-foreground">Record what the job actually costs. Only confirmed costs affect profit.</p></div>
         <Button onClick={startNew} data-testid="button-add-job-cost"><Plus className="mr-2 h-4 w-4" />Add cost</Button>
@@ -424,9 +424,9 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       {!loading && !error && filtered.length > 0 && <Card className="flex flex-wrap items-center justify-between gap-3 p-4 text-sm" data-testid="job-cost-list-totals"><span className="font-semibold">Filtered total · {filtered.length} entries</span><div className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums"><span>Ex GST <b>{aud(totals.ex)}</b></span><span>GST <b>{aud(totals.gst)}</b></span><span>Inc GST <b>{aud(totals.inc)}</b></span></div><p className="w-full text-xs text-muted-foreground">List totals include the selected draft and confirmed entries. Only confirmed entries affect profitability.</p></Card>}
 
       <Dialog open={open} onOpenChange={next => { if ((submitting || scanBusy) && !next) return; if (next) setOpen(true); else closeForm(); }}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl" data-testid="dialog-job-cost">
+        <DialogContent className="max-h-[92dvh] min-w-0 [overflow-wrap:anywhere] overflow-y-auto sm:max-w-2xl" data-testid="dialog-job-cost">
           <DialogHeader><DialogTitle>{editing ? 'Edit job cost' : 'Add a job cost'}</DialogTitle><DialogDescription>Record the actual expense. Use draft while it needs checking; confirmed costs count towards profit.</DialogDescription></DialogHeader>
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSave} className="min-w-0 max-w-full space-y-4">
             {!editing && <ReceiptScanControls file={previewFile} busy={scanBusy || submitting} uploaded={!!uploadedReceiptPath && uploadedReceiptFile === previewFile} onFileChange={onSelectFile} onScan={scanReceipt} />}
             {scanBusy && <p role="status" className="rounded-md border border-amber-300 bg-amber-50/70 px-3 py-2 text-sm text-amber-900">Uploading original and scanning receipt…</p>}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -521,7 +521,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
 
 function ReceiptLinesView({ cost }: { cost?: JobCost }) {
   if (!cost?.receipt_line_items) return <p className="text-sm text-muted-foreground">No stored receipt line items.</p>;
-  return <div className="space-y-2"><p className="text-xs text-muted-foreground">{cost.receipt_confidence ?? 'Unknown'} scan confidence</p>{cost.receipt_line_items.map((item, index) => <div key={index} className="flex flex-wrap justify-between gap-2 border-b py-2 text-sm"><span>{item.description || 'Unreadable item'}{item.quantity !== null ? ` · Qty ${item.quantity}` : ''}{item.unit_price !== null ? ` · Unit ${aud(item.unit_price)}` : ''}</span><span className="tabular-nums">{item.amount === null ? 'Unreadable amount' : aud(item.amount)}</span></div>)}</div>;
+  return <div className="min-w-0 space-y-2 [overflow-wrap:anywhere]"><p className="text-xs text-muted-foreground">{cost.receipt_confidence ?? 'Unknown'} scan confidence</p>{cost.receipt_line_items.map((item, index) => <div key={index} className="flex min-w-0 flex-wrap justify-between gap-2 border-b py-2 text-sm"><span className="min-w-0">{item.description || 'Unreadable item'}{item.quantity !== null ? ` · Qty ${item.quantity}` : ''}{item.unit_price !== null ? ` · Unit ${aud(item.unit_price)}` : ''}</span><span className="tabular-nums">{item.amount === null ? 'Unreadable amount' : aud(item.amount)}</span></div>)}</div>;
 }
 
 function Field({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {
