@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { JobSectionMenu } from '../src/components/JobSectionMenu';
 import { AppHeader } from '../src/components/AppHeader';
+import { JobHeader } from '../src/components/JobHeader';
+import { Copy, ExternalLink, MoreVertical, Send } from 'lucide-react';
 import { Tabs, TabsContent } from '../src/components/ui/tabs';
 
 const sections = [
@@ -11,12 +13,22 @@ const sections = [
 function Fixture() {
   const [value, setValue] = useState(new URLSearchParams(location.search).get('tab') || 'quote');
   return <div className="min-h-screen">
-    <AppHeader onOpenNavigation={() => {}} actions={
-      <JobSectionMenu value={value} onValueChange={setValue} invoiceCount={3} pendingVariationCount={2} documentNotificationCount={1} />
-    } />
+    <AppHeader onOpenNavigation={() => {}} />
+    <JobHeader>
+      <div className="mb-3">
+        <h1 className="text-xl font-bold">Example job</h1>
+        <p className="text-sm text-muted-foreground">Test client · draft</p>
+      </div>
+      <div className="flex w-full items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center">
+          {([['Send job', Send], ['Copy link', Copy], ['Preview', ExternalLink], ['Job actions', MoreVertical]] as const).map(([label, Icon]) =>
+            <button key={String(label)} aria-label={String(label)} className="inline-flex h-11 w-11 shrink-0 items-center justify-center"><Icon className="h-4 w-4" /></button>
+          )}
+        </div>
+        <JobSectionMenu value={value} onValueChange={setValue} invoiceCount={3} pendingVariationCount={2} documentNotificationCount={1} />
+      </div>
+    </JobHeader>
     <main className="mx-auto max-w-5xl p-4">
-    <h1 className="mb-1 text-xl font-bold">Example job</h1>
-    <p className="mb-6 text-sm text-muted-foreground">Isolated job-section navigation check</p>
     <Tabs value={value} onValueChange={setValue} className="min-w-0">
       {sections.map(([key, label]) => <TabsContent key={key} value={key} role="region" aria-labelledby={undefined} aria-label={label}>
         <section className="mt-6 rounded-xl border bg-white p-4">

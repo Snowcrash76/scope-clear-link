@@ -25,8 +25,10 @@ try {
     await trigger.waitFor();
     assert.equal(await page.getByRole('tablist').count(), 0);
     assert.equal(await page.getByRole('button', { name: /^Job sections,/ }).count(), 1);
+    assert.equal(await page.getByTestId('app-header').getByRole('button', { name: /^Job sections,/ }).count(), 0);
+    assert.equal(await page.getByTestId('job-header').getByRole('button', { name: /^Job sections,/ }).count(), 1);
     const beforeScroll = await trigger.boundingBox();
-    assert.ok(beforeScroll.x + beforeScroll.width >= width - 25, 'Job menu is on the right edge');
+    assert.ok(beforeScroll.x + beforeScroll.width >= width - Math.max(25, (width - 1152) / 2 + 30), 'Job menu is on the right of the job header');
     if (width < 1024) {
       const globalMenu = await page.getByRole('button', { name: 'Open navigation', exact: true }).boundingBox();
       assert.ok(globalMenu.x + globalMenu.width < beforeScroll.x, 'Global and job menus do not overlap');
@@ -53,14 +55,16 @@ try {
     assert.ok(await page.evaluate(() => window.scrollY) >= 500, 'Fixture really scrolls');
     const after = await trigger.boundingBox();
     assert.ok(Math.abs(after.y - before.y) <= 1, 'Job menu stays in the same screen position while scrolling');
-    assert.ok(after.y >= 0 && after.y + after.height <= 70, 'Job menu remains in the top header');
+    const jobHeader = await page.getByTestId('job-header').boundingBox();
+    assert.ok(Math.abs(jobHeader.y - (width < 1024 ? 64 : 0)) <= 1, 'Job header sticks below the global mobile bar without overlapping');
+    assert.ok(after.y >= jobHeader.y && after.y + after.height <= jobHeader.y + jobHeader.height, 'Job menu remains inside the job header');
     await trigger.focus();
     await page.keyboard.press('ArrowDown');
     await page.getByRole('menu').waitFor();
     assert.equal(await page.getByRole('menuitemradio', { name: /^Quote/ }).getAttribute('aria-checked'), 'true');
     const bounds = await page.getByRole('menu').boundingBox();
     assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width + 1);
-    if (width === 390) await page.screenshot({ path: 'generated-artifacts/job-sections-open-390.jpg', fullPage: true });
+    if (width === 390) await page.screenshot({ path: 'generated-artifacts/job-sections-open-390.jpg' });
     await page.keyboard.press('Escape');
     await page.getByRole('menu').waitFor({ state: 'hidden' });
     assert.equal(await trigger.evaluate(el => el === document.activeElement), true);
@@ -73,7 +77,7 @@ try {
     await page.getByRole('button', { name: 'Job sections, Costs', exact: true }).waitFor();
     await page.getByRole('region', { name: 'Costs', exact: true }).waitFor();
     assert.deepEqual(errors, []);
-    console.log(`PASS fixed top-right header, scroll position, six sections, counts, keyboard and deep links at ${width}px`);
+    console.log(`PASS right-hand job action row, sticky job header, six sections and navigation at ${width}px`);
     await page.close();
   }
 } finally { await browser.close(); }

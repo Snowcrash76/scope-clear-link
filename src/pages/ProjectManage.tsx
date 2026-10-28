@@ -16,6 +16,7 @@ import { RespondToClientModal } from '@/components/RespondToClientModal';
 import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { JobSectionMenu } from '@/components/JobSectionMenu';
+import { JobHeader } from '@/components/JobHeader';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import {
   Dialog,
@@ -448,63 +449,49 @@ export default function ProjectManage() {
   };
 
   return (
-    <AppShell
-      headerActions={
-        <JobSectionMenu
-          value={activeTab}
-          onValueChange={setActiveTab}
-          invoiceCount={invoices.length}
-          pendingVariationCount={pendingClientRequests.length}
-          documentNotificationCount={
-            showDocNotification
-              ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
-              : 0
-          }
-        />
-      }
-    >
-      {/* Project sub-header */}
-      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm relative z-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex min-w-0 items-start gap-2 sm:gap-3">
-              <Button variant="ghost" size="icon" className="mt-0.5 h-11 w-11 flex-shrink-0" aria-label="Back to dashboard" onClick={() => navigate('/dashboard')}>
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  <h1 className="max-w-full break-words font-heading text-xl sm:text-2xl font-bold">{project.name}</h1>
-                  <Badge variant={
-                    project.status === 'draft' ? 'secondary' :
-                    project.status === 'sent' ? 'pending' :
-                    project.status === 'completed' ? 'success' : 'default'
-                  }>
-                    {project.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1 flex-wrap">
-                  <span className="flex items-center gap-1">
-                    <User className="w-3.5 h-3.5" />
-                    {project.clientName}
+    <AppShell>
+      <JobHeader>
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+            <Button variant="ghost" size="icon" className="mt-0.5 h-11 w-11 flex-shrink-0" aria-label="Back to dashboard" onClick={() => navigate('/dashboard')}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="min-w-0 flex-1">
+              <div className="flex min-w-0 items-start gap-2 sm:gap-3">
+                <h1 className="min-w-0 break-words font-heading text-xl font-bold sm:text-2xl">{project.name}</h1>
+                <Badge className="mt-0.5 shrink-0" variant={
+                  project.status === 'draft' ? 'secondary' :
+                  project.status === 'sent' ? 'pending' :
+                  project.status === 'completed' ? 'success' : 'default'
+                }>
+                  {project.status.replace('_', ' ')}
+                </Badge>
+              </div>
+              <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <User className="w-3.5 h-3.5" />
+                  {project.clientName}
+                </span>
+                <span className="hidden items-center gap-1 sm:flex">
+                  <Mail className="w-3.5 h-3.5" />
+                  {project.clientEmail}
+                </span>
+                {project.clientAddress && (
+                  <span className="hidden items-center gap-1 sm:flex" data-testid="text-client-address">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {project.clientAddress}
                   </span>
-                  <span className="hidden sm:flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5" />
-                    {project.clientEmail}
-                  </span>
-                  {project.clientAddress && (
-                    <span className="hidden sm:flex items-center gap-1" data-testid="text-client-address">
-                      <MapPin className="w-3.5 h-3.5" />
-                      {project.clientAddress}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
             </div>
-            <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+          </div>
+
+          <div className="mt-3 flex w-full min-w-0 items-center">
+            <div className="flex min-w-0 shrink-0 items-center gap-0 sm:gap-1">
               {project.status === 'draft' && (
-                <Button variant="accent" size="sm" className="min-h-11" aria-label="Send job to client" onClick={handleSendToClient}>
+                <Button variant="accent" size="sm" className="h-11 w-11 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Send job to client" onClick={handleSendToClient}>
                   <Send className="w-4 h-4" />
-                  <span className="hidden sm:inline ml-2">Send to Client</span>
+                  <span className="hidden sm:ml-2 sm:inline">Send to Client</span>
                 </Button>
               )}
               <TooltipProvider>
@@ -513,7 +500,7 @@ export default function ProjectManage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-11 w-11"
+                      className="h-11 w-11 shrink-0"
                       aria-label="Copy client preview link"
                       onClick={handleCopyClientLink}
                       data-testid="button-copy-client-link"
@@ -532,7 +519,7 @@ export default function ProjectManage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-11 w-11"
+                      className="h-11 w-11 shrink-0"
                       aria-label="Preview client page"
                       onClick={() => window.open(getClientProjectUrl(project.id), '_blank', 'noopener,noreferrer')}
                       data-testid="button-preview-client-page"
@@ -549,7 +536,7 @@ export default function ProjectManage() {
               {/* Project actions menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="Project actions" data-testid="button-project-actions-menu">
+                  <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label="Project actions" data-testid="button-project-actions-menu">
                     <MoreVertical className="w-4 h-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -576,9 +563,23 @@ export default function ProjectManage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+
+            <div className="ml-auto w-[108px] shrink-0 sm:w-auto">
+              <JobSectionMenu
+                value={activeTab}
+                onValueChange={setActiveTab}
+                invoiceCount={invoices.length}
+                pendingVariationCount={pendingClientRequests.length}
+                documentNotificationCount={
+                  showDocNotification
+                    ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
+                    : 0
+                }
+              />
+            </div>
           </div>
         </div>
-      </div>
+      </JobHeader>
 
       <main className="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Notification banners */}
