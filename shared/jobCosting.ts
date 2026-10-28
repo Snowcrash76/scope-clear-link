@@ -113,3 +113,30 @@ export function profitability(job: JobProfitability, basis: RevenueBasis) {
     : margin !== null ? 'healthy' : 'unknown';
   return { revenue, profit, margin, health };
 }
+
+/** Match revenue and costs to the same jobs; never average individual margins. */
+export function profitabilitySummary(jobs: JobProfitability[], basis: RevenueBasis) {
+  let revenue = 0, confirmedCosts = 0, jobCount = 0, excludedJobCount = 0, excludedCosts = 0;
+  for (const job of jobs) {
+    const result = profitability(job, basis);
+    if (result.revenue === null) {
+      excludedJobCount++;
+      excludedCosts += job.confirmedCostsExGst;
+      continue;
+    }
+    jobCount++;
+    revenue += result.revenue;
+    confirmedCosts += job.confirmedCostsExGst;
+  }
+  if (!jobCount) return {
+    revenue: null, confirmedCosts: null, profit: null, margin: null,
+    jobCount, excludedJobCount, excludedCosts: money(excludedCosts),
+  };
+  revenue = money(revenue);
+  confirmedCosts = money(confirmedCosts);
+  const profit = money(revenue - confirmedCosts);
+  return {
+    revenue, confirmedCosts, profit, margin: revenue > 0 ? profit / revenue * 100 : null,
+    jobCount, excludedJobCount, excludedCosts: money(excludedCosts),
+  };
+}

@@ -20,3 +20,9 @@ Do not show the job profitability/cost breakdown as a persistent panel above all
 **Why:** The user explicitly asked to remove that shared panel because it appeared across every page in the jobs section.
 
 **How to apply:** Keep costing tools in their dedicated areas; do not reintroduce a shared profitability panel when extending the job layout.
+
+Portfolio margin uses combined profit divided by combined revenue, not the average of job percentages. When selected revenue is unknown, exclude that job and its costs together and disclose the excluded costs.
+
+**Why:** Averaging job margins gives small jobs disproportionate weight. Mixing unknown-revenue costs into a known-revenue total would present a misleading overall result; silently ignoring them without disclosure would also hide financial uncertainty.
+
+**How to apply:** Keep portfolio revenue, costs and profit scoped to the same set of jobs. Treat an absent accepted quote as unknown rather than zero. Zero known revenue can still produce a loss, but has no percentage margin. Label these figures gross job profit, not net business profit.

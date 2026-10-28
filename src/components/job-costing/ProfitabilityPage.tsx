@@ -7,6 +7,7 @@ import { useJobProfitability, aud, profitability, type RevenueBasis } from '@/ho
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { JobCostSetupHelp, isJobCostSetupError } from '@/components/job-costing/JobCostSetupHelp';
+import { ProfitabilitySummary } from '@/components/job-costing/ProfitabilitySummary';
 
 type SortKey = 'name' | 'revenue' | 'costs' | 'profit' | 'margin';
 export default function ProfitabilityPage() {
@@ -35,6 +36,7 @@ export default function ProfitabilityPage() {
       : query.isError ? <Card className="p-6"><h2 className="font-semibold">Could not load profitability</h2><p className="mt-2 text-sm text-muted-foreground">{query.error instanceof Error ? query.error.message : 'Please try again.'}</p>{isJobCostSetupError(query.error) && <JobCostSetupHelp />}<Button variant="outline" className="mt-4" onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></Card>
       : !rows.length ? <Card className="border-dashed px-5 py-12 text-center"><CircleDollarSign className="mx-auto mb-3 h-9 w-9 text-amber-800" /><h2 className="font-semibold">No job figures yet</h2><p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">Once jobs and their costing data are available, the comparison will appear here.</p></Card>
       : <>
+        <ProfitabilitySummary jobs={query.data ?? []} basis={basis} />
         <div className="hidden max-w-full overflow-x-auto rounded-xl border border-[#D8C3AD] bg-background shadow-card md:block">
           <table className="w-full text-left text-sm"><thead className="bg-muted/60 text-xs text-muted-foreground"><tr>{([
             ['name', 'Job'], ['revenue', basis === 'quoted' ? 'Accepted quote' : 'Issued invoices'], ['costs', 'Confirmed costs'], ['profit', 'Profit'], ['margin', 'Margin'],
