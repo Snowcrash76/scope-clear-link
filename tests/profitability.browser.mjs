@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const job = { jobId: 'one', jobName: 'Synthetic carpentry job', clientName: 'Test client', status: 'in_progress',
-  quotedExGst: 1000, invoicedExGst: 600, approvedVariationsExGst: 200, confirmedCostsExGst: 750,
+  quotedExGst: 1000, quoteStatus: 'draft', quoteIsEstimate: true, invoicedExGst: 600, approvedVariationsExGst: 200, confirmedCostsExGst: 750,
   draftCostsExGst: 500, costsByCategory: { Materials: 750, Subcontractor: 0, 'Plant/Equipment': 0, Labour: 0, Other: 0 } };
 const jobs = [job, { ...job, jobId: 'two', jobName: 'Synthetic kitchen job', invoicedExGst: 1000, confirmedCostsExGst: 500 },
   { ...job, jobId: 'three', jobName: 'Job without accepted quote', quotedExGst: null, invoicedExGst: 0, confirmedCostsExGst: 200 }];
@@ -37,18 +37,33 @@ try {
     const page = await browser.newPage({ viewport: { width, height: 900 } });
     const errors = []; page.on('pageerror', error => errors.push(error.message));
     await page.goto(`${base}/generated-artifacts/profitability.html`);
-    await page.getByTestId('summary-profit').waitFor();
-    assert.match(await page.getByTestId('summary-profit').innerText(), /750\.00/);
-    assert.match(await page.getByTestId('summary-margin').innerText(), /37\.5%/);
+    const profit = page.locator('[data-testid="job-profit-one"]:visible');
+    const margin = page.locator('[data-testid="job-margin-one"]:visible');
+    await profit.waitFor();
+    assert.match(await profit.innerText(), /250\.00/);
+    assert.match(await margin.innerText(), /25\.0%/);
+    assert.equal(await page.getByText('Portfolio totals', { exact: true }).count(), 0);
+    assert.equal(await page.getByTestId('summary-profit').count(), 0);
+    assert.match(await page.locator('body').innerText(), /Estimated profit/i);
+    assert.match(await page.locator('body').innerText(), /draft.*cost|cost.*draft/i);
     await page.getByRole('button', { name: 'invoiced', exact: true }).click();
-    assert.match(await page.getByTestId('summary-profit').innerText(), /150\.00/);
-    assert.match(await page.getByTestId('summary-margin').innerText(), /9\.4%/);
+    assert.match(await profit.innerText(), /150\.00/);
+    assert.match(await margin.innerText(), /25\.0%/);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     for (const scenario of ['unknown', 'zero']) {
       await page.goto(`${base}/generated-artifacts/profitability.html?scenario=${scenario}`);
-      await page.getByTestId('summary-margin').waitFor();
-      const margin = await page.getByTestId('summary-margin').innerText();
-      assert.doesNotMatch(margin, /NaN|Infinity|0\.0%/);
+      const id = scenario === 'unknown' ? 'three' : 'one';
+      const region = page.locator(`[data-testid="profitability-card-${id}"]:visible,[data-testid="profitability-row-${id}"]:visible`);
+      await region.waitFor();
+      assert.doesNotMatch(await region.innerText(), /NaN|Infinity/);
+      if (scenario === 'unknown') {
+        assert.match(await region.innerText(), /add a quote/i);
+        assert.equal(await region.locator('a[href="/manage/three?tab=quote"]').count() > 0, true);
+      }
+      if (scenario === 'zero') {
+        assert.match(await region.innerText(), /\$0 revenue/);
+        assert.match(await page.locator('[data-testid="job-profit-one"]:visible').innerText(), /-\$750\.00/);
+      }
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     }
     assert.deepEqual(errors, []);

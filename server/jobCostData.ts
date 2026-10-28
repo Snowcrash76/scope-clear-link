@@ -13,13 +13,20 @@ export function summarizeJobs(
     // Multiple quotes are alternatives/revisions, never additive.
     const accepted = quotes.filter(q => q.project_id === project.id && q.status === 'approved')
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
-    const quote = accepted.find(q => q.id === project.active_quote_id) ?? accepted[0];
+    // Show an approved quote first. Before approval, allow an explicitly labelled
+    // estimate from one current saved quote rather than suppressing all job figures.
+    const estimates = quotes.filter(q => q.project_id === project.id && ['draft', 'sent'].includes(q.status))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const quote = accepted.find(q => q.id === project.active_quote_id) ?? accepted[0]
+      ?? estimates.find(q => q.id === project.active_quote_id) ?? estimates[0];
     const jobCosts = costs.filter(c => c.job_id === project.id);
     const confirmed = jobCosts.filter(c => c.status === 'confirmed');
     const sumCosts = (list: JobCost[]) => money(list.reduce((sum, c) => sum + Number(c.amount_ex_gst), 0));
     return {
       jobId: project.id, jobName: project.name, clientName: project.client_name, status: project.status,
-      quotedExGst: quote ? money(Number(quote.subtotal) || 0) : null,
+      quotedExGst: quote?.subtotal != null && Number.isFinite(Number(quote.subtotal)) ? money(Number(quote.subtotal)) : null,
+      quoteStatus: quote?.status ?? null,
+      quoteIsEstimate: !!quote && quote.status !== 'approved',
       invoicedExGst: money(invoices.filter(i => i.project_id === project.id && ['sent', 'paid', 'overdue'].includes(i.status))
         .reduce((sum, invoice) => sum + (Number(invoice.subtotal) || 0), 0)),
       // Informational: the existing quote subtotal already incorporates approved variations.

@@ -59,7 +59,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
         <div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-lg border bg-background p-3">
-              <p className="text-xs text-muted-foreground">Accepted quote</p>
+              <p className="text-xs text-muted-foreground">{job.quoteIsEstimate ? 'Quote value (estimate)' : 'Accepted quote'}</p>
               <p className="mt-1 text-lg font-bold tabular-nums">{job.quotedExGst === null ? 'Unavailable' : aud(job.quotedExGst)}</p>
             </div>
             <div className="rounded-lg border bg-background p-3">
@@ -79,7 +79,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
             <p className="text-xl font-bold tabular-nums">{result.profit === null ? '—' : aud(result.profit)}</p>
           </div>
           {job.quotedExGst === null && basis === 'quoted' && (
-            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">No accepted quote is available for comparison yet. Quote line prices are sale prices; estimated cost tracking is not available.</p>
+            <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Add a quote with an amount to calculate this job's profit and margin.</p>
           )}
           {job.quotedExGst === 0 && <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Quoted revenue is recorded as $0.00, so a costs-to-quote comparison is unavailable.</p>}
           {job.quotedExGst !== null && job.quotedExGst > 0 && (
@@ -113,7 +113,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
       </div>
       <div className="flex items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground sm:px-5">
         {result.health === 'loss' ? <TrendingDown className="h-3.5 w-3.5 text-rose-700" /> : <TrendingUp className="h-3.5 w-3.5 text-emerald-700" />}
-        Profit uses the selected revenue basis and confirmed costs. Drafts are excluded. Estimated cost comparison is unavailable; quote line items are sale prices.
+        Profit uses the selected revenue basis and confirmed costs. Draft costs are excluded. {basis === 'quoted' && job.quoteIsEstimate ? 'Profit and margin are estimates until the quote is approved.' : 'Quote line items are sale prices.'}
       </div>
     </Card>
   );

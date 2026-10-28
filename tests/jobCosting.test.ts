@@ -101,6 +101,39 @@ test('margin thresholds handle zero, no accepted quote, low margin, boundary and
   assert.equal(profitability({ ...base, quotedExGst: 99 }, 'quoted').health, 'loss');
 });
 
+test('per-job profit uses the current unapproved quote as an explicitly labelled estimate', () => {
+  const [job] = summarizeJobs([{ ...project, active_quote_id: 'current' }], [
+    { id: 'current', project_id: jobId, status: 'draft', subtotal: 500, created_at: '2026-01-01' },
+    { id: 'other', project_id: jobId, status: 'sent', subtotal: 1200, created_at: '2026-02-01' },
+    { id: 'declined', project_id: jobId, status: 'declined', subtotal: 9000, created_at: '2026-03-01' },
+  ], [], [], [cost]);
+  assert.equal(job.quotedExGst, 500);
+  assert.equal(job.quoteIsEstimate, true);
+  assert.equal(job.quoteStatus, 'draft');
+  assert.equal(profitability(job, 'quoted').profit, 400);
+  assert.equal(profitability(job, 'quoted').margin, 80);
+});
+
+test('approved revenue stays authoritative and quote alternatives are never added together', () => {
+  const [job] = summarizeJobs([{ ...project, active_quote_id: 'draft' }], [
+    { id: 'approved', project_id: jobId, status: 'approved', subtotal: 1000, created_at: '2026-01-01' },
+    { id: 'draft', project_id: jobId, status: 'draft', subtotal: 8000, created_at: '2026-03-01' },
+  ], [], [], [cost]);
+  assert.equal(job.quotedExGst, 1000);
+  assert.equal(job.quoteIsEstimate, false);
+  assert.equal(job.quoteStatus, 'approved');
+});
+
+test('missing, declined and null-valued quotes are not mistaken for a valid zero quote', () => {
+  const quote = { id: 'one', project_id: jobId, status: 'draft', subtotal: null as number | null, created_at: '2026-01-01' };
+  const summarize = (quotes: typeof quote[]) => summarizeJobs([project], quotes, [], [], [cost])[0];
+  assert.equal(summarize([quote]).quotedExGst, null);
+  assert.equal(summarize([{ ...quote, status: 'declined', subtotal: 999 }]).quotedExGst, null);
+  const zero = summarize([{ ...quote, subtotal: 0 }]);
+  assert.equal(profitability(zero, 'quoted').profit, -100);
+  assert.equal(profitability(zero, 'quoted').margin, null);
+});
+
 export function fakeDatabase(options: { missing?: boolean } = {}) {
   const tables: Record<string, any[]> = {
     projects: [project, { ...project, id: otherJob, user_id: otherOwner }],
