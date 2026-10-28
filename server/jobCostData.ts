@@ -21,7 +21,8 @@ export function summarizeJobs(
       ?? estimates.find(q => q.id === project.active_quote_id) ?? estimates[0];
     const jobCosts = costs.filter(c => c.job_id === project.id);
     const confirmed = jobCosts.filter(c => c.status === 'confirmed');
-    const sumCosts = (list: JobCost[]) => money(list.reduce((sum, c) => sum + Number(c.amount_ex_gst), 0));
+    const sumCosts = (list: JobCost[], field: 'amount_ex_gst' | 'amount_inc_gst' = 'amount_ex_gst') =>
+      money(list.reduce((sum, c) => sum + Number(c[field]), 0));
     return {
       jobId: project.id, jobName: project.name, clientName: project.client_name, status: project.status,
       quotedExGst: quote?.subtotal != null && Number.isFinite(Number(quote.subtotal)) ? money(Number(quote.subtotal)) : null,
@@ -33,7 +34,9 @@ export function summarizeJobs(
       approvedVariationsExGst: money(changes.filter(c => c.project_id === project.id && c.status === 'approved')
         .reduce((sum, change) => sum + (Number(change.cost_impact) || 0), 0)),
       confirmedCostsExGst: sumCosts(confirmed),
+      confirmedCostsIncGst: sumCosts(confirmed, 'amount_inc_gst'),
       draftCostsExGst: sumCosts(jobCosts.filter(c => c.status === 'draft')),
+      draftCostsIncGst: sumCosts(jobCosts.filter(c => c.status === 'draft'), 'amount_inc_gst'),
       costsByCategory: Object.fromEntries(COST_CATEGORIES.map(category =>
         [category, sumCosts(confirmed.filter(c => c.category === category))])) as JobProfitability['costsByCategory'],
     };

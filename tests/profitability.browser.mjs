@@ -7,9 +7,10 @@ const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const job = { jobId: 'one', jobName: 'Synthetic carpentry job', clientName: 'Test client', status: 'in_progress',
   quotedExGst: 1000, quoteStatus: 'draft', quoteIsEstimate: true, invoicedExGst: 600, approvedVariationsExGst: 200, confirmedCostsExGst: 750,
-  draftCostsExGst: 500, costsByCategory: { Materials: 750, Subcontractor: 0, 'Plant/Equipment': 0, Labour: 0, Other: 0 } };
-const jobs = [job, { ...job, jobId: 'two', jobName: 'Synthetic kitchen job', invoicedExGst: 1000, confirmedCostsExGst: 500 },
-  { ...job, jobId: 'three', jobName: 'Job without accepted quote', quotedExGst: null, invoicedExGst: 0, confirmedCostsExGst: 200 }];
+  confirmedCostsIncGst: 825, draftCostsExGst: 500, draftCostsIncGst: 550,
+  costsByCategory: { Materials: 750, Subcontractor: 0, 'Plant/Equipment': 0, Labour: 0, Other: 0 } };
+const jobs = [job, { ...job, jobId: 'two', jobName: 'Synthetic kitchen job', invoicedExGst: 1000, confirmedCostsExGst: 500, confirmedCostsIncGst: 550 },
+  { ...job, jobId: 'three', jobName: 'Job without accepted quote', quotedExGst: null, invoicedExGst: 0, confirmedCostsExGst: 200, confirmedCostsIncGst: 220 }];
 await mkdir('generated-artifacts', { recursive: true });
 await build({ entryPoints: ['tests/profitability.fixture.tsx'], bundle: true, platform: 'browser', format: 'esm',
   jsx: 'automatic', alias: { '@': resolve('src') }, loader: { '.sql': 'text' },
@@ -40,15 +41,19 @@ try {
     const profit = page.locator('[data-testid="job-profit-one"]:visible');
     const margin = page.locator('[data-testid="job-margin-one"]:visible');
     await profit.waitFor();
-    assert.match(await profit.innerText(), /250\.00/);
-    assert.match(await margin.innerText(), /25\.0%/);
+    assert.match(await profit.innerText(), /175\.00/);
+    assert.match(await margin.innerText(), /17\.5%/);
+    assert.match(await page.locator('[data-testid="job-costs-one"]:visible').innerText(), /825\.00/);
+    assert.match(await page.locator('body').innerText(), /Confirmed costs \(inc GST\)/);
+    assert.match(await page.locator('body').innerText(), /Quote value \(ex GST\)/);
     assert.equal(await page.getByText('Portfolio totals', { exact: true }).count(), 0);
     assert.equal(await page.getByTestId('summary-profit').count(), 0);
     assert.match(await page.locator('body').innerText(), /Estimated profit/i);
     assert.match(await page.locator('body').innerText(), /draft.*cost|cost.*draft/i);
     await page.getByRole('button', { name: 'invoiced', exact: true }).click();
-    assert.match(await profit.innerText(), /150\.00/);
-    assert.match(await margin.innerText(), /25\.0%/);
+    assert.match(await profit.innerText(), /-\$225\.00/);
+    assert.match(await margin.innerText(), /-37\.5%/);
+    assert.match(await page.locator('[data-testid="job-costs-one"]:visible').innerText(), /825\.00/);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     for (const scenario of ['unknown', 'zero']) {
       await page.goto(`${base}/generated-artifacts/profitability.html?scenario=${scenario}`);
@@ -62,7 +67,7 @@ try {
       }
       if (scenario === 'zero') {
         assert.match(await region.innerText(), /\$0 revenue/);
-        assert.match(await page.locator('[data-testid="job-profit-one"]:visible').innerText(), /-\$750\.00/);
+        assert.match(await page.locator('[data-testid="job-profit-one"]:visible').innerText(), /-\$825\.00/);
       }
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     }

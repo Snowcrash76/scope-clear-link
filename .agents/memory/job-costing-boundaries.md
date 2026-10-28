@@ -26,3 +26,9 @@ Show profit and margin for each job, not portfolio totals.
 **Why:** The user explicitly said the portfolio totals were unavailable and confusing: "i want the profit and margin to show for each job".
 
 **How to apply:** Prioritise each job's profit and numeric margin. Before quote approval, show calculations from the current saved quote as an estimate, not actual accepted revenue. Keep missing quote amounts distinct from zero. Show draft costs pending confirmation rather than implying they are included. Do not reintroduce portfolio totals.
+
+The Profitability section uses confirmed receipt costs including GST.
+
+**Why:** The user explicitly requested GST-inclusive costs rather than the previous ex-GST costs.
+
+**How to apply:** Use recorded inclusive receipt amounts, not a blanket 10% uplift, because receipts can include GST-free purchases. Keep draft costs excluded. The request changes costs only: keep quote and invoice revenue unchanged and label their tax basis separately rather than claiming all report figures share one GST basis.

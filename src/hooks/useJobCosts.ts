@@ -64,7 +64,7 @@ export function useJobCosts(jobId?: string) {
 export function useJobProfitability(jobId?: string) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['job-profitability', user?.id, jobId ?? 'all'],
+    queryKey: ['job-profitability', user?.id, jobId ?? 'all', 'gst-inclusive-costs'],
     queryFn: () => costApi<JobProfitability[]>(`/api/job-profitability${jobId ? `?jobId=${jobId}` : ''}`),
     enabled: !!user,
   });

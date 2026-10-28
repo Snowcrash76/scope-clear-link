@@ -102,14 +102,17 @@ export interface JobProfitability {
   invoicedExGst: number;
   approvedVariationsExGst: number;
   confirmedCostsExGst: number;
+  confirmedCostsIncGst: number;
   draftCostsExGst: number;
+  draftCostsIncGst: number;
   costsByCategory: Record<CostCategory, number>;
 }
 export const aud = (value: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(value);
-export function profitability(job: JobProfitability, basis: RevenueBasis) {
+export function profitability(job: JobProfitability, basis: RevenueBasis, costBasis: 'ex-gst' | 'inc-gst' = 'ex-gst') {
   const revenue = basis === 'quoted' ? job.quotedExGst : job.invoicedExGst;
-  const profit = revenue === null ? null : money(revenue - job.confirmedCostsExGst);
-  const margin = revenue !== null && revenue > 0 ? (profit! / revenue) * 100 : null;
+  const costs = costBasis === 'inc-gst' ? job.confirmedCostsIncGst : job.confirmedCostsExGst;
+  const profit = revenue === null || !Number.isFinite(costs) ? null : money(revenue - costs);
+  const margin = revenue !== null && revenue > 0 && profit !== null ? (profit / revenue) * 100 : null;
   const health = profit !== null && profit < MARGIN_THRESHOLDS.loss ? 'loss'
     : margin !== null && margin < MARGIN_THRESHOLDS.low ? 'low'
     : margin !== null ? 'healthy' : 'unknown';

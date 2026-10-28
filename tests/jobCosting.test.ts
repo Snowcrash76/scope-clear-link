@@ -101,6 +101,28 @@ test('margin thresholds handle zero, no accepted quote, low margin, boundary and
   assert.equal(profitability({ ...base, quotedExGst: 99 }, 'quoted').health, 'loss');
 });
 
+test('GST-inclusive profitability uses recorded receipt totals including GST-free costs, without converting revenue', () => {
+  const [job] = summarizeJobs([project], [
+    { id: quoteId, project_id: jobId, status: 'approved', subtotal: 1000, created_at: '2026-01-01' },
+  ], [{ project_id: jobId, status: 'sent', subtotal: 600 }], [], [
+    cost,
+    { ...cost, id: 'gst-free', amount_ex_gst: 50, gst_amount: 0, amount_inc_gst: 50, gst_applies: false },
+    { ...cost, id: 'printed-tax', amount_ex_gst: 80, gst_amount: 4, amount_inc_gst: 84 },
+    { ...cost, id: 'draft', status: 'draft', amount_ex_gst: 200, gst_amount: 20, amount_inc_gst: 220 },
+    { ...cost, id: 'other-job', job_id: otherJob, amount_ex_gst: 999, amount_inc_gst: 1098.9 },
+  ]);
+  assert.equal(job.confirmedCostsExGst, 230);
+  assert.equal(job.confirmedCostsIncGst, 244);
+  assert.equal(job.draftCostsIncGst, 220);
+  assert.equal(job.quotedExGst, 1000);
+  assert.equal(job.invoicedExGst, 600);
+  assert.deepEqual(profitability(job, 'quoted', 'inc-gst'), { revenue: 1000, profit: 756, margin: 75.6, health: 'healthy' });
+  assert.equal(profitability(job, 'invoiced', 'inc-gst').profit, 356);
+  assert.equal(profitability({ ...job, quotedExGst: 0 }, 'quoted', 'inc-gst').profit, -244);
+  assert.equal(profitability({ ...job, quotedExGst: 0 }, 'quoted', 'inc-gst').margin, null);
+  assert.equal(profitability({ ...job, quotedExGst: null }, 'quoted', 'inc-gst').profit, null);
+});
+
 test('per-job profit uses the current unapproved quote as an explicitly labelled estimate', () => {
   const [job] = summarizeJobs([{ ...project, active_quote_id: 'current' }], [
     { id: 'current', project_id: jobId, status: 'draft', subtotal: 500, created_at: '2026-01-01' },
