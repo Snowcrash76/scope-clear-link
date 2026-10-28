@@ -155,21 +155,21 @@ export function QuoteSection({
 
   // Sync state when quote prop changes (fix for editing not working)
   useEffect(() => {
-    if (quote) {
+    if (quote && !isEditing && !isCreating) {
       setTaxRate(quote.taxRate ?? 10);
       setNotes(quote.notes ?? '');
       setTerms(quote.terms || defaultTerms || '');
       setValidUntil(quote.validUntil ? format(quote.validUntil, 'yyyy-MM-dd') : '');
       setQuoteRef(quote.reference ?? '');
     }
-  }, [quote]);
+  }, [quote, isEditing, isCreating, defaultTerms]);
 
   // When business defaults load asynchronously, seed terms if the quote has none
   useEffect(() => {
-    if (defaultTerms && !quote?.terms) {
-      setTerms(defaultTerms);
+    if (defaultTerms && !quote?.terms && !isEditing && !isCreating) {
+      setTerms(prev => prev || defaultTerms);
     }
-  }, [defaultTerms]);
+  }, [defaultTerms, quote?.terms, isEditing, isCreating]);
 
   // Build approved-variation cost set first so all filters can use it
   const approvedChanges = changeRequests.filter(cr => cr.status === 'approved');
@@ -193,15 +193,16 @@ export function QuoteSection({
 
   const handleCreateQuote = async () => {
     setIsSaving(true);
-    await onCreateQuote({
-      subtotal,
-      taxRate,
-      notes: notes || undefined,
-      terms: terms || undefined,
-      validUntil: validUntil ? new Date(validUntil) : undefined,
-    });
-    setIsSaving(false);
-    setIsCreating(false);
+    try {
+      const quoteId = await onCreateQuote({
+        subtotal,
+        taxRate,
+        notes: notes || undefined,
+        terms: terms || undefined,
+        validUntil: validUntil ? new Date(validUntil) : undefined,
+      });
+      if (quoteId) setIsCreating(false);
+    } finally { setIsSaving(false); }
   };
 
   const handleUpdateQuote = async () => {

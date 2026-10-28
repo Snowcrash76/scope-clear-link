@@ -394,6 +394,7 @@ export function AppShell({ children }: AppShellProps) {
       setIsCreateModalOpen(false);
       navigate(`/manage/${projectId}?tab=quote`);
     }
+    return !!projectId;
   };
 
   const sidebarProps: SidebarInnerProps = {

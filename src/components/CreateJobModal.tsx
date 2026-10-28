@@ -18,6 +18,7 @@ import {
 import { Plus, Trash2, Package, Ban, AlertTriangle, DollarSign, CalendarIcon, FileText, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, addDays } from 'date-fns';
+import { collectQuoteDraftItems, quoteDraftTotals } from '@/lib/newQuoteDraft';
 
 interface QuoteLineItem {
   tempId: string;
@@ -43,12 +44,14 @@ interface CreateJobModalProps {
       notes: string;
       terms: string;
     };
-  }) => void;
+  }) => Promise<boolean>;
   defaultQuoteTerms?: string;
 }
 
 export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTerms }: CreateJobModalProps) {
   const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   
   // Step 1: Job Details
   const [jobName, setJobName] = useState('');
@@ -78,6 +81,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
   }, [defaultQuoteTerms]);
 
   const resetForm = () => {
+    setSaveError(null);
     setStep(1);
     setJobName('');
     setClientName('');
@@ -99,6 +103,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
   };
 
   const handleClose = () => {
+    if (saving) return;
     onOpenChange(false);
     resetForm();
   };
@@ -121,31 +126,43 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
     setLineItems(prev => prev.filter(item => item.tempId !== tempId));
   };
 
-  const handleSubmit = () => {
-    onCreateJob({
-      name: jobName,
-      clientName,
-      clientEmail,
-      clientAddress: clientAddress.trim() || undefined,
-      quoteData: {
-        lineItems: lineItems.map(({ tempId, ...item }) => item),
-        taxRate,
-        validUntil: validUntil || null,
-        notes,
-        terms,
-      },
-    });
-    handleClose();
+  const handleSubmit = async () => {
+    if (saving) return;
+    setSaveError(null);
+    setSaving(true);
+    try {
+      const items = collectQuoteDraftItems(lineItems, currentItem);
+      const success = await onCreateJob({
+        name: jobName,
+        clientName,
+        clientEmail,
+        clientAddress: clientAddress.trim() || undefined,
+        quoteData: {
+          lineItems: items,
+          taxRate,
+          validUntil: validUntil || null,
+          notes,
+          terms,
+        },
+      });
+      if (!success) {
+        setSaveError('The job and quote could not be saved. Your entries have been kept. Please try again.');
+        return;
+      }
+      onOpenChange(false);
+      resetForm();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Unable to save the quote. Your entries have been kept.');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const canProceedStep1 = jobName.trim() && clientName.trim() && clientEmail.trim();
   const canSubmit = Boolean(canProceedStep1);
 
-  const subtotal = lineItems
-    .filter(item => item.category === 'included')
-    .reduce((sum, item) => sum + (item.cost || 0), 0);
-  const taxAmount = subtotal * (taxRate / 100);
-  const total = subtotal + taxAmount;
+  const previewItems = [...lineItems, ...(currentItem.title.trim() ? [currentItem] : [])];
+  const { subtotal, taxAmount, total } = quoteDraftTotals(previewItems, taxRate);
 
   const categoryOptions: { value: 'included' | 'excluded' | 'assumption'; label: string; icon: React.ElementType; color: string }[] = [
     { value: 'included', label: 'Included', icon: Package, color: 'text-approved' },
@@ -154,8 +171,8 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={(nextOpen) => { if (!nextOpen) handleClose(); else onOpenChange(true); }}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-busy={saving}>
         <DialogHeader>
           <DialogTitle className="font-heading flex items-center gap-2">
             {step === 1 ? (
@@ -414,8 +431,9 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
           </div>
         )}
 
+        {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
         <DialogFooter>
-          <Button variant="ghost" onClick={handleClose}>
+          <Button variant="ghost" onClick={handleClose} disabled={saving}>
             Cancel
           </Button>
           {step === 1 ? (
@@ -427,16 +445,16 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
             </Button>
           ) : (
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setStep(1)}>
+              <Button variant="outline" onClick={() => setStep(1)} disabled={saving}>
                 Back
               </Button>
               <Button 
                 variant="accent"
                 onClick={handleSubmit} 
-                disabled={!canSubmit}
+                disabled={!canSubmit || saving}
               >
                 <FileText className="w-4 h-4 mr-2" />
-                Create Job & Quote
+                {saving ? 'Saving…' : 'Create Job & Quote'}
               </Button>
             </div>
           )}
