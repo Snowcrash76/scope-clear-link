@@ -44,13 +44,12 @@ export function JobSectionMenu({
   };
 
   return (
-    <div className="mb-6">
-      <DropdownMenu>
+    <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 max-w-full justify-start gap-3 border-zinc-200 bg-white px-3 text-left shadow-sm hover:bg-zinc-50"
+            className="min-h-11 max-w-full justify-start gap-2 border-zinc-200 bg-white px-3 text-left shadow-sm hover:bg-zinc-50"
             aria-label={`Job sections, ${currentLabel}`}
           >
             <Menu className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -58,7 +57,7 @@ export function JobSectionMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          align="start"
+          align="end"
           sideOffset={6}
           className="w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-1.5"
         >
@@ -89,7 +88,6 @@ export function JobSectionMenu({
             })}
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    </DropdownMenu>
   );
 }

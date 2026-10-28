@@ -24,6 +24,13 @@ try {
     let trigger = page.getByRole('button', { name: 'Job sections, Quote', exact: true });
     await trigger.waitFor();
     assert.equal(await page.getByRole('tablist').count(), 0);
+    assert.equal(await page.getByRole('button', { name: /^Job sections,/ }).count(), 1);
+    const beforeScroll = await trigger.boundingBox();
+    assert.ok(beforeScroll.x + beforeScroll.width >= width - 25, 'Job menu is on the right edge');
+    if (width < 1024) {
+      const globalMenu = await page.getByRole('button', { name: 'Open navigation', exact: true }).boundingBox();
+      assert.ok(globalMenu.x + globalMenu.width < beforeScroll.x, 'Global and job menus do not overlap');
+    }
     for (const label of ['Invoices', 'Costs', 'Variations', 'Stages', 'Documents', 'Quote']) {
       await trigger.click();
       const items = page.getByRole('menuitemradio');
@@ -41,6 +48,12 @@ try {
       assert.equal(await page.getByRole('region').count(), 1);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     }
+    const before = await trigger.boundingBox();
+    await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
+    assert.ok(await page.evaluate(() => window.scrollY) >= 500, 'Fixture really scrolls');
+    const after = await trigger.boundingBox();
+    assert.ok(Math.abs(after.y - before.y) <= 1, 'Job menu stays in the same screen position while scrolling');
+    assert.ok(after.y >= 0 && after.y + after.height <= 70, 'Job menu remains in the top header');
     await trigger.focus();
     await page.keyboard.press('ArrowDown');
     await page.getByRole('menu').waitFor();
@@ -60,7 +73,7 @@ try {
     await page.getByRole('button', { name: 'Job sections, Costs', exact: true }).waitFor();
     await page.getByRole('region', { name: 'Costs', exact: true }).waitFor();
     assert.deepEqual(errors, []);
-    console.log(`PASS six job sections, counts, keyboard, deep-link state and width at ${width}px`);
+    console.log(`PASS fixed top-right header, scroll position, six sections, counts, keyboard and deep links at ${width}px`);
     await page.close();
   }
 } finally { await browser.close(); }

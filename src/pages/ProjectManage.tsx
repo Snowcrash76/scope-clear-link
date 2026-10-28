@@ -448,9 +448,23 @@ export default function ProjectManage() {
   };
 
   return (
-    <AppShell>
+    <AppShell
+      headerActions={
+        <JobSectionMenu
+          value={activeTab}
+          onValueChange={setActiveTab}
+          invoiceCount={invoices.length}
+          pendingVariationCount={pendingClientRequests.length}
+          documentNotificationCount={
+            showDocNotification
+              ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
+              : 0
+          }
+        />
+      }
+    >
       {/* Project sub-header */}
-      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-16 lg:top-0 z-20">
+      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm relative z-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="flex min-w-0 items-start gap-2 sm:gap-3">
@@ -652,18 +666,6 @@ export default function ProjectManage() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
-          <JobSectionMenu
-            value={activeTab}
-            onValueChange={setActiveTab}
-            invoiceCount={invoices.length}
-            pendingVariationCount={pendingClientRequests.length}
-            documentNotificationCount={
-              showDocNotification
-                ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
-                : 0
-            }
-          />
-
           <TabsContent value="costs" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Costs">
             <JobCostsTab jobId={project.id} />
           </TabsContent>

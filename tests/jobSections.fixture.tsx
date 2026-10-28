@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { JobSectionMenu } from '../src/components/JobSectionMenu';
+import { AppHeader } from '../src/components/AppHeader';
 import { Tabs, TabsContent } from '../src/components/ui/tabs';
 
 const sections = [
@@ -9,11 +10,14 @@ const sections = [
 ];
 function Fixture() {
   const [value, setValue] = useState(new URLSearchParams(location.search).get('tab') || 'quote');
-  return <main className="mx-auto max-w-5xl p-4">
+  return <div className="min-h-screen">
+    <AppHeader onOpenNavigation={() => {}} actions={
+      <JobSectionMenu value={value} onValueChange={setValue} invoiceCount={3} pendingVariationCount={2} documentNotificationCount={1} />
+    } />
+    <main className="mx-auto max-w-5xl p-4">
     <h1 className="mb-1 text-xl font-bold">Example job</h1>
     <p className="mb-6 text-sm text-muted-foreground">Isolated job-section navigation check</p>
     <Tabs value={value} onValueChange={setValue} className="min-w-0">
-      <JobSectionMenu value={value} onValueChange={setValue} invoiceCount={3} pendingVariationCount={2} documentNotificationCount={1} />
       {sections.map(([key, label]) => <TabsContent key={key} value={key} role="region" aria-labelledby={undefined} aria-label={label}>
         <section className="mt-6 rounded-xl border bg-white p-4">
           <h2 className="text-lg font-semibold">{label}</h2>
@@ -22,6 +26,8 @@ function Fixture() {
       </TabsContent>)}
     </Tabs>
     <button data-testid="outside-menu" className="mt-6 min-h-11 rounded-md border px-4">Outside menu</button>
-  </main>;
+    <div style={{ height: 1800 }} className="mt-6 rounded-xl bg-zinc-50 p-4 text-sm text-muted-foreground">Long job content for scroll checks</div>
+    </main>
+  </div>;
 }
 createRoot(document.getElementById('root')!).render(<Fixture />);

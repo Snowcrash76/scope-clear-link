@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { CreateJobModal } from '@/components/CreateJobModal';
+import { AppHeader } from '@/components/AppHeader';
 import { useCreateProject, type CreateProjectData } from '@/hooks/useCreateProject';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +23,6 @@ import {
   Plus,
   Settings,
   LogOut,
-  Menu,
   Save,
   UploadCloud,
   X,
@@ -208,9 +208,10 @@ function SidebarInner({
 
 interface AppShellProps {
   children: React.ReactNode;
+  headerActions?: React.ReactNode;
 }
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, headerActions }: AppShellProps) {
   const { profile, signOut, user } = useAuth();
   const { createProject } = useCreateProject();
   const queryClient = useQueryClient();
@@ -425,18 +426,7 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Page content */}
       <div className="flex-1 lg:pl-64 min-w-0 flex flex-col">
-        {/* Mobile top bar */}
-        <div className="lg:hidden flex h-16 shrink-0 items-center gap-3 px-4 py-2 border-b border-zinc-200 bg-white/95 backdrop-blur-md shadow-sm sticky top-0 z-30">
-          <button
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg hover:bg-muted transition-colors"
-            data-testid="button-mobile-menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-          <span className="font-heading font-bold text-base">ScopeClear</span>
-        </div>
+        <AppHeader actions={headerActions} onOpenNavigation={() => setMobileOpen(true)} />
 
         {children}
       </div>
