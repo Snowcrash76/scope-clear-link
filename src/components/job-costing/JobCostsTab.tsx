@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, FileText, Paperclip, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertCircle, Eye, FileText, Paperclip, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   useJobCosts, COST_CATEGORIES, calculateGst, completeMissingCostSubtotal, jobCostInputSchema, aud,
@@ -20,6 +20,7 @@ import { JobCostSetupHelp, isJobCostSetupError } from '@/components/job-costing/
 import { ReceiptScanControls } from '@/components/job-costing/ReceiptScanControls';
 import { ReceiptLineItemsEditor } from '@/components/job-costing/ReceiptLineItemsEditor';
 import { ReceiptItemsSummary } from '@/components/job-costing/ReceiptItemsSummary';
+import { JobCostView } from '@/components/job-costing/JobCostView';
 import { ReceiptReviewFields } from '@/components/job-costing/ReceiptReviewFields';
 import { receiptCurrencyForReview } from '../../../shared/receiptScanning';
 
@@ -421,7 +422,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                 {hasStoredScanData(cost) && <Button variant="link" size="sm" className="mt-1 h-8 px-0" onClick={() => setLineItemsTarget(cost)} data-testid={`button-view-line-items-${cost.id}`}>View line items</Button>}
                 {cost.receipt_image_url && <Button variant="link" size="sm" className="mt-1 h-8 px-0" disabled={openingReceipt === cost.id} onClick={() => viewReceipt(cost)}><Paperclip className="mr-1.5 h-3.5 w-3.5" />{openingReceipt === cost.id ? 'Opening…' : 'View receipt'}</Button>}
               </div>
-              <div className="flex shrink-0 gap-1 sm:justify-end"><Button variant="ghost" size="sm" className="min-h-11" onClick={() => startEdit(cost)} aria-label={`Edit ${cost.supplier}`} data-testid={`button-edit-cost-${cost.id}`}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button variant="ghost" size="icon" className="h-11 w-11 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(cost)} aria-label={`Delete ${cost.supplier}`} data-testid={`button-delete-cost-${cost.id}`}><Trash2 className="h-4 w-4" /></Button></div>
+              <div className="flex shrink-0 flex-wrap gap-1 sm:justify-end"><Button variant="ghost" size="sm" className="min-h-11" onClick={() => setLineItemsTarget(cost)} aria-label={`View ${cost.supplier}`} data-testid={`button-view-cost-${cost.id}`}><Eye className="mr-1.5 h-4 w-4" />View</Button><Button variant="ghost" size="sm" className="min-h-11" onClick={() => startEdit(cost)} aria-label={`Edit ${cost.supplier}`} data-testid={`button-edit-cost-${cost.id}`}><Pencil className="mr-1.5 h-4 w-4" />Edit</Button><Button variant="ghost" size="icon" className="h-11 w-11 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(cost)} aria-label={`Delete ${cost.supplier}`} data-testid={`button-delete-cost-${cost.id}`}><Trash2 className="h-4 w-4" /></Button></div>
             </div>
           </Card>
         ))}</div>}
@@ -508,9 +509,9 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         </DialogContent>
       </Dialog>
       <Dialog open={!!lineItemsTarget} onOpenChange={next => !next && setLineItemsTarget(null)}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader><DialogTitle>Receipt line items</DialogTitle><DialogDescription>Extracted details for {lineItemsTarget?.supplier}. Edit these values from the cost form.</DialogDescription></DialogHeader>
-          <ReceiptLinesView cost={lineItemsTarget ?? undefined} />
+        <DialogContent className="max-w-xl" data-testid="dialog-view-cost">
+          <DialogHeader><DialogTitle>Receipt and cost details</DialogTitle><DialogDescription>Read-only details for {lineItemsTarget?.supplier}. Close this view and choose Edit to make changes.</DialogDescription></DialogHeader>
+          {lineItemsTarget && <JobCostView key={lineItemsTarget.id} cost={lineItemsTarget} />}
           <DialogFooter><Button variant="outline" onClick={() => setLineItemsTarget(null)}>Close</Button></DialogFooter>
         </DialogContent>
       </Dialog>
@@ -524,11 +525,6 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       <AlertDialog open={!!deleteTarget} onOpenChange={isOpen => !isOpen && setDeleteTarget(null)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Delete this cost?</AlertDialogTitle><AlertDialogDescription>This will permanently remove {deleteTarget?.supplier ? `the cost from ${deleteTarget.supplier}` : 'this job cost'} from the job. This cannot be undone.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel><AlertDialogAction disabled={deleting} onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">{deleting ? 'Deleting…' : 'Delete cost'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </section>
   );
-}
-
-function ReceiptLinesView({ cost }: { cost?: JobCost }) {
-  if (!cost?.receipt_line_items) return <p className="text-sm text-muted-foreground">No stored receipt line items.</p>;
-  return <div className="min-w-0 space-y-3"><p className="text-xs text-muted-foreground">{cost.receipt_confidence ?? 'Unknown'} scan confidence</p><ReceiptItemsSummary items={cost.receipt_line_items} subtotal={cost.amount_ex_gst} gst={cost.gst_amount} total={cost.amount_inc_gst} /></div>;
 }
 
 function Field({ label, id, error, children }: { label: string; id: string; error?: string; children: React.ReactNode }) {

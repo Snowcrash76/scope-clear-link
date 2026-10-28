@@ -5,6 +5,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { ReceiptScanControls } from '../src/components/job-costing/ReceiptScanControls';
 import { ReceiptLineItemsEditor } from '../src/components/job-costing/ReceiptLineItemsEditor';
 import { ReceiptItemsSummary } from '../src/components/job-costing/ReceiptItemsSummary';
+import { JobCostView } from '../src/components/job-costing/JobCostView';
+import type { JobCost } from '../src/hooks/useJobCosts';
 
 test('selected receipt photo and long filenames stay inside shrinkable containers', () => {
   const file = new File(['synthetic'], `IMG_${'LongCameraFilename'.repeat(15)}.jpg`, { type: 'image/jpeg' });
@@ -66,4 +68,17 @@ test('missing line fields stay explicit and a mismatched provided total is never
   assert.ok(html.includes('Description not read'));
   assert.ok(html.includes('Not read'));
   assert.match(html, /data-testid="receipt-summary-total"[^>]*>\$99\.00/);
+});
+
+test('cost view shows read-only details and totals even without an attachment or scanned items', () => {
+  const html = renderToStaticMarkup(createElement(JobCostView, { cost: {
+    id: 'fixture', job_id: 'fixture-job', supplier: 'Hardware supplier', cost_date: '2026-10-28',
+    description: 'Purchased materials', category: 'Materials', status: 'confirmed',
+    reference_number: 'REC-123', amount_ex_gst: 100, gst_amount: 10, amount_inc_gst: 110,
+    notes: 'Keep this note', receipt_image_url: null, receipt_line_items: [],
+  } as JobCost }));
+  for (const text of ['Hardware supplier', 'REC-123', 'Purchased materials', 'Keep this note', '$110.00', 'No receipt attached.']) {
+    assert.ok(html.includes(text), `Read-only view retains ${text}`);
+  }
+  assert.doesNotMatch(html, /<(input|textarea|select|form)\b/);
 });

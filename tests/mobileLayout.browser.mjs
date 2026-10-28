@@ -42,6 +42,7 @@ await build({
             id: '00000000-0000-4000-8000-000000000002', source: 'scope', title: '${'LongQuoteItem'.repeat(20)}', quote_number: 'QT-TEST'
           }], scopeLinkSetupRequired: false, loading: false, error: null,
           refetch: async () => {}, saveCost: async (input, id) => {
+            window.__costSaveCalls = (window.__costSaveCalls || 0) + 1;
             const record = {...input, id: id || 'synthetic-cost', created_at: '2026-10-28T00:00:00Z',
               updated_at: '2026-10-28T00:00:00Z', created_by: 'synthetic-test-user'};
             setCosts(current => [...current.filter(row => row.id !== record.id), record]);
@@ -55,7 +56,10 @@ await build({
             return { extraction: ${JSON.stringify(extraction)} };
           }
           export async function findCostDuplicates() { return []; }
-          export async function getCostReceiptUrl() { return ''; }
+          export async function getCostReceiptUrl() {
+            if (window.__failReceiptLink) { window.__failReceiptLink = false; throw new Error('Synthetic receipt link failure'); }
+            return ${JSON.stringify('data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="180" height="250"><rect width="180" height="250" fill="white"/><text x="10" y="30">Synthetic receipt</text></svg>').toString('base64'))};
+          }
         `;
         return { contents, loader: 'ts', resolveDir: resolve('src/hooks') };
       });
@@ -78,7 +82,7 @@ try {
     async function check(label) {
       await page.waitForTimeout(300);
       const bounds = await page.evaluate(() => {
-        const dialog = document.querySelector('[data-testid="dialog-job-cost"]');
+        const dialog = document.querySelector('[role="dialog"]');
         return {
           viewport: innerWidth, page: document.documentElement.scrollWidth,
           dialog: dialog ? { left: dialog.getBoundingClientRect().left, right: dialog.getBoundingClientRect().right,
@@ -145,9 +149,27 @@ try {
     assert.equal(await page.getByTestId('receipt-line-amount-0').inputValue(), '90');
     await check('reopened receipt retains edited items');
     await page.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await page.getByTestId('button-view-line-items-synthetic-cost').click();
-    await page.getByTestId('receipt-items-summary').last().waitFor();
+    await page.getByTestId('button-view-cost-synthetic-cost').click();
+    const readOnly = page.getByTestId('dialog-view-cost');
+    await readOnly.getByTestId('link-original-receipt').waitFor();
+    await page.waitForFunction(() => {
+      const image = document.querySelector('[data-testid="job-cost-read-only"] img');
+      return image?.complete && image.naturalWidth > 0;
+    });
+    assert.equal(await readOnly.locator('input,textarea,select,[contenteditable="true"]').count(), 0);
+    assert.match(await readOnly.getByTestId('receipt-summary-total').innerText(), /110\.00/);
+    assert.equal(await readOnly.getByAltText(/Original receipt from/).evaluate(image => image.complete && image.naturalWidth > 0), true);
     await check('saved receipt details modal');
+    await readOnly.getByRole('button', { name: 'Close', exact: true }).last().click();
+    assert.equal(await page.evaluate(() => window.__costSaveCalls), 1, 'Viewing and closing must not save');
+    if (width === 360) {
+      await page.evaluate(() => { window.__failReceiptLink = true; });
+      await page.getByTestId('button-view-cost-synthetic-cost').click();
+      await readOnly.getByRole('alert').waitFor();
+      await readOnly.getByRole('button', { name: 'Retry receipt' }).click();
+      await readOnly.getByTestId('link-original-receipt').waitFor();
+      await page.screenshot({ path: 'generated-artifacts/cost-read-only-360.jpg' });
+    }
     assert.deepEqual(errors, [], `${width}px browser errors`);
     if (width === 360) {
       await page.screenshot({ path: 'generated-artifacts/receipt-review-360.jpg' });
