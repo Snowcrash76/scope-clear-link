@@ -3,3 +3,4 @@
 - [Visual theme](visual-theme.md) — the user wants this app to have a white background rather than a dark theme.
 - [Addition variations](addition-variations.md) — extra materials or work belong to an Addition variation, not a substitution or a change to the original price.
 - [Phone layout verification](phone-layout-verification.md) — verify actual signed-in components and attachment/review states, not just public pages or empty forms.
+- [Employee portal boundaries](employee-portal-boundaries.md) — gate each phase on approval; reuse existing job models and enforce employee access server-side.
