@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "CkY_2uwjGbfS_t2r2KqGd"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-10-29T12-27-56-570Z.html"
+type = "html"
+title = "ScopeClear encrypted database backup"
+description = "Save this HTML backup file. It contains an encrypted archive and an offline decrypt/download page. Use the new database password you saved; never enter it in chat. Receipt/photo file contents are not included."
+logical_id = "00c49cab-d45e-4720-931a-8db88f2c4d66"
+content_hash = "sha256:f9c5ceefe956f8f40d95310a64d11af8c1dbe5d1006b52c578c1c28120e32066"
+size = 438500
+mtime_ms = 1793276917688
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/00c49cab-d45e-4720-931a-8db88f2c4d66/671ed247-c7cb-4fd9-888a-680e63262a14"
+storage_version_token = "1793277029911766"
+content_type = "text/html"
