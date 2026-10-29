@@ -50,13 +50,10 @@ export default defineConfig(({ mode }) => ({
           }
 
           const requestPath = req.url?.split("?")[0] ?? "";
-          if (requestPath.startsWith("/api/admin/") ||
-              requestPath === "/api/job-profitability" ||
-              requestPath.startsWith("/api/receipts/") ||
-              requestPath === "/api/job-costs" ||
-              requestPath.startsWith("/api/job-costs/") ||
-              requestPath === "/api/validate-invite-code" ||
-              requestPath === "/api/consume-invite-code") {
+          // Use the same authentication and client-capability middleware in
+          // preview and production. Legacy direct handlers below are retained
+          // for now, but no /api request bypasses the Express application.
+          if (requestPath.startsWith("/api/")) {
             try {
               const { app } = await import("./server/index");
               // Express decorates Node's request/response before dispatching routes.

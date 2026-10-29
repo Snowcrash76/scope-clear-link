@@ -25,6 +25,9 @@ const sections = [
   { value: 'changes', label: 'Variations' },
   { value: 'stages', label: 'Stages' },
   { value: 'documents', label: 'Documents' },
+  { value: 'staff', label: 'Assigned staff' },
+  { value: 'timesheets', label: 'Timesheets' },
+  { value: 'employee-updates', label: 'Employee updates' },
 ] as const;
 
 export function JobSectionMenu({

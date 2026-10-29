@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { clientAccessHeaders } from '@/lib/clientAccess';
 import { sendClientDocumentUploadNotification } from '@/lib/documentNotification';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -67,7 +68,7 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
     // Step 1: get a signed upload URL from the server
     const tokenRes = await fetch('/api/get-signed-upload-url', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...clientAccessHeaders() },
       body: JSON.stringify({ projectId, fileName: file.name }),
     });
     if (!tokenRes.ok) {
@@ -90,7 +91,7 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
     // Step 3: record the document metadata in the database
     const recordRes = await fetch('/api/record-client-document', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...clientAccessHeaders() },
       body: JSON.stringify({
         projectId,
         fileName: file.name,
@@ -149,8 +150,16 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
         filePath = filePath.split('/project-documents/')[1];
         if (filePath.includes('?')) filePath = filePath.split('?')[0];
       }
-      const { data, error } = await supabase.storage.from('project-documents').download(filePath);
-      if (error) throw error;
+      let data: Blob;
+      if (filePath.startsWith('/api/client/files/')) {
+        const response = await fetch(filePath);
+        if (!response.ok) throw new Error('The secure document could not be opened.');
+        data = await response.blob();
+      } else {
+        const result = await supabase.storage.from('project-documents').download(filePath);
+        if (result.error) throw result.error;
+        data = result.data;
+      }
       const url = URL.createObjectURL(data);
       const link = document.createElement('a');
       link.href = url;
@@ -170,6 +179,10 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
 
   const handleView = async (doc: ProjectDocument) => {
     try {
+      if (doc.file_url.startsWith('/api/client/files/')) {
+        window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+        return;
+      }
       let filePath = doc.file_url;
       if (filePath.includes('/project-documents/')) {
         filePath = filePath.split('/project-documents/')[1];

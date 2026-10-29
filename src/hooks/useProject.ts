@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { clientAccessHeaders } from '@/lib/clientAccess';
 import { toast } from 'sonner';
 import { Project, ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
 
@@ -36,7 +37,7 @@ const sendChangeNotification = async (
 ) => {
   try {
     const { data: { session } } = await supabase.auth.getSession();
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', ...clientAccessHeaders() };
     if (session?.access_token) {
       headers['Authorization'] = `Bearer ${session.access_token}`;
     }
@@ -170,11 +171,12 @@ export function useProject(projectId: string | undefined) {
       const changeRequests = (changeRes.data || []) as DbChangeRequest[];
       const projectStages = (stageRes.data || []) as DbProjectStage[];
       const profile = profileRes.data;
-      const rawDocuments = (docsRes.data || []) as ProjectDocument[];
+      const rawDocuments = (docsRes.data || []).filter((doc: any) => doc.purpose !== 'employee_photo') as ProjectDocument[];
 
       // Generate signed URLs for documents (bucket is now private)
       const projectDocuments = await Promise.all(
         rawDocuments.map(async (doc) => {
+          if (doc.file_url.startsWith('/api/client/files/')) return doc;
           // If it's a full URL (legacy), extract the path; otherwise use as-is
           let filePath = doc.file_url;
           if (doc.file_url.includes('/project-documents/')) {
@@ -362,10 +364,11 @@ export function useProject(projectId: string | undefined) {
         .eq('project_id', projectId)
         .order('created_at', { ascending: false });
 
-      const rawDocuments = (docsRes.data || []) as ProjectDocument[];
+      const rawDocuments = (docsRes.data || []).filter((doc: any) => doc.purpose !== 'employee_photo') as ProjectDocument[];
 
       const projectDocuments = await Promise.all(
         rawDocuments.map(async (doc) => {
+          if (doc.file_url.startsWith('/api/client/files/')) return doc;
           let filePath = doc.file_url;
           if (doc.file_url.includes('/project-documents/')) {
             filePath = doc.file_url.split('/project-documents/').pop() || doc.file_url;

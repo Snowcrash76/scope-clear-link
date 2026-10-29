@@ -109,6 +109,7 @@ function SidebarInner({
     { to: '/quotes', icon: FileText, label: 'Quotes', active: currentPath.startsWith('/quotes'), testId: 'nav-quotes' },
     { to: '/invoices', icon: Receipt, label: 'Invoices', active: currentPath.startsWith('/invoices'), testId: 'nav-invoices' },
     { to: '/clients', icon: Users, label: 'Clients', active: currentPath.startsWith('/clients'), testId: 'nav-clients' },
+    { to: '/team', icon: Users, label: 'Team', active: currentPath.startsWith('/team'), testId: 'nav-team' },
   ];
 
   return (

@@ -15,9 +15,16 @@ function getResendKey() {
 }
 
 function getSiteUrl() {
+  if (process.env.VITE_PUBLIC_BASE_URL) return process.env.VITE_PUBLIC_BASE_URL.replace(/\/$/, '');
   if (process.env.SITE_URL) return process.env.SITE_URL;
   if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   return 'http://localhost:5000';
+}
+
+async function secureProjectLink(projectId: string, baseUrl: string) {
+  const { data, error } = await getSupabaseAdmin().from('projects').select('client_access_token').eq('id', projectId).single();
+  if (error || !data?.client_access_token) throw new Error('Secure client links need the employee portal database migration.');
+  return `${baseUrl}/project/${projectId}?access=${data.client_access_token}`;
 }
 
 async function sendViaResend(to: string, subject: string, html: string) {
@@ -104,7 +111,7 @@ export async function handleChangeNotification(
     recipientEmail = project.client_email;
     recipientName = project.client_name;
     senderName = profile?.business_name || 'Your Trade';
-    projectUrl = `${baseUrl}/project/${projectId}`;
+    projectUrl = await secureProjectLink(projectId, baseUrl);
   } else {
     recipientEmail = profile?.email;
     recipientName = profile?.contact_name || 'Trade';
@@ -217,7 +224,7 @@ export async function handleSendQuoteToClient(
 
   const baseUrl = getSiteUrl();
   const quoteUrl = `${baseUrl}/quote/${quote.quote_token}`;
-  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const projectUrl = await secureProjectLink(projectId, baseUrl);
   const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
   const clientName = project.client_name || 'there';
   const projectName = project.name;
@@ -304,7 +311,7 @@ export async function handleSendInvoiceToClient(
     .single();
 
   const baseUrl = getSiteUrl();
-  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const projectUrl = await secureProjectLink(projectId, baseUrl);
   const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
   const clientName = project.client_name || 'there';
   const projectName = project.name;
@@ -483,7 +490,7 @@ export async function handleSendScopeChangeNotification(
     .single();
 
   const baseUrl = getSiteUrl();
-  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const projectUrl = await secureProjectLink(projectId, baseUrl);
   const tradeName = profile?.business_name || profile?.contact_name || 'Your trade';
   const clientName = project.client_name || 'there';
   const projectName = project.name;
@@ -605,7 +612,7 @@ export async function handleDocumentUploadNotification(
     .single();
 
   const baseUrl = getSiteUrl();
-  const projectUrl = `${baseUrl}/project/${projectId}`;
+  const projectUrl = await secureProjectLink(projectId, baseUrl);
   const tradeName = profile?.business_name || 'Your trade';
   const clientName = project.client_name || 'there';
   const count = documentNames.length;

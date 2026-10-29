@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { ImagePlus, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { isClientPage } from '@/lib/clientAccess';
+import { uploadClientImage } from '@/lib/clientImageUpload';
 import { toast } from 'sonner';
 
 interface MultiImageUploadProps {
@@ -28,8 +30,11 @@ export function MultiImageUpload({
 
   const uploadToStorage = async (file: File): Promise<string | null> => {
     try {
+      if (isClientPage()) return await uploadClientImage(file,bucket);
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user)throw new Error('Sign in before uploading an image.');
       const fileExt = file.name.split('.').pop();
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const fileName = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       
       const { data, error } = await supabase.storage
         .from(bucket)

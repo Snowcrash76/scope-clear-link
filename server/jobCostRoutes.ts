@@ -58,6 +58,7 @@ export function createJobCostRouter(
     await ownJob(db, userId, input.job_id);
     if (id) {
       const original = await ownCost(db, userId, id);
+      if ((original as JobCost & {timesheet_entry_id?:string}).timesheet_entry_id) throw new CostApiError(409,'Correct approved labour through Team timesheets. Reopen the approved week first.');
       if (original.job_id !== input.job_id) throw new CostApiError(400, 'A cost cannot be moved to another job.');
     }
     if (input.quote_line_item_id) {
@@ -99,6 +100,7 @@ export function createJobCostRouter(
   router.delete('/job-costs/:id', route(async (req, db, userId) => {
     const id = uuid.parse(req.params.id);
     const cost = await ownCost(db, userId, id);
+    if ((cost as JobCost & {timesheet_entry_id?:string}).timesheet_entry_id) throw new CostApiError(409,'Correct approved labour through Team timesheets. Reopen the approved week first.');
     const { error } = await db.from('job_costs').delete().eq('id', id).eq('job_id', cost.job_id);
     checkDb(error);
     return { success: true };

@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import { inviteErrorMessage } from '../shared/adminInvites';
 import { createJobCostRouter } from './jobCostRoutes';
+import { createEmployeeRouter } from './employeeRoutes';
+import { createClientAccessRouter, requireOwnerOrClient } from './clientAccess';
 import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
 
 export const app = express();
@@ -10,6 +12,11 @@ app.use('/api/receipts', express.json({ limit: '8mb' }));
 app.use('/api/job-costs', express.json({ limit: '1mb' }));
 app.use(express.json());
 app.use('/api', createJobCostRouter());
+app.use('/api', createEmployeeRouter());
+app.use('/api', createClientAccessRouter());
+app.use(['/api/get-signed-upload-url','/api/record-client-document',
+  '/api/send-change-notification','/api/send-quote-notification',
+  '/api/send-client-document-notification','/api/send-document-notification'], requireOwnerOrClient);
 
 app.post('/api/send-change-notification', async (req, res) => {
   try {

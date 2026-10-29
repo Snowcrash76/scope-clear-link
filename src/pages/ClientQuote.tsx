@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { clientAccessHeaders } from '@/lib/clientAccess';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -178,7 +179,7 @@ export default function ClientQuote() {
 
       fetch('/api/send-quote-notification', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...clientAccessHeaders() },
         body: JSON.stringify({
           quoteToken: token,
           notificationType: isApprove ? 'approved' : 'declined',

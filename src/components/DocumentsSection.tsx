@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { DocumentUploadModal } from './DocumentUploadModal';
 import { EditDocumentModal } from './EditDocumentModal';
+import { portalRequest } from '@/hooks/useEmployeePortal';
 
 interface ProjectDocument {
   id: string;
@@ -28,6 +29,7 @@ interface ProjectDocument {
   file_type: string | null;
   file_size: number | null;
   created_at: string;
+  employee_visible?: boolean;
 }
 
 interface DocumentsSectionProps {
@@ -40,6 +42,21 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<ProjectDocument | null>(null);
+  const [visibilitySaving, setVisibilitySaving] = useState<string | null>(null);
+
+  const toggleEmployeeVisibility = async (doc: ProjectDocument, visible: boolean) => {
+    if (visible && !window.confirm('Publish this file to assigned employees? Check first that it contains no rates, prices or other financial details.')) return;
+    setVisibilitySaving(doc.id);
+    try {
+      await portalRequest(`/team/documents/${doc.id}/visibility`, { employee_visible: visible });
+      toast.success(visible ? 'Published to employees' : 'Employee access removed');
+      onRefresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not update employee visibility');
+    } finally {
+      setVisibilitySaving(null);
+    }
+  };
 
   const handleDelete = async (doc: ProjectDocument) => {
     setDeletingId(doc.id);
@@ -207,6 +224,16 @@ export function DocumentsSection({ projectId, documents, onRefresh }: DocumentsS
                   </p>
                 </div>
                 <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1">
+                  <label className="mr-2 flex min-h-11 items-center gap-2 rounded-lg px-2 text-xs font-medium text-muted-foreground">
+                    <input
+                      aria-label={`Publish ${displayName(doc)} to employees`}
+                      type="checkbox"
+                      checked={!!doc.employee_visible}
+                      disabled={visibilitySaving === doc.id}
+                      onChange={(event) => void toggleEmployeeVisibility(doc, event.target.checked)}
+                    />
+                    Staff access
+                  </label>
                   <Button
                     variant="ghost"
                     size="icon"

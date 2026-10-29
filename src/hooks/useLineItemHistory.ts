@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { clientAccessHeaders } from '@/lib/clientAccess';
 
 export interface LineItemHistoryEntry {
   id: string;
@@ -70,7 +71,7 @@ export function useLineItemHistory(quoteId: string | undefined, quoteToken?: str
     }
     setLoading(true);
     try {
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { ...clientAccessHeaders() };
       let url = `/api/quotes/${quoteId}/line-item-history`;
 
       if (quoteToken) {

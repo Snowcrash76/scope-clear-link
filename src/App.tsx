@@ -24,6 +24,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import { Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
 import ProfitabilityPage from "./components/job-costing/ProfitabilityPage";
+import { EmployeeAccept, EmployeeGate, EmployeeHome, EmployeeJob, EmployeeLogin, EmployeeNotifications, EmployeeTimesheets } from "./components/EmployeePortalUI";
+import { TeamHome } from "./components/TeamPortalUI";
 
 const queryClient = new QueryClient();
 
@@ -85,6 +87,18 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/admin/invites" element={<Navigate to="/admin?tab=invites" replace />} />
+            <Route path="/employee/login" element={<EmployeeLogin />} />
+            <Route path="/employee/accept" element={<EmployeeAccept />} />
+            <Route path="/employee" element={<EmployeeGate><EmployeeHome /></EmployeeGate>} />
+            <Route path="/employee/week" element={<EmployeeGate><EmployeeHome week /></EmployeeGate>} />
+            <Route path="/employee/jobs/:jobId" element={<EmployeeGate><EmployeeJob /></EmployeeGate>} />
+            <Route path="/employee/timesheets" element={<EmployeeGate><EmployeeTimesheets /></EmployeeGate>} />
+            <Route path="/employee/notifications" element={<EmployeeGate><EmployeeNotifications /></EmployeeGate>} />
+            <Route path="/team" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
+            <Route path="/team/assignments" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
+            <Route path="/team/timesheets" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
+            <Route path="/team/permissions" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
+            <Route path="/team/jobs/:id/:panel" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

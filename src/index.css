@@ -80,6 +80,13 @@
 
 }
 
+.portal-shell { background: #fff; color: #25302c; min-height: 100dvh; font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif; }
+.portal-shell h1, .portal-shell h2, .portal-shell h3, .portal-shell h4 { font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif; }
+.portal-mono { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }
+.portal-grid { background-image: linear-gradient(to right, rgba(42,72,58,.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,72,58,.045) 1px, transparent 1px); background-size: 28px 28px; }
+.portal-enter { animation: portal-enter .35s ease-out both; }
+@keyframes portal-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
 @layer base {
   * {
     @apply border-border;

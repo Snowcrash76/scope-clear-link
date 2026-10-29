@@ -75,6 +75,7 @@ import { RichTextContent } from '@/components/RichTextEditor';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { JobCostsTab } from '@/components/job-costing/JobCostsTab';
+import { TeamHome } from '@/components/TeamPortalUI';
 
 export default function ProjectManage() {
   const { id } = useParams();
@@ -402,12 +403,33 @@ export default function ProjectManage() {
     }
   };
 
-  const handleCopyClientLink = () => {
-    const link = getClientProjectUrl(project.id);
-    navigator.clipboard.writeText(link);
-    toast.success('Client page link copied!', {
-      description: 'Share with your client for full transparency.'
-    });
+  const handleCopyClientLink = async () => {
+    try {
+      const link = await getClientProjectUrl(project.id);
+      await navigator.clipboard.writeText(link);
+      toast.success('Client page link copied!', {
+        description: 'Share with your client for full transparency.'
+      });
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not create a secure client link. Please retry.');
+    }
+  };
+
+  const handlePreviewClientPage = async () => {
+    // Open synchronously while the browser still considers this a user action.
+    const previewWindow = window.open('about:blank', '_blank');
+    if (previewWindow) previewWindow.opener = null;
+    try {
+      const link = await getClientProjectUrl(project.id);
+      if (previewWindow) {
+        previewWindow.location.href = link;
+      } else {
+        toast.error('Your browser blocked the preview window. Allow pop-ups and try again.');
+      }
+    } catch (error) {
+      previewWindow?.close();
+      toast.error(error instanceof Error ? error.message : 'Could not open the secure client preview. Please retry.');
+    }
   };
 
   // Separate pending changes into client requests (need trade response) and trade requests (awaiting client)
@@ -521,7 +543,7 @@ export default function ProjectManage() {
                       size="icon"
                       className="h-11 w-11 shrink-0"
                       aria-label="Preview client page"
-                      onClick={() => window.open(getClientProjectUrl(project.id), '_blank', 'noopener,noreferrer')}
+                      onClick={handlePreviewClientPage}
                       data-testid="button-preview-client-page"
                     >
                       <ExternalLink className="w-4 h-4" />
@@ -946,6 +968,15 @@ export default function ProjectManage() {
               documents={documents}
               onRefresh={refetch}
             />
+          </TabsContent>
+          <TabsContent value="staff" className="mt-0" role="region" aria-label="Assigned staff">
+            <TeamHome panel="staff" embedded />
+          </TabsContent>
+          <TabsContent value="timesheets" className="mt-0" role="region" aria-label="Job timesheets">
+            <TeamHome panel="timesheets" embedded />
+          </TabsContent>
+          <TabsContent value="employee-updates" className="mt-0" role="region" aria-label="Employee updates">
+            <TeamHome panel="updates" embedded />
           </TabsContent>
         </Tabs>
       </main>

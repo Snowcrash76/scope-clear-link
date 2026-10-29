@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
+import { cn, getClientProjectUrl } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -43,6 +43,7 @@ interface ProjectCardProps {
 export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeleteProject }: ProjectCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isOpeningPreview, setIsOpeningPreview] = useState(false);
   const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending').length;
   const unacknowledgedItems = project.scopeItems.filter(si => !si.acknowledged).length;
   const needsAttention = pendingChanges > 0 || (project.status === 'sent' && unacknowledgedItems > 0);
@@ -87,6 +88,26 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
       toast.success(successMessage);
     }
     setIsUpdating(false);
+  };
+
+  const handlePreviewClientPage = async () => {
+    if (isOpeningPreview) return;
+    const previewWindow = window.open('about:blank', '_blank');
+    if (previewWindow) previewWindow.opener = null;
+    if (!previewWindow) {
+      toast.error('Your browser blocked the preview window. Allow pop-ups and try again.');
+      return;
+    }
+    setIsOpeningPreview(true);
+    try {
+      const clientUrl = await getClientProjectUrl(project.id);
+      previewWindow.location.href = clientUrl;
+    } catch (error) {
+      previewWindow.close();
+      toast.error(error instanceof Error ? error.message : 'Could not open the secure client preview. Please retry.');
+    } finally {
+      setIsOpeningPreview(false);
+    }
   };
 
   const getActionButton = () => {
@@ -235,11 +256,11 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
                 <Button 
                   variant="ghost" 
                   size="sm"
-                  asChild
+                  aria-label="Preview client page"
+                  onClick={handlePreviewClientPage}
+                  disabled={isOpeningPreview}
                 >
-                  <Link to={`/project/${project.id}`} target="_blank">
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
+                  {isOpeningPreview ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

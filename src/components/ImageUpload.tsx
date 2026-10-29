@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { ImagePlus, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
+import { isClientPage } from '@/lib/clientAccess';
+import { uploadClientImage, clientImagePreview } from '@/lib/clientImageUpload';
 import { toast } from 'sonner';
 
 interface ImageUploadProps {
@@ -27,9 +29,12 @@ export function ImageUpload({
   const uploadToStorage = async (file: File): Promise<string | null> => {
     try {
       setIsUploading(true);
+      if (isClientPage()) return await uploadClientImage(file,bucket);
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user)throw new Error('Sign in before uploading an image.');
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const fileName = `${user.id}/${folder}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       
       const { data, error } = await supabase.storage
         .from(bucket)
@@ -107,7 +112,7 @@ export function ImageUpload({
     return (
       <div className={cn("relative group", className)}>
         <img 
-          src={value} 
+          src={clientImagePreview(value,bucket)}
           alt="Uploaded" 
           className="w-full h-32 object-cover rounded-lg border border-border"
         />

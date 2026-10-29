@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { supabase } from '@/integrations/supabase/client';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,8 +13,13 @@ export function getPublicBaseUrl(): string {
   return "";
 }
 
-export function getClientProjectUrl(projectId: string): string {
-  return `${getPublicBaseUrl()}/project/${projectId}`;
+export async function getClientProjectUrl(projectId: string): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error('Please sign in to share a client link.');
+  const response = await fetch(`/api/team/jobs/${encodeURIComponent(projectId)}/client-link`, { headers: { Authorization: `Bearer ${session.access_token}` } });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'The secure client link could not be created.');
+  return `${getPublicBaseUrl()}${data.path}`;
 }
 
 export function getQuoteShareUrl(quoteToken: string): string {

@@ -14,3 +14,9 @@ Reuse existing Jobs, Documents, Costs and Variations models, and do not break ex
 **Why:** The employee portal is an extension of the existing product, not a replacement or a parallel job-management system.
 
 **How to apply:** Keep employee-only identity, assignments and time tracking owner-scoped. Enforce assignment and role permissions on the server and direct database/storage paths, not only navigation. Employee endpoints must not expose unassigned jobs or financial figures; hourly cost rates are admin-only.
+
+Replace job-ID-only client project links with separate secure capabilities, and resend existing project links.
+
+**Why:** Assigned employees necessarily know job IDs. Keeping those IDs as financial client access keys would defeat employee financial restrictions. The user explicitly approved replacing existing client project links after being told they must be resent.
+
+**How to apply:** Do not restore anonymous job-ID access for compatibility. Coordinate the matching app build and external Supabase policy migration during release; the older published client cannot read through the new security boundary. Preserve quote-token flows and pre-existing file references through scoped access, not reopened public buckets.

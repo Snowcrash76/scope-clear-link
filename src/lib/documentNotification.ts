@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { clientAccessHeaders } from '@/lib/clientAccess';
 
 export async function sendClientDocumentUploadNotification(
   projectId: string,
@@ -7,7 +8,7 @@ export async function sendClientDocumentUploadNotification(
   try {
     const res = await fetch('/api/send-client-document-notification', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...clientAccessHeaders() },
       body: JSON.stringify({ projectId, documentNames }),
     });
     if (!res.ok) {

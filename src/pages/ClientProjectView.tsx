@@ -97,8 +97,8 @@ export default function ClientProjectView() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Job Not Found</h1>
-          <p className="text-muted-foreground mt-2">The job you're looking for doesn't exist.</p>
+          <h1 className="text-2xl font-bold text-foreground">Client link unavailable</h1>
+          <p className="text-muted-foreground mt-2 px-4">This link may have been replaced. Please ask your trade for a new secure client link.</p>
         </div>
       </div>
     );
