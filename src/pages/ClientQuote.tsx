@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { ClientChangeRequest } from '@/components/client/ClientChangeRequest';
+import { useProject } from '@/hooks/useProject';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { clientAccessHeaders } from '@/lib/clientAccess';
@@ -44,6 +46,7 @@ export default function ClientQuote() {
   const [scopeItems, setScopeItems] = useState<ScopeItemRow[]>([]);
   const [project, setProject] = useState<ProjectRow | null>(null);
   const [profile, setProfile] = useState<ProfileRow | null>(null);
+  const { createChangeRequest } = useProject(project?.id);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -382,7 +385,7 @@ export default function ClientQuote() {
       <main className="mx-auto w-full min-w-0 max-w-3xl space-y-5 px-4 py-5 sm:px-6 sm:py-8">
         <Card className="min-w-0 overflow-hidden border-primary/20 bg-card shadow-sm" data-testid="client-quote-summary">
           <div className="border-b border-border bg-primary/5 px-4 py-4 sm:px-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Quote summary</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">Quote summary</p>
             <h2 className="mt-1 font-heading text-xl font-bold text-foreground sm:text-2xl">
               {isActionable ? 'Review your quote' : quote.status === 'approved' ? 'Your accepted quote' : quote.status === 'declined' ? 'Your quote decision' : 'Quote details'}
             </h2>
@@ -443,11 +446,11 @@ export default function ClientQuote() {
             {isActionable && (
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Need an adjustment? {profile?.email ? (
-                  <a className="font-medium text-primary underline underline-offset-4" href={`mailto:${profile.email}?subject=${encodeURIComponent(`Question about quote ${quote.quote_number}`)}`}>
+                  <a className="font-medium text-foreground underline underline-offset-4" href={`mailto:${profile.email}?subject=${encodeURIComponent(`Question about quote ${quote.quote_number}`)}`}>
                     Email {profile.business_name || 'the business'}
                   </a>
                 ) : profile?.phone ? (
-                  <a className="font-medium text-primary underline underline-offset-4" href={`tel:${profile.phone}`}>
+                  <a className="font-medium text-foreground underline underline-offset-4" href={`tel:${profile.phone}`}>
                     Call {profile.business_name || 'the business'}
                   </a>
                 ) : (
@@ -762,6 +765,14 @@ export default function ClientQuote() {
             </div>
           </div>
         )}
+        <ClientChangeRequest onSubmit={description => createChangeRequest({
+          type: 'client_request',
+          title: 'Client Request',
+          description,
+          costImpact: 0,
+          timeImpact: 0,
+        }, 'trade')} />
+
         {/* Unified activity feed — line item history + change requests + quote status events
             Data is sourced from the hook's unified endpoint response ({ history, changeRequests, quote })
             with a fallback to the locally-loaded quote for quote status events if the hook hasn't resolved yet. */}

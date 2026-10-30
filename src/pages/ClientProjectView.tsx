@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ClientPortalHeader } from '@/components/client/ClientPortalHeader';
+import { ClientChangeRequest } from '@/components/client/ClientChangeRequest';
 import { ActionRequired } from '@/components/ActionRequired';
 import { ExclusionsPanel } from '@/components/ExclusionsPanel';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
@@ -209,6 +210,7 @@ export default function ClientProjectView() {
     if (success) {
       toast.success('Sent! Your trade will review and respond.');
     }
+    return success;
   };
 
   const handleQuoteApproval = async (comment: string) => {
@@ -343,7 +345,7 @@ export default function ClientProjectView() {
             <div className="border-b border-border bg-primary/5 p-4 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Quote {activeQuote.quoteNumber}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">Quote {activeQuote.quoteNumber}</p>
                   <h2 className="mt-1 font-heading text-xl font-bold text-foreground sm:text-2xl">
                     {activeQuote.status === 'sent' ? 'Review and accept your quote' : activeQuote.status === 'approved' ? 'Your accepted quote' : activeQuote.status === 'declined' ? 'Your quote decision' : 'Your project quote'}
                   </h2>
@@ -399,7 +401,7 @@ export default function ClientProjectView() {
               </div>
               {activeQuote.status === 'sent' && project.tradePhone && (
                 <p className="text-sm text-muted-foreground">
-                  Need to discuss the quote? <a className="font-medium text-primary underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeBusinessName || project.tradeName}</a>
+                  Need to discuss the quote? <a className="font-medium text-foreground underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeBusinessName || project.tradeName}</a>
                 </p>
               )}
             </div>
@@ -407,7 +409,7 @@ export default function ClientProjectView() {
         ) : (
           <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Project update</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-foreground">Project update</p>
               <h2 className="mt-1 font-heading text-xl font-bold text-foreground">{project.name}</h2>
               <p className="mt-1 text-sm text-muted-foreground">Follow progress, review documents, and see any requests that need your attention.</p>
             </div>
@@ -443,6 +445,8 @@ export default function ClientProjectView() {
             </div>
           </Card>
         )}
+
+        <ClientChangeRequest onSubmit={handleRequestChange} />
 
         {/* Action Required Banner */}
         <ActionRequired 
@@ -692,7 +696,7 @@ export default function ClientProjectView() {
                   <Separator className="my-2" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total (inc GST)</span>
-                    <span className="text-primary">
+                    <span className="text-foreground">
                       ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -880,10 +884,10 @@ export default function ClientProjectView() {
               <Card className="p-4 bg-primary/5 border-primary/20">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
-                    <Receipt className="w-5 h-5 text-primary" />
+                    <Receipt className="w-5 h-5 text-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-semibold text-primary">
+                    <h3 className="font-heading font-semibold text-foreground">
                       {newSentInvoices.length === 1 ? 'New Invoice' : `${newSentInvoices.length} New Invoices`}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -917,7 +921,7 @@ export default function ClientProjectView() {
                       {/* Prominent heading from first line item */}
                       {firstLineItem && (
                         <div className="mb-4 pb-3 border-b">
-                      <h3 className="break-words [overflow-wrap:anywhere] text-lg font-semibold text-primary border-l-4 border-primary pl-3">
+                      <h3 className="break-words [overflow-wrap:anywhere] text-lg font-semibold text-foreground border-l-4 border-primary pl-3">
                             {firstLineItem.description}
                           </h3>
                         </div>
@@ -1042,10 +1046,10 @@ export default function ClientProjectView() {
               <Card className="p-4 bg-primary/5 border-primary/20">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
-                    <FolderOpen className="w-5 h-5 text-primary" />
+                    <FolderOpen className="w-5 h-5 text-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-semibold text-primary">New Documents</h3>
+                    <h3 className="font-heading font-semibold text-foreground">New Documents</h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length === 1
                         ? '1 document was added recently.'
@@ -1103,6 +1107,7 @@ export default function ClientProjectView() {
         onConfirm={handleQuoteApproval}
         action={quoteApprovalModal.action}
         title={activeQuote?.quoteNumber || 'Quote'}
+        subject="quote"
       />
 
       {/* Quote View Modal */}
@@ -1124,7 +1129,7 @@ export default function ClientProjectView() {
           <p className="break-words [overflow-wrap:anywhere]">This job page is provided by {project.tradeBusinessName}</p>
           <p className="mt-1 break-words [overflow-wrap:anywhere]">
             Questions? {project.tradePhone
-              ? <a className="font-medium text-primary underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeName || project.tradeBusinessName}</a>
+              ? <a className="font-medium text-foreground underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeName || project.tradeBusinessName}</a>
               : 'Reply to the original project email to contact your trade.'}
           </p>
         </div>

@@ -18,6 +18,7 @@ interface ApprovalModalProps {
   onConfirm: (comment: string) => Promise<void> | void;
   action: 'approve' | 'decline';
   title: string;
+  subject?: 'quote' | 'variation';
 }
 
 export function ApprovalModal({
@@ -26,6 +27,7 @@ export function ApprovalModal({
   onConfirm,
   action,
   title,
+  subject = 'variation',
 }: ApprovalModalProps) {
   const [comment, setComment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,7 +60,7 @@ export function ApprovalModal({
             ) : (
               <X className="w-5 h-5 text-declined" />
             )}
-            {isApprove ? 'Approve' : 'Decline'} Variation
+            {isApprove ? (subject === 'quote' ? 'Accept' : 'Approve') : 'Decline'} {subject === 'quote' ? 'Quote' : 'Variation'}
           </DialogTitle>
           <DialogDescription>
             {isApprove 
@@ -105,7 +107,7 @@ export function ApprovalModal({
             ) : isApprove ? (
               <>
                 <Check className="w-4 h-4" />
-                Confirm Approval
+                {subject === 'quote' ? 'Accept Quote' : 'Confirm Approval'}
               </>
             ) : (
               <>

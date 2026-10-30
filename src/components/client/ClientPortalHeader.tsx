@@ -37,7 +37,7 @@ export function ClientPortalHeader({
               className="h-11 w-11 shrink-0 rounded-xl border border-border bg-background object-contain p-1"
             />
           ) : (
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary" aria-hidden="true">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-foreground" aria-hidden="true">
               <Building2 className="h-5 w-5" />
             </span>
           )}
@@ -47,7 +47,7 @@ export function ClientPortalHeader({
               <span className="break-words [overflow-wrap:anywhere]">{businessName || 'Your project team'}</span>
             </div>
             {referenceLabel && (
-              <p className="mt-1 text-sm font-semibold text-primary">{referenceLabel}</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{referenceLabel}</p>
             )}
             <h1 className="mt-1 break-words [overflow-wrap:anywhere] font-heading text-2xl font-bold leading-tight text-foreground sm:text-3xl">
               {projectName}
