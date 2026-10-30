@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface StageManagerProps {
   stages: ProjectStage[];
@@ -206,24 +207,38 @@ export function StageManager({
                 {/* Reorder buttons */}
                 {isEditable && onReorderStages && (
                   <div className="flex flex-col gap-0.5">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      disabled={index === 0}
-                      onClick={() => handleMoveStage(index, 'up')}
-                    >
-                      <ChevronUp className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-5 w-5"
-                      disabled={index === stages.length - 1}
-                      onClick={() => handleMoveStage(index, 'down')}
-                    >
-                      <ChevronDown className="w-3 h-3" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11"
+                          aria-label={`Move stage ${stage.name} up`}
+                          title={`Move stage ${stage.name} up`}
+                          disabled={index === 0}
+                          onClick={() => handleMoveStage(index, 'up')}
+                        >
+                          <ChevronUp className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Move stage {stage.name} up</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11"
+                          aria-label={`Move stage ${stage.name} down`}
+                          title={`Move stage ${stage.name} down`}
+                          disabled={index === stages.length - 1}
+                          onClick={() => handleMoveStage(index, 'down')}
+                        >
+                          <ChevronDown className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Move stage {stage.name} down</TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
 
@@ -301,25 +316,39 @@ export function StageManager({
                 {/* Edit/Delete Actions */}
                 {isEditable && (
                   <div className="ml-auto flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => handleEditStage(stage)}
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive"
-                      onClick={() => {
-                        setStageToDelete(stage.id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11"
+                          aria-label={`Edit stage ${stage.name}`}
+                          title={`Edit stage ${stage.name}`}
+                          onClick={() => handleEditStage(stage)}
+                        >
+                          <Pencil className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Edit stage {stage.name}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-11 w-11 text-destructive hover:text-destructive"
+                          aria-label={`Delete stage ${stage.name}`}
+                          title={`Delete stage ${stage.name}`}
+                          onClick={() => {
+                            setStageToDelete(stage.id);
+                            setDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Delete stage {stage.name}</TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
 

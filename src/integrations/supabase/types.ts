@@ -14,6 +14,34 @@ export type Database = {
   }
   public: {
     Tables: {
+      // Type metadata for the existing invite table, not a schema migration.
+      invite_codes: {
+        Row: {
+          id: string
+          code: string
+          label: string | null
+          used_by_email: string | null
+          used_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          label?: string | null
+          used_by_email?: string | null
+          used_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          label?: string | null
+          used_by_email?: string | null
+          used_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           id: string

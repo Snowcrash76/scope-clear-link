@@ -28,6 +28,7 @@ import {
   AlertDialogDescription,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ProjectDocument {
   id: string;
@@ -294,43 +295,77 @@ export function DocumentsSection({
                       />
                       Staff access
                     </label>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setEditingDocument(doc)}
-                      title="Edit display name"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleView(doc)}
-                      title="View"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDownload(doc)}
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDelete(doc)}
-                      disabled={deletingId === doc.id}
-                      title="Delete"
-                    >
-                      {deletingId === doc.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      )}
-                    </Button>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="min-h-11 min-w-11"
+                          onClick={() => setEditingDocument(doc)}
+                          title={`Edit ${displayName(doc)} display name`}
+                          aria-label={`Edit ${displayName(doc)} display name`}
+                        >
+                          <Pencil className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Edit {displayName(doc)} display name
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="min-h-11 min-w-11"
+                          onClick={() => handleView(doc)}
+                          title={`View ${displayName(doc)}`}
+                          aria-label={`View ${displayName(doc)}`}
+                        >
+                          <Eye className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>View {displayName(doc)}</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="min-h-11 min-w-11"
+                          onClick={() => handleDownload(doc)}
+                          title={`Download ${displayName(doc)}`}
+                          aria-label={`Download ${displayName(doc)}`}
+                        >
+                          <Download className="w-4 h-4" aria-hidden="true" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Download {displayName(doc)}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="min-h-11 min-w-11"
+                          onClick={() => handleDelete(doc)}
+                          disabled={deletingId === doc.id}
+                          title={`Delete ${displayName(doc)}`}
+                          aria-label={`Delete ${displayName(doc)}`}
+                        >
+                          {deletingId === doc.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 text-destructive" aria-hidden="true" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        Delete {displayName(doc)}
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               );

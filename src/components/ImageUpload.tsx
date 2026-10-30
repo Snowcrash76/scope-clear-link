@@ -113,11 +113,13 @@ export function ImageUpload({
       <div className={cn("relative group", className)}>
         <img 
           src={clientImagePreview(value,bucket)}
-          alt="Uploaded" 
+          alt="Uploaded project image"
           className="w-full h-32 object-cover rounded-lg border border-border"
         />
         <button
           onClick={handleRemove}
+          type="button"
+          aria-label="Remove uploaded project image"
           className="absolute top-2 right-2 p-1.5 bg-background/80 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
         >
           <X className="w-4 h-4" />
@@ -188,7 +190,7 @@ export function ImageDisplay({ src, alt = "Attached image", className }: ImageDi
       >
         <img 
           src={src} 
-          alt={alt}
+          alt={alt || "Attached project image"}
           className="w-full h-24 object-cover"
         />
         <div className="absolute inset-0 bg-background/0 hover:bg-background/10 transition-colors flex items-center justify-center">
@@ -204,11 +206,13 @@ export function ImageDisplay({ src, alt = "Attached image", className }: ImageDi
           <div className="relative max-w-4xl max-h-[90vh] animate-scale-in">
             <img 
               src={src} 
-              alt={alt}
+              alt={alt || "Attached project image"}
               className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
             />
             <button
               onClick={() => setIsExpanded(false)}
+              type="button"
+              aria-label="Close enlarged image preview"
               className="absolute top-2 right-2 p-2 bg-background/80 backdrop-blur-sm rounded-full shadow-md hover:bg-destructive hover:text-destructive-foreground transition-colors"
             >
               <X className="w-5 h-5" />

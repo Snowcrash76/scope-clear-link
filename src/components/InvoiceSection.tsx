@@ -50,7 +50,7 @@ interface InvoiceSectionProps {
   quote: Quote | null;
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
-  quoteLineItems?: Array<{ id: string; cost: number | null }>;
+  quoteLineItems?: Array<{ id: string; title: string; cost: number | null }>;
   projectName: string;
   clientName: string;
   clientEmail: string;

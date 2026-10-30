@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface FileWithDisplayName {
   file: File;
@@ -199,15 +200,24 @@ export function DocumentUploadModal({
                           {formatFileSize(item.file.size)}
                         </p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 flex-shrink-0"
-                        onClick={() => handleRemoveFile(index)}
-                        disabled={isUploading}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-11 w-11 flex-shrink-0"
+                            aria-label={`Remove ${item.file.name} from upload list`}
+                            title={`Remove ${item.file.name} from upload list`}
+                            onClick={() => handleRemoveFile(index)}
+                            disabled={isUploading}
+                          >
+                            <X className="w-4 h-4" aria-hidden="true" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Remove {item.file.name} from upload list
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
                     <div>
                       <Label htmlFor={`display-name-${index}`} className="text-xs text-muted-foreground">

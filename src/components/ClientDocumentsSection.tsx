@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ProjectDocument {
   id: string;
@@ -275,29 +276,47 @@ export function ClientDocumentsSection({ documents, projectId, onRefresh }: Clie
                   </p>
                 </div>
                 <div className="ml-auto flex max-w-full shrink-0 flex-wrap items-center justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleView(doc)}
-                    title="View"
-                    data-testid={`button-view-doc-${doc.id}`}
-                  >
-                    <Eye className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDownload(doc)}
-                    disabled={downloadingId === doc.id}
-                    title="Download"
-                    data-testid={`button-download-doc-${doc.id}`}
-                  >
-                    {downloadingId === doc.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="min-h-11 min-w-11"
+                        onClick={() => handleView(doc)}
+                        title={`View ${doc.display_name || doc.file_name}`}
+                        aria-label={`View ${doc.display_name || doc.file_name}`}
+                        data-testid={`button-view-doc-${doc.id}`}
+                      >
+                        <Eye className="w-4 h-4" aria-hidden="true" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      View {doc.display_name || doc.file_name}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="min-h-11 min-w-11"
+                        onClick={() => handleDownload(doc)}
+                        disabled={downloadingId === doc.id}
+                        title={`Download ${doc.display_name || doc.file_name}`}
+                        aria-label={`Download ${doc.display_name || doc.file_name}`}
+                        data-testid={`button-download-doc-${doc.id}`}
+                      >
+                        {downloadingId === doc.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                        ) : (
+                          <Download className="w-4 h-4" aria-hidden="true" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Download {doc.display_name || doc.file_name}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             );

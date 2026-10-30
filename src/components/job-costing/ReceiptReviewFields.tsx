@@ -16,12 +16,12 @@ export function ReceiptReviewFields({
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="receipt-abn">Supplier ABN</Label>
-          <Input id="receipt-abn" data-testid="input-receipt-abn" value={abn} maxLength={20} disabled={disabled} onChange={event => onAbnChange(event.target.value)} placeholder="Not read" />
+          <Input id="receipt-abn" data-testid="input-receipt-abn" value={abn} maxLength={20} disabled={disabled} onChange={event => onAbnChange(event.target.value)} placeholder="Not read" className="min-h-11 text-sm" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="receipt-currency">Receipt currency</Label>
-          <Input id="receipt-currency" data-testid="input-receipt-currency" value={currency} readOnly />
-          <p className="text-[11px] text-muted-foreground">All receipt costs are recorded in AUD.</p>
+          <Input id="receipt-currency" data-testid="input-receipt-currency" value={currency} readOnly className="min-h-11 text-sm" />
+          <p className="text-sm text-muted-foreground">All receipt costs are recorded in AUD.</p>
         </div>
       </div>
     </div>

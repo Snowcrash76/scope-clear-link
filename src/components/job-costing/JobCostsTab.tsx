@@ -725,7 +725,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
           ["Inc GST", totals.inc],
         ].map(([label, value]) => (
           <Card key={String(label)} className="p-3 sm:p-4">
-            <p className="text-[11px] font-medium text-muted-foreground sm:text-xs">
+            <p className="text-xs font-medium text-muted-foreground">
               {label}
             </p>
             <p className="mt-1 truncate text-sm font-bold tabular-nums sm:text-lg">
@@ -738,7 +738,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         <div className="min-w-0 space-y-1">
           <Label
             htmlFor="cost-category-filter"
-            className="text-xs text-muted-foreground"
+            className="text-sm text-muted-foreground"
           >
             Category
           </Label>
@@ -763,7 +763,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         <div className="min-w-0 space-y-1">
           <Label
             htmlFor="cost-status-filter"
-            className="text-xs text-muted-foreground"
+            className="text-sm text-muted-foreground"
           >
             Status
           </Label>
@@ -905,7 +905,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                         />
                       </div>
                     ) : (
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs tabular-nums">
+                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                         <span>
                           Ex GST <b>{aud(cost.amount_ex_gst)}</b>
                         </span>
@@ -918,12 +918,12 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                       </div>
                     )}
                     {cost.status === "draft" && (
-                      <p className="mt-2 text-xs text-warning">
+                      <p className="mt-2 text-sm text-warning">
                         Draft — excluded from job profit until confirmed.
                       </p>
                     )}
                     {cost.notes && (
-                      <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">
+                      <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
                         {cost.notes}
                       </p>
                     )}
@@ -1012,7 +1012,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               Inc GST <b>{aud(totals.inc)}</b>
             </span>
           </div>
-          <p className="w-full text-xs text-muted-foreground">
+          <p className="w-full text-sm text-muted-foreground">
             List totals include the selected draft and confirmed entries. Only
             confirmed entries affect profitability.
           </p>
@@ -1147,7 +1147,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                   }}
                   disabled={scanBusy || submitting}
                 />
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className="mt-2 text-sm text-muted-foreground">
                   Item prices are recorded as printed and may include GST. Bill
                   totals below are kept separately; editing an item does not
                   overwrite the receipt total.
@@ -1162,7 +1162,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     AUD
                   </span>
                 </p>
-                <label className="flex items-center gap-2 text-xs">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={!form.gst_applies}
@@ -1201,7 +1201,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     onChange={(e) => setAmount("ex", e.target.value)}
                   />
                   {!form.amount_ex_gst.trim() && exGstAmount && (
-                    <span className="text-[11px] text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       Calculated from total and GST.
                     </span>
                   )}
@@ -1216,7 +1216,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     value={effectiveGstAmount}
                     onChange={(e) => changeGst(e.target.value)}
                   />
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     {effectiveGstAmount !== gstAmount
                       ? form.gst_applies
                         ? "Calculated at 10% because no GST amount was provided."
@@ -1242,7 +1242,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                   />
                 </Field>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {scanUsed
                   ? "Printed totals stay independent: editing one does not change the others. Check any mismatch against the receipt; scanned GST may not be 10%."
                   : "Enter either ex-GST or inc-GST; the other amount and GST are calculated."}
@@ -1308,7 +1308,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     ))}
                   </SelectContent>
                 </Select>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {quoteLineItems.length
                     ? "Choose included work or a line item from this job’s quotes, then save the cost. This does not change the quote."
                     : "No saved quote items found for this job. Save included work or a quote line item in Quotes, then reopen this form."}
@@ -1345,7 +1345,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                       <p className="text-sm font-semibold">
                         Receipt scan review
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         Nothing is posted automatically. Check the original
                         before saving.
                       </p>
@@ -1359,13 +1359,13 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     </Badge>
                   </div>
                   {liveScanWarnings.length > 0 ? (
-                    <ul className="list-disc space-y-1 pl-5 text-xs text-warning">
+                    <ul className="list-disc space-y-1 pl-5 text-sm text-warning">
                       {liveScanWarnings.map((warning, index) => (
                         <li key={`${warning}-${index}`}>{warning}</li>
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       The current values reconcile. Still confirm them against
                       the receipt.
                     </p>
@@ -1435,7 +1435,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               </div>
             )}
             {removeReceipt && (
-              <p className="text-xs text-warning">
+              <p className="text-sm text-warning">
                 Existing attachment will be removed when saved.{" "}
                 <button
                   type="button"
@@ -1508,7 +1508,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               </div>
             )}
             {editing && (
-              <div className="rounded-md bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+              <div className="rounded-md bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
                 Created {new Date(editing.created_at).toLocaleString("en-AU")} ·
                 Updated {new Date(editing.updated_at).toLocaleString("en-AU")} ·
                 Creator {editing.created_by}
@@ -1533,7 +1533,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     </li>
                   ))}
                 </ul>
-                <label className="flex items-start gap-2 text-xs text-warning">
+                <label className="flex items-start gap-2 text-sm text-warning">
                   <input
                     data-testid="checkbox-duplicate-acknowledged"
                     type="checkbox"
@@ -1556,7 +1556,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
             {duplicateError && (
               <div
                 role="alert"
-                className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive"
+                className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span>Duplicate check failed: {duplicateError}</span>
@@ -1579,7 +1579,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               </div>
             )}
             {duplicateLoading && duplicateQueryKey && (
-              <p role="status" className="text-xs text-muted-foreground">
+              <p role="status" className="text-sm text-muted-foreground">
                 Checking for matching costs…
               </p>
             )}
@@ -1720,7 +1720,7 @@ function Field({
     <div className="min-w-0 space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       {children}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
     </div>
   );
 }

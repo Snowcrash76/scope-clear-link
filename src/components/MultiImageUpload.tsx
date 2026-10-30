@@ -233,7 +233,7 @@ function ImageThumbnail({ path, bucket, onRemove }: ImageThumbnailProps) {
       ) : imageUrl ? (
         <img 
           src={imageUrl} 
-          alt="Uploaded" 
+          alt="Uploaded project image preview" 
           className="w-full h-full object-cover rounded-lg border border-border"
         />
       ) : (
@@ -246,6 +246,8 @@ function ImageThumbnail({ path, bucket, onRemove }: ImageThumbnailProps) {
           e.stopPropagation();
           onRemove();
         }}
+        type="button"
+        aria-label="Remove uploaded image"
         className="absolute top-1 right-1 p-1 bg-background/80 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground"
       >
         <X className="w-3 h-3" />
@@ -319,6 +321,8 @@ export function MultiImageDisplay({ paths, bucket = 'scope-images', className }:
             />
             <button
               onClick={() => setExpandedIndex(null)}
+              type="button"
+              aria-label="Close enlarged image preview"
               className="absolute top-2 right-2 p-2 bg-background/80 backdrop-blur-sm rounded-full shadow-md hover:bg-destructive hover:text-destructive-foreground transition-colors"
             >
               <X className="w-5 h-5" />
@@ -333,6 +337,8 @@ export function MultiImageDisplay({ paths, bucket = 'scope-images', className }:
                       loadSignedUrl(paths[expandedIndex - 1], expandedIndex - 1);
                       setExpandedIndex(expandedIndex - 1);
                     }}
+                    type="button"
+                    aria-label="View previous image"
                     className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-background/80 backdrop-blur-sm rounded-full shadow-md hover:bg-secondary transition-colors"
                   >
                     ←
@@ -345,6 +351,8 @@ export function MultiImageDisplay({ paths, bucket = 'scope-images', className }:
                       loadSignedUrl(paths[expandedIndex + 1], expandedIndex + 1);
                       setExpandedIndex(expandedIndex + 1);
                     }}
+                    type="button"
+                    aria-label="View next image"
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-background/80 backdrop-blur-sm rounded-full shadow-md hover:bg-secondary transition-colors"
                   >
                     →
@@ -401,7 +409,7 @@ function ImageDisplayThumbnail({ path, bucket, onClick }: { path: string; bucket
       ) : imageUrl ? (
         <img 
           src={imageUrl} 
-          alt="Scope image"
+          alt="Project image thumbnail"
           className="w-full h-full object-cover"
         />
       ) : (
@@ -462,9 +470,9 @@ function ExpandedImage({ path, bucket, signedUrl }: { path: string; bucket: stri
   }
 
   return (
-    <img 
+      <img 
       src={imageUrl} 
-      alt="Scope image"
+        alt="Enlarged project image"
       className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
     />
   );

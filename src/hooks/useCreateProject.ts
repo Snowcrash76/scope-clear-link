@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import type { Project } from '@/types/project';
+import type { Database } from '@/integrations/supabase/types';
 
 export interface CreateProjectLineItem {
   title: string;
@@ -16,7 +16,7 @@ export interface CreateProjectData {
   clientName: string;
   clientEmail: string;
   clientAddress?: string;
-  projectStatus?: Project['status'];
+  projectStatus?: Database['public']['Enums']['project_status'];
   quoteData: {
     lineItems: CreateProjectLineItem[];
     taxRate: number;

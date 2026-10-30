@@ -45,34 +45,38 @@ function AppointmentRow({
       className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors group"
       data-testid={`appointment-row-${appt.id}`}
     >
-      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 flex-shrink-0 w-20">
+      <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5 flex-shrink-0 w-20">
         <Clock className="w-3 h-3" />
         <span>{formatTime(appt.start_time)}</span>
       </div>
       <div className="flex-1 min-w-0">
         <p className="break-words [overflow-wrap:anywhere] text-sm font-medium leading-snug">{appt.title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-sm text-muted-foreground mt-0.5">
           {formatTime(appt.start_time)} – {formatTime(appt.end_time)}
         </p>
         {appt.notes && (
-          <p className="break-words [overflow-wrap:anywhere] text-xs text-muted-foreground mt-0.5 italic">{appt.notes}</p>
+          <p className="break-words [overflow-wrap:anywhere] text-sm text-muted-foreground mt-0.5 italic">{appt.notes}</p>
         )}
       </div>
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <div className="flex items-center gap-1 opacity-100 transition-opacity flex-shrink-0 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
         <button
+          type="button"
           onClick={() => onEdit(appt)}
-          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          aria-label={`Edit appointment ${appt.title}`}
+          title={`Edit appointment ${appt.title}`}
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
           data-testid={`button-edit-appointment-${appt.id}`}
-          title="Edit"
         >
           <Pencil className="w-3 h-3" />
         </button>
         <button
+          type="button"
           onClick={() => onDelete(appt.id)}
           disabled={deleting}
-          className="p-1 rounded hover:bg-red-50 transition-colors text-muted-foreground hover:text-red-600"
+          aria-label={`Delete appointment ${appt.title}`}
+          title={`Delete appointment ${appt.title}`}
+          className="inline-flex min-h-11 min-w-11 items-center justify-center rounded hover:bg-destructive/10 transition-colors text-muted-foreground hover:text-destructive"
           data-testid={`button-delete-appointment-${appt.id}`}
-          title="Delete"
         >
           <Trash2 className="w-3 h-3" />
         </button>
@@ -105,67 +109,69 @@ function AppointmentForm({
   return (
     <div className="px-4 py-3 bg-muted/30 border-t border-border/60 space-y-3" data-testid="appointment-form">
       <div className="space-y-1">
-        <Label htmlFor="appt-title" className="text-xs">Title</Label>
+        <Label htmlFor="appt-title" className="text-sm">Title</Label>
         <Input
           id="appt-title"
           value={form.title}
           onChange={e => set('title', e.target.value)}
           placeholder="e.g. Site inspection at 12 Oak St"
-          className="h-8 text-sm"
+          className="min-h-11 text-sm"
           autoFocus
           data-testid="input-appointment-title"
         />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
-          <Label htmlFor="appt-start" className="text-xs">Start time</Label>
+          <Label htmlFor="appt-start" className="text-sm">Start time</Label>
           <Input
             id="appt-start"
             type="time"
             value={form.start_time}
             onChange={e => set('start_time', e.target.value)}
-            className="h-8 text-sm"
+            className="min-h-11 text-sm"
             data-testid="input-appointment-start-time"
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="appt-end" className="text-xs">End time</Label>
+          <Label htmlFor="appt-end" className="text-sm">End time</Label>
           <Input
             id="appt-end"
             type="time"
             value={form.end_time}
             onChange={e => set('end_time', e.target.value)}
-            className="h-8 text-sm"
+            className="min-h-11 text-sm"
             data-testid="input-appointment-end-time"
           />
         </div>
       </div>
       <div className="space-y-1">
-        <Label htmlFor="appt-notes" className="text-xs text-muted-foreground">Notes (optional)</Label>
+        <Label htmlFor="appt-notes" className="text-sm text-muted-foreground">Notes (optional)</Label>
         <Input
           id="appt-notes"
           value={form.notes}
           onChange={e => set('notes', e.target.value)}
           placeholder="Any extra details..."
-          className="h-8 text-sm"
+          className="min-h-11 text-sm"
           data-testid="input-appointment-notes"
         />
       </div>
       <div className="flex justify-end gap-2">
         <button
+          type="button"
           onClick={onCancel}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-muted"
+          className="flex min-h-11 items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 rounded hover:bg-muted"
           data-testid="button-appointment-cancel"
         >
           <X className="w-3 h-3" /> Cancel
         </button>
         <button
+          type="button"
           onClick={() => onSave(form)}
           disabled={!canSave || saving}
           className={cn(
-            'flex items-center gap-1 text-xs px-3 py-1.5 rounded font-medium transition-colors',
+            'flex min-h-11 items-center gap-1 text-sm px-3 rounded font-medium transition-colors',
             canSave && !saving
-              ? 'bg-amber-600 text-white hover:bg-amber-700'
+              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
               : 'bg-muted text-muted-foreground cursor-not-allowed'
           )}
           data-testid="button-appointment-save"
@@ -245,20 +251,21 @@ export function TodaySchedule() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-y-2 px-4 py-3 border-b border-border/60">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <Calendar className="w-4 h-4 text-amber-600" />
-          <h2 className="font-heading text-sm font-semibold">Today's Schedule</h2>
+          <Calendar className="w-4 h-4 text-warning" aria-hidden="true" />
+          <h2 className="font-heading text-base font-semibold">Today's Schedule</h2>
           {!loading && appointments.length > 0 && (
-            <span className="inline-flex items-center justify-center h-4 min-w-4 px-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold leading-none" data-testid="text-appointment-count">
+            <span className="inline-flex items-center justify-center h-5 min-w-5 px-1 rounded-full bg-warning/10 text-warning text-xs font-bold leading-none" data-testid="text-appointment-count">
               {appointments.length}
             </span>
           )}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">{dateLabel}</span>
+          <span className="text-sm text-muted-foreground">{dateLabel}</span>
           {!showForm && !editingId && (
             <button
+              type="button"
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-1 text-xs font-medium text-amber-700 hover:text-amber-800 transition-colors px-1.5 py-1 rounded hover:bg-amber-50"
+              className="flex min-h-11 items-center gap-1 text-sm font-medium text-warning hover:underline transition-colors px-2 rounded"
               data-testid="button-add-appointment"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -287,8 +294,9 @@ export function TodaySchedule() {
             <Calendar className="w-8 h-8 text-muted-foreground/40 mb-2" />
             <p className="text-sm text-muted-foreground">No appointments scheduled for today.</p>
             <button
+              type="button"
               onClick={() => setShowForm(true)}
-              className="mt-3 text-xs text-amber-700 hover:text-amber-800 font-medium transition-colors"
+              className="mt-3 min-h-11 px-3 text-sm text-warning hover:underline font-medium transition-colors"
               data-testid="button-add-first-appointment"
             >
               + Add one
