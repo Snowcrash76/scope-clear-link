@@ -44,3 +44,9 @@ The existing hourly cost rates are the employees' actual pay rates. Admins and e
 **Why:** The user explicitly confirmed “Yes, use the current rates” and “Admins and each employee themselves.”
 
 **How to apply:** Keep all other job finances private. Label approved-hours pay as an estimate before tax, not an outstanding balance or payroll calculation; actual payments, deductions, overtime and super are not tracked by this feature.
+
+Timesheets need approval/denial plus employee and admin edit/delete controls. Employees manage their own unlocked entries; owners/admins manage entries within their business.
+
+**Why:** The user explicitly requested both review decisions and editing/deletion for team members and admins. Approved hours already post job labour costs, so silent changes would make costs inaccurate.
+
+**How to apply:** Require explicit reopening before correcting submitted/approved weeks, reverse approved labour first, and preserve the correction/deletion audit. Admins must be able to resubmit corrected hours without requiring an inactive employee to sign in.

@@ -28,3 +28,17 @@ mtime_ms = 1793347929697
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/75e4f780-2f3f-46b6-bcb9-ea2ddf50f937/2292d206-8f87-4452-8e06-61726ed92ca8"
 storage_version_token = "1793348939059848"
 content_type = "text/html"
+
+[[outputs]]
+id = "tYI9dBOSWI5b36YZbX2vV"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-10-30T09-54-18-213Z.html"
+type = "html"
+title = "Encrypted backup before timesheet changes"
+description = "Encrypted database archive and file metadata. Receipt/photo file contents are not included. Keep your database password privately to decrypt it; full restore has not been tested."
+logical_id = "f966d013-1e61-40e2-9a69-402aef16a066"
+content_hash = "sha256:27840669ca7e2921a1e4b57bdb5a77d8d40b2d5ced7c03ae15c89b13e1b12708"
+size = 603604
+mtime_ms = 1793354107009
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/f966d013-1e61-40e2-9a69-402aef16a066/47ca7c15-bae0-467e-a460-752ed4667f5c"
+storage_version_token = "1793355028271842"
+content_type = "text/html"

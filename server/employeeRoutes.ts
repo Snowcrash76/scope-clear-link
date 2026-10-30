@@ -62,6 +62,7 @@ export function createEmployeeRouter() {
       sql: [
         ...(actor.setupRequired ? ['20261029000000_employee_portal.sql'] : []),
         '20261030000000_team_member_management.sql',
+        '20261030010000_timesheet_entry_management.sql',
       ].map(file => readFileSync(path.resolve('supabase/migrations', file), 'utf8')).join('\n\n'),
       editor_url: 'https://supabase.com/dashboard/project/aswmcyldowvpugmfmykf/sql/new',
     };
@@ -209,8 +210,20 @@ export function createEmployeeRouter() {
     return portalMutate(db, actor, 'clock_out', { id: body.entry_id, break_minutes: body.break_minutes, notes: body.notes, gps: body.gps });
   }));
   router.post('/employee/time', portalHandler(async (req, db, actor) => { requireEmployee(actor); return portalMutate(db, actor, 'time_save', timeBody.parse(req.body)); }));
-  router.patch('/employee/time/:id', portalHandler(async (req, db, actor) => { requireEmployee(actor); return portalMutate(db, actor, 'time_save', { ...timeBody.parse(req.body), id: paramsId(req.params.id) }); }));
-  router.delete('/employee/time/:id', portalHandler(async (req, db, actor) => { requireEmployee(actor); return portalMutate(db, actor, 'time_delete', { id: paramsId(req.params.id) }); }));
+  router.patch('/employee/time/:id', portalHandler(async (req, db, actor) => { requireEmployee(actor); return manageTimeEntry(db, actor, paramsId(req.params.id), 'update', timeBody.parse(req.body)); }));
+  router.delete('/employee/time/:id', portalHandler(async (req, db, actor) => { requireEmployee(actor); return manageTimeEntry(db, actor, paramsId(req.params.id), 'delete', {}); }));
+  router.patch('/team/time/:id', portalHandler(async (req, db, actor) => {
+    requireTeam(actor);
+    return manageTimeEntry(db, actor, paramsId(req.params.id), 'update', timeBody.extend({ reason: text.optional() }).parse(req.body));
+  }));
+  router.delete('/team/time/:id', portalHandler(async (req, db, actor) => {
+    requireTeam(actor);
+    return manageTimeEntry(db, actor, paramsId(req.params.id), 'delete', z.object({ reason: text.optional() }).parse(req.body ?? {}));
+  }));
+  router.post('/team/time/:id/submit', portalHandler(async (req, db, actor) => {
+    requireTeam(actor);
+    return manageTimeEntry(db, actor, paramsId(req.params.id), 'submit', {});
+  }));
   router.post('/employee/submit', portalHandler(async (req, db, actor) => { requireEmployee(actor); return portalMutate(db, actor, 'submit', z.object({ week_start: date }).strict().parse(req.body)); }));
   router.post('/team/review', portalHandler(async (req, db, actor) => {
     const body = z.object({ submission_id: id, decision: z.enum(['approved','rejected','reopen']), comment: text.default('') }).strict().parse(req.body);
@@ -300,6 +313,15 @@ export function createEmployeeRouter() {
     }
   });
   return router;
+}
+async function manageTimeEntry(db: any, actor: PortalActor, entryId: string, action: string, payload: unknown) {
+  const { data, error } = await db.rpc('portal_manage_time_entry', {
+    p_actor: actor.userId, p_entry: entryId, p_action: action, p_payload: payload,
+  });
+  if (error && ['PGRST202','42883'].includes(error.code))
+    throw new CostApiError(503, 'Timesheet editing database setup is required. Apply supabase/migrations/20261030010000_timesheet_entry_management.sql in Supabase, then retry.');
+  portalDbCheck(error);
+  return data;
 }
 async function authorisedEmployeeDocument(db: any, actor: PortalActor, documentId: string) {
   // Even Admin-role employees using employee endpoints get employee-only rights.
