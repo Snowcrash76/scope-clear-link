@@ -61,14 +61,14 @@ export function ReviewDialog({
         </h2>
         {review.decision === "reopen" ? (
           <p className="mt-2 rounded-xl bg-muted p-3 text-sm leading-5 text-muted-foreground">
-            Reopening unlocks the whole week for corrections. If it was
+            Job filters change display only. Reopening unlocks the employee’s whole week across all jobs for corrections. If it was
             approved, its posted job labour cost is reversed. The employee or an
             admin must resubmit the corrected week before it can be approved and
             posted again.
           </p>
         ) : (
           <p className="mt-2 text-sm text-muted-foreground">
-            Week commencing {showDate(review.submission.week_start)}.{" "}
+            Week commencing {showDate(review.submission.week_start)} across all jobs. Job filters change display only.{" "}
             {review.decision === "approved"
               ? "Approval confirms these hours for posting to job labour."
               : "Denying returns the week to the employee for corrections and resubmission."}

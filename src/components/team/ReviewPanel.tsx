@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, ChevronRight, History, MoreHorizontal } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { Check, ChevronRight, History, MoreHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -87,6 +88,8 @@ export function ReviewPanel({
   canEdit?: boolean;
   refresh: () => unknown;
 }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedJobId = searchParams.get("job") ?? "";
   const [selectedWeek, setSelectedWeek] = useState(() =>
     weekStart(localDate(new Date(), team.timezone)),
   );
@@ -117,12 +120,18 @@ export function ReviewPanel({
   const historyReturnTarget = useRef<HTMLButtonElement | null>(null);
   const todayDate = localDate(new Date(), team.timezone);
   const today = weekStart(todayDate);
-  const entries = useMemo(
+  const allWeekEntries = useMemo(
     () =>
       team.entries.filter(
         (entry) => weekStart(entry.work_date) === selectedWeek,
       ),
     [team.entries, selectedWeek],
+  );
+  const entries = useMemo(
+    () => selectedJobId
+      ? allWeekEntries.filter((entry) => entry.project_id === selectedJobId)
+      : allWeekEntries,
+    [allWeekEntries, selectedJobId],
   );
   const allSubmissions = useMemo(
     () =>
@@ -134,22 +143,25 @@ export function ReviewPanel({
     [team.submissions, selectedWeek],
   );
   const people = useMemo<PersonWeek[]>(() => {
-    const ids = new Set([
-      ...team.employees.filter((e) => e.active).map((e) => e.id),
-      ...entries.map((entry) => entry.employee_id),
-      ...allSubmissions.map((submission) => submission.employee_id),
-    ]);
+    const ids = selectedJobId
+      ? new Set(entries.map((entry) => entry.employee_id))
+      : new Set([
+          ...team.employees.filter((e) => e.active).map((e) => e.id),
+          ...entries.map((entry) => entry.employee_id),
+          ...allSubmissions.map((submission) => submission.employee_id),
+        ]);
     const list = [...ids].map((id) => {
       const memberEntries = entries.filter((entry) => entry.employee_id === id);
+      const fullWeekEntries = allWeekEntries.filter((entry) => entry.employee_id === id);
       const submission = allSubmissions.find((item) => item.employee_id === id);
-      const running = memberEntries.some((entry) => !entry.ended_at);
+      const running = fullWeekEntries.some((entry) => !entry.ended_at);
       const status: TimesheetStatus = running
         ? "running"
         : (submission?.status ?? "draft");
       const locked =
         submission?.status === "submitted" ||
         submission?.status === "approved" ||
-        memberEntries.some(
+        fullWeekEntries.some(
           (entry) =>
             entry.status === "submitted" || entry.status === "approved",
         );
@@ -177,7 +189,7 @@ export function ReviewPanel({
       };
     });
     return sortReviewRows(list);
-  }, [team.employees, entries, allSubmissions, selectedWeek, reviewerId]);
+  }, [team.employees, entries, allWeekEntries, allSubmissions, selectedWeek, reviewerId, selectedJobId]);
   const selected = people.find((person) => person.id === selectedId) ?? null;
   const reviewerRole = team.employees.find(
     (employee) => employee.id === reviewerId,
@@ -225,7 +237,7 @@ export function ReviewPanel({
     .at(-1);
   const showNoWeekData =
     entries.length === 0 &&
-    allSubmissions.length === 0 &&
+    (selectedJobId !== "" || allSubmissions.length === 0) &&
     filter !== "Missing hours";
   const selectedTotals = selected ? timesheetTotals(selected.entries) : null;
   const auditRows = team.audit as AuditRow[];
@@ -321,6 +333,7 @@ export function ReviewPanel({
     }
   }
   async function submitForReview(person: PersonWeek) {
+    if (selectedJobId) return;
     if (person.entries.some((entry) => !entry.ended_at)) {
       setError("Clock out all running entries before submitting this week.");
       return;
@@ -343,6 +356,7 @@ export function ReviewPanel({
     }
   }
   async function approveAll() {
+    if (selectedJobId) return;
     setBusy(true);
     setBatchResult("");
     const results: string[] = [];
@@ -487,7 +501,7 @@ export function ReviewPanel({
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Total hours{" "}
+          {selectedJobId ? "Selected job hours" : "Total hours"}{" "}
           <strong className="ml-1 text-base text-foreground">
             {formatDuration(person.minutes)}
           </strong>
@@ -503,8 +517,9 @@ export function ReviewPanel({
                 variant="outline"
                 className="min-w-0 flex-1 px-3"
                 disabled={
-                  busy || person.entries.some((entry) => !entry.ended_at)
+                  busy || !!selectedJobId || person.entries.some((entry) => !entry.ended_at)
                 }
+                title={selectedJobId ? "Clear the job filter before submitting the full employee week." : undefined}
                 onClick={(event) => {
                   event.stopPropagation();
                   void submitForReview(person);
@@ -659,11 +674,27 @@ export function ReviewPanel({
               today={todayDate}
               id="review-week"
             />
+            <select
+              aria-label="Filter timesheets by job"
+              value={selectedJobId}
+              onChange={(event) => {
+                const next = new URLSearchParams(searchParams);
+                if (event.target.value) next.set("job", event.target.value);
+                else next.delete("job");
+                setSearchParams(next, { replace: true });
+              }}
+              className="min-h-11 min-w-40 rounded-lg border border-input bg-background px-3 text-sm"
+            >
+              <option value="">All jobs</option>
+              {team.jobs.map((job) => <option key={job.id} value={job.id}>{job.name}</option>)}
+            </select>
             {canReview && submittedPeople.length > 0 && (
               <Button
                 ref={approveAllTriggerRef}
                 className={primary}
                 onClick={() => setConfirmApproveAll(true)}
+                disabled={!!selectedJobId}
+                title={selectedJobId ? "Clear the job filter before approving submissions." : undefined}
               >
                 <Check className="mr-2 h-4 w-4" />
                 Approve all submitted
@@ -685,6 +716,24 @@ export function ReviewPanel({
             </DropdownMenu>
           </div>
         </div>
+        {selectedJobId && (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning/40 bg-warning/10 p-3" role="status">
+            <p className="text-sm leading-5"><strong>Display filter only.</strong> Submissions, running-entry checks, and all review decisions apply to the employee’s full week across every job. Clear the job filter before submitting, approving, denying, or reopening.</p>
+            <button
+              type="button"
+              aria-label="Clear job filter"
+              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-background px-3 text-sm font-semibold"
+              onClick={() => {
+                const next = new URLSearchParams(searchParams);
+                next.delete("job");
+                setSearchParams(next, { replace: true });
+              }}
+            >
+              <span>Job: {team.jobs.find((job) => job.id === selectedJobId)?.name ?? selectedJobId}</span>
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        )}
         {batchResult && (
           <p role="status" className="mt-3 rounded-lg bg-muted p-3 text-sm">
             {batchResult}
@@ -708,7 +757,7 @@ export function ReviewPanel({
         <SummaryStrip
           metrics={[
             {
-              label: "Total hours",
+              label: selectedJobId ? "Selected job hours" : "Total hours",
               value: formatDuration(paidMinutes),
               tooltip: `Includes ${formatDuration(weekTotals.breakMinutes)} of unpaid breaks removed`,
             },
@@ -771,7 +820,9 @@ export function ReviewPanel({
       </nav>
       {showNoWeekData || filtered.length === 0 ? (
         <EmptyState
-          onJump={lastWeek ? () => setSelectedWeek(lastWeek) : undefined}
+          title={selectedJobId && entries.length === 0 ? "No hours for this job this week" : undefined}
+          detail={selectedJobId && entries.length === 0 ? "Choose another week or select a different job." : undefined}
+          onJump={!selectedJobId && lastWeek ? () => setSelectedWeek(lastWeek) : undefined}
         />
       ) : (
         <>
@@ -798,7 +849,7 @@ export function ReviewPanel({
                     scope="col"
                     className="px-3 py-3 text-right font-semibold"
                   >
-                    Total
+                    {selectedJobId ? "Job total" : "Total"}
                   </th>
                   <th scope="col" className="px-3 py-3 font-semibold">
                     Status
@@ -870,7 +921,7 @@ export function ReviewPanel({
               </div>
               {selectedTotals && (
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-muted p-3">
-                  <p className="text-sm text-muted-foreground">Total hours <strong className="ml-1 text-lg text-foreground">{formatDuration(selectedTotals.paidMinutes)}</strong></p>
+                  <p className="text-sm text-muted-foreground">{selectedJobId ? "Selected job hours" : "Total hours"} <strong className="ml-1 text-lg text-foreground">{formatDuration(selectedTotals.paidMinutes)}</strong></p>
                   <TimesheetStatusBadge status={selected.status} />
                   <InfoPopover
                     label={`Unpaid breaks removed: ${formatDuration(selectedTotals.breakMinutes)}`}
@@ -880,6 +931,11 @@ export function ReviewPanel({
                     Break details
                   </InfoPopover>
                 </div>
+              )}
+              {selectedJobId && (
+                <p className="mt-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-muted-foreground">
+                  This drawer shows entries for the selected job, but status and every review action apply to the employee’s full week across all jobs. Clear the job filter before submitting, approving, denying, or reopening.
+                </p>
               )}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-sm text-muted-foreground">{lastReviewedLine(selected.id)}</p>
@@ -1019,8 +1075,9 @@ export function ReviewPanel({
                   <Button
                     variant="outline"
                     disabled={
-                      busy || selected.entries.some((entry) => !entry.ended_at)
+                      busy || !!selectedJobId || selected.entries.some((entry) => !entry.ended_at)
                     }
+                    title={selectedJobId ? "Clear the job filter before submitting the full employee week." : undefined}
                     onClick={() => void submitForReview(selected)}
                   >
                     Submit for review
@@ -1032,6 +1089,8 @@ export function ReviewPanel({
                   <>
                     <Button
                       variant="outline"
+                      disabled={!!selectedJobId}
+                      title={selectedJobId ? "Clear the job filter before reviewing the full employee week." : undefined}
                       onClick={() =>
                         setReview(selected.submission!, "rejected")
                       }
@@ -1040,6 +1099,8 @@ export function ReviewPanel({
                     </Button>
                     <Button
                       className={primary}
+                      disabled={!!selectedJobId}
+                      title={selectedJobId ? "Clear the job filter before reviewing the full employee week." : undefined}
                       onClick={() =>
                         setReview(selected.submission!, "approved")
                       }
@@ -1054,6 +1115,8 @@ export function ReviewPanel({
                 selected.submission.status !== "submitted" && (
                   <Button
                     variant="outline"
+                    disabled={!!selectedJobId}
+                    title={selectedJobId ? "Clear the job filter before reviewing the full employee week." : undefined}
                     onClick={() => setReview(selected.submission!, "reopen")}
                   >
                     Reopen week
@@ -1064,6 +1127,8 @@ export function ReviewPanel({
                 selected.submission?.status === "submitted" && (
                   <Button
                     variant="outline"
+                    disabled={!!selectedJobId}
+                    title={selectedJobId ? "Clear the job filter before reviewing the full employee week." : undefined}
                     onClick={() => setReview(selected.submission!, "reopen")}
                   >
                     Reopen week
@@ -1105,6 +1170,11 @@ export function ReviewPanel({
               {showDate(deleteTarget.work_date)} entry. The action will be
               recorded in the audit trail.
             </p>
+            {selectedJobId && (
+              <p className="mt-2 rounded-lg bg-muted p-3 text-sm text-muted-foreground">
+                The job filter changes display only. This action removes only the selected draft entry; weekly review decisions still apply across the employee’s full week.
+              </p>
+            )}
             {error && (
               <p
                 role="alert"
@@ -1161,8 +1231,7 @@ export function ReviewPanel({
               Approve all submitted weeks?
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              Each submission is approved separately. You can review the result
-              for every person after the requests finish.
+              Each submission is approved separately for that employee’s full week across all jobs. The job filter changes display only. You can review the result for every person after the requests finish.
             </p>
             <ul className="mt-4 divide-y divide-border rounded-xl border border-border">
               {submittedPeople.map((person) => (

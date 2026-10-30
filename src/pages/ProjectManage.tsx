@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, Navigate } from 'react-router-dom';
 import { AppShell, parseDefaultTerms } from '@/components/AppShell';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -88,7 +88,7 @@ import { ProjectActivityContent, type ProjectActivityEvent } from '@/components/
 import { ProjectOverview } from '@/components/project-manage/ProjectOverview';
 import type { ClientEditValues } from '@/components/project-manage/ClientDetailsCard';
 
-export default function ProjectManage() {
+function ProjectManageContent() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -925,9 +925,6 @@ export default function ProjectManage() {
             </nav>
             <TeamHome panel="staff" embedded />
           </TabsContent>
-          <TabsContent value="timesheets" className="mt-0" role="region" aria-label="Job timesheets">
-            <TeamHome panel="timesheets" embedded />
-          </TabsContent>
           <TabsContent value="employee-updates" className="mt-0" role="region" aria-label="Employee updates">
             <nav className="mb-4 flex gap-2" aria-label="Team views">
               <Button variant={activeTab === 'staff' ? 'accent' : 'outline'} className="min-h-11" onClick={() => setActiveTab('staff')}>Assignments</Button>
@@ -1022,4 +1019,13 @@ export default function ProjectManage() {
       </Dialog>
     </AppShell>
   );
+}
+
+export default function ProjectManage() {
+  const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  if (searchParams.get('tab') === 'timesheets') {
+    return <Navigate to={`/team/timesheets?job=${encodeURIComponent(id ?? '')}`} replace />;
+  }
+  return <ProjectManageContent />;
 }

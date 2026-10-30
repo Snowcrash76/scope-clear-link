@@ -49,7 +49,6 @@ const groups = [
   {
     label: "People & files",
     items: [
-      { value: "timesheets", label: "Timesheets", icon: CalendarDays },
       { value: "staff", label: "Team", icon: Users },
       { value: "documents", label: "Documents", icon: FileText },
     ],

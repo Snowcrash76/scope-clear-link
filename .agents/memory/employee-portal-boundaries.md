@@ -56,3 +56,15 @@ Company document library schema, permissions, storage rules and acknowledgement 
 **Why:** The user requested the company library as a proposal-only phase, while permitting navigation, client-action, document-presentation and timesheet-presentation improvements separately.
 
 **How to apply:** Do not treat approval of those presentation changes as library approval. Include any newly needed document classification, independent client-sharing or durable client-send/view tracking fields in the proposal rather than silently adding storage or permissions.
+
+Timesheet review belongs under Team by person/week, with jobs as a display filter rather than a job-page timesheet section.
+
+**Why:** The user explained that jobs can last one day or many months, so weekly payroll review under Team is simpler.
+
+**How to apply:** Preserve old job timesheet links with the job filter. Do not let a job display filter silently narrow whole-week submission, approval, denial or reopening, or alter approved labour posting.
+
+The Schedule calendar may read existing appointments and assignments without a new schema, but scheduling schema, permission and heavy dependency changes require a written proposal and approval.
+
+**Why:** The user explicitly approved immediate read-only calendar work while requiring review before those changes.
+
+**How to apply:** Do not treat the read-only calendar as approval for booking types, recurrence, cancellation semantics or a new scheduling-intent model. Keep existing assignment notifications and employee-only access boundaries.

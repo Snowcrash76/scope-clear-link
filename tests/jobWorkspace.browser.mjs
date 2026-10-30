@@ -115,7 +115,7 @@ try {
     assert.equal(await page.locator('a[href="tel:0400000000"]').count() > 0, true, 'Uses existing client phone');
     const nav = page.getByRole('navigation', { name: 'Job sections', exact: true });
     const labels = await nav.locator('button[data-section-item]').allTextContents();
-    assert.equal(labels.length, 10, 'All ten primary sections are exposed, no More menu');
+    assert.equal(labels.length, 9, 'All nine job sections are exposed; timesheets are reviewed under Team');
     if (width < 1024) {
       const tops = await nav.locator('button[data-section-item]').evaluateAll(buttons => buttons.map(button => Math.round(button.getBoundingClientRect().top)));
       assert.equal(new Set(tops).size, 1, 'Small-screen navigation stays on one row');

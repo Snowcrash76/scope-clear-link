@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useParams } from "react-router-dom";
 import {
   CalendarDays,
   Eye,
@@ -73,6 +73,7 @@ import { ReviewPanel } from "./ReviewPanel";
 import { ReviewDialog } from "./ReviewDialog";
 import { UpdatesPanel } from "./UpdatesPanelView";
 import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
+import { JobHoursSummary } from "@/components/team/JobHoursSummary";
 
 export function TeamHome({
   panel,
@@ -91,10 +92,11 @@ export function TeamHome({
       : routePanel === "staff" || routePanel === "timesheets"
         ? routePanel
         : undefined);
+  const legacyJobTimesheets = !!jobId && routePanel === "timesheets";
   const location = useLocation().pathname;
-  const filterJob = jobId;
+  const filterJob = legacyJobTimesheets ? undefined : jobId;
   const path = `/team/bootstrap${filterJob ? `?job_id=${encodeURIComponent(filterJob)}` : ""}`;
-  const q = usePortal<TeamBootstrap>(path);
+  const q = usePortal<TeamBootstrap>(path, !legacyJobTimesheets);
   const refresh = useRefreshPortal();
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -364,6 +366,9 @@ export function TeamHome({
         : invitedIds.has(employee.id)
           ? "Invited"
           : "Invite status unknown";
+  if (legacyJobTimesheets) {
+    return <Navigate to={`/team/timesheets?job=${encodeURIComponent(jobId)}`} replace />;
+  }
   return (
     <AlertDialog
       open={!!removeTarget}
@@ -632,7 +637,9 @@ export function TeamHome({
               ) : isUpdates ? (
                 <UpdatesPanel team={team} jobId={jobId} />
               ) : isJobStaff ? (
-                <div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+                <div className="space-y-5">
+                  {isAdmin && <JobHoursSummary entries={team.entries} jobId={jobId} />}
+                  <div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
                   <form className={`${card} p-5`} onSubmit={assignCrew}>
                     <h2 className="text-lg font-bold">
                       Assign team members to {activeJob?.name ?? "this job"}
@@ -755,6 +762,7 @@ export function TeamHome({
                     }}
                     filterJob={jobId}
                   />
+                  </div>
                 </div>
               ) : (
                 <section className={`${card} overflow-hidden`}>

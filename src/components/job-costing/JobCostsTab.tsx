@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   AlertCircle,
   Eye,
@@ -73,6 +74,10 @@ import { ReceiptItemsSummary } from "@/components/job-costing/ReceiptItemsSummar
 import { JobCostView } from "@/components/job-costing/JobCostView";
 import { ReceiptReviewFields } from "@/components/job-costing/ReceiptReviewFields";
 import { receiptCurrencyForReview } from "../../../shared/receiptScanning";
+import { usePortal, usePortalSession } from "@/hooks/useEmployeePortal";
+import type { TeamBootstrap } from "../../../shared/employeePortal";
+import { approvedJobLabour } from "@/components/team/jobTimesheetSummary";
+import { formatDuration } from "@/components/timesheets";
 
 type FormState = {
   supplier: string;
@@ -134,6 +139,12 @@ const descriptionFromReceipt = (extraction: ReceiptExtraction) =>
     .slice(0, 5000);
 
 export function JobCostsTab({ jobId }: { jobId: string }) {
+  const portalSession = usePortalSession();
+  const canViewLabourCost = !!portalSession.data?.canManageTeam;
+  const teamQuery = usePortal<TeamBootstrap>(
+    `/team/bootstrap?job_id=${encodeURIComponent(jobId)}`,
+    canViewLabourCost,
+  );
   const {
     costs,
     quoteLineItems,
@@ -146,6 +157,13 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
     saving,
     deleting,
   } = useJobCosts(jobId);
+  const labourSummary = teamQuery.data
+    ? approvedJobLabour(
+        teamQuery.data.entries,
+        costs as (JobCost & { timesheet_entry_id?: string | null })[],
+        jobId,
+      )
+    : null;
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [editing, setEditing] = useState<JobCost | null>(null);
@@ -705,6 +723,48 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
       className="min-w-0 max-w-full space-y-4 [overflow-wrap:anywhere]"
       data-testid="job-costs-tab"
     >
+      {canViewLabourCost && (
+        <Card className="border-border bg-muted/30 p-4 sm:p-5" data-testid="job-labour-summary">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Labour</p>
+              <h3 className="mt-1 text-base font-semibold">Approved timesheet labour</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Hours and linked posted costs from approved entries only.</p>
+            </div>
+            <Link
+              to={`/team/timesheets?job=${encodeURIComponent(jobId)}`}
+              className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-4"
+            >
+              View timesheets for this job
+            </Link>
+          </div>
+          {portalSession.isLoading || teamQuery.isLoading || loading ? (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2" aria-label="Loading approved labour summary">
+              <div className="h-16 animate-pulse rounded-lg bg-muted" />
+              <div className="h-16 animate-pulse rounded-lg bg-muted" />
+            </div>
+          ) : portalSession.error || teamQuery.error || !teamQuery.data ? (
+            <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-muted-foreground" role="status">
+              Approved hours and labour cost are unavailable because team timesheet data could not be loaded.
+              <Button type="button" variant="link" className="ml-1 min-h-11 px-2" onClick={() => void teamQuery.refetch()}>Retry</Button>
+            </div>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-muted-foreground">Approved hours</p>
+                <p className="mt-1 text-lg font-bold tabular-nums">{formatDuration(labourSummary?.approvedMinutes ?? 0)}</p>
+              </div>
+              <div className="rounded-lg border border-border bg-background p-3">
+                <p className="text-xs text-muted-foreground">Linked labour cost</p>
+                <p className="mt-1 text-lg font-bold tabular-nums">
+                  {error || labourSummary?.amount === null ? "Unavailable" : aud(labourSummary?.amount ?? 0)}
+                </p>
+                {(error || labourSummary?.amount === null) && <p className="mt-1 text-xs text-muted-foreground">{error ? "Job cost records could not be loaded." : "Approved entries are missing linked posted cost metadata."}</p>}
+              </div>
+            </div>
+          )}
+        </Card>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h2 className="font-heading text-lg font-semibold">Job costs</h2>

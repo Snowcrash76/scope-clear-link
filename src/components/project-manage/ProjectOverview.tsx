@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { ArrowRight, CalendarDays, FileText, Receipt, Users } from "lucide-react";
 import type { Project } from "@/types/project";
 import type { TeamBootstrap } from "../../../shared/employeePortal";
-import { usePortal } from "@/hooks/useEmployeePortal";
+import { usePortal, usePortalSession } from "@/hooks/useEmployeePortal";
 import { Button } from "@/components/ui/button";
 import { ClientDetailsCard, type ClientEditValues } from "./ClientDetailsCard";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
+import { JobHoursSummary } from "@/components/team/JobHoursSummary";
 
 type DocumentItem = {
   id: string;
@@ -32,7 +33,9 @@ export function ProjectOverview({
   onSaveClient: (values: ClientEditValues, applyToAll: boolean) => Promise<boolean>;
   onChangeTab: (tab: string) => void;
 }) {
-  const teamQuery = usePortal<TeamBootstrap>(`/team/bootstrap?job_id=${encodeURIComponent(project.id)}`);
+  const portalSession = usePortalSession();
+  const canManageTeam = !!portalSession.data?.canManageTeam;
+  const teamQuery = usePortal<TeamBootstrap>(`/team/bootstrap?job_id=${encodeURIComponent(project.id)}`, canManageTeam);
   const stages = project.stages ?? [];
   const currentIndex = stages.findIndex((stage) => stage.status === "current");
   const completedStages = stages.filter((stage) => stage.status === "completed").length;
@@ -108,8 +111,12 @@ export function ProjectOverview({
       </div>
       <div className="rounded-xl border border-border bg-muted/40 p-4">
         <div className="flex items-center gap-2"><Users className="h-4 w-4 text-muted-foreground" /><h2 className="font-semibold">Team and schedule</h2></div>
-        {teamQuery.isLoading ? (
+        {portalSession.isLoading || teamQuery.isLoading ? (
           <div className="mt-3 h-12 animate-pulse rounded-lg bg-muted" aria-label="Loading the team schedule" />
+        ) : portalSession.error ? (
+          <div className="mt-2 flex flex-wrap items-center gap-2"><p className="text-sm text-muted-foreground">Team access could not be verified.</p><Button type="button" variant="link" className="min-h-11 px-2" onClick={() => void portalSession.refetch()}>Retry</Button></div>
+        ) : !canManageTeam ? (
+          <p className="mt-2 text-sm text-muted-foreground">Team schedule details are available to managers.</p>
         ) : teamQuery.error ? (
           <div className="mt-2 flex flex-wrap items-center gap-2"><p className="text-sm text-muted-foreground">Team assignments could not be loaded.</p><Button type="button" variant="link" className="min-h-11 px-2" onClick={() => void teamQuery.refetch()}>Retry</Button></div>
         ) : upcomingAssignments.length ? (
@@ -120,6 +127,13 @@ export function ProjectOverview({
             })}
           </ul>
         ) : <p className="mt-1 text-sm text-muted-foreground">No upcoming assignments are scheduled for this job.</p>}
+        {portalSession.isLoading || teamQuery.isLoading ? (
+          <div className="mt-3 h-20 animate-pulse rounded-xl bg-muted" aria-label="Loading logged hours" />
+        ) : !canManageTeam ? null : portalSession.error || teamQuery.error ? (
+          <p role="status" className="mt-3 text-sm text-muted-foreground">Hours logged are unavailable because team records could not be loaded.</p>
+        ) : teamQuery.data && (
+          <div className="mt-3"><JobHoursSummary entries={teamQuery.data.entries} jobId={project.id} /></div>
+        )}
         {upcomingAssignments[0] && <p className="mt-3 text-sm"><strong>Next scheduled:</strong> {upcomingAssignments[0].date} · {upcomingAssignments[0].start_time} (Australia/Sydney)</p>}
         <div className="flex flex-wrap gap-3">
           <Button type="button" variant="outline" className="mt-3 min-h-11 gap-2" onClick={() => onChangeTab("staff")}>Open team <ArrowRight className="h-4 w-4" /></Button>
