@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { CostApiError, jobCostClient } from './jobCostAccess';
 import {
-  assignedJobs, fileCapability, portalActor, portalDbCheck, portalError, portalHandler, portalMutate,
+  assignedJobs, fileCapability, portalActor, portalDbCheck, portalError, portalHandler, portalMutate, ownEmployeeHourlyRate,
   portalPermissions, portalRows, requireAssigned, requireEmployee, requireTeam,
   safeDocumentColumns, safeEmployeeColumns, safeEntryColumns, safeJobColumns, verifyFileCapability, type PortalActor,
 } from './employeeAccess';
@@ -74,19 +74,20 @@ export function createEmployeeRouter() {
     const employee = requireEmployee(actor);
     const jobs = await assignedJobs(db, actor);
     const permissions = await portalPermissions(db, actor.ownerId, employee.role);
+    const hourlyRate = await ownEmployeeHourlyRate(db, actor);
     const assignments = await portalRows(() => db.from('employee_assignments').select('id,employee_id,project_id,appointment_id').eq('employee_id', employee.id).eq('owner_id', actor.ownerId));
     const appointmentIds = assignments.map(a => a.appointment_id);
     const [safeJobs, appointments, entries, submissions, documents, notes, notifications] = await Promise.all([
       jobs.length ? portalRows(() => db.from('projects').select(safeJobColumns).in('id', jobs).eq('user_id', actor.ownerId)) : [],
       appointmentIds.length ? portalRows(() => db.from('appointments').select('id,date,start_time,end_time,notes').in('id', appointmentIds).eq('user_id', actor.ownerId)) : [],
-      portalRows(() => db.from('employee_time_entries').select(safeEntryColumns).eq('employee_id', employee.id).order('started_at', { ascending: false })),
+      portalRows(() => db.from('employee_time_entries').select(`${safeEntryColumns},rate_snapshot`).eq('employee_id', employee.id).eq('owner_id', actor.ownerId).order('started_at', { ascending: false })),
       portalRows(() => db.from('employee_week_submissions').select('id,employee_id,week_start,status,review_comment,submitted_at').eq('employee_id', employee.id).order('week_start', { ascending: false })),
       permissions.view_documents && jobs.length ? portalRows(() => db.from('project_documents').select(safeDocumentColumns).in('project_id', jobs).eq('employee_visible', true).order('created_at', { ascending: false })) : [],
       jobs.length ? portalRows(() => db.from('employee_job_notes').select('id,project_id,employee_id,body,created_at').in('project_id', jobs).eq('owner_id', actor.ownerId).order('created_at', { ascending: false })) : [],
       portalRows(() => db.from('employee_notifications').select('id,title,body,project_id,read_at,created_at').eq('employee_id', employee.id).order('created_at', { ascending: false })),
     ]);
     return {
-      employee: publicEmployee(employee), permissions, timezone: 'Australia/Sydney', today: localDate(),
+      employee: publicEmployee(employee), hourly_rate: hourlyRate, permissions, timezone: 'Australia/Sydney', today: localDate(),
       jobs: safeJobs, assignments: assignments.flatMap(a => { const ap = appointments.find(p => p.id === a.appointment_id); return ap ? [{ ...a, date: ap.date, start_time: ap.start_time, end_time: ap.end_time, notes: ap.notes }] : []; }),
       entries, submissions, documents, notes, notifications,
     };
@@ -114,7 +115,7 @@ export function createEmployeeRouter() {
       portalRows(() => db.from('employee_cost_rates').select('employee_id,hourly_rate').eq('owner_id', actor.ownerId)),
       portalRows(() => { let q = db.from('appointments').select('id,project_id,title,date,start_time,end_time,notes').eq('user_id', actor.ownerId); return filterJob ? q.eq('project_id', filterJob) : q; }),
       portalRows(() => { let q = db.from('employee_assignments').select('id,employee_id,project_id,appointment_id').eq('owner_id', actor.ownerId); return filterJob ? q.eq('project_id', filterJob) : q; }),
-      portalRows(() => { let q = db.from('employee_time_entries').select(safeEntryColumns).eq('owner_id', actor.ownerId).order('started_at', { ascending: false }); return filterJob ? q.eq('project_id', filterJob) : q; }),
+      portalRows(() => { let q = db.from('employee_time_entries').select(`${safeEntryColumns},rate_snapshot`).eq('owner_id', actor.ownerId).order('started_at', { ascending: false }); return filterJob ? q.eq('project_id', filterJob) : q; }),
       portalRows(() => db.from('employee_week_submissions').select('id,employee_id,week_start,status,review_comment,submitted_at').eq('owner_id', actor.ownerId).order('week_start', { ascending: false })),
       portalRows(() => db.from('employee_role_permissions').select('role,permissions').eq('owner_id', actor.ownerId)),
       jobIds.length ? portalRows(() => db.from('employee_job_notes').select('id,project_id,employee_id,body,created_at').in('project_id', jobIds).eq('owner_id', actor.ownerId).order('created_at', { ascending: false })) : [],

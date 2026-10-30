@@ -25,6 +25,8 @@ export interface PortalTimeEntry {
   id: string; employee_id: string; project_id: string; work_date: string;
   started_at: string; ended_at: string | null; break_minutes: number; notes: string;
   status: 'draft' | 'submitted' | 'approved'; paid_minutes: number | null; created_at: string;
+  /** Available only for one's own timesheets and authorised team management. */
+  rate_snapshot?: number | null;
 }
 export interface PortalSubmission {
   id: string; employee_id: string; week_start: string; status: 'submitted' | 'approved' | 'rejected';
@@ -40,6 +42,7 @@ export interface PortalNotification {
   id: string; title: string; body: string; project_id: string | null; read_at: string | null; created_at: string;
 }
 export interface EmployeeBootstrap {
+  hourly_rate: number | null;
   employee: PortalEmployee; permissions: OperationalPermissions; timezone: string; today: string;
   jobs: PortalJob[]; assignments: PortalAssignment[]; entries: PortalTimeEntry[];
   submissions: PortalSubmission[]; documents: PortalDocument[]; notes: PortalNote[];

@@ -18,7 +18,7 @@ job-ID-only client links. The old published build cannot use those new policies.
    skip security or cron statements to make it appear successful.
 4. Confirm that Supabase Cron contains the `employee-weekly-reminders` hourly
    job. It runs without an open browser or an active application instance.
-5. Refresh **Team**. Set private employee cost rates, configure operational role
+5. Refresh **Team**. Set employee hourly pay/job-cost rates, configure operational role
    permissions, and assign staff to jobs and appointments.
 6. Use the job's **Copy client link** action to resend secure project links.
    Previous `/project/<job-id>` links no longer grant access. Quote-token links

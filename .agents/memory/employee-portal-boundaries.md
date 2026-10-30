@@ -13,7 +13,7 @@ Reuse existing Jobs, Documents, Costs and Variations models, and do not break ex
 
 **Why:** The employee portal is an extension of the existing product, not a replacement or a parallel job-management system.
 
-**How to apply:** Keep employee-only identity, assignments and time tracking owner-scoped. Enforce assignment and role permissions on the server and direct database/storage paths, not only navigation. Employee endpoints must not expose unassigned jobs or financial figures; hourly cost rates are admin-only.
+**How to apply:** Keep employee-only identity, assignments and time tracking owner-scoped. Enforce assignment and role permissions on the server and direct database/storage paths, not only navigation. Employee endpoints must not expose unassigned jobs or commercial job finances. The explicitly approved own-pay exception is documented below.
 
 Replace job-ID-only client project links with separate secure capabilities, and resend existing project links.
 
@@ -38,3 +38,9 @@ Treat creating an invited account separately from accepting an invitation with a
 **Why:** The user reported new-password acceptance being rejected because the browser still carried another account's session.
 
 **How to apply:** Create only the invited email's account; never reset an existing account through an invitation. Existing-account acceptance must still authenticate the invited email.
+
+The existing hourly cost rates are the employees' actual pay rates. Admins and each employee themselves may see timesheet pay estimates; employees must not see coworkers' pay.
+
+**Why:** The user explicitly confirmed “Yes, use the current rates” and “Admins and each employee themselves.”
+
+**How to apply:** Keep all other job finances private. Label approved-hours pay as an estimate before tax, not an outstanding balance or payroll calculation; actual payments, deductions, overtime and super are not tracked by this feature.

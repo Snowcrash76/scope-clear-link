@@ -9,6 +9,14 @@ export const safeJobColumns = 'id,name,client_name,client_address,client_phone,e
 export const safeEntryColumns = 'id,employee_id,project_id,work_date,started_at,ended_at,break_minutes,notes,status,paid_minutes,created_at';
 export const safeDocumentColumns = 'id,project_id,file_name,display_name,file_type,purpose,caption,photo_stage,employee_visible,created_at';
 export const safeEmployeeColumns = 'id,name,email,role,active,auth_user_id';
+/** Never accept an employee ID from a browser when exposing an employee's rate. */
+export async function ownEmployeeHourlyRate(db: SupabaseClient, actor: PortalActor): Promise<number | null> {
+  const employee = requireEmployee(actor);
+  const { data, error } = await db.from('employee_cost_rates').select('hourly_rate')
+    .eq('employee_id', employee.id).eq('owner_id', actor.ownerId).maybeSingle();
+  portalDbCheck(error);
+  return data?.hourly_rate ?? null;
+}
 export function portalDbCheck(error: { code?: string; message: string } | null) {
   if (!error) return;
   if (['42703','PGRST202','PGRST204'].includes(error.code ?? '') && /archived_at|revoked_auth_user_ids|portal_manage_employee/.test(error.message))

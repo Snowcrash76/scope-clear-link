@@ -15,7 +15,7 @@ const params = new URLSearchParams(window.location.search);
 const view = params.get('view') ?? 'today';
 
 function Fixture() {
-  const initialPath = view === 'job' ? '/employee/jobs/fixture-job' : view === 'team' ? '/team' : view === 'assignments' ? '/team/assignments' : view === 'timesheets' ? '/employee/timesheets' : '/employee';
+  const initialPath = view === 'job' ? '/employee/jobs/fixture-job' : view === 'team' ? '/team' : view === 'team-timesheets' ? '/team/timesheets' : view === 'assignments' ? '/team/assignments' : view === 'timesheets' ? '/employee/timesheets' : '/employee';
   return <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <MemoryRouter initialEntries={[initialPath]}>
@@ -24,6 +24,7 @@ function Fixture() {
           <Route path="/employee/timesheets" element={<EmployeeTimesheets />} />
           <Route path="/employee/jobs/:jobId" element={<EmployeeJob />} />
           <Route path="/team" element={<TeamHome />} />
+          <Route path="/team/timesheets" element={<TeamHome />} />
           <Route path="/team/assignments" element={<TeamHome />} />
           <Route path="/team/jobs/:id/:panel" element={<TeamHome />} />
         </Routes>
