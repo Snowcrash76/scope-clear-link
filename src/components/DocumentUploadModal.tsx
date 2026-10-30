@@ -35,13 +35,15 @@ interface DocumentUploadModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onUploadComplete: () => void;
+  photoOnly?: boolean;
 }
 
 export function DocumentUploadModal({ 
   projectId, 
   open, 
   onOpenChange, 
-  onUploadComplete 
+  onUploadComplete,
+  photoOnly = false,
 }: DocumentUploadModalProps) {
   const [files, setFiles] = useState<FileWithDisplayName[]>([]);
   const [isUploading, setIsUploading] = useState(false);
@@ -145,9 +147,9 @@ export function DocumentUploadModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Upload Documents</DialogTitle>
+          <DialogTitle>{photoOnly ? "Add a job photo" : "Upload Documents"}</DialogTitle>
           <DialogDescription>
-            Add files and set display names for your client to see
+            {photoOnly ? "Take a photo or choose an image for this job." : "Add project files and set a clear display name."}
           </DialogDescription>
         </DialogHeader>
 
@@ -158,7 +160,8 @@ export function DocumentUploadModal({
               ref={fileInputRef}
               type="file"
               multiple
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.dxf"
+              accept={photoOnly ? "image/*" : ".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.dwg,.dxf"}
+              capture={photoOnly ? "environment" : undefined}
               onChange={handleFileSelect}
               className="hidden"
             />

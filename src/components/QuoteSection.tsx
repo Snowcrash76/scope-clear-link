@@ -88,6 +88,7 @@ interface QuoteSectionProps {
   isTradeView?: boolean;
   onSaveScopeItem?: (item: Omit<ScopeItem, 'id' | 'acknowledged'> & { id?: string }) => Promise<boolean | void>;
   onDeleteScopeItem?: (itemId: string) => Promise<boolean | void>;
+  onOpenVariations?: () => void;
 }
 
 export function QuoteSection({
@@ -119,6 +120,7 @@ export function QuoteSection({
   isTradeView = true,
   onSaveScopeItem,
   onDeleteScopeItem,
+  onOpenVariations,
 }: QuoteSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -766,13 +768,16 @@ export function QuoteSection({
           isSavingReference={isSavingRef}
         />
         <QuoteTotalsSummary subtotal={subtotal} taxRate={taxRate} taxAmount={taxAmount} total={total} />
+        <Button type="button" variant="link" className="mt-2 min-h-11 max-w-full justify-start whitespace-normal px-0 text-left" onClick={onOpenVariations} aria-label="View approved variations">
+          Original quote {aud(scopeSubtotal + customItemsTotal)} + Approved variations {aud(changesImpact)} = Current total {aud(subtotal)} <span className="ml-1 text-muted-foreground">(ex GST · Variations)</span>
+        </Button>
 
         {/* Actions (Trade View) */}
         {isTradeView && (
           <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
               <Eye className="w-4 h-4 mr-2" />
-              View Quote
+              View as client
             </Button>
             <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4 mr-2" />

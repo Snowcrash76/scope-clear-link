@@ -138,6 +138,15 @@ const SAFE_RICH_TEXT_TAGS = new Set([
 const DROP_RICH_TEXT_SUBTREES = new Set(['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math']);
 
 function sanitizeRichTextHtml(html: string): string {
+  if (typeof document === 'undefined') {
+    const text = html
+      .replace(/<(script|style|iframe|object|embed|svg|math)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+      .replace(/<[^>]*>/g, '');
+    return text
+      .replace(/&(?!(?:#\d+|#x[\da-f]+|\w+);)/gi, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
   const template = document.createElement('template');
   template.innerHTML = html;
   const cleanRoot = document.createElement('div');

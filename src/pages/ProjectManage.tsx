@@ -80,11 +80,13 @@ import { toast } from 'sonner';
 import { JobCostsTab } from '@/components/job-costing/JobCostsTab';
 import { TeamHome } from '@/components/TeamPortalUI';
 import { jobDisplayStatus } from '@/lib/quoteDisplay';
-import { awaitingClientApproval } from '@/lib/variationStatus';
+import { awaitingClientApproval, needsTradeResponse } from '@/lib/variationStatus';
 import { ProjectManageHeader } from '@/components/project-manage/ProjectManageHeader';
 import { ProjectManageNotifications } from '@/components/project-manage/ProjectManageNotifications';
 import { ProjectVariationsTabContent } from '@/components/project-manage/ProjectVariationsTabContent';
 import { ProjectActivityContent, type ProjectActivityEvent } from '@/components/project-manage/ProjectActivityContent';
+import { ProjectOverview } from '@/components/project-manage/ProjectOverview';
+import type { ClientEditValues } from '@/components/project-manage/ClientDetailsCard';
 
 export default function ProjectManage() {
   const { id } = useParams();
@@ -111,6 +113,7 @@ export default function ProjectManage() {
     reorderStages,
     clearAllStages,
     updateProjectStatus,
+    updateClientDetails,
   } = useProject(id);
   const { createProject } = useCreateProject();
 
@@ -190,13 +193,28 @@ export default function ProjectManage() {
   }, [activeQuote, quoteLineItems, project]);
 
   // Check for tab query param (e.g., from job creation or dashboard attention).
-  const rawTab = searchParams.get('tab') || 'quote';
-  const initialTab = rawTab === 'scope' ? 'quote' : rawTab === 'variations' ? 'changes' : rawTab;
+  const rawTab = searchParams.get('tab') || 'overview';
+  const initialTab = ['scope', 'variations', 'changes'].includes(rawTab)
+    ? 'changes'
+    : rawTab;
   const targetVariationId = searchParams.get('variation');
   const [activeTab, setActiveTab] = useState(initialTab);
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
+  useEffect(() => {
+    if (searchParams.get('client') === 'edit') setClientEditOpen(true);
+  }, [searchParams]);
+  useEffect(() => {
+    const variationId = searchParams.get('variation');
+    if (activeTab !== 'changes' || !variationId || !project) return;
+    const timeout = window.setTimeout(() => {
+      const target = document.getElementById(`variation-${variationId}`);
+      target?.focus({ preventScroll: true });
+      target?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeTab, project?.changeRequests.length, searchParams]);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
   const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
   const [respondingToRequest, setRespondingToRequest] = useState<ChangeRequest | null>(null);
@@ -209,6 +227,7 @@ export default function ProjectManage() {
   const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
+  const [clientEditOpen, setClientEditOpen] = useState(false);
   const [defaultTerms, setDefaultTerms] = useState<string>('');
   const [defaultQuoteTerms, setDefaultQuoteTerms] = useState<string>('');
   const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
@@ -492,39 +511,37 @@ export default function ProjectManage() {
     return !!invoiceId;
   };
 
-  const handleSendToClient = async () => {
-    const success = await updateProjectStatus('sent');
-    if (success) {
-      toast.success('Job sent to client!');
-    }
-  };
-
-  const handleCopyClientLink = async () => {
-    try {
-      const link = await getClientProjectUrl(project.id);
-      await navigator.clipboard.writeText(link);
-      toast.success('Client page link copied!', {
-        description: 'Share with your client for full transparency.'
+  const handleSaveClientDetails = async (values: ClientEditValues, applyToAll: boolean) => {
+    if (!applyToAll) {
+      return updateClientDetails({
+        clientName: values.clientName,
+        clientEmail: values.clientEmail,
+        clientAddress: values.clientAddress,
       });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Could not create a secure client link. Please retry.');
     }
-  };
-
-  const handlePreviewClientPage = async () => {
-    // Open synchronously while the browser still considers this a user action.
-    const previewWindow = window.open('about:blank', '_blank');
-    if (previewWindow) previewWindow.opener = null;
     try {
-      const link = await getClientProjectUrl(project.id);
-      if (previewWindow) {
-        previewWindow.location.href = link;
-      } else {
-        toast.error('Your browser blocked the preview window. Allow pop-ups and try again.');
-      }
+      const { data: rows, error: lookupError } = await supabase
+        .from('projects')
+        .select('id, client_name, client_email');
+      if (lookupError) throw lookupError;
+      const clientKey = project.clientEmail.trim().toLowerCase() || project.clientName.trim().toLowerCase();
+      const projectIds = (rows ?? [])
+        .filter((row) => (row.client_email ?? '').trim().toLowerCase() || (row.client_name ?? '').trim().toLowerCase())
+        .filter((row) => ((row.client_email ?? '').trim().toLowerCase() || (row.client_name ?? '').trim().toLowerCase()) === clientKey)
+        .map((row) => row.id);
+      if (!projectIds.includes(project.id)) projectIds.push(project.id);
+      const { error } = await supabase.from('projects').update({
+        client_name: values.clientName,
+        client_email: values.clientEmail,
+        client_address: values.clientAddress || null,
+      }).in('id', projectIds);
+      if (error) throw error;
+      await refetch();
+      toast.success(`Client details updated on ${projectIds.length} job${projectIds.length === 1 ? '' : 's'}`);
+      return true;
     } catch (error) {
-      previewWindow?.close();
-      toast.error(error instanceof Error ? error.message : 'Could not open the secure client preview. Please retry.');
+      toast.error(error instanceof Error ? error.message : 'Failed to update client details');
+      return false;
     }
   };
 
@@ -656,21 +673,18 @@ export default function ProjectManage() {
       <ProjectManageHeader
         project={project}
         activeQuote={activeQuote}
-        activeTab={activeTab}
         onTabChange={setActiveTab}
-        invoiceCount={invoices.length}
-        pendingVariationCount={project.changeRequests.filter(awaitingClientApproval).length}
-        documentNotificationCount={
-          showDocNotification
-            ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
-            : 0
-        }
+        pendingVariationCount={pendingClientRequests.length + project.changeRequests.filter(awaitingClientApproval).length}
+        stageCount={project.stages.length}
         isDuplicating={isDuplicating}
         onBack={() => navigate('/dashboard')}
-        onSendToClient={handleSendToClient}
+        onAddVariation={() => setIsSendingChangeRequest(true)}
         onDuplicateProject={handleDuplicateProject}
-        onCopyClientLink={handleCopyClientLink}
-        onPreviewClientPage={handlePreviewClientPage}
+        onSaveClient={handleSaveClientDetails}
+        onAddClientEmail={() => setClientEditOpen(true)}
+        onClientPageSent={refetch}
+        clientEditOpen={clientEditOpen}
+        onClientEditOpenChange={setClientEditOpen}
         onUpdateProjectStatus={updateProjectStatus}
       />
 
@@ -687,7 +701,29 @@ export default function ProjectManage() {
           onDismissDocNotification={dismissDocNotification}
         />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+        <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start">
+          <JobSectionMenu
+            value={activeTab}
+            onValueChange={setActiveTab}
+            invoiceCount={invoices.filter((invoice) => invoice.status === 'sent' || invoice.status === 'overdue').length}
+            pendingVariationCount={pendingClientRequests.length + project.changeRequests.filter(awaitingClientApproval).length}
+            needsTradeResponseCount={pendingClientRequests.length}
+            documentCount={documents.length}
+            stageCount={project.stages.length}
+            stageBadge={project.stages.length ? `${project.stages.filter((stage) => stage.status === 'completed').length}/${project.stages.length}` : undefined}
+          />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
+          <TabsContent value="overview" className="mt-0" role="region" aria-label="Overview">
+            <ProjectOverview
+              project={project}
+              documents={documents}
+              unpaidInvoiceCount={invoices.filter((invoice) => invoice.status === 'sent' || invoice.status === 'overdue').length}
+              originalQuoteTotal={activeQuote?.subtotal ?? 0}
+              approvedVariationTotal={project.changeRequests.filter((item) => item.status === 'approved').reduce((total, item) => total + item.costImpact, 0)}
+              onSaveClient={handleSaveClientDetails}
+              onChangeTab={setActiveTab}
+            />
+          </TabsContent>
           <TabsContent value="costs" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Costs">
             <JobCostsTab jobId={project.id} />
           </TabsContent>
@@ -805,6 +841,7 @@ export default function ProjectManage() {
               onReviseQuote={reviseQuote}
               onSaveScopeItem={handleSaveScopeItem}
               onDeleteScopeItem={handleDeleteScopeItem}
+              onOpenVariations={() => setActiveTab('changes')}
             />
             </>}
           </TabsContent>
@@ -882,15 +919,24 @@ export default function ProjectManage() {
             />
           </TabsContent>
           <TabsContent value="staff" className="mt-0" role="region" aria-label="Assigned staff">
+            <nav className="mb-4 flex gap-2" aria-label="Team views">
+              <Button variant={activeTab === 'staff' ? 'accent' : 'outline'} className="min-h-11" onClick={() => setActiveTab('staff')}>Assignments</Button>
+              <Button variant={activeTab === 'employee-updates' ? 'accent' : 'outline'} className="min-h-11" onClick={() => setActiveTab('employee-updates')}>Team updates</Button>
+            </nav>
             <TeamHome panel="staff" embedded />
           </TabsContent>
           <TabsContent value="timesheets" className="mt-0" role="region" aria-label="Job timesheets">
             <TeamHome panel="timesheets" embedded />
           </TabsContent>
           <TabsContent value="employee-updates" className="mt-0" role="region" aria-label="Employee updates">
+            <nav className="mb-4 flex gap-2" aria-label="Team views">
+              <Button variant={activeTab === 'staff' ? 'accent' : 'outline'} className="min-h-11" onClick={() => setActiveTab('staff')}>Assignments</Button>
+              <Button variant={activeTab === 'employee-updates' ? 'accent' : 'outline'} className="min-h-11" onClick={() => setActiveTab('employee-updates')}>Team updates</Button>
+            </nav>
             <TeamHome panel="updates" embedded />
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </PageLayout>
 
       {/* Modals */}

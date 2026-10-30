@@ -1,17 +1,15 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Project } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   User, 
   Calendar, 
   AlertCircle, 
   CheckCircle2, 
   Clock,
-  ExternalLink,
   Send,
   RotateCcw,
   Loader2,
@@ -19,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { cn, getClientProjectUrl } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   AlertDialog,
@@ -32,6 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { ClientPageActions } from '@/components/project-manage/ClientPageActions';
 
 interface ProjectCardProps {
   project: Project;
@@ -40,10 +39,10 @@ interface ProjectCardProps {
   onDeleteProject?: (id: string) => Promise<boolean>;
 }
 
-export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeleteProject }: ProjectCardProps) {
+export function ProjectCard({ project, onUpdateStatus, onDeleteProject }: ProjectCardProps) {
+  const navigate = useNavigate();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isOpeningPreview, setIsOpeningPreview] = useState(false);
   const pendingChanges = project.changeRequests.filter(cr => cr.status === 'pending').length;
   const unacknowledgedItems = project.scopeItems.filter(si => !si.acknowledged).length;
   const needsAttention = pendingChanges > 0 || (project.status === 'sent' && unacknowledgedItems > 0);
@@ -88,26 +87,6 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
       toast.success(successMessage);
     }
     setIsUpdating(false);
-  };
-
-  const handlePreviewClientPage = async () => {
-    if (isOpeningPreview) return;
-    const previewWindow = window.open('about:blank', '_blank');
-    if (previewWindow) previewWindow.opener = null;
-    if (!previewWindow) {
-      toast.error('Your browser blocked the preview window. Allow pop-ups and try again.');
-      return;
-    }
-    setIsOpeningPreview(true);
-    try {
-      const clientUrl = await getClientProjectUrl(project.id);
-      previewWindow.location.href = clientUrl;
-    } catch (error) {
-      previewWindow.close();
-      toast.error(error instanceof Error ? error.message : 'Could not open the secure client preview. Please retry.');
-    } finally {
-      setIsOpeningPreview(false);
-    }
   };
 
   const getActionButton = () => {
@@ -183,6 +162,13 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
           <Badge variant={config.variant}>{config.label}</Badge>
         </div>
 
+        <div className="mb-4 border-t border-border pt-3">
+          <ClientPageActions
+            project={project}
+            onAddEmail={() => navigate(`/manage/${project.id}?client=edit`)}
+          />
+        </div>
+
         {/* Stats */}
         <div className="flex flex-wrap gap-3 mb-4">
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -250,24 +236,6 @@ export function ProjectCard({ project, onViewProject, onUpdateStatus, onDeletePr
               Manage
             </Link>
           </Button>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  aria-label="Preview client page"
-                  onClick={handlePreviewClientPage}
-                  disabled={isOpeningPreview}
-                >
-                  {isOpeningPreview ? <Loader2 className="w-4 h-4 animate-spin" /> : <ExternalLink className="w-4 h-4" />}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Preview Client Page</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           {project.status === 'draft' && onDeleteProject && (
             <AlertDialog>
               <AlertDialogTrigger asChild>

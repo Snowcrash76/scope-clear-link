@@ -121,7 +121,7 @@ export function createEmployeeRouter() {
       portalRows(() => db.from('employee_role_permissions').select('role,permissions').eq('owner_id', actor.ownerId)),
       jobIds.length ? portalRows(() => db.from('employee_job_notes').select('id,project_id,employee_id,body,created_at').in('project_id', jobIds).eq('owner_id', actor.ownerId).order('created_at', { ascending: false })) : [],
       jobIds.length ? portalRows(() => db.from('project_documents').select(safeDocumentColumns).in('project_id', jobIds).eq('purpose', 'employee_photo').order('created_at', { ascending: false })) : [],
-      portalRows(() => db.from('employee_audit_events').select('id,action,created_at,actor_id,detail,project_id').eq('owner_id', actor.ownerId).order('created_at', { ascending: false })),
+      portalRows(() => db.from('employee_audit_events').select('id,action,created_at,actor_id,employee_id,detail,project_id').eq('owner_id', actor.ownerId).order('created_at', { ascending: false })),
     ]);
     return {
       employees: employees.map(e => ({ ...e, hourly_rate: rates.find(r => r.employee_id === e.id)?.hourly_rate ?? null })),

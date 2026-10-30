@@ -71,6 +71,7 @@ type DbProject = {
   client_name: string;
   client_email: string;
   client_address: string | null;
+  client_phone?: string | null;
   status: 'draft' | 'sent' | 'in_progress' | 'completed';
   total_value: number | null;
   created_at: string;
@@ -267,6 +268,7 @@ export function useProject(projectId: string | undefined) {
         clientName: p.client_name,
         clientEmail: p.client_email,
         clientAddress: p.client_address || undefined,
+        clientPhone: p.client_phone ?? null,
         tradeName: profile?.contact_name || 'Trade',
         tradeBusinessName: profile?.business_name || 'Business',
         tradeAddress: (profile as any)?.business_address || undefined,

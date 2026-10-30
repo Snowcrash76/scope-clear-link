@@ -58,7 +58,7 @@ export interface TeamBootstrap {
   jobs: PortalJob[]; appointments: { id: string; project_id: string | null; title: string; date: string; start_time: string; end_time: string }[];
   assignments: PortalAssignment[]; entries: PortalTimeEntry[]; submissions: PortalSubmission[];
   permissions: Record<EmployeeRole, OperationalPermissions>; timezone: string;
-  notes: PortalNote[]; documents: PortalDocument[]; audit: { id: string; action: string; created_at: string; actor_id: string; detail: unknown }[];
+  notes: PortalNote[]; documents: PortalDocument[]; audit: { id: string; action: string; created_at: string; actor_id: string; employee_id?: string | null; detail: unknown }[];
 }
 export interface PortalReviews { submissions: PortalSubmission[]; entries: PortalTimeEntry[]; jobs: PortalJob[]; employees: PortalEmployee[] }
 export const roleLabels: Record<EmployeeRole, string> = { labourer: 'Labourer', supervisor: 'Leading Hand / Supervisor', admin: 'Admin' };

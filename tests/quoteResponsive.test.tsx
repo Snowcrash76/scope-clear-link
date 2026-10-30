@@ -25,10 +25,10 @@ test('quote read view keeps actions and long content within a shrinkable phone l
     onReviseQuote: async () => true,
   }));
   assert.match(html, /w-full min-w-0/);
-  assert.match(html, /flex flex-col sm:flex-row sm:flex-wrap/);
+  assert.match(html, /flex flex-col gap-2 sm:flex-row sm:flex-wrap/);
   assert.match(html, /w-full sm:w-auto/);
   assert.match(html, /overflow-wrap:anywhere/);
-  for (const text of ['View Quote', 'Download PDF', 'Send to Client', 'hallway preparation', '1,250.00']) {
+  for (const text of ['View as client', 'Download PDF', 'Send to client', 'hallway preparation', '1,250.00']) {
     assert.ok(html.includes(text), `The phone layout must retain ${text}`);
   }
 });

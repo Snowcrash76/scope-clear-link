@@ -1,5 +1,4 @@
 import { JobHeader } from '@/components/JobHeader';
-import { JobSectionMenu } from '@/components/JobSectionMenu';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,54 +11,47 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { jobDisplayStatus } from '@/lib/quoteDisplay';
 import type { Project, Quote } from '@/types/project';
-import {
-  ArrowLeft,
-  CheckCircle2,
-  Copy,
-  ExternalLink,
-  FolderOpen,
-  Loader2,
-  Mail,
-  MapPin,
-  MoreVertical,
-  RotateCcw,
-  Send,
-  User,
-} from 'lucide-react';
+import { ClientDetailsCard, type ClientEditValues } from './ClientDetailsCard';
+import { ClientPageActions } from './ClientPageActions';
+import { ArrowLeft, CheckCircle2, Copy, FolderOpen, Loader2, MoreVertical, RotateCcw } from 'lucide-react';
 
 type ProjectManageHeaderProps = {
   project: Project;
   activeQuote: Quote | null;
-  activeTab: string;
   onTabChange: (tab: string) => void;
-  invoiceCount: number;
   pendingVariationCount: number;
-  documentNotificationCount: number;
+  stageCount: number;
   isDuplicating: boolean;
   onBack: () => void;
-  onSendToClient: () => void;
+  onAddVariation: () => void;
   onDuplicateProject: () => void | Promise<void>;
-  onCopyClientLink: () => void | Promise<void>;
-  onPreviewClientPage: () => void;
+  onSaveClient: (values: ClientEditValues, applyToAll: boolean) => Promise<boolean>;
+  onAddClientEmail: () => void;
+  onClientPageSent: () => void | Promise<void>;
+  clientEditOpen: boolean;
+  onClientEditOpenChange: (open: boolean) => void;
   onUpdateProjectStatus: (status: 'completed' | 'in_progress') => boolean | Promise<boolean>;
 };
 
 export function ProjectManageHeader({
   project,
   activeQuote,
-  activeTab,
   onTabChange,
-  invoiceCount,
   pendingVariationCount,
-  documentNotificationCount,
+  stageCount,
   isDuplicating,
   onBack,
-  onSendToClient,
+  onAddVariation,
   onDuplicateProject,
-  onCopyClientLink,
-  onPreviewClientPage,
+  onSaveClient,
+  onAddClientEmail,
+  onClientPageSent,
+  clientEditOpen,
+  onClientEditOpenChange,
   onUpdateProjectStatus,
 }: ProjectManageHeaderProps) {
+  const currentStageIndex = project.stages.findIndex((stage) => stage.status === 'current');
+  const currentStage = currentStageIndex >= 0 ? project.stages[currentStageIndex] : null;
   return (
     <JobHeader>
       <div className="min-w-0">
@@ -75,33 +67,11 @@ export function ProjectManageHeader({
                 valid_until: activeQuote.validUntil?.toISOString() ?? null,
               } : null)} />
             </div>
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-              <span className="flex shrink-0 items-center gap-1">
-                <User className="w-3.5 h-3.5" />
-                {project.clientName}
-              </span>
-              <span className="flex min-w-0 max-w-full items-center gap-1">
-                <Mail className="w-3.5 h-3.5" />
-                <span className="truncate">{project.clientEmail}</span>
-              </span>
-              {project.clientAddress && (
-                <span className="flex min-w-0 max-w-full items-center gap-1" data-testid="text-client-address">
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span className="truncate">{project.clientAddress}</span>
-                </span>
-              )}
-            </div>
           </div>
         </div>
 
         <div className="mt-3 flex w-full min-w-0 items-center">
           <div className="flex min-w-0 shrink-0 items-center gap-0 sm:gap-1">
-            {project.status === 'draft' && (
-              <Button variant="accent" size="sm" className="h-11 w-11 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Send job to client" onClick={onSendToClient}>
-                <Send className="w-4 h-4" />
-                <span className="hidden sm:ml-2 sm:inline">Send to Client</span>
-              </Button>
-            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="h-11 shrink-0 gap-2 border-zinc-400 bg-white px-3 text-sm text-zinc-900" aria-label="Actions" data-testid="button-project-actions-menu">
@@ -110,6 +80,11 @@ export function ProjectManageHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuItem onClick={onAddVariation} className="min-h-11 gap-2" data-testid="menu-item-add-variation">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Add variation
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={() => void onDuplicateProject()}
                   disabled={isDuplicating}
@@ -118,14 +93,6 @@ export function ProjectManageHeader({
                 >
                   {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="w-4 h-4" />}
                   {isDuplicating ? 'Creating copy…' : 'Duplicate job'}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => void onCopyClientLink()} className="min-h-11 gap-2" data-testid="menu-item-share-link">
-                  <ExternalLink className="w-4 h-4" />
-                  Share link
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={onPreviewClientPage} className="min-h-11 gap-2" data-testid="menu-item-preview-client-page">
-                  <ExternalLink className="w-4 h-4" />
-                  Preview client page
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Job status</DropdownMenuLabel>
@@ -157,14 +124,19 @@ export function ProjectManageHeader({
             </DropdownMenu>
           </div>
         </div>
-        <div className="mt-3 w-full min-w-0">
-          <JobSectionMenu
-            value={activeTab}
-            onValueChange={onTabChange}
-            invoiceCount={invoiceCount}
-            pendingVariationCount={pendingVariationCount}
-            documentNotificationCount={documentNotificationCount}
-          />
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" className="min-h-11 gap-2" onClick={() => onTabChange("stages")}>
+            {currentStage ? `Stage ${currentStageIndex + 1} of ${stageCount} · ${currentStage.name}` : stageCount ? `${stageCount} stages` : "Add stages"}
+          </Button>
+          {pendingVariationCount > 0 && (
+            <Button type="button" variant="outline" className="min-h-11 gap-2 border-warning/40 text-warning" onClick={() => onTabChange("changes")}>
+              {pendingVariationCount} variation{pendingVariationCount === 1 ? "" : "s"} need action
+            </Button>
+          )}
+          <ClientPageActions project={project} onAddEmail={onAddClientEmail} onSendSuccess={onClientPageSent} />
+        </div>
+        <div className="mt-3 max-w-3xl">
+          <ClientDetailsCard project={project} onSave={onSaveClient} open={clientEditOpen} onOpenChange={onClientEditOpenChange} />
         </div>
       </div>
     </JobHeader>

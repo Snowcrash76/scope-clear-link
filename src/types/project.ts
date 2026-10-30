@@ -110,6 +110,7 @@ export interface Project {
   clientName: string;
   clientEmail: string;
   clientAddress?: string;
+  clientPhone?: string | null;
   tradeName: string;
   tradeBusinessName: string;
   tradeAddress?: string;

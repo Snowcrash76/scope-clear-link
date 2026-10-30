@@ -70,7 +70,6 @@ import { AssignmentList } from "./AssignmentListView";
 import { AssignmentEditDialog } from "./AssignmentEditDialog";
 import { PermissionCard } from "./PermissionCardView";
 import { ReviewPanel } from "./ReviewPanel";
-import { AuditTrail } from "./AuditTrailView";
 import { ReviewDialog } from "./ReviewDialog";
 import { UpdatesPanel } from "./UpdatesPanelView";
 import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
@@ -628,7 +627,6 @@ export function TeamHome({
                     canEdit={!!session.data?.canManageTeam}
                     refresh={refresh}
                   />
-                  <AuditTrail rows={team.audit} />
                 </>
               ) : isUpdates ? (
                 <UpdatesPanel team={team} jobId={jobId} />

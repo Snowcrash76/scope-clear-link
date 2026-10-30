@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -29,6 +29,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface ProjectDocument {
   id: string;
@@ -39,6 +41,7 @@ interface ProjectDocument {
   file_size: number | null;
   created_at: string;
   employee_visible?: boolean;
+  purpose?: string | null;
 }
 
 interface DocumentsSectionProps {
@@ -59,6 +62,40 @@ export function DocumentsSection({
   const [visibilitySaving, setVisibilitySaving] = useState<string | null>(null);
   const [visibilityTarget, setVisibilityTarget] =
     useState<ProjectDocument | null>(null);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [previewDoc, setPreviewDoc] = useState<ProjectDocument | null>(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [photoUpload, setPhotoUpload] = useState(false);
+
+  const documentGroups = useMemo(() => {
+    const filtered = documents.filter((doc) => {
+      const text = `${doc.display_name || doc.file_name} ${doc.purpose ?? ""} ${doc.file_type ?? ""}`.toLowerCase();
+      const matchesSearch = text.includes(search.trim().toLowerCase());
+      const type = (doc.file_type ?? "").toLowerCase();
+      const matchesType = typeFilter === "all"
+        || (typeFilter === "image" && type.startsWith("image/"))
+        || (typeFilter === "pdf" && type.includes("pdf"))
+        || (typeFilter === "spreadsheet" && (type.includes("spreadsheet") || type.includes("excel") || type.includes("csv")))
+        || (typeFilter === "other" && !type.startsWith("image/") && !type.includes("pdf") && !type.includes("spreadsheet") && !type.includes("excel") && !type.includes("csv"));
+      return matchesSearch && matchesType;
+    });
+    const groupFor = (doc: ProjectDocument) => {
+      const purpose = (doc.purpose ?? "").toLowerCase();
+      if (purpose.includes("photo")) return "Photos";
+      if (purpose.includes("plan") || purpose.includes("drawing")) return "Site plans & drawings";
+      if (purpose.includes("report") || purpose.includes("certificate")) return "Reports & certificates";
+      if (purpose === "client_upload" || purpose === "client_uploaded" || purpose === "uploaded_by_client") return "Client documents";
+      return "Other";
+    };
+    const order = ["Site plans & drawings", "Photos", "Reports & certificates", "Client documents", "Other"];
+    return order.map((title) => ({
+      title,
+      items: filtered.filter((doc) => groupFor(doc) === title),
+    })).filter((group) => group.items.length);
+  }, [documents, search, typeFilter]);
 
   const toggleEmployeeVisibility = async (
     doc: ProjectDocument,
@@ -191,6 +228,9 @@ export function DocumentsSection({
   };
 
   const handleView = async (doc: ProjectDocument) => {
+    setPreviewDoc(doc);
+    setPreviewUrl("");
+    setPreviewLoading(true);
     try {
       // Clean the file path - remove any URL parts if present
       let filePath = doc.file_url;
@@ -204,23 +244,22 @@ export function DocumentsSection({
         }
       }
 
-      console.log("Viewing document with path:", filePath);
-
-      // Get signed URL for viewing
       const { data, error } = await supabase.storage
         .from("project-documents")
-        .createSignedUrl(filePath, 300); // 5 minutes validity
+        .createSignedUrl(filePath, 300);
 
       if (error) {
         console.error("Signed URL error:", error);
         throw error;
       }
 
-      // Open in new tab
-      window.open(data.signedUrl, "_blank");
+      setPreviewUrl(data.signedUrl);
     } catch (error) {
       console.error("Error viewing document:", error);
       toast.error("Failed to view document");
+      setPreviewDoc(null);
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -235,22 +274,52 @@ export function DocumentsSection({
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-heading text-lg font-semibold">Documents</h2>
-          <Button onClick={() => setUploadModalOpen(true)}>
+          <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+          <Button className="min-h-11 flex-1 sm:flex-none" onClick={() => { setPhotoUpload(false); setUploadModalOpen(true); }}>
             <Upload className="w-4 h-4 mr-2" />
             Upload
           </Button>
+          <Button variant="outline" className="min-h-11 flex-1 sm:hidden" onClick={() => { setPhotoUpload(true); setUploadModalOpen(true); }}>
+            <ImageIcon className="mr-2 h-4 w-4" />
+            Take photo
+          </Button>
+          </div>
         </div>
 
-        {documents.length > 0 ? (
-          <Card className="divide-y">
-            {documents.map((doc) => {
+        <p className="rounded-lg border border-info/25 bg-info/10 p-3 text-sm text-foreground">
+          Client access follows the existing secure client-page rules. This schema has no separate client-only visibility setting; Team access controls only employee visibility.
+        </p>
+        <div className="grid gap-3 rounded-xl border border-border bg-card p-3 sm:grid-cols-[minmax(12rem,1fr)_auto_auto] sm:items-center">
+          <Input aria-label="Search job documents" placeholder="Search documents" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <label className="flex min-h-11 items-center gap-2 text-sm">
+            <span className="shrink-0 font-medium">Type</span>
+            <select aria-label="Filter documents by type" className="h-11 min-w-32 rounded-md border border-input bg-background px-3" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}>
+              <option value="all">All files</option><option value="image">Images</option><option value="pdf">PDFs</option><option value="spreadsheet">Spreadsheets</option><option value="other">Other</option>
+            </select>
+          </label>
+          <div className="flex gap-1" aria-label="Document layout">
+            <Button type="button" variant={layout === "list" ? "accent" : "outline"} className="min-h-11" aria-pressed={layout === "list"} onClick={() => setLayout("list")}>List</Button>
+            <Button type="button" variant={layout === "grid" ? "accent" : "outline"} className="min-h-11" aria-pressed={layout === "grid"} onClick={() => setLayout("grid")}>Grid</Button>
+          </div>
+        </div>
+
+        {documents.length > 0 && documentGroups.length ? (
+          <div className="space-y-5">
+            {documentGroups.map(({ title, items }) => (
+            <section key={title} aria-labelledby={`document-group-${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`}>
+              <h3 id={`document-group-${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`} className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">{title} <span className="ml-1 rounded-full bg-muted px-2 py-0.5 tabular-nums">{items.length}</span></h3>
+              <Card className={cn(layout === "grid" ? "grid gap-3 border-0 bg-transparent shadow-none sm:grid-cols-2 xl:grid-cols-3" : "divide-y")}>
+            {items.map((doc) => {
               const FileIcon = getFileIcon(doc.file_type);
               const hasCustomName =
                 doc.display_name && doc.display_name !== doc.file_name;
               return (
                 <div
                   key={doc.id}
-                  className="p-3 sm:p-4 flex min-w-0 flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 hover:bg-secondary/30 transition-colors"
+                  className={cn(
+                    "p-3 sm:p-4 flex min-w-0 flex-wrap items-center gap-3 transition-colors",
+                    layout === "grid" ? "rounded-xl border border-border bg-card shadow-soft" : "sm:flex-nowrap hover:bg-secondary/30",
+                  )}
                 >
                   <div
                     className={cn(
@@ -293,7 +362,7 @@ export function DocumentsSection({
                           )
                         }
                       />
-                      Staff access
+                      Team access
                     </label>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -370,7 +439,12 @@ export function DocumentsSection({
                 </div>
               );
             })}
-          </Card>
+              </Card>
+            </section>
+            ))}
+          </div>
+        ) : documents.length ? (
+          <Card className="p-10 text-center"><FileText className="mx-auto h-10 w-10 text-muted-foreground" /><p className="mt-3 font-semibold">No documents match these filters</p><Button type="button" variant="link" className="mt-1 min-h-11" onClick={() => { setSearch(""); setTypeFilter("all"); }}>Clear search and filters</Button></Card>
         ) : (
           <Card className="p-12 text-center">
             <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -392,6 +466,7 @@ export function DocumentsSection({
           open={uploadModalOpen}
           onOpenChange={setUploadModalOpen}
           onUploadComplete={onRefresh}
+          photoOnly={photoUpload}
         />
 
         <EditDocumentModal
@@ -400,6 +475,21 @@ export function DocumentsSection({
           onOpenChange={(open) => !open && setEditingDocument(null)}
           onSave={onRefresh}
         />
+        <Dialog open={!!previewDoc} onOpenChange={(open) => { if (!open) { setPreviewDoc(null); setPreviewUrl(""); } }}>
+          <DialogContent className="max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-4xl overflow-hidden">
+            <DialogHeader>
+              <DialogTitle>{previewDoc ? displayName(previewDoc) : "Document preview"}</DialogTitle>
+              <DialogDescription>Secure preview link expires after five minutes.</DialogDescription>
+            </DialogHeader>
+            <div className="grid min-h-52 place-items-center overflow-auto rounded-xl bg-muted/50">
+              {previewLoading ? <div role="status" className="animate-pulse text-sm text-muted-foreground">Loading preview…</div> : previewUrl && previewDoc?.file_type?.startsWith("image/") ? (
+                <img src={previewUrl} alt={`Preview of ${displayName(previewDoc)}`} className="max-h-[65dvh] max-w-full object-contain" />
+              ) : previewUrl && previewDoc?.file_type?.includes("pdf") ? (
+                <iframe src={previewUrl} title={`PDF preview of ${displayName(previewDoc)}`} className="h-[65dvh] w-full border-0" />
+              ) : previewUrl ? <p className="p-6 text-sm text-muted-foreground">This file type can’t be previewed. Use Download to open the file.</p> : null}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
       <AlertDialogContent>
         <AlertDialogTitle>

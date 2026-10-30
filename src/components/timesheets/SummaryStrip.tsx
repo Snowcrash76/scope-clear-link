@@ -12,16 +12,17 @@ export interface SummaryMetric {
   value: string;
   detail?: string;
   tone?: "default" | "warning" | "success";
+  tooltip?: string;
+  warning?: string;
+  warningTooltip?: string;
 }
 
 export function SummaryStrip({
   metrics,
   runningCount = 0,
-  payNote = false,
 }: {
   metrics: SummaryMetric[];
   runningCount?: number;
-  payNote?: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -34,15 +35,38 @@ export function SummaryStrip({
             <p className="text-sm font-medium text-muted-foreground">
               {metric.label}
             </p>
-            <p
-              className={`mt-1 break-words text-xl font-bold tabular-nums ${metric.tone === "success" ? "text-success" : "text-foreground"}`}
-            >
-              {metric.value}
-            </p>
+            {metric.tooltip ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" aria-label={`${metric.label}: ${metric.value}. ${metric.tooltip}`} className={`mt-1 min-h-11 break-words text-left text-xl font-bold tabular-nums underline decoration-dotted underline-offset-4 ${metric.tone === "success" ? "text-success" : "text-foreground"}`}>
+                      {metric.value}<Info className="ml-1 inline h-4 w-4 align-middle text-muted-foreground" aria-hidden="true" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-72">{metric.tooltip}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <p className={`mt-1 break-words text-xl font-bold tabular-nums ${metric.tone === "success" ? "text-success" : "text-foreground"}`}>
+                {metric.value}
+              </p>
+            )}
             {metric.detail && (
               <p className="mt-1 text-sm text-muted-foreground">
                 {metric.detail}
               </p>
+            )}
+            {metric.warning && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="mt-2 inline-flex min-h-8 items-center rounded-full bg-warning/15 px-2 text-xs font-semibold text-warning underline decoration-dotted underline-offset-2">
+                      {metric.warning}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-72">{metric.warningTooltip}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         ))}
@@ -52,25 +76,6 @@ export function SummaryStrip({
           <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-warning/15 px-3 text-sm font-semibold text-foreground">
             Running clocks · {runningCount} · excluded from paid total
           </span>
-        )}
-        {payNote && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex min-h-10 items-center gap-2 rounded-lg px-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4"
-                >
-                  <Info className="h-4 w-4" />
-                  About pay estimate
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-64">
-                Estimate uses approved hours only and excludes tax, super,
-                overtime, deductions and payments made.
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         )}
       </div>
     </div>

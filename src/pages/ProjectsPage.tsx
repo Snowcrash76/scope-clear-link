@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
 import { LoadErrorState } from "@/components/LoadErrorState";
@@ -9,6 +9,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -30,7 +31,8 @@ import {
   type QuoteSummary,
 } from "@/lib/quoteDisplay";
 import { StatusBadge } from "@/components/StatusBadge";
-import { awaitingClientApproval } from "@/lib/variationStatus";
+import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
+import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -103,6 +105,7 @@ function ProjectInitial({ name }: { name: string }) {
 }
 
 export default function ProjectsPage() {
+  const navigate = useNavigate();
   const {
     projects,
     loading,
@@ -149,7 +152,7 @@ export default function ProjectsPage() {
     if (filterParam === "awaiting_response")
       return awaitingQuoteResponse(project, quote);
     if (filterParam === "pending_approval")
-      return project.changeRequests.some(awaitingClientApproval);
+      return project.changeRequests.some((variation) => needsTradeResponse(variation) || awaitingClientApproval(variation));
     if (filterParam === "in_progress")
       return (
         jobDisplayStatus(project, quote) === "in_progress" &&
@@ -201,7 +204,7 @@ export default function ProjectsPage() {
   };
   const pendingVariationTotal = filtered.reduce(
     (total, project) =>
-      total + project.changeRequests.filter(awaitingClientApproval).length,
+      total + project.changeRequests.filter((variation) => needsTradeResponse(variation) || awaitingClientApproval(variation)).length,
     0,
   );
   const filterLabel: Record<string, string> = {
@@ -361,8 +364,9 @@ export default function ProjectsPage() {
                 ).length;
                 const total = project.stages.length;
                 const progress = total > 0 ? (completed / total) * 100 : 0;
+                const currentStage = project.stages.find((stage) => stage.status === "current");
                 const pending = project.changeRequests.filter(
-                  (c) => c.status === "pending",
+                  (c) => needsTradeResponse(c) || awaitingClientApproval(c),
                 ).length;
                 const resolved = project.changeRequests.filter(
                   (c) => c.status === "approved" || c.status === "declined",
@@ -423,6 +427,14 @@ export default function ProjectsPage() {
                             </span>
                           )}
                         </div>
+                        {total > 0 && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2" aria-label={`Stage progress ${completed} of ${total}${currentStage ? `, current stage ${currentStage.name}` : ""}`}>
+                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                              <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+                            </div>
+                            <span className="text-sm text-muted-foreground">{completed} / {total} · {currentStage?.name ?? (completed === total ? "Complete" : "No current stage")}</span>
+                          </div>
+                        )}
                         <div className="mt-2 flex flex-wrap items-center gap-2">
                           {profitabilityQuery.isLoading ? (
                             <span
@@ -482,19 +494,6 @@ export default function ProjectsPage() {
                         </p>
                         <p className="text-xs text-muted-foreground">ex GST</p>
                       </div>
-                      {total > 0 && (
-                        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                          <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
-                            <div
-                              className="h-full rounded-full bg-primary transition-all"
-                              style={{ width: `${progress}%` }}
-                            />
-                          </div>
-                          <span className="text-xs font-semibold text-muted-foreground">
-                            {completed}/{total}
-                          </span>
-                        </div>
-                      )}
                       <div className="hidden min-w-[16rem] max-w-[20rem] text-right lg:block">
                         <p className="text-sm font-medium text-foreground">
                           {nextAction(
@@ -546,6 +545,12 @@ export default function ProjectsPage() {
                             Mark as In Progress
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuSeparator />
+                        <ClientPageActions
+                          layout="menu"
+                          project={project}
+                          onAddEmail={() => navigate(`/manage/${project.id}?client=edit`)}
+                        />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>

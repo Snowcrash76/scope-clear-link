@@ -4,7 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
 import { useDashboardInvoices } from '@/hooks/useDashboardInvoices';
 import { awaitingQuoteResponse, jobDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
-import { awaitingClientApproval } from '@/lib/variationStatus';
+import { awaitingClientApproval, needsTradeResponse } from '@/lib/variationStatus';
 import type { Project } from '@/types/project';
 import { cn } from '@/lib/utils';
 
@@ -37,8 +37,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
   );
   const completed = projects.filter(project => jobDisplayStatus(project, quotesByProject.get(project.id)) === 'completed');
   const pendingVariationCount = projects.reduce((total, project) =>
-    total + project.changeRequests.filter(awaitingClientApproval).length, 0);
-  const pendingJobs = projects.filter(project => project.changeRequests.some(awaitingClientApproval)).length;
+    total + project.changeRequests.filter(variation => needsTradeResponse(variation) || awaitingClientApproval(variation)).length, 0);
+  const needsTradeResponseCount = projects.reduce((total, project) =>
+    total + project.changeRequests.filter(needsTradeResponse).length, 0);
+  const pendingJobs = projects.filter(project => project.changeRequests.some(variation => needsTradeResponse(variation) || awaitingClientApproval(variation))).length;
   const overdueInvoices = (invoiceQuery.data ?? []).filter(invoice => invoice.status === 'overdue');
   const unpaidInvoices = (invoiceQuery.data ?? []).filter(invoice => invoice.status === 'sent' || invoice.status === 'overdue');
   const sumBalances = (rows: typeof overdueInvoices) => {
@@ -77,10 +79,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       testId: 'stat-active-projects',
     },
     {
-      label: 'Pending Approvals', value: pendingVariationCount,
-      subtitle: `${pendingVariationCount} variation request${pendingVariationCount === 1 ? '' : 's'} across ${pendingJobs} job${pendingJobs === 1 ? '' : 's'}`,
-      href: '/projects?status=pending_approval',
-      title: 'Counts pending variation requests, not unique jobs.',
+      label: 'Variations awaiting action', value: pendingVariationCount,
+      subtitle: `${needsTradeResponseCount} need your response · ${pendingVariationCount - needsTradeResponseCount} awaiting client across ${pendingJobs} job${pendingJobs === 1 ? '' : 's'}`,
+      href: '/variations?filter=needs-action',
+      title: 'Includes client requests that need your response and trade variations awaiting client approval.',
       testId: 'stat-pending-approvals',
       highlight: pendingVariationCount > 0,
     },

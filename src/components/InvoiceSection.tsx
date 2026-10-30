@@ -480,7 +480,8 @@ export function InvoiceSection({
                         size="sm" 
                         variant="outline"
                         onClick={() => setViewingInvoice(invoice)}
-                        title="View Details"
+                        title="View as client"
+                        aria-label={`View invoice ${invoice.invoiceNumber} as client`}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>

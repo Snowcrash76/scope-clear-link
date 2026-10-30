@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, ChevronRight, MoreHorizontal } from "lucide-react";
+import { Check, ChevronRight, History, Info, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,6 +32,7 @@ import {
   sortReviewRows,
 } from "@/components/timesheets";
 import type { TimesheetStatus } from "@/components/timesheets";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   primary,
   outline,
@@ -43,6 +44,14 @@ import {
   showDate,
 } from "./portalShared";
 import { TimeEntryEditor } from "./TimeEntryEditor";
+import { TimesheetAuditHistory } from "@/components/project-manage/TimesheetAuditHistory";
+import {
+  auditActorName,
+  auditLabel,
+  formatAuditTimestamp,
+  reviewAuditForPersonWeek,
+  type AuditRow,
+} from "@/components/project-manage/timesheetAudit";
 
 type Filter = "All" | "Needs review" | "Approved" | "Drafts" | "Missing hours";
 interface PersonWeek {
@@ -95,10 +104,16 @@ export function ReviewPanel({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [batchResult, setBatchResult] = useState("");
+  const [auditDialog, setAuditDialog] = useState<{
+    personId?: string;
+    personName?: string;
+    week?: string;
+  } | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
   const approveAllTriggerRef = useRef<HTMLButtonElement | null>(null);
   const entryActionTriggerRef = useRef<HTMLButtonElement | null>(null);
   const drawerCloseRef = useRef<HTMLButtonElement | null>(null);
+  const auditTriggerRef = useRef<HTMLButtonElement | null>(null);
   const todayDate = localDate(new Date(), team.timezone);
   const today = weekStart(todayDate);
   const entries = useMemo(
@@ -212,6 +227,18 @@ export function ReviewPanel({
     allSubmissions.length === 0 &&
     filter !== "Missing hours";
   const selectedTotals = selected ? timesheetTotals(selected.entries) : null;
+  const auditRows = team.audit as AuditRow[];
+  const reviewEvents = (personId: string) =>
+    reviewAuditForPersonWeek(auditRows, personId, selectedWeek).filter((row) =>
+      ["week.approved", "week.rejected", "week.reopen"].includes(row.action),
+    );
+  const lastReviewedLine = (personId: string) => {
+    const latest = reviewEvents(personId)[0];
+    if (!latest) return "Not yet reviewed";
+    const label = auditLabel(latest)?.label ?? "Reviewed";
+    const timestamp = formatAuditTimestamp(latest.created_at, team.timezone);
+    return `Last reviewed by ${auditActorName(latest, team.employees)} on ${timestamp.text} — ${label}`;
+  };
   function openDrawer(person: PersonWeek, trigger: HTMLElement) {
     triggerRef.current = trigger;
     setSelectedId(person.id);
@@ -459,7 +486,7 @@ export function ReviewPanel({
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Total{" "}
+          Total hours{" "}
           <strong className="ml-1 text-base text-foreground">
             {formatHours(person.minutes)}
           </strong>
@@ -498,6 +525,22 @@ export function ReviewPanel({
             Review <ChevronRight className="ml-1 h-4 w-4" />
           </Button>
         </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2">
+        <p className="min-w-0 truncate text-xs text-muted-foreground">{lastReviewedLine(person.id)}</p>
+        <Button
+          ref={auditTriggerRef}
+          type="button"
+          variant="link"
+          className="min-h-11 shrink-0 px-2 text-sm"
+          onClick={(event) => {
+            event.stopPropagation();
+            auditTriggerRef.current = event.currentTarget;
+            setAuditDialog({ personId: person.id, personName: person.name, week: selectedWeek });
+          }}
+        >
+          History
+        </Button>
       </div>
     </article>
   );
@@ -541,6 +584,7 @@ export function ReviewPanel({
                 person.role as "labourer" | "supervisor" | "admin",
               )}
             </span>
+            <span className="mt-1 block max-w-56 truncate text-xs text-muted-foreground">{lastReviewedLine(person.id)}</span>
           </span>
         </div>
       </th>
@@ -557,7 +601,22 @@ export function ReviewPanel({
         {formatHours(person.minutes)}
       </td>
       <td className="px-3 py-3">
-        <TimesheetStatusBadge status={person.status} />
+        <div className="flex flex-col items-start gap-1">
+          <TimesheetStatusBadge status={person.status} />
+          <Button
+            ref={auditTriggerRef}
+            type="button"
+            variant="link"
+            className="min-h-11 px-0 text-sm"
+            onClick={(event) => {
+              event.stopPropagation();
+              auditTriggerRef.current = event.currentTarget;
+              setAuditDialog({ personId: person.id, personName: person.name, week: selectedWeek });
+            }}
+          >
+            History
+          </Button>
+        </div>
       </td>
       <td className="px-3 py-3 text-right">
         <Button
@@ -607,6 +666,20 @@ export function ReviewPanel({
                 Approve all submitted
               </Button>
             )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button ref={auditTriggerRef} type="button" variant="outline" className="min-h-11 gap-2" aria-label="Timesheet options">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span>More</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="min-h-11" onSelect={() => setAuditDialog({})}>
+                  <History className="mr-2 h-4 w-4" />
+                  Review history
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
         {batchResult && (
@@ -631,18 +704,23 @@ export function ReviewPanel({
       <div className="border-b border-border p-4 sm:p-5">
         <SummaryStrip
           metrics={[
-            { label: "Paid hours", value: formatHours(paidMinutes) },
             {
-              label: "Awaiting approval",
-              value: `${awaiting.length}`,
-              detail: formatHours(awaitingMinutes),
-              tone: "warning",
+              label: "Total hours",
+              value: formatHours(paidMinutes),
+              tooltip: `Includes ${formatDuration(weekTotals.breakMinutes)} of unpaid breaks removed`,
             },
-            {
-              label: "Approved hours",
+            ...(awaitingMinutes > 0 ? [{
+              label: "Needs approval",
+              value: formatHours(awaitingMinutes),
+              detail: `${awaiting.length} team member${awaiting.length === 1 ? "" : "s"}`,
+              tone: "warning" as const,
+            }] : []),
+            ...(weekTotals.draftMinutes > 0 ? [{ label: "Not yet submitted", value: formatHours(weekTotals.draftMinutes) }] : []),
+            ...(approvedMinutes > 0 ? [{
+              label: "Approved",
               value: formatHours(approvedMinutes),
-              tone: "success",
-            },
+              tone: "success" as const,
+            }] : []),
             ...(canViewPay
               ? [
                   {
@@ -654,15 +732,14 @@ export function ReviewPanel({
                             style: "currency",
                             currency: "AUD",
                           }).format(estimatedPay),
-                    detail: weekTotals.missingRateCount
-                      ? `${weekTotals.missingRateCount} approved ${weekTotals.missingRateCount === 1 ? "entry is" : "entries are"} missing a recorded rate`
-                      : undefined,
+                    tooltip: "Estimate uses approved hours only and excludes tax, super, overtime, deductions and payments made.",
+                    warning: weekTotals.missingRateCount ? `${weekTotals.missingRateCount} missing rate${weekTotals.missingRateCount === 1 ? "" : "s"}` : undefined,
+                    warningTooltip: `${weekTotals.missingRateCount} approved ${weekTotals.missingRateCount === 1 ? "entry is" : "entries are"} missing a recorded rate. Estimated approved pay may be incomplete.`,
                   },
                 ]
               : []),
           ]}
           runningCount={runningCount}
-          payNote={canViewPay}
         />
       </div>
       <nav
@@ -789,46 +866,36 @@ export function ReviewPanel({
                 </Button>
               </div>
               {selectedTotals && (
-                <div className="mt-4 grid grid-cols-3 gap-2">
-                  <div className="rounded-xl bg-muted p-3">
-                    <span className="text-sm text-muted-foreground">Paid</span>
-                    <strong className="mt-1 block text-lg tabular-nums">
-                      {formatHours(selectedTotals.paidMinutes)}
-                    </strong>
-                  </div>
-                  <div className="rounded-xl bg-muted p-3">
-                    <span className="text-sm text-muted-foreground">Break</span>
-                    <strong className="mt-1 block text-lg tabular-nums">
-                      {formatDuration(selectedTotals.breakMinutes)}
-                    </strong>
-                  </div>
-                  <div className="min-w-0 rounded-xl bg-muted p-3">
-                    <span className="text-sm text-muted-foreground">
-                      {canViewPay ? "Approved pay" : "Approved hours"}
-                    </span>
-                    <strong className="mt-1 block truncate text-lg tabular-nums">
-                      {canViewPay
-                        ? selectedTotals.approvedPay === null
-                          ? "Unavailable"
-                          : new Intl.NumberFormat("en-AU", {
-                              style: "currency",
-                              currency: "AUD",
-                            }).format(selectedTotals.approvedPay)
-                        : formatHours(selectedTotals.approvedMinutes)}
-                    </strong>
-                  </div>
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-muted p-3">
+                  <p className="text-sm text-muted-foreground">Total hours <strong className="ml-1 text-lg text-foreground">{formatHours(selectedTotals.paidMinutes)}</strong></p>
+                  <TimesheetStatusBadge status={selected.status} />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4" aria-label={`Unpaid breaks removed: ${formatDuration(selectedTotals.breakMinutes)}`}>
+                          <Info className="h-4 w-4" /> Break details
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>Includes {formatDuration(selectedTotals.breakMinutes)} of unpaid breaks removed</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               )}
-              {canViewPay && selected.employee && (
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Current hourly rate:{" "}
-                  <strong className="text-foreground">
-                    {selected.employee.hourly_rate == null
-                      ? "Not set"
-                      : `${new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD" }).format(selected.employee.hourly_rate)} / hr`}
-                  </strong>
-                </p>
-              )}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-muted-foreground">{lastReviewedLine(selected.id)}</p>
+                <Button
+                  ref={auditTriggerRef}
+                  type="button"
+                  variant="link"
+                  className="min-h-11 px-2"
+                  onClick={(event) => {
+                    auditTriggerRef.current = event.currentTarget;
+                    setAuditDialog({ personId: selected.id, personName: selected.name, week: selectedWeek });
+                  }}
+                >
+                  History
+                </Button>
+              </div>
               {selected.locked && (
                 <div className="mt-4">
                   <LockNotice />
@@ -884,7 +951,7 @@ export function ReviewPanel({
                           {formatClock(entry.started_at, team.timezone)} –{" "}
                           {formatClock(entry.ended_at, team.timezone)}
                         </td>
-                        <td className="px-3 py-3">{entry.break_minutes} min</td>
+                        <td className="px-3 py-3">{formatDuration(entry.break_minutes)} break</td>
                         <td className="px-3 py-3 tabular-nums">
                           {formatDuration(paid(entry))}
                         </td>
@@ -919,7 +986,7 @@ export function ReviewPanel({
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-muted-foreground">
-                        Break {entry.break_minutes} min{" "}
+                        {formatDuration(entry.break_minutes)} break{" "}
                         {entry.notes && `· ${entry.notes}`}
                       </p>
                       <div className="mt-3 flex justify-end">
@@ -1124,6 +1191,21 @@ export function ReviewPanel({
           </div>
         </div>
       )}
+      <TimesheetAuditHistory
+        rows={auditRows}
+        employees={team.employees}
+        timezone={team.timezone}
+        personId={auditDialog?.personId}
+        personName={auditDialog?.personName}
+        week={auditDialog?.week}
+        open={!!auditDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAuditDialog(null);
+            window.setTimeout(() => auditTriggerRef.current?.focus(), 0);
+          }
+        }}
+      />
     </section>
   );
 }

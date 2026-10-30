@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, Clock3, MoreHorizontal, X } from "lucide-react";
+import { CalendarDays, Clock3, Info, MoreHorizontal, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   usePortal,
@@ -56,6 +56,7 @@ import { PortalLayout } from "./PortalLayout";
 import { PageTitle } from "./PageTitleView";
 import { EmployeeReviewQueue } from "./EmployeeReviewQueue";
 import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const statusFor = (value: string | undefined): TimesheetStatus =>
   value === "submitted" || value === "approved" || value === "rejected"
@@ -98,7 +99,8 @@ export function EmployeeTimesheets() {
     .filter((entry) => weekStart(entry.work_date) === ws)
     .sort((a, b) => a.started_at.localeCompare(b.started_at));
   const groups = useMemo(() => groupEntriesByDay(entries), [entries]);
-  const total = timesheetTotals(entries).paidMinutes;
+  const weeklyTotals = timesheetTotals(entries);
+  const total = weeklyTotals.paidMinutes;
   const submitted = data?.submissions.find(
     (submission) => submission.week_start === ws,
   );
@@ -402,10 +404,18 @@ export function EmployeeTimesheets() {
                 />
                 <div className="flex flex-wrap items-center justify-between gap-4 lg:justify-end">
                   <div>
-                    <p className="text-sm text-muted-foreground">Week total</p>
-                    <p className="text-3xl font-bold tabular-nums">
-                      <HoursCell minutes={total} />
-                    </p>
+                    <p className="text-sm text-muted-foreground">Total hours</p>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" className="min-h-11 rounded-lg text-left text-3xl font-bold tabular-nums underline decoration-dotted underline-offset-4" aria-label={`Total hours ${formatDuration(total)}. Includes ${formatDuration(weeklyTotals.breakMinutes)} of unpaid breaks removed`}>
+                            <HoursCell minutes={total} />
+                            <Info className="ml-2 inline h-4 w-4 align-middle text-muted-foreground" aria-hidden="true" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>Includes {formatDuration(weeklyTotals.breakMinutes)} of unpaid breaks removed</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <TimesheetStatusBadge status={statusFor(submitted?.status)} />
                   {canSubmit && (
@@ -518,7 +528,7 @@ export function EmployeeTimesheets() {
                                         entry.ended_at,
                                         data.timezone,
                                       )}{" "}
-                                      · {entry.break_minutes} min break
+                                       · {formatDuration(entry.break_minutes)} break
                                     </p>
                                     <p className="mt-1 text-sm font-semibold tabular-nums">
                                       {formatDuration(

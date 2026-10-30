@@ -61,7 +61,8 @@ import {
 } from "@/hooks/useDashboardInvoices";
 import { useJobProfitability } from "@/hooks/useJobCosts";
 import type { JobProfitability } from "@/hooks/useJobCosts";
-import { awaitingClientApproval } from "@/lib/variationStatus";
+import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
+import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
 
 interface AttentionItem {
   id: string;
@@ -131,6 +132,16 @@ function NeedsAttention({
   }
 
   for (const project of projects) {
+    for (const variation of project.changeRequests.filter(needsTradeResponse)) {
+      items.push({
+        id: `client-request-${variation.id}`,
+        category: "Client variation request",
+        title: "Client variation request — needs your response",
+        detail: `${variation.title || "Untitled request"} · ${project.name} · raised ${relativeTime(variation.createdAt)}`,
+        href: `/manage/${project.id}?tab=changes&variation=${encodeURIComponent(variation.id)}`,
+        timestamp: variation.createdAt.getTime(),
+      });
+    }
     for (const variation of project.changeRequests.filter(
       awaitingClientApproval,
     )) {
@@ -188,11 +199,10 @@ function NeedsAttention({
     }
   }
 
-  items.sort(
-    (a, b) =>
-      (a.timestamp ?? Number.MAX_SAFE_INTEGER) -
-      (b.timestamp ?? Number.MAX_SAFE_INTEGER),
-  );
+  items.sort((a, b) => {
+    const rank = (item: AttentionItem) => item.category === "Client variation request" ? 0 : item.category === "Variation" ? 1 : 2;
+    return rank(a) - rank(b) || (a.timestamp ?? Number.MAX_SAFE_INTEGER) - (b.timestamp ?? Number.MAX_SAFE_INTEGER);
+  });
   const costRecordsMissing =
     !costError && !costLoading
       ? projects.filter((project) => {
@@ -381,20 +391,23 @@ function ProjectListItem({
   onView: (id: string) => void;
   quote?: QuoteSummary;
 }) {
+  const navigate = useNavigate();
   const completedStages = project.stages.filter(
     (s) => s.status === "completed",
   ).length;
   const totalStages = project.stages.length;
   const stageProgress =
     totalStages > 0 ? (completedStages / totalStages) * 100 : 0;
+  const currentStage = project.stages.find((stage) => stage.status === "current");
   const pendingVariations = project.changeRequests.filter(
-    (cr) => cr.status === "pending",
+    (cr) => needsTradeResponse(cr) || awaitingClientApproval(cr),
   ).length;
   const resolvedVariations = project.changeRequests.filter(
     (cr) => cr.status === "approved" || cr.status === "declined",
   ).length;
 
   return (
+    <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
     <button
       type="button"
       onClick={() => onView(project.id)}
@@ -430,29 +443,22 @@ function ProjectListItem({
             </span>
           )}
         </div>
-      </div>
-
-      {totalStages > 0 && (
-        <div className="hidden sm:flex items-center gap-3 flex-shrink-0">
-          <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            Stage
-          </span>
-          <div className="flex items-center gap-2">
-            <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
-              <div
-                className="h-full rounded-full bg-primary transition-all"
-                style={{ width: `${stageProgress}%` }}
-              />
+        {totalStages > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-2" aria-label={`Stage progress ${completedStages} of ${totalStages}${currentStage ? `, current stage ${currentStage.name}` : ""}`}>
+            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${stageProgress}%` }} />
             </div>
-            <span className="text-xs font-semibold">
-              {completedStages} / {totalStages}
-            </span>
+            <span className="text-sm text-muted-foreground">{completedStages} / {totalStages} · {currentStage?.name ?? (completedStages === totalStages ? "Complete" : "No current stage")}</span>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
     </button>
+    <div className="px-4 pb-3 sm:px-2 sm:py-2">
+      <ClientPageActions project={project} onAddEmail={() => navigate(`/manage/${project.id}?client=edit`)} />
+    </div>
+    </div>
   );
 }
 

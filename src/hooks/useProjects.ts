@@ -13,6 +13,7 @@ type DbProject = {
   client_name: string;
   client_email: string;
   client_address: string | null;
+  client_phone?: string | null;
   status: 'draft' | 'sent' | 'in_progress' | 'completed';
   total_value: number | null;
   created_at: string;
@@ -116,6 +117,7 @@ export function useProjects() {
           clientName: p.client_name,
           clientEmail: p.client_email,
           clientAddress: p.client_address || undefined,
+          clientPhone: p.client_phone ?? null,
           tradeName: '', // Will be populated from profile
           tradeBusinessName: '',
           status: p.status === 'in_progress' ? 'in_progress' : p.status as Project['status'],

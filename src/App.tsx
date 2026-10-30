@@ -16,6 +16,7 @@ import ProjectsPage from "./pages/ProjectsPage";
 import QuotesPage from "./pages/QuotesPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import ClientsPage from "./pages/ClientsPage";
+import { VariationsPage } from "./components/project-manage/VariationsPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -73,6 +74,11 @@ const App = () => (
             <Route path="/quotes" element={
               <ProtectedRoute>
                 <QuotesPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/variations" element={
+              <ProtectedRoute>
+                <VariationsPage />
               </ProtectedRoute>
             } />
             <Route path="/invoices" element={
