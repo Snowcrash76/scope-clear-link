@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
 import { useProjects } from '@/hooks/useProjects';
@@ -14,7 +14,7 @@ import { FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, 
 import { cn } from '@/lib/utils';
 import { useJobProfitability, aud, profitability } from '@/hooks/useJobCosts';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
-import { jobDisplayStatus } from '@/lib/quoteDisplay';
+import { jobDisplayStatus, quoteDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
 import { StatusBadge } from '@/components/StatusBadge';
 
 const TABS = [
@@ -27,6 +27,26 @@ const TABS = [
 ] as const;
 
 type Tab = typeof TABS[number]['key'];
+type SortOrder = 'newest' | 'oldest' | 'name' | 'quote';
+
+function dateLabel(value: string | Date | undefined) {
+  if (!value) return 'date unavailable';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'date unavailable' : new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(date);
+}
+
+function nextAction(project: { status: string; createdAt: Date; updatedAt: Date }, quote?: QuoteSummary) {
+  const quoteStatus = quoteDisplayStatus(quote);
+  if (project.status === 'completed') return `Completed · updated ${dateLabel(project.updatedAt)}`;
+  if (project.status === 'in_progress') return `In progress · updated ${dateLabel(project.updatedAt)}`;
+  if (project.status === 'acknowledged') return `Approved · ${dateLabel(quote?.approved_at ?? project.updatedAt)}`;
+  if (quoteStatus === 'sent') return `Waiting on client since ${dateLabel(quote?.updated_at ?? quote?.created_at)}`;
+  if (quoteStatus === 'expired') return `Follow up on expired quote · expired ${dateLabel(quote?.valid_until ?? quote?.updated_at)}`;
+  if (quoteStatus === 'approved') return `Approved · ${dateLabel(quote?.approved_at ?? quote?.updated_at)}`;
+  if (quoteStatus === 'declined') return `Revise declined quote · ${dateLabel(quote?.declined_at ?? quote?.updated_at)}`;
+  if (quoteStatus === 'draft') return `Finish draft quote · updated ${dateLabel(quote?.updated_at ?? quote?.created_at)}`;
+  return `New lead · created ${dateLabel(project.createdAt)}`;
+}
 
 function ProjectInitial({ name }: { name: string }) {
   const colors = ['bg-amber-600','bg-stone-600','bg-zinc-600','bg-amber-800','bg-orange-600','bg-stone-500'];
@@ -39,19 +59,26 @@ function ProjectInitial({ name }: { name: string }) {
 }
 
 export default function ProjectsPage() {
-  const navigate = useNavigate();
   const { projects, loading, updateProjectStatus } = useProjects();
   const profitabilityQuery = useJobProfitability();
   const profitabilityById = new Map((profitabilityQuery.data ?? []).map(job => [job.jobId, job]));
   const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
-  const latestQuoteByProject = new Map<string, NonNullable<typeof quoteQuery.data>[number]>();
+  const latestQuoteByProject = new Map<string, QuoteSummary>();
   for (const quote of [...(quoteQuery.data ?? [])].sort((a, b) =>
     Number(a.status === 'declined') - Number(b.status === 'declined') || b.created_at.localeCompare(a.created_at))) {
     if (!latestQuoteByProject.has(quote.project_id)) latestQuoteByProject.set(quote.project_id, quote);
   }
   const [tab, setTab] = useState<Tab>('all');
+  const [sort, setSort] = useState<SortOrder>('newest');
 
   const filtered = projects.filter(p => tab === 'all' || jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === tab);
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name);
+    if (sort === 'quote') return (latestQuoteByProject.get(b.id)?.subtotal ?? -Infinity) - (latestQuoteByProject.get(a.id)?.subtotal ?? -Infinity);
+    const createdA = a.createdAt.getTime();
+    const createdB = b.createdAt.getTime();
+    return sort === 'newest' ? createdB - createdA : createdA - createdB;
+  });
 
   const counts = {
     all: projects.length,
@@ -87,6 +114,25 @@ export default function ProjectsPage() {
           ))}
         </div>
 
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-muted-foreground">{sortedFiltered.length} {sortedFiltered.length === 1 ? 'job' : 'jobs'}</p>
+          <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
+            <span>Sort:</span>
+            <select
+              value={sort}
+              onChange={event => setSort(event.target.value as SortOrder)}
+              className="min-h-11 rounded-lg border border-zinc-400 bg-white px-3 text-sm text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700"
+              aria-label="Sort jobs"
+              name="job-sort"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="name">Job name A–Z</option>
+              <option value="quote">Quote value — high to low</option>
+            </select>
+          </label>
+        </div>
+
         <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
           {loading ? (
             <div className="divide-y">
@@ -100,7 +146,7 @@ export default function ProjectsPage() {
                 </div>
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : sortedFiltered.length === 0 ? (
             <div className="text-center py-12 px-4">
               <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
@@ -109,7 +155,7 @@ export default function ProjectsPage() {
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {filtered.map(project => {
+              {sortedFiltered.map(project => {
                 const completed = project.stages.filter(s => s.status === 'completed').length;
                 const total = project.stages.length;
                 const progress = total > 0 ? (completed / total) * 100 : 0;
@@ -117,14 +163,13 @@ export default function ProjectsPage() {
                 const resolved = project.changeRequests.filter(c => c.status === 'approved' || c.status === 'declined').length;
 
                 return (
-                  <div
-                    key={project.id}
-                    className="flex min-w-0 items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3.5 hover:bg-muted/40 transition-colors cursor-pointer group"
-                    onClick={() => navigate(`/manage/${project.id}`)}
-                    data-testid={`project-row-${project.id}`}
-                  >
-                    <ProjectInitial name={project.name} />
-                    <div className="flex-1 min-w-0">
+                  <div key={project.id} className="flex min-w-0 items-center gap-2 px-2 py-2 transition-colors hover:bg-muted/40 sm:gap-3 sm:px-3 sm:py-2.5" data-testid={`project-row-${project.id}`}>
+                    <Link
+                      to={`/manage/${project.id}`}
+                      className="group flex min-h-[76px] min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:gap-4 sm:px-2"
+                    >
+                      <ProjectInitial name={project.name} />
+                      <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                         <span className="min-w-0 font-semibold text-sm break-words">{project.name}</span>
                         <StatusBadge status={jobDisplayStatus(project, latestQuoteByProject.get(project.id))} size="sm" />
@@ -149,6 +194,9 @@ export default function ProjectsPage() {
                           })() : <span className="text-xs text-muted-foreground">Profitability unavailable</span>}
                         <span className="text-xs text-muted-foreground">Margin uses ex-GST revenue less confirmed costs inc GST. Costs may be incomplete.</span>
                       </div>
+                      <p className="mt-2 text-sm font-medium text-foreground lg:hidden">
+                        <span className="text-muted-foreground">Next action · </span>{nextAction(project, latestQuoteByProject.get(project.id))}
+                      </p>
                     </div>
                     <div className="hidden min-w-28 text-right sm:block">
                       <p className="text-xs text-muted-foreground">Quote value</p>
@@ -163,17 +211,24 @@ export default function ProjectsPage() {
                         <span className="text-xs font-semibold text-muted-foreground">{completed}/{total}</span>
                       </div>
                     )}
+                    <div className="hidden min-w-[16rem] max-w-[20rem] text-right lg:block">
+                      <p className="text-sm font-medium text-foreground">{nextAction(project, latestQuoteByProject.get(project.id))}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">Next action</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                    </Link>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          onClick={e => e.stopPropagation()}
-                          className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-muted transition-colors text-muted-foreground flex-shrink-0"
+                          type="button"
+                          className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring flex-shrink-0"
+                          aria-label={`More actions for ${project.name}`}
                           data-testid={`button-project-menu-${project.id}`}
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52" onClick={e => e.stopPropagation()}>
+                      <DropdownMenuContent align="end" className="w-52">
                         {project.status !== 'completed' ? (
                           <DropdownMenuItem
                             className="gap-2"

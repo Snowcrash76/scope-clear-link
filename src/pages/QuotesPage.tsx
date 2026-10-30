@@ -1,18 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { CreateJobModal } from '@/components/CreateJobModal';
+import { useCreateProject } from '@/hooks/useCreateProject';
+import { FileText, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { StatusBadge } from '@/components/StatusBadge';
 import { quoteDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
 import { aud } from '@/hooks/useJobCosts';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface QuoteRow extends QuoteSummary {
   projectName: string;
@@ -49,18 +53,56 @@ function useAllQuotes() {
 
 export default function QuotesPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { createProject } = useCreateProject();
   const query = useAllQuotes();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all');
+  const [search, setSearch] = useState('');
+  const [newQuoteOpen, setNewQuoteOpen] = useState(false);
   const quotes = query.data ?? [];
   const visible = quotes.filter(quote => {
     const status = quoteDisplayStatus(quote);
     const matchesStatus = filter === 'all' || status === filter;
-    return matchesStatus;
+    const term = search.trim().toLocaleLowerCase();
+    const matchesSearch = !term || [quote.projectName, quote.clientName, quote.quote_number, status ?? '']
+      .some(value => value.toLocaleLowerCase().includes(term));
+    return matchesStatus && matchesSearch;
   });
 
+  const handleCreateQuote = async (data: Parameters<typeof createProject>[0]) => {
+    const projectId = await createProject(data);
+    if (!projectId) return false;
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['/quotes/all'] }),
+      queryClient.invalidateQueries({ queryKey: ['/projects'] }),
+    ]);
+    toast.success('Job and quote created', { description: 'The new draft is ready to review.' });
+    setNewQuoteOpen(false);
+    navigate(`/manage/${projectId}?tab=quote`);
+    return true;
+  };
+
   return <AppShell>
-    <PageLayout title="Quotes" description="Every quote, with the client-facing status and ex-GST value.">
-      <div className="mb-4 flex justify-end">
+    <PageLayout
+      title="Quotes"
+      description="Every quote, with the client-facing status and ex-GST value. New quote starts a new job; open a job to manage its existing quote."
+      actions={<Button className="min-h-11" onClick={() => setNewQuoteOpen(true)} data-testid="button-new-quote"><FileText className="mr-2 h-4 w-4" />New quote</Button>}
+    >
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="relative block w-full sm:max-w-sm">
+          <span className="sr-only">Search this quote list</span>
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input
+            name="quote-list-search"
+            autoComplete="off"
+            value={search}
+            onChange={event => setSearch(event.target.value)}
+            placeholder="Search this quote list"
+            className="min-h-11 pl-9"
+            aria-label="Search this quote list"
+            data-testid="input-quote-list-search"
+          />
+        </label>
         <p className="text-sm text-muted-foreground">{visible.length} {visible.length === 1 ? 'quote' : 'quotes'}</p>
       </div>
       <div className="mb-4 flex gap-1 overflow-x-auto border-b [-webkit-overflow-scrolling:touch]">
@@ -93,5 +135,10 @@ export default function QuotesPage() {
               })}</div>}
       </div>
     </PageLayout>
+    <CreateJobModal
+      open={newQuoteOpen}
+      onOpenChange={setNewQuoteOpen}
+      onCreateJob={handleCreateQuote}
+    />
   </AppShell>;
 }

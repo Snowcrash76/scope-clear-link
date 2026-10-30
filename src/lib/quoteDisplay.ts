@@ -12,6 +12,9 @@ export interface QuoteSummary {
   total: number | null;
   tax_amount: number | null;
   created_at: string;
+  updated_at?: string;
+  approved_at?: string | null;
+  declined_at?: string | null;
   valid_until?: string | null;
 }
 

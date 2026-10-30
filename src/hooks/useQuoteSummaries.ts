@@ -11,7 +11,7 @@ export function useQuoteSummaries(projectIds: string[]) {
     enabled: !!user?.id && projectIds.length > 0,
     queryFn: async () => {
       const { data, error } = await supabase.from('quotes')
-        .select('id, project_id, quote_number, status, subtotal, total, tax_amount, created_at, valid_until')
+        .select('id, project_id, quote_number, status, subtotal, total, tax_amount, created_at, updated_at, approved_at, declined_at, valid_until')
         .in('project_id', idsKey.split(','));
       if (error) throw error;
       return (data ?? []) as QuoteSummary[];
