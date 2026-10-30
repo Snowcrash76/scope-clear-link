@@ -35,3 +35,8 @@ export function jobDisplayStatus(project: Pick<Project, 'status'>, quote?: Pick<
   return 'lead';
 }
 
+/** A job already in progress/completed is not also awaiting its quote response. */
+export function awaitingQuoteResponse(project: Pick<Project, 'status'>, quote?: Pick<QuoteSummary, 'status' | 'valid_until'> | null): boolean {
+  return jobDisplayStatus(project, quote) === 'quoted' && quoteDisplayStatus(quote) === 'sent';
+}
+

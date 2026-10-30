@@ -2,7 +2,7 @@ import { Project } from '@/types/project';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
-import { quoteDisplayStatus } from '@/lib/quoteDisplay';
+import { awaitingQuoteResponse } from '@/lib/quoteDisplay';
 
 interface DashboardStatsProps {
   projects: Project[];
@@ -22,7 +22,7 @@ export function DashboardStats({ projects }: DashboardStatsProps) {
     acc + p.changeRequests.filter(cr => cr.status === 'pending').length, 0
   );
 
-  const awaitingResponse = projects.filter(p => quoteDisplayStatus(latestByProject.get(p.id)) === 'sent').length;
+  const awaitingResponse = projects.filter(p => awaitingQuoteResponse(p, latestByProject.get(p.id))).length;
   const completedProjects = projects.filter(p => p.status === 'completed').length;
 
   const mostRecentUpdate = activeProjects.length > 0
