@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
 import { useProjects } from '@/hooks/useProjects';
@@ -14,8 +14,9 @@ import { FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, 
 import { cn } from '@/lib/utils';
 import { useJobProfitability, aud, profitability } from '@/hooks/useJobCosts';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
-import { jobDisplayStatus, quoteDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
+import { awaitingQuoteResponse, jobDisplayStatus, quoteDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
 import { StatusBadge } from '@/components/StatusBadge';
+import { awaitingClientApproval } from '@/lib/variationStatus';
 
 const TABS = [
   { key: 'all', label: 'All' },
@@ -60,6 +61,7 @@ function ProjectInitial({ name }: { name: string }) {
 
 export default function ProjectsPage() {
   const { projects, loading, updateProjectStatus } = useProjects();
+  const [searchParams, setSearchParams] = useSearchParams();
   const profitabilityQuery = useJobProfitability();
   const profitabilityById = new Map((profitabilityQuery.data ?? []).map(job => [job.jobId, job]));
   const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
@@ -68,10 +70,30 @@ export default function ProjectsPage() {
     Number(a.status === 'declined') - Number(b.status === 'declined') || b.created_at.localeCompare(a.created_at))) {
     if (!latestQuoteByProject.has(quote.project_id)) latestQuoteByProject.set(quote.project_id, quote);
   }
-  const [tab, setTab] = useState<Tab>('all');
   const [sort, setSort] = useState<SortOrder>('newest');
+  const filterParam = searchParams.get('status') ?? 'all';
+  const specialFilter = ['awaiting_response', 'pending_approval', 'no_costs', 'missing_cost_data'].includes(filterParam);
+  const tab: Tab = TABS.some(item => item.key === filterParam) ? filterParam as Tab : 'all';
 
-  const filtered = projects.filter(p => tab === 'all' || jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === tab);
+  const selectFilter = (filter: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (filter === 'all') next.delete('status');
+    else next.set('status', filter);
+    setSearchParams(next);
+  };
+
+  const filtered = projects.filter(project => {
+    const quote = latestQuoteByProject.get(project.id);
+    if (filterParam === 'awaiting_response') return awaitingQuoteResponse(project, quote);
+    if (filterParam === 'pending_approval') return project.changeRequests.some(awaitingClientApproval);
+    if (filterParam === 'in_progress') return jobDisplayStatus(project, quote) === 'in_progress' && !awaitingQuoteResponse(project, quote);
+    if (filterParam === 'no_costs') {
+      const costs = profitabilityById.get(project.id);
+      return !!costs && costs.confirmedCostsIncGst === 0 && costs.draftCostsIncGst === 0;
+    }
+    if (filterParam === 'missing_cost_data') return !profitabilityById.has(project.id);
+    return tab === 'all' || jobDisplayStatus(project, quote) === tab;
+  });
   const sortedFiltered = [...filtered].sort((a, b) => {
     if (sort === 'name') return a.name.localeCompare(b.name);
     if (sort === 'quote') return (latestQuoteByProject.get(b.id)?.subtotal ?? -Infinity) - (latestQuoteByProject.get(a.id)?.subtotal ?? -Infinity);
@@ -88,6 +110,14 @@ export default function ProjectsPage() {
     in_progress: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'in_progress').length,
     completed: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'completed').length,
   };
+  const pendingVariationTotal = filtered.reduce((total, project) =>
+    total + project.changeRequests.filter(awaitingClientApproval).length, 0);
+  const filterLabel: Record<string, string> = {
+    awaiting_response: 'Awaiting quote response',
+    pending_approval: `Pending variations · ${pendingVariationTotal} requests across ${filtered.length} jobs`,
+    no_costs: 'Jobs with no costs logged',
+    missing_cost_data: 'Jobs with unavailable cost data',
+  };
 
   return (
     <AppShell>
@@ -97,13 +127,14 @@ export default function ProjectsPage() {
           {TABS.map(t => (
             <button
               key={t.key}
-              onClick={() => setTab(t.key)}
+              onClick={() => selectFilter(t.key)}
               className={cn(
                 'flex min-h-11 shrink-0 items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
-                tab === t.key
+                !specialFilter && tab === t.key
                   ? 'border-primary text-foreground'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
+              aria-pressed={!specialFilter && tab === t.key}
               data-testid={`tab-${t.key}`}
             >
               {t.label}
@@ -115,7 +146,11 @@ export default function ProjectsPage() {
         </div>
 
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">{sortedFiltered.length} {sortedFiltered.length === 1 ? 'job' : 'jobs'}</p>
+          <div>
+            <p className="text-sm text-muted-foreground">{sortedFiltered.length} {sortedFiltered.length === 1 ? 'job' : 'jobs'}</p>
+            {specialFilter&&<p className="mt-0.5 text-sm font-medium text-zinc-800">{filterLabel[filterParam]}</p>}
+          </div>
+          {specialFilter&&<button type="button" onClick={()=>selectFilter('all')} className="min-h-11 rounded-lg px-3 text-sm font-semibold text-amber-900 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700">Clear dashboard filter</button>}
           <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
             <span>Sort:</span>
             <select
@@ -146,6 +181,10 @@ export default function ProjectsPage() {
                 </div>
               ))}
             </div>
+          ) : (filterParam === 'no_costs' || filterParam === 'missing_cost_data') && profitabilityQuery.isLoading ? (
+            <div className="space-y-3 p-5" aria-label="Checking cost records">{Array.from({length:3}).map((_,i)=><Skeleton key={i} className="h-16 w-full"/>)}</div>
+          ) : (filterParam === 'no_costs' || filterParam === 'missing_cost_data') && profitabilityQuery.isError ? (
+            <div className="p-8 text-center"><p role="alert" className="text-sm text-zinc-800">Cost records could not be checked. This is not evidence that a job has zero costs.</p><button type="button" onClick={()=>void profitabilityQuery.refetch()} className="mt-3 min-h-11 rounded-lg px-3 text-sm font-semibold text-amber-900 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700">Try again</button></div>
           ) : sortedFiltered.length === 0 ? (
             <div className="text-center py-12 px-4">
               <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />

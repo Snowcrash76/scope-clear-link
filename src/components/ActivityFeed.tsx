@@ -83,7 +83,7 @@ function EventRow({ event }: { event: ActivityEvent }) {
         <p className="text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
           {event.description}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5" title={event.timestamp.toLocaleString('en-AU')}>
           {formatDistanceToNow(event.timestamp, { addSuffix: true })}
         </p>
       </div>
@@ -144,7 +144,7 @@ export function ActivityFeed() {
 
   return (
     <div data-testid="activity-feed">
-      <div className="flex items-center justify-between mb-2 px-1">
+      <div className="flex items-center justify-between mb-2">
         <h2 className="font-heading text-base font-semibold">Recent Activity</h2>
         {!isLoading && !isError && hasMore && (
           <span className="text-xs text-muted-foreground">{events!.length} events — scroll to see all</span>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,12 +12,13 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { DashboardStats } from '@/components/DashboardStats';
-import { AppShell } from '@/components/AppShell';
+import { AppShell, NewJobButton } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
 import { exportProjectsReport, exportProjectsReportPDF } from '@/lib/exportReport';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   ChevronRight,
   Briefcase,
@@ -24,12 +26,187 @@ import {
   User,
   HelpCircle,
   Download,
+  MoreHorizontal,
+  Clock3,
+  Receipt,
+  CircleDollarSign,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
-import { jobDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
+import { awaitingQuoteResponse, jobDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
 import { StatusBadge } from '@/components/StatusBadge';
+import { useDashboardInvoices, type DashboardInvoice } from '@/hooks/useDashboardInvoices';
+import { useJobProfitability } from '@/hooks/useJobCosts';
+import type { JobProfitability } from '@/hooks/useJobCosts';
+import { awaitingClientApproval } from '@/lib/variationStatus';
+
+interface AttentionItem {
+  id: string;
+  category: string;
+  title: string;
+  detail: string;
+  href: string;
+  timestamp?: number;
+}
+
+function relativeTime(value: string | Date | null | undefined) {
+  if (!value) return 'Date unavailable';
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? 'Date unavailable' : formatDistanceToNow(date, { addSuffix: true });
+}
+
+function NeedsAttention({
+  projects,
+  latestQuotes,
+  quoteError,
+  quoteLoading,
+  invoices,
+  invoiceError,
+  invoiceLoading,
+  costs,
+  costError,
+  costLoading,
+  retry,
+}: {
+  projects: Project[];
+  latestQuotes: Map<string, QuoteSummary>;
+  quoteError: boolean;
+  quoteLoading: boolean;
+  invoices?: DashboardInvoice[];
+  invoiceError: boolean;
+  invoiceLoading: boolean;
+  costs?: JobProfitability[];
+  costError: boolean;
+  costLoading: boolean;
+  retry: () => void;
+}) {
+  const items: AttentionItem[] = [];
+  const now = Date.now();
+  const projectMap = new Map(projects.map(project => [project.id, project]));
+
+  if (!quoteError) {
+    for (const project of projects) {
+      const quote = latestQuotes.get(project.id);
+      if (!quote || !awaitingQuoteResponse(project, quote)) continue;
+      const sentAt = new Date(quote.updated_at ?? quote.created_at);
+      if (Number.isNaN(sentAt.getTime()) || now - sentAt.getTime() < 3 * 24 * 60 * 60 * 1000) continue;
+      items.push({
+        id: `quote-${quote.id}`,
+        category: 'Quote',
+        title: `${project.name} · quote awaiting reply`,
+        detail: `Sent ${relativeTime(sentAt)}${project.clientName ? ` · ${project.clientName}` : ''}`,
+        href: `/manage/${project.id}?tab=quote`,
+        timestamp: sentAt.getTime(),
+      });
+    }
+  }
+
+  for (const project of projects) {
+    for (const variation of project.changeRequests.filter(awaitingClientApproval)) {
+      items.push({
+        id: `variation-${variation.id}`,
+        category: 'Variation',
+        title: `${variation.title || 'Variation'} · ${project.name}`,
+        detail: `Waiting for client approval · raised ${relativeTime(variation.createdAt)}`,
+        href: `/manage/${project.id}?tab=variations`,
+        timestamp: variation.createdAt.getTime(),
+      });
+    }
+  }
+
+  if (!invoiceError) {
+    for (const invoice of (invoices ?? []).filter(item => item.status === 'overdue')) {
+      const project = projectMap.get(invoice.project_id);
+      if (!project) continue;
+      items.push({
+        id: `invoice-${invoice.id}`,
+        category: 'Overdue invoice',
+        title: `Invoice ${invoice.invoice_number} · ${project.name}`,
+        detail: invoice.due_date ? `Due ${format(new Date(invoice.due_date), 'd MMM yyyy')}` : 'Past due · date unavailable',
+        href: `/manage/${project.id}?tab=invoices`,
+        timestamp: invoice.due_date ? new Date(invoice.due_date).getTime() : new Date(invoice.updated_at).getTime(),
+      });
+    }
+  }
+
+  const costsByJob = new Map((costs ?? []).map(job => [job.jobId, job]));
+  if (!costError && !costLoading) {
+    for (const project of projects) {
+      const record = costsByJob.get(project.id);
+      if (!record || !Number.isFinite(record.confirmedCostsIncGst) || !Number.isFinite(record.draftCostsIncGst)) continue;
+      if (record.confirmedCostsIncGst === 0 && record.draftCostsIncGst === 0) {
+        items.push({
+          id: `cost-${project.id}`,
+          category: 'No costs logged',
+          title: `${project.name} · no costs logged`,
+          detail: 'No recorded confirmed or draft costs',
+          href: `/manage/${project.id}?tab=costs`,
+        });
+      }
+    }
+  }
+
+  items.sort((a, b) => (a.timestamp ?? Number.MAX_SAFE_INTEGER) - (b.timestamp ?? Number.MAX_SAFE_INTEGER));
+  const costRecordsMissing = !costError && !costLoading ? projects.filter(project => {
+    const record = costsByJob.get(project.id);
+    return !record || !Number.isFinite(record.confirmedCostsIncGst) || !Number.isFinite(record.draftCostsIncGst);
+  }).length : 0;
+  const sourceUnavailable = quoteError || invoiceError || costError || costRecordsMissing > 0;
+  const checking = quoteLoading || invoiceLoading || costLoading;
+  const unavailableSources = [
+    quoteError ? 'quote data' : '',
+    invoiceError ? 'invoice data' : '',
+    costError ? 'cost data' : '',
+  ].filter(Boolean);
+
+  return (
+    <section className="mb-8" aria-labelledby="needs-attention-title">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 id="needs-attention-title" className="font-heading text-base font-semibold">Needs your attention</h2>
+        {items.some(item => item.category === 'No costs logged') && <Link to="/projects?status=no_costs" className="min-h-11 inline-flex items-center rounded-lg px-2 text-sm font-semibold text-amber-900 underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700">View jobs with no costs</Link>}
+      </div>
+      <div className="overflow-hidden rounded-xl border border-[#D8C3AD] bg-white shadow-card">
+        {checking ? (
+          <div className="space-y-3 p-4" aria-label="Checking items that need attention">
+            {Array.from({length:3}).map((_,index)=><div key={index} className="flex gap-3"><div className="h-8 w-8 animate-pulse rounded-lg bg-amber-100"/><div className="flex-1 space-y-2"><div className="h-4 w-2/3 animate-pulse rounded bg-amber-100"/><div className="h-3 w-1/3 animate-pulse rounded bg-stone-100"/></div></div>)}
+          </div>
+        ) : items.length ? (
+          <>
+            {sourceUnavailable&&<div role="status" className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+              <p>Some checks are unavailable{unavailableSources.length ? ` (${unavailableSources.join(', ')})` : ''}. Failed data is not treated as clear.{costRecordsMissing > 0 ? ` ${costRecordsMissing} job${costRecordsMissing === 1 ? '' : 's'} have missing or incomplete cost records and are not counted as zero.` : ''}</p>
+              {(quoteError||invoiceError||costError)&&<Button type="button" variant="outline" className="min-h-11 gap-2 bg-white" onClick={retry}><RefreshCw className="h-4 w-4"/>Retry checks</Button>}
+            </div>}
+            <div className="divide-y divide-border/60">
+              {items.slice(0, 7).map(item => (
+                <Link key={item.id} to={item.href} className="flex min-h-16 items-center gap-3 px-4 py-3 transition-colors hover:bg-amber-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-amber-700">
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-900" aria-hidden="true">
+                    {item.category === 'Quote' ? <Clock3 className="h-4 w-4"/> : item.category === 'Variation' ? <GitBranch className="h-4 w-4"/> : item.category === 'Overdue invoice' ? <Receipt className="h-4 w-4"/> : <CircleDollarSign className="h-4 w-4"/>}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words text-sm font-semibold text-zinc-950">{item.title}</span>
+                    <span className="mt-0.5 block break-words text-sm text-zinc-700">{item.detail}</span>
+                  </span>
+                  <span className="hidden shrink-0 rounded-full border border-zinc-300 px-2 py-1 text-xs font-medium text-zinc-700 sm:inline-flex">{item.category}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-zinc-500" aria-hidden="true"/>
+                </Link>
+              ))}
+            </div>
+            {items.length > 7&&<p className="border-t border-border px-4 py-2.5 text-sm text-zinc-700">{items.length - 7} more items need attention. Open the relevant dashboard filter to see the full list.</p>}
+          </>
+        ) : sourceUnavailable ? (
+          <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-zinc-800">{costRecordsMissing > 0 ? `${costRecordsMissing} job${costRecordsMissing === 1 ? '' : 's'} have unavailable cost records. They are not treated as jobs with zero costs.` : 'Some attention checks could not be verified. Failed data is not treated as clear.'}</p>
+            <Button type="button" variant="outline" className="min-h-11 gap-2" onClick={retry}><RefreshCw className="h-4 w-4"/>Retry checks</Button>
+          </div>
+        ) : (
+          <p className="px-4 py-8 text-center text-sm font-medium text-zinc-800">You're all caught up</p>
+        )}
+      </div>
+    </section>
+  );
+}
 
 function ProjectInitial({ name }: { name: string }) {
   const colors = [
@@ -127,6 +304,8 @@ export default function TradeDashboard() {
   const navigate = useNavigate();
   const { projects, loading } = useProjects();
   const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
+  const invoiceQuery = useDashboardInvoices(projects.map(project => project.id));
+  const profitabilityQuery = useJobProfitability();
   const latestQuoteByProject = new Map<string, QuoteSummary>();
   for (const quote of [...(quoteQuery.data ?? [])].sort((a, b) =>
     Number(a.status === 'declined') - Number(b.status === 'declined') || b.created_at.localeCompare(a.created_at))) {
@@ -170,9 +349,15 @@ export default function TradeDashboard() {
     }
   };
 
-  const activeProjects = projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'in_progress');
+  const activeProjects = projects.filter(p =>
+    jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'in_progress' &&
+    !awaitingQuoteResponse(p, latestQuoteByProject.get(p.id))
+  );
 
   const filteredActive = activeProjects;
+  const retryAttentionChecks = () => {
+    void Promise.all([quoteQuery.refetch(), invoiceQuery.refetch(), profitabilityQuery.refetch()]);
+  };
 
   const handleViewProject = (id: string) => {
     navigate(`/manage/${id}`);
@@ -268,21 +453,43 @@ export default function TradeDashboard() {
       <PageLayout
         title="Dashboard Overview"
         description="Welcome back. Here's what's happening across your jobs today."
-        actions={<Button variant="outline" onClick={handleExportReport} disabled={isExporting || loading} className="min-h-11 flex items-center gap-2" data-testid="button-export-report"><Download className="w-4 h-4" />{isExporting ? 'Exporting…' : 'Export Report'}</Button>}
+        actions={<div className="flex flex-wrap items-center gap-2">
+          <NewJobButton testId="dashboard-new-job" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><Button type="button" variant="outline" className="min-h-11 gap-2" aria-label="More dashboard actions" data-testid="button-dashboard-more"><MoreHorizontal className="h-4 w-4"/>More</Button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem className="min-h-11 gap-2" disabled={isExporting || loading} onSelect={handleExportReport}><Download className="h-4 w-4"/>{isExporting ? 'Exporting…' : 'Export report'}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>}
       >
 
         {/* Stat cards */}
         <div className="mb-8">
-          <DashboardStats projects={projects} />
+          <DashboardStats projects={projects} loading={loading} />
         </div>
+
+        <NeedsAttention
+          projects={projects}
+          latestQuotes={latestQuoteByProject}
+          quoteError={!!quoteQuery.isError}
+          quoteLoading={quoteQuery.isLoading}
+          invoices={invoiceQuery.data}
+          invoiceError={!!invoiceQuery.isError}
+          invoiceLoading={invoiceQuery.isLoading}
+          costs={profitabilityQuery.data}
+          costError={!!profitabilityQuery.isError}
+          costLoading={profitabilityQuery.isLoading}
+          retry={retryAttentionChecks}
+        />
 
         {/* Active projects */}
         <div className="mb-8">
           <div className="flex items-center justify-between gap-2 mb-3">
             <h2 className="font-heading text-base font-semibold">Active Jobs</h2>
             <button
-              onClick={() => navigate('/dashboard')}
-              className="text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
+              onClick={() => navigate('/projects?status=in_progress')}
+              className="min-h-11 text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
               data-testid="button-view-all-projects"
             >
               VIEW ALL <ChevronRight className="w-4 h-4" />

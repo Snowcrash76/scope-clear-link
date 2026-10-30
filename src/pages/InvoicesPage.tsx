@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -108,8 +108,14 @@ function exportInvoicesCSV(rows: InvoiceRow[]) {
   URL.revokeObjectURL(url);
 }
 
+function parseInvoiceStatusParam(value: string | null): Set<InvoiceStatus> {
+  if (value === 'unpaid') return new Set(['sent', 'overdue']);
+  return new Set((value ?? '').split(',').filter((status): status is InvoiceStatus => ALL_STATUSES.includes(status as InvoiceStatus)));
+}
+
 export default function InvoicesPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: invoices, isLoading } = useAllInvoices();
 
   // Date filter
@@ -118,20 +124,30 @@ export default function InvoicesPage() {
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
 
   // Status filter — empty set means "show all"
-  const [statusFilter, setStatusFilter] = useState<Set<InvoiceStatus>>(new Set());
+  const statusParam = searchParams.get('status');
+  const [statusFilter, setStatusFilter] = useState<Set<InvoiceStatus>>(() => parseInvoiceStatusParam(statusParam));
   const [statusFilterOpen, setStatusFilterOpen] = useState(false);
+  useEffect(() => {
+    setStatusFilter(parseInvoiceStatusParam(statusParam));
+  }, [statusParam]);
 
   const isDateFiltered = !!dateFrom || !!dateTo;
   const isStatusFiltered = statusFilter.size > 0;
   const isFiltered = isDateFiltered || isStatusFiltered;
 
+  const commitStatusFilter = (next: Set<InvoiceStatus>) => {
+    setStatusFilter(next);
+    const params = new URLSearchParams(searchParams);
+    if (next.size) params.set('status', [...next].join(','));
+    else params.delete('status');
+    setSearchParams(params, { replace: true });
+  };
+
   const toggleStatus = (s: InvoiceStatus) => {
-    setStatusFilter(prev => {
-      const next = new Set(prev);
-      if (next.has(s)) next.delete(s);
-      else next.add(s);
-      return next;
-    });
+    const next = new Set(statusFilter);
+    if (next.has(s)) next.delete(s);
+    else next.add(s);
+    commitStatusFilter(next);
   };
 
   const filtered = (invoices ?? []).filter(inv => {
@@ -157,7 +173,7 @@ export default function InvoicesPage() {
   };
 
   const clearStatusFilter = () => {
-    setStatusFilter(new Set());
+    commitStatusFilter(new Set());
     setStatusFilterOpen(false);
   };
 

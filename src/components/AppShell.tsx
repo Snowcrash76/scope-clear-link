@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateJobModal } from '@/components/CreateJobModal';
@@ -56,6 +56,18 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+const NewJobActionContext = createContext<(() => void) | null>(null);
+
+export function NewJobButton({ className = '', testId = 'button-new-job' }: { className?: string; testId?: string }) {
+  const openNewJob = useContext(NewJobActionContext);
+  if (!openNewJob) return null;
+  return (
+    <Button type="button" onClick={openNewJob} data-testid={testId} className={`min-h-11 gap-2 bg-amber-500 font-semibold text-zinc-950 hover:bg-amber-600 ${className}`}>
+      <Plus className="h-4 w-4" />
+      New Job
+    </Button>
+  );
+}
 
 export function parseDefaultTerms(raw: string | null): { quote: string; invoice: string } {
   if (!raw) return { quote: '', invoice: '' };
@@ -464,10 +476,11 @@ export function AppShell({ children, headerActions }: AppShellProps) {
     }
     return !!projectId;
   };
+  const openCreateJob = () => setIsCreateModalOpen(true);
 
   const sidebarProps: SidebarInnerProps = {
     authEmail: user?.email,
-    onNewJob: () => setIsCreateModalOpen(true),
+    onNewJob: openCreateJob,
     onOpenSettings: openSettings,
     onSignOut: handleSignOut,
     currentPath: pathname,
@@ -477,6 +490,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
   };
 
   return (
+    <NewJobActionContext.Provider value={openCreateJob}>
     <div className="min-h-[100dvh] flex bg-background">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:z-40">
@@ -833,5 +847,6 @@ export function AppShell({ children, headerActions }: AppShellProps) {
         </DialogContent>
       </Dialog>
     </div>
+    </NewJobActionContext.Provider>
   );
 }
