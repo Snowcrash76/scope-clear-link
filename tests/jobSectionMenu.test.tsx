@@ -58,4 +58,6 @@ test('the job section selector sits in a sticky desktop column and stays separat
   assert.match(globalMarkup, /aria-label="Open navigation"/);
   assert.doesNotMatch(globalMarkup, /Job sections/);
   assert.match(markup, /aria-current="page"/);
+  const source = readFileSync("src/components/JobSectionMenu.tsx", "utf8");
+  assert.match(source, /h-\[100dvh\][\s\S]*sm:max-h-none sm:max-w-none sm:rounded-none[\s\S]*lg:inset-auto/);
 });

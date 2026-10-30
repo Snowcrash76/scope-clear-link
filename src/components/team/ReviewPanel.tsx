@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, ChevronRight, History, Info, MoreHorizontal } from "lucide-react";
+import { Check, ChevronRight, History, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +32,6 @@ import {
   sortReviewRows,
 } from "@/components/timesheets";
 import type { TimesheetStatus } from "@/components/timesheets";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   primary,
   outline,
@@ -45,6 +44,7 @@ import {
 } from "./portalShared";
 import { TimeEntryEditor } from "./TimeEntryEditor";
 import { TimesheetAuditHistory } from "@/components/project-manage/TimesheetAuditHistory";
+import { InfoPopover } from "@/components/timesheets/InfoPopover";
 import {
   auditActorName,
   auditLabel,
@@ -488,7 +488,7 @@ export function ReviewPanel({
         <p className="text-sm text-muted-foreground">
           Total hours{" "}
           <strong className="ml-1 text-base text-foreground">
-            {formatHours(person.minutes)}
+            {formatDuration(person.minutes)}
           </strong>
         </p>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
@@ -598,7 +598,7 @@ export function ReviewPanel({
         </td>
       ))}
       <td className="whitespace-nowrap px-3 py-3 text-right font-semibold tabular-nums">
-        {formatHours(person.minutes)}
+        {formatDuration(person.minutes)}
       </td>
       <td className="px-3 py-3">
         <div className="flex flex-col items-start gap-1">
@@ -706,19 +706,19 @@ export function ReviewPanel({
           metrics={[
             {
               label: "Total hours",
-              value: formatHours(paidMinutes),
+              value: formatDuration(paidMinutes),
               tooltip: `Includes ${formatDuration(weekTotals.breakMinutes)} of unpaid breaks removed`,
             },
             ...(awaitingMinutes > 0 ? [{
               label: "Needs approval",
-              value: formatHours(awaitingMinutes),
+              value: formatDuration(awaitingMinutes),
               detail: `${awaiting.length} team member${awaiting.length === 1 ? "" : "s"}`,
               tone: "warning" as const,
             }] : []),
-            ...(weekTotals.draftMinutes > 0 ? [{ label: "Not yet submitted", value: formatHours(weekTotals.draftMinutes) }] : []),
+            ...(weekTotals.draftMinutes > 0 ? [{ label: "Not yet submitted", value: formatDuration(weekTotals.draftMinutes) }] : []),
             ...(approvedMinutes > 0 ? [{
               label: "Approved",
-              value: formatHours(approvedMinutes),
+              value: formatDuration(approvedMinutes),
               tone: "success" as const,
             }] : []),
             ...(canViewPay
@@ -867,18 +867,15 @@ export function ReviewPanel({
               </div>
               {selectedTotals && (
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-muted p-3">
-                  <p className="text-sm text-muted-foreground">Total hours <strong className="ml-1 text-lg text-foreground">{formatHours(selectedTotals.paidMinutes)}</strong></p>
+                  <p className="text-sm text-muted-foreground">Total hours <strong className="ml-1 text-lg text-foreground">{formatDuration(selectedTotals.paidMinutes)}</strong></p>
                   <TimesheetStatusBadge status={selected.status} />
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4" aria-label={`Unpaid breaks removed: ${formatDuration(selectedTotals.breakMinutes)}`}>
-                          <Info className="h-4 w-4" /> Break details
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent>Includes {formatDuration(selectedTotals.breakMinutes)} of unpaid breaks removed</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <InfoPopover
+                    label={`Unpaid breaks removed: ${formatDuration(selectedTotals.breakMinutes)}`}
+                    content={`Includes ${formatDuration(selectedTotals.breakMinutes)} of unpaid breaks removed`}
+                    className="px-2 text-sm text-muted-foreground underline decoration-dotted underline-offset-4"
+                  >
+                    Break details
+                  </InfoPopover>
                 </div>
               )}
               <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

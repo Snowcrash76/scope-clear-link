@@ -6,6 +6,7 @@ import type { PortalTimeEntry } from "../shared/employeePortal";
 import { timesheetTotals } from "../shared/timesheetTotals";
 import { TimesheetStatusBadge } from "../src/components/timesheets/TimesheetStatusBadge";
 import { WeekSwitcher } from "../src/components/timesheets/WeekSwitcher";
+import { SummaryStrip } from "../src/components/timesheets/SummaryStrip";
 import {
   groupEntriesByDay,
   shiftWeek,
@@ -96,4 +97,38 @@ test("employee entries group by work date and retain chronological day totals", 
 test("empty review rows and empty employee days are safe", () => {
   assert.deepEqual(sortReviewRows([]), []);
   assert.deepEqual(groupEntriesByDay([]), []);
+});
+
+test("weekly manager summary keeps one total headline and puts nonzero statuses on one line", () => {
+  const html = renderToStaticMarkup(
+    createElement(SummaryStrip, {
+      metrics: [
+        {
+          label: "Total hours",
+          value: "37h 30m",
+          tooltip: "Includes 1h 00m of unpaid breaks removed",
+        },
+        {
+          label: "Needs approval",
+          value: "8h 30m",
+          detail: "2 team members",
+          tone: "warning",
+        },
+        { label: "Approved", value: "29h 00m", tone: "success" },
+        {
+          label: "Estimated approved pay",
+          value: "$847.50",
+          tooltip: "Approved-hours estimate only.",
+        },
+      ],
+    }),
+  );
+
+  assert.match(html, /aria-label="Total hours: 37h 30m\. Includes 1h 00m of unpaid breaks removed"/);
+  assert.match(html, /Needs approval/);
+  assert.match(html, /Approved/);
+  assert.match(html, /37h 30m/);
+  assert.match(html, /\$847\.50/);
+  assert.doesNotMatch(html, /grid-cols-2 gap-2 lg:grid-cols-4/);
+  assert.equal((html.match(/aria-label="Total hours:/g) ?? []).length, 1);
 });

@@ -56,7 +56,7 @@ import { PortalLayout } from "./PortalLayout";
 import { PageTitle } from "./PageTitleView";
 import { EmployeeReviewQueue } from "./EmployeeReviewQueue";
 import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { InfoPopover } from "@/components/timesheets/InfoPopover";
 
 const statusFor = (value: string | undefined): TimesheetStatus =>
   value === "submitted" || value === "approved" || value === "rejected"
@@ -405,17 +405,14 @@ export function EmployeeTimesheets() {
                 <div className="flex flex-wrap items-center justify-between gap-4 lg:justify-end">
                   <div>
                     <p className="text-sm text-muted-foreground">Total hours</p>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button type="button" className="min-h-11 rounded-lg text-left text-3xl font-bold tabular-nums underline decoration-dotted underline-offset-4" aria-label={`Total hours ${formatDuration(total)}. Includes ${formatDuration(weeklyTotals.breakMinutes)} of unpaid breaks removed`}>
-                            <HoursCell minutes={total} />
-                            <Info className="ml-2 inline h-4 w-4 align-middle text-muted-foreground" aria-hidden="true" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Includes {formatDuration(weeklyTotals.breakMinutes)} of unpaid breaks removed</TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <InfoPopover
+                      label={`Total hours: ${formatDuration(total)}. Includes ${formatDuration(weeklyTotals.breakMinutes)} of unpaid breaks removed`}
+                      content={`Includes ${formatDuration(weeklyTotals.breakMinutes)} of unpaid breaks removed`}
+                      testId="employee-total-hours"
+                      className="text-left text-3xl font-bold tabular-nums text-foreground underline decoration-dotted underline-offset-4"
+                    >
+                      <>{formatDuration(total)}<Info className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /></>
+                    </InfoPopover>
                   </div>
                   <TimesheetStatusBadge status={statusFor(submitted?.status)} />
                   {canSubmit && (

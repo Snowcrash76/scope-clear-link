@@ -1,10 +1,5 @@
 import { Info } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { InfoPopover } from "./InfoPopover";
 import { formatHours } from "./format";
 
 export interface SummaryMetric {
@@ -24,61 +19,74 @@ export function SummaryStrip({
   metrics: SummaryMetric[];
   runningCount?: number;
 }) {
+  const total = metrics.find((metric) => metric.label === "Total hours") ?? metrics[0];
+  const pay = metrics.find((metric) => metric.label === "Estimated approved pay");
+  const statuses = metrics.filter(
+    (metric) => metric !== total && metric !== pay,
+  );
+
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-        {metrics.map((metric) => (
-          <div
-            key={metric.label}
-            className="min-w-0 rounded-xl bg-muted/70 p-3 sm:p-4"
-          >
-            <p className="text-sm font-medium text-muted-foreground">
-              {metric.label}
-            </p>
-            {metric.tooltip ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" aria-label={`${metric.label}: ${metric.value}. ${metric.tooltip}`} className={`mt-1 min-h-11 break-words text-left text-xl font-bold tabular-nums underline decoration-dotted underline-offset-4 ${metric.tone === "success" ? "text-success" : "text-foreground"}`}>
-                      {metric.value}<Info className="ml-1 inline h-4 w-4 align-middle text-muted-foreground" aria-hidden="true" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-72">{metric.tooltip}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <p className={`mt-1 break-words text-xl font-bold tabular-nums ${metric.tone === "success" ? "text-success" : "text-foreground"}`}>
-                {metric.value}
-              </p>
-            )}
-            {metric.detail && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {metric.detail}
-              </p>
-            )}
-            {metric.warning && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button type="button" className="mt-2 inline-flex min-h-8 items-center rounded-full bg-warning/15 px-2 text-xs font-semibold text-warning underline decoration-dotted underline-offset-2">
-                      {metric.warning}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-72">{metric.warningTooltip}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+    <section className="space-y-3" aria-label="Weekly timesheet summary">
+      <div className={`grid gap-4 ${pay ? "sm:grid-cols-[minmax(0,1fr)_auto]" : ""}`}>
+        {total && (
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-muted-foreground">Total hours</p>
+            {total.tooltip ? (
+              <InfoPopover
+                label={`Total hours: ${total.value}. ${total.tooltip}`}
+                content={total.tooltip}
+                testId="manager-total-hours"
+                className="mt-1 max-w-full text-left text-3xl font-bold tabular-nums text-foreground underline decoration-dotted underline-offset-4"
+              >
+                <>{total.value}<Info className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /></>
+              </InfoPopover>
+            ) : <p className="mt-1 text-3xl font-bold tabular-nums">{total.value}</p>}
+          </div>
+        )}
+        {pay && (
+          <div className="min-w-0 sm:min-w-48">
+            <p className="text-sm font-semibold text-muted-foreground">{pay.label}</p>
+            {pay.tooltip ? (
+              <InfoPopover
+                label={`${pay.label}: ${pay.value}. ${pay.tooltip}`}
+                content={pay.tooltip}
+                className={`mt-1 max-w-full text-left text-xl font-bold tabular-nums ${pay.tone === "success" ? "text-success" : "text-foreground"} underline decoration-dotted underline-offset-4`}
+              >
+                <>{pay.value}<Info className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" /></>
+              </InfoPopover>
+            ) : <p className="mt-1 text-xl font-bold tabular-nums">{pay.value}</p>}
+            {pay.warning && pay.warningTooltip && (
+              <InfoPopover
+                label={`${pay.warning}. ${pay.warningTooltip}`}
+                content={pay.warningTooltip}
+                className="mt-1 max-w-full rounded-full bg-warning/15 px-3 text-sm font-semibold text-warning underline decoration-dotted underline-offset-2"
+              >
+                <>{pay.warning}<Info className="h-4 w-4 shrink-0" aria-hidden="true" /></>
+              </InfoPopover>
             )}
           </div>
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {runningCount > 0 && (
-          <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-warning/15 px-3 text-sm font-semibold text-foreground">
-            Running clocks · {runningCount} · excluded from paid total
-          </span>
         )}
       </div>
-    </div>
+      {statuses.length > 0 && (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border pt-2 text-sm text-muted-foreground" aria-label="Timesheet status totals">
+          {statuses.map((metric, index) => (
+            <span key={metric.label}>
+              {index > 0 && <span aria-hidden="true" className="mr-2">·</span>}
+              <span>{metric.label} </span>
+              <strong className={metric.tone === "warning" ? "font-semibold text-warning" : metric.tone === "success" ? "font-semibold text-success" : "font-semibold text-foreground"}>
+                {metric.value}
+              </strong>
+              {metric.detail && <span> · {metric.detail}</span>}
+            </span>
+          ))}
+        </p>
+      )}
+      {runningCount > 0 && (
+        <p className="text-sm font-semibold text-warning">
+          Running clocks · {runningCount} · excluded from paid total
+        </p>
+      )}
+    </section>
   );
 }
 

@@ -204,7 +204,7 @@ export function JobSectionMenu({
         All sections
       </Button>
       <Dialog open={allOpen} onOpenChange={setAllOpen}>
-        <DialogContent className="inset-0 flex h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col rounded-none border-0 p-5 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[85dvh] sm:w-[min(44rem,calc(100vw-2rem))] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border">
+        <DialogContent className="inset-0 flex h-[100dvh] w-screen max-h-none max-w-none translate-x-0 translate-y-0 flex-col rounded-none border-0 p-5 sm:max-h-none sm:max-w-none sm:rounded-none lg:inset-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[85dvh] lg:w-[min(44rem,calc(100vw-2rem))] lg:max-w-[44rem] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:border">
           <DialogTitle className="text-xl">All job sections</DialogTitle>
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-2">
             {groups.map((group, index) => (
