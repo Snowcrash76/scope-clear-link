@@ -934,7 +934,7 @@ export function TeamHome({
                                 </p>
                               )}
                             </div>
-                            <DropdownMenu>
+                            <DropdownMenu modal={false}>
                               <DropdownMenuTrigger asChild>
                                 <button
                                   type="button"
@@ -1036,6 +1036,14 @@ export function TeamHome({
             onOpenAutoFocus={(event) => {
               event.preventDefault();
               removeCancelRef.current?.focus();
+            }}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              document
+                .querySelector<HTMLButtonElement>(
+                  `[data-testid="team-member-actions-${removeTarget.id}"]`,
+                )
+                ?.focus();
             }}
           >
             <p className="text-sm font-semibold uppercase tracking-[.12em] text-destructive">
