@@ -41,15 +41,18 @@ export function useInvoices(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
 
   const fetchInvoices = useCallback(async (showLoading = true) => {
     if (!projectId) {
+      setError(null);
       setLoading(false);
       return;
     }
 
     try {
       if (showLoading) setLoading(true);
+      setError(null);
 
       const { data: invoicesData, error: invoicesError } = await supabase
         .from('invoices')
@@ -110,6 +113,7 @@ export function useInvoices(projectId: string | undefined) {
       setInvoices(mappedInvoices);
     } catch (error) {
       console.error('Error fetching invoices:', error);
+      setError(error);
       toast.error('Failed to load invoices');
     } finally {
       setLoading(false);
@@ -358,6 +362,7 @@ export function useInvoices(projectId: string | undefined) {
   return {
     invoices,
     loading,
+    error,
     refetch: fetchInvoices,
     createInvoice,
     updateInvoiceStatus,

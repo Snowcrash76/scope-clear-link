@@ -61,15 +61,18 @@ export function useLineItemHistory(quoteId: string | undefined, quoteToken?: str
   const [changeRequests, setChangeRequests] = useState<QuoteActivityChangeRequest[]>([]);
   const [quote, setQuote] = useState<QuoteActivitySummary | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<unknown | null>(null);
 
   const fetchHistory = useCallback(async () => {
     if (!quoteId) {
       setHistory([]);
       setChangeRequests([]);
       setQuote(null);
+      setError(null);
       return;
     }
     setLoading(true);
+    setError(null);
     try {
       const headers: Record<string, string> = { ...clientAccessHeaders() };
       let url = `/api/quotes/${quoteId}/line-item-history`;
@@ -84,7 +87,7 @@ export function useLineItemHistory(quoteId: string | undefined, quoteToken?: str
       }
 
       const res = await fetch(url, { headers });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(`Activity request failed (${res.status})`);
 
       const json = await res.json();
 
@@ -107,6 +110,7 @@ export function useLineItemHistory(quoteId: string | undefined, quoteToken?: str
       }
     } catch (err) {
       console.error('Failed to load line item history:', err);
+      setError(err);
     } finally {
       setLoading(false);
     }
@@ -116,7 +120,7 @@ export function useLineItemHistory(quoteId: string | undefined, quoteToken?: str
     fetchHistory();
   }, [fetchHistory]);
 
-  return { history, changeRequests, quote, loading, refetch: fetchHistory };
+  return { history, changeRequests, quote, loading, error, refetch: fetchHistory };
 }
 
 export function formatHistoryEntry(entry: LineItemHistoryEntry): string {

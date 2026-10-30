@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useProjects } from '@/hooks/useProjects';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -60,7 +61,7 @@ function ProjectInitial({ name }: { name: string }) {
 }
 
 export default function ProjectsPage() {
-  const { projects, loading, updateProjectStatus } = useProjects();
+  const { projects, loading, error: projectsError, refetch: refetchProjects, updateProjectStatus } = useProjects();
   const [searchParams, setSearchParams] = useSearchParams();
   const profitabilityQuery = useJobProfitability();
   const profitabilityById = new Map((profitabilityQuery.data ?? []).map(job => [job.jobId, job]));
@@ -118,6 +119,13 @@ export default function ProjectsPage() {
     no_costs: 'Jobs with no costs logged',
     missing_cost_data: 'Jobs with unavailable cost data',
   };
+
+  if (projectsError) {
+    return <AppShell><PageLayout title="Jobs" description="All your jobs in one place."><LoadErrorState title="Jobs could not be loaded" description="A failed jobs request is not an empty job list. Retry to fetch the saved jobs." onRetry={refetchProjects} /></PageLayout></AppShell>;
+  }
+  if (quoteQuery.isError) {
+    return <AppShell><PageLayout title="Jobs" description="All your jobs in one place."><LoadErrorState title="Quote statuses could not be loaded" description="Job lifecycle filters depend on saved quote status. Retry before treating a filtered list as empty." onRetry={quoteQuery.refetch} /></PageLayout></AppShell>;
+  }
 
   return (
     <AppShell>

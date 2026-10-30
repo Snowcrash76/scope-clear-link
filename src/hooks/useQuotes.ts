@@ -32,15 +32,18 @@ export function useQuotes(projectId: string | undefined) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
 
   const fetchQuotes = useCallback(async (showLoading = true) => {
     if (!projectId) {
+      setError(null);
       setLoading(false);
       return;
     }
 
     try {
       if (showLoading) setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from('quotes')
@@ -80,6 +83,7 @@ export function useQuotes(projectId: string | undefined) {
       setActiveQuote(active);
     } catch (error) {
       console.error('Error fetching quotes:', error);
+      setError(error);
       toast.error('Failed to load quotes');
     } finally {
       setLoading(false);
@@ -413,6 +417,7 @@ export function useQuotes(projectId: string | undefined) {
     quotes,
     activeQuote,
     loading,
+    error,
     refetch: fetchQuotes,
     createQuote,
     updateQuote,

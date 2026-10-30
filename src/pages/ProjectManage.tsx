@@ -18,6 +18,8 @@ import { DocumentsSection } from '@/components/DocumentsSection';
 import { JobSectionMenu } from '@/components/JobSectionMenu';
 import { JobHeader } from '@/components/JobHeader';
 import { PageLayout } from '@/components/PageLayout';
+import { LoadErrorState } from '@/components/LoadErrorState';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import {
   Dialog,
@@ -88,6 +90,7 @@ export default function ProjectManage() {
     project,
     documents,
     loading,
+    error: projectLoadError,
     refetch,
     saveScopeItem,
     deleteScopeItem,
@@ -108,6 +111,9 @@ export default function ProjectManage() {
 
   const {
     activeQuote,
+    loading: quotesLoading,
+    error: quotesError,
+    refetch: refetchQuotes,
     createQuote,
     updateQuote,
     sendQuote,
@@ -118,15 +124,26 @@ export default function ProjectManage() {
 
   const {
     lineItems: quoteLineItems,
+    loading: quoteLineItemsLoading,
+    error: quoteLineItemsError,
+    refetch: refetchQuoteLineItems,
     addLineItem,
     updateLineItem,
     deleteLineItem,
   } = useQuoteLineItems(activeQuote?.id);
 
-  const { history: lineItemHistory } = useLineItemHistory(activeQuote?.id);
+  const {
+    history: lineItemHistory,
+    loading: historyLoading,
+    error: historyError,
+    refetch: refetchHistory,
+  } = useLineItemHistory(activeQuote?.id);
 
   const {
     invoices,
+    loading: invoicesLoading,
+    error: invoicesError,
+    refetch: refetchInvoices,
     createInvoice,
     updateInvoiceNumber,
     sendInvoice,
@@ -270,22 +287,38 @@ export default function ProjectManage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-      </div>
+      <AppShell>
+        <PageLayout title="Loading job" description="Getting the latest saved details.">
+          <div className="space-y-5" aria-label="Loading job details">
+            <Skeleton className="h-24 w-full rounded-xl" />
+            <Skeleton className="h-12 w-full rounded-xl" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+        </PageLayout>
+      </AppShell>
+    );
+  }
+
+  if (projectLoadError) {
+    return (
+      <AppShell>
+        <PageLayout title="Job unavailable" description="The saved job details could not be loaded.">
+          <LoadErrorState title="Could not load this job" description="This is a loading error, not an empty or missing job. Retry to fetch its saved data." onRetry={refetch} />
+        </PageLayout>
+      </AppShell>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Job not found</p>
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
-            Back to Dashboard
-          </Button>
-        </div>
-      </div>
+      <AppShell>
+        <PageLayout title="Job not found" description="This job may have been removed or the link may be incorrect.">
+          <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center">
+            <p className="text-sm text-zinc-800">No saved job exists at this address.</p>
+            <Button variant="outline" className="mt-4 min-h-11" onClick={() => navigate('/projects')}>Return to Jobs</Button>
+          </div>
+        </PageLayout>
+      </AppShell>
     );
   }
 
@@ -892,6 +925,19 @@ export default function ProjectManage() {
 
           {/* Quote Tab */}
           <TabsContent value="quote" className="mt-0 min-w-0 space-y-4" role="region" aria-labelledby={undefined} aria-label="Quote">
+            {quotesLoading || quoteLineItemsLoading ? (
+              <div className="space-y-4" aria-label="Loading quote">
+                <Skeleton className="h-16 w-full rounded-xl" />
+                <Skeleton className="h-32 w-full rounded-xl" />
+                <Skeleton className="h-56 w-full rounded-xl" />
+              </div>
+            ) : quotesError || quoteLineItemsError ? (
+              <LoadErrorState
+                title="Quote details could not be loaded"
+                description="A failed quote or line-item request is not an empty quote. Retry to reload the saved data."
+                onRetry={() => Promise.all([refetchQuotes(), refetchQuoteLineItems()])}
+              />
+            ) : <>
             {activeQuote?.quoteToken && (
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-lg bg-secondary/40 border border-border">
                 <div className="flex items-center gap-2 min-w-0">
@@ -975,6 +1021,7 @@ export default function ProjectManage() {
               onSaveScopeItem={handleSaveScopeItem}
               onDeleteScopeItem={handleDeleteScopeItem}
             />
+            </>}
           </TabsContent>
 
           <TabsContent value="activity" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Activity">
@@ -986,7 +1033,17 @@ export default function ProjectManage() {
                 </div>
                 <span className="text-sm tabular-nums text-muted-foreground">{activityEvents.length} {activityEvents.length === 1 ? 'event' : 'events'}</span>
               </div>
-              {activityEvents.length === 0 ? (
+              {historyLoading ? (
+                <div className="space-y-3 p-5" aria-label="Loading job activity">
+                  <Skeleton className="h-14 w-full rounded-lg" />
+                  <Skeleton className="h-14 w-full rounded-lg" />
+                  <Skeleton className="h-14 w-full rounded-lg" />
+                </div>
+              ) : historyError ? (
+                <div className="p-4 sm:p-5">
+                  <LoadErrorState title="Job activity could not be loaded" description="A failed activity request is not evidence that no saved activity exists." onRetry={refetchHistory} />
+                </div>
+              ) : activityEvents.length === 0 ? (
                 <div className="px-5 py-12 text-center">
                   <Clock className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
                   <p className="font-medium">No activity recorded yet</p>
@@ -1015,7 +1072,14 @@ export default function ProjectManage() {
 
           {/* Invoices Tab */}
           <TabsContent value="invoices" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Invoices">
-            <InvoiceSection
+            {invoicesLoading ? (
+              <div className="space-y-4" aria-label="Loading invoices">
+                <Skeleton className="h-14 w-full rounded-xl" />
+                <Skeleton className="h-24 w-full rounded-xl" />
+              </div>
+            ) : invoicesError ? (
+              <LoadErrorState title="Invoices could not be loaded" description="A failed invoice request is not an empty invoice list." onRetry={refetchInvoices} />
+            ) : <InvoiceSection
               invoices={invoices}
               quote={activeQuote}
               scopeItems={project.scopeItems}
@@ -1040,7 +1104,7 @@ export default function ProjectManage() {
               onMarkAsPaid={markAsPaid}
               onCancelInvoice={cancelInvoice}
               onDeleteInvoice={deleteInvoice}
-            />
+            />}
           </TabsContent>
 
           {/* Stages Tab */}

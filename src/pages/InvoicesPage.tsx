@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -116,7 +117,8 @@ function parseInvoiceStatusParam(value: string | null): Set<InvoiceStatus> {
 export default function InvoicesPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { data: invoices, isLoading } = useAllInvoices();
+  const invoiceQuery = useAllInvoices();
+  const { data: invoices, isLoading, isError, refetch } = invoiceQuery;
 
   // Date filter
   const [dateFrom, setDateFrom] = useState('');
@@ -327,7 +329,7 @@ export default function InvoicesPage() {
           </div>
 
         {/* Active filter summary */}
-        {isFiltered && !isLoading && (
+        {isFiltered && !isLoading && !isError && (
           <p className="text-sm text-muted-foreground mb-4">
             Showing <span className="font-medium text-foreground">{filtered.length}</span> of {invoices?.length ?? 0} invoices
             {isStatusFiltered && (
@@ -360,6 +362,8 @@ export default function InvoicesPage() {
                 </div>
               ))}
             </div>
+          ) : isError ? (
+            <div className="p-4 sm:p-6"><LoadErrorState title="Invoices could not be loaded" description="A failed invoice request is not an empty invoice list." onRetry={refetch} /></div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 px-4">
               <Receipt className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
@@ -377,10 +381,12 @@ export default function InvoicesPage() {
           ) : (
             <div className="divide-y divide-border/50">
               {filtered.map(inv => (
-                <div
+                <button
+                  type="button"
                   key={inv.id}
                   onClick={() => navigate(`/manage/${inv.project_id}?tab=invoices`)}
-                  className="cursor-pointer hover:bg-muted/40 transition-colors group"
+                  aria-label={`Open invoice ${inv.invoice_number} for ${inv.projectName}`}
+                  className="block w-full cursor-pointer text-left transition-colors hover:bg-muted/40 group"
                   data-testid={`invoice-row-${inv.id}`}
                 >
                   {/* Mobile layout */}
@@ -417,7 +423,7 @@ export default function InvoicesPage() {
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}

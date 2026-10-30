@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { useProjects } from '@/hooks/useProjects';
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
@@ -50,7 +51,7 @@ function ClientInitial({ name }: { name: string }) {
 }
 
 export default function ClientsPage() {
-  const { projects, loading } = useProjects();
+  const { projects, loading, error: projectsError, refetch: refetchProjects } = useProjects();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
@@ -102,6 +103,10 @@ export default function ClientsPage() {
     return !term || [client.name, client.email, client.address].some(value => value.toLocaleLowerCase().includes(term));
   });
   const isLoading = loading || quoteQuery.isLoading;
+
+  if (projectsError) {
+    return <AppShell><PageLayout title="Clients" description="Client details from existing jobs."><LoadErrorState title="Client jobs could not be loaded" description="A failed jobs request is not an empty client list. Retry to load the saved records." onRetry={refetchProjects} /></PageLayout></AppShell>;
+  }
 
   function openEdit(client: ClientInfo) {
     setEditClient(client);

@@ -19,6 +19,7 @@ import {
 import { format } from 'date-fns';
 import { InviteCodeSetupHelp } from '@/components/InviteCodeSetupHelp';
 import { PageLayout } from '@/components/PageLayout';
+import { LoadErrorState } from '@/components/LoadErrorState';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
@@ -97,7 +98,7 @@ function StatCard({ label, value, icon: Icon, sub }: { label: string; value: str
 
 // ─── Overview tab ───────────────────────────────────────────────────────────────
 function OverviewTab() {
-  const { data: stats, isLoading } = useQuery<AdminStats>({
+  const { data: stats, isLoading, isError, refetch } = useQuery<AdminStats>({
     queryKey: ['/api/admin/stats'],
     queryFn: () => adminFetch('/api/admin/stats'),
   });
@@ -110,6 +111,7 @@ function OverviewTab() {
     );
   }
 
+  if (isError) return <LoadErrorState title="Admin overview could not be loaded" onRetry={refetch} />;
   if (!stats) return null;
 
   const p = stats.projectsByStatus;
@@ -157,7 +159,7 @@ function OverviewTab() {
 function UsersTab() {
   const [search, setSearch] = useState('');
 
-  const { data: users = [], isLoading } = useQuery<AdminUser[]>({
+  const { data: users = [], isLoading, isError, refetch } = useQuery<AdminUser[]>({
     queryKey: ['/api/admin/users'],
     queryFn: () => adminFetch('/api/admin/users'),
   });
@@ -184,6 +186,8 @@ function UsersTab() {
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl" />)}
         </div>
+      ) : isError ? (
+        <LoadErrorState title="Users could not be loaded" onRetry={refetch} />
       ) : filtered.length === 0 ? (
         <p className="text-sm text-muted-foreground py-8 text-center">
           {search ? 'No users match that search.' : 'No registered users yet.'}
@@ -390,7 +394,7 @@ function InviteCodesTab() {
 
 // ─── Activity tab ───────────────────────────────────────────────────────────────
 function ActivityTab() {
-  const { data: events = [], isLoading } = useQuery<ActivityEvent[]>({
+  const { data: events = [], isLoading, isError, refetch } = useQuery<ActivityEvent[]>({
     queryKey: ['/api/admin/activity'],
     queryFn: () => adminFetch('/api/admin/activity'),
   });
@@ -402,6 +406,8 @@ function ActivityTab() {
       </div>
     );
   }
+
+  if (isError) return <LoadErrorState title="Admin activity could not be loaded" onRetry={refetch} />;
 
   if (events.length === 0) {
     return <p className="text-sm text-muted-foreground py-8 text-center">No activity yet.</p>;

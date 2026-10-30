@@ -51,8 +51,8 @@ export function JobSectionMenu({
   };
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
-      <nav aria-label="Job sections" className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+    <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center">
+      <nav aria-label="Job sections" className="grid min-w-0 flex-1 grid-cols-3 gap-1 sm:flex sm:items-center">
         {primarySections.map(section => {
           const count = notificationCount(section.value);
           const selected = value === section.value;
@@ -63,7 +63,7 @@ export function JobSectionMenu({
               onClick={() => onValueChange(section.value)}
               aria-pressed={selected}
               className={cn(
-                'min-h-11 shrink-0 rounded-lg px-3 text-sm font-semibold transition-colors',
+                'min-h-11 min-w-0 rounded-lg px-1.5 text-sm font-semibold transition-colors sm:shrink-0 sm:px-3',
                 selected ? 'bg-amber-100 text-zinc-950 ring-1 ring-inset ring-amber-400' : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950'
               )}
               data-testid={`job-section-${section.value}`}
@@ -84,7 +84,7 @@ export function JobSectionMenu({
             data-testid="button-more-job-sections"
           >
             <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">{selectedSecondary?.label ?? 'More'}</span>
+            <span>{selectedSecondary?.label ?? 'More'}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-[min(20rem,calc(100vw-2rem))] max-w-[calc(100vw-2rem)] p-1.5">

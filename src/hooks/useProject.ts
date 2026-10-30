@@ -136,15 +136,18 @@ export function useProject(projectId: string | undefined) {
   const [project, setProject] = useState<Project | null>(null);
   const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
 
   const fetchProject = useCallback(async (showLoading = true) => {
     if (!projectId) {
+      setError(null);
       setLoading(false);
       return;
     }
 
     try {
       if (showLoading) setLoading(true);
+      setError(null);
       
       const { data: projectData, error: projectError } = await supabase
         .from('projects')
@@ -166,6 +169,8 @@ export function useProject(projectId: string | undefined) {
         supabase.from('profiles').select('*').eq('user_id', (projectData as DbProject).user_id).maybeSingle(),
         supabase.from('project_documents').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
       ]);
+      const relatedError = scopeRes.error || changeRes.error || stageRes.error || profileRes.error || docsRes.error;
+      if (relatedError) throw relatedError;
 
       const scopeItems = (scopeRes.data || []) as DbScopeItem[];
       const changeRequests = (changeRes.data || []) as DbChangeRequest[];
@@ -313,6 +318,7 @@ export function useProject(projectId: string | undefined) {
       setDocuments(projectDocuments);
     } catch (error) {
       console.error('Error fetching project:', error);
+      setError(error);
       toast.error('Failed to load job');
     } finally {
       setLoading(false);
@@ -1021,6 +1027,7 @@ export function useProject(projectId: string | undefined) {
     project,
     documents,
     loading,
+    error,
     refetch: fetchProject,
     saveScopeItem,
     deleteScopeItem,

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Dialog,
   DialogContent,
@@ -14,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { DashboardStats } from '@/components/DashboardStats';
 import { AppShell, NewJobButton } from '@/components/AppShell';
 import { PageLayout } from '@/components/PageLayout';
+import { LoadErrorState } from '@/components/LoadErrorState';
 import { ActivityFeed } from '@/components/ActivityFeed';
 import { useProjects } from '@/hooks/useProjects';
 import { exportProjectsReport, exportProjectsReportPDF } from '@/lib/exportReport';
@@ -237,7 +239,7 @@ function ProjectListItem({
   const resolvedVariations = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined').length;
 
   return (
-    <div onClick={() => onView(project.id)} className="flex items-center gap-4 py-3.5 px-4 hover:bg-muted/40 transition-colors cursor-pointer group" data-testid={`project-list-item-${project.id}`}>
+    <button type="button" onClick={() => onView(project.id)} aria-label={`Open job ${project.name}`} className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 group" data-testid={`project-list-item-${project.id}`}>
       <ProjectInitial name={project.name} />
 
       <div className="flex-1 min-w-0">
@@ -281,28 +283,32 @@ function ProjectListItem({
       )}
 
       <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </div>
+    </button>
   );
 }
 
 function SupportWidget() {
   return (
-      <div className="fixed bottom-3 right-3 z-50 group sm:bottom-6 sm:right-6">
-      <button
-        className="flex min-h-11 items-center gap-2 px-3 py-2 rounded-full shadow-lg text-xs font-medium transition-all duration-200 bg-zinc-900 text-zinc-100"
-        style={{ boxShadow: '0 4px 16px -4px rgba(0,0,0,0.25)' }}
-        data-testid="button-contact-support"
-      >
-        <HelpCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-        <span className="text-zinc-400 group-hover:text-zinc-100 transition-colors">Need help?</span>
-      </button>
+      <div className="mt-6 flex justify-end">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button" aria-label="Need help?" className="inline-flex min-h-11 items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-800" data-testid="button-contact-support">
+              <HelpCircle className="h-4 w-4 text-amber-900" aria-hidden="true" />
+              Help
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="end" side="top" className="z-40 w-[min(20rem,calc(100vw-2rem))]">
+            <p className="font-semibold text-zinc-950">Workspace help</p>
+            <p className="mt-1 text-sm leading-5 text-zinc-700">A support contact is not configured here. Please contact your workspace administrator.</p>
+          </PopoverContent>
+        </Popover>
     </div>
   );
 }
 
 export default function TradeDashboard() {
   const navigate = useNavigate();
-  const { projects, loading } = useProjects();
+  const { projects, loading, error: projectsError, refetch: refetchProjects } = useProjects();
   const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
   const invoiceQuery = useDashboardInvoices(projects.map(project => project.id));
   const profitabilityQuery = useJobProfitability();
@@ -362,6 +368,10 @@ export default function TradeDashboard() {
   const handleViewProject = (id: string) => {
     navigate(`/manage/${id}`);
   };
+
+  if (projectsError) {
+    return <AppShell><PageLayout title="Dashboard Overview" description="Your workspace overview."><LoadErrorState title="Jobs could not be loaded" description="Dashboard counts and attention items are unavailable until the jobs request succeeds." onRetry={refetchProjects} /></PageLayout></AppShell>;
+  }
 
   return (
     <>

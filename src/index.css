@@ -33,7 +33,7 @@
     --accent-foreground: 30 10% 12%;
 
     /* Status colors */
-    --success: 142 52% 42%;
+    --success: 143 58% 29%;
     --success-foreground: 0 0% 100%;
     
     --warning: 40 100% 48%;
@@ -47,7 +47,7 @@
     --pending-foreground: 30 10% 12%;
 
     /* Approved state */
-    --approved: 158 44% 42%;
+    --approved: 158 60% 29%;
     --approved-foreground: 0 0% 100%;
 
     /* Quiet warm-gray boundaries */
@@ -92,6 +92,35 @@
 .team-page [class~="text-[11px]"],
 .team-page [class~="text-[10px]"] { font-size: .875rem; line-height: 1.25rem; }
 .team-page .portal-mono { font-family: var(--font-body); }
+
+/* Main-app metadata is kept at a readable 14px floor; employee portal remains independent. */
+.main-app [class~="text-xs"],
+.main-app [class~="text-[11px]"],
+.main-app [class~="text-[10px]"],
+body:has(.main-app) [data-radix-portal] [class~="text-xs"],
+body:has(.main-app) [data-radix-portal] [class~="text-[11px]"],
+body:has(.main-app) [data-radix-portal] [class~="text-[10px]"] { font-size: .875rem; line-height: 1.25rem; }
+
+/* Keep pointer targets comfortable in management UI and its Radix portals. */
+.main-app button,
+.team-page button,
+body:has(.main-app) [data-radix-portal] button { min-height: 44px; }
+.main-app button[aria-label],
+.team-page button[aria-label],
+body:has(.main-app) [data-radix-portal] button[aria-label] { min-width: 44px; }
+.main-app input,
+.main-app select,
+.team-page input,
+.team-page select,
+body:has(.main-app) [data-radix-portal] input,
+body:has(.main-app) [data-radix-portal] select { min-height: 44px; }
+
+.main-app :where(button, a, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible,
+.team-page :where(button, a, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible,
+body:has(.main-app) [data-radix-portal] :where(button, a, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
 
 @layer base {
   * {

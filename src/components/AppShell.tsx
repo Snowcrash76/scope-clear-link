@@ -506,7 +506,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
       </Sheet>
 
       {/* Page content */}
-      <div className="flex-1 lg:pl-64 min-w-0 flex flex-col">
+      <div className="main-app flex-1 lg:pl-64 min-w-0 flex flex-col">
         <AppHeader
           actions={<div className="flex min-w-0 items-center gap-2">
             <Button variant="outline" className="min-h-11 max-w-[min(62vw,22rem)] justify-start gap-2 px-3 text-sm text-zinc-700" onClick={() => { setGlobalSearchTerm(''); setGlobalSearchOpen(true); }} aria-label="Search jobs, quotes or clients">

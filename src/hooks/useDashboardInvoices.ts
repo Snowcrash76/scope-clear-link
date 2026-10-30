@@ -7,7 +7,6 @@ export interface DashboardInvoice {
   invoice_number: string;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   total: number | null;
-  amount_paid: number | null;
   due_date: string | null;
   updated_at: string;
 }
@@ -21,7 +20,7 @@ export function useDashboardInvoices(projectIds: string[]) {
       if (!projectIds.length) return [];
       const { data, error } = await supabase
         .from('invoices')
-        .select('id, project_id, invoice_number, status, total, amount_paid, due_date, updated_at')
+        .select('id, project_id, invoice_number, status, total, due_date, updated_at')
         .in('project_id', projectIds);
       if (error) throw error;
       return (data ?? []).map(invoice => ({ ...invoice, status: invoice.status as DashboardInvoice['status'] }));

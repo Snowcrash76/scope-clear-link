@@ -44,8 +44,8 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
   const sumBalances = (rows: typeof overdueInvoices) => {
     let total = 0;
     for (const invoice of rows) {
-      if (invoice.total === null || invoice.amount_paid === null || !Number.isFinite(invoice.total) || !Number.isFinite(invoice.amount_paid)) return null;
-      total += Math.max(0, invoice.total - invoice.amount_paid);
+      if (invoice.total === null || !Number.isFinite(invoice.total)) return null;
+      total += invoice.total;
     }
     return total;
   };
@@ -56,8 +56,8 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
   const quoteUnavailable = quoteQuery.isError;
   const invoiceError = invoiceQuery.isError;
   const loadingCards = loading;
-  const unpaidSubtitle = invoiceError ? 'Invoice data unavailable' : unpaidTotal === null ? 'One or more balances unavailable' : unpaidInvoices.length ? 'Sent + overdue balances' : 'No unpaid invoices';
-  const overdueSubtitle = invoiceError ? 'Invoice data unavailable' : overdueTotal === null ? 'One or more balances unavailable' : overdueInvoices.length ? `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? '' : 's'}` : 'No overdue invoices';
+  const unpaidSubtitle = invoiceError ? 'Invoice data unavailable' : unpaidTotal === null ? 'One or more totals unavailable' : unpaidInvoices.length ? 'Recorded sent + overdue totals' : 'No recorded unpaid invoices';
+  const overdueSubtitle = invoiceError ? 'Invoice data unavailable' : overdueTotal === null ? 'One or more totals unavailable' : overdueInvoices.length ? `${overdueInvoices.length} overdue invoice${overdueInvoices.length === 1 ? '' : 's'} · recorded total` : 'No overdue invoices';
 
   const cards: {
     label: string;
@@ -104,7 +104,7 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       label: 'Unpaid invoices ($)', value: formatMoney(unpaidTotal),
       subtitle: unpaidSubtitle,
       href: '/invoices?status=unpaid',
-      title: 'Outstanding balances on sent and overdue invoices. Draft, paid and cancelled invoices are excluded.',
+      title: 'Recorded totals on sent and overdue invoices. Draft, paid and cancelled invoices are excluded; partial payments are not tracked.',
       testId: 'stat-unpaid-invoices',
       loading: invoiceQuery.isLoading,
     },
@@ -112,7 +112,7 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       label: 'Overdue ($)', value: formatMoney(overdueTotal),
       subtitle: overdueSubtitle,
       href: '/invoices?status=overdue',
-      title: 'Outstanding balances on invoices marked Overdue.',
+      title: 'Recorded totals on invoices marked Overdue; partial payments are not tracked.',
       testId: 'stat-overdue-invoices',
       highlight: overdueInvoices.length > 0,
       loading: invoiceQuery.isLoading,

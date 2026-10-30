@@ -51,6 +51,7 @@ async function insertHistory(
 export function useQuoteLineItems(quoteId: string | undefined) {
   const [lineItems, setLineItems] = useState<QuoteLineItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
   const revisedToastShown = useRef(false);
   const revisedEmailSent = useRef(false);
 
@@ -122,12 +123,14 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   const fetchLineItems = useCallback(async (showLoading = true) => {
     if (!quoteId) {
       setLineItems([]);
+      setError(null);
       setLoading(false);
       return;
     }
 
     try {
       if (showLoading) setLoading(true);
+      setError(null);
 
       const { data, error } = await supabase
         .from('quote_line_items')
@@ -152,6 +155,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
       setLineItems(mapped);
     } catch (error) {
       console.error('Error fetching quote line items:', error);
+      setError(error);
       toast.error('Failed to load quote line items');
     } finally {
       setLoading(false);
@@ -377,6 +381,7 @@ export function useQuoteLineItems(quoteId: string | undefined) {
   return {
     lineItems,
     loading,
+    error,
     refetch: fetchLineItems,
     addLineItem,
     updateLineItem,

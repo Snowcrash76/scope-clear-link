@@ -66,16 +66,19 @@ export function useProjects() {
   const queryClient = useQueryClient();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<unknown | null>(null);
 
   const fetchProjects = useCallback(async () => {
     if (!user?.id) {
       setProjects([]);
+      setError(null);
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      setError(null);
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
@@ -96,6 +99,8 @@ export function useProjects() {
         supabase.from('change_requests').select('*').in('project_id', projectIds),
         supabase.from('project_stages').select('*').in('project_id', projectIds).order('stage_order'),
       ]);
+      const relatedError = scopeRes.error || changeRes.error || stageRes.error;
+      if (relatedError) throw relatedError;
 
       const scopeItems = (scopeRes.data || []) as DbScopeItem[];
       const changeRequests = (changeRes.data || []) as DbChangeRequest[];
@@ -157,6 +162,7 @@ export function useProjects() {
       setProjects(mappedProjects);
     } catch (error) {
       console.error('Error fetching projects:', error);
+      setError(error);
       toast.error('Failed to load jobs');
     } finally {
       setLoading(false);
@@ -245,6 +251,7 @@ export function useProjects() {
   return {
     projects,
     loading,
+    error,
     createProject,
     updateProjectStatus,
     deleteProject,
