@@ -108,7 +108,7 @@ export interface JobProfitability {
   costsByCategory: Record<CostCategory, number>;
 }
 export const aud = (value: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(value);
-export function profitability(job: JobProfitability, basis: RevenueBasis, costBasis: 'ex-gst' | 'inc-gst' = 'ex-gst') {
+export function profitability(job: JobProfitability, basis: RevenueBasis, costBasis: 'ex-gst' | 'inc-gst' = 'inc-gst') {
   const revenue = basis === 'quoted' ? job.quotedExGst : job.invoicedExGst;
   const costs = costBasis === 'inc-gst' ? job.confirmedCostsIncGst : job.confirmedCostsExGst;
   const profit = revenue === null || !Number.isFinite(costs) ? null : money(revenue - costs);

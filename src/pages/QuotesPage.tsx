@@ -1,33 +1,25 @@
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/AppShell';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { FileText, ChevronRight, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
+import { StatusBadge } from '@/components/StatusBadge';
+import { quoteDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
+import { aud } from '@/hooks/useJobCosts';
+import { Button } from '@/components/ui/button';
 
-type QuoteStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'revised';
-
-const STATUS_VARIANTS: Record<QuoteStatus, string> = {
-  draft: 'bg-zinc-100 text-zinc-600',
-  sent: 'bg-amber-100 text-amber-800',
-  approved: 'bg-green-100 text-green-800',
-  declined: 'bg-red-100 text-red-800',
-  revised: 'bg-amber-100 text-amber-800',
-};
-
-interface QuoteRow {
-  id: string;
-  quote_number: string;
-  status: QuoteStatus;
-  total: number | null;
-  created_at: string;
-  project_id: string;
+interface QuoteRow extends QuoteSummary {
   projectName: string;
   clientName: string;
 }
+
+const FILTERS = ['all', 'draft', 'sent', 'approved', 'declined', 'expired'] as const;
 
 function useAllQuotes() {
   const { user } = useAuth();
@@ -35,120 +27,83 @@ function useAllQuotes() {
     queryKey: ['/quotes/all', user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
-      const { data: projects, error: pe } = await supabase
-        .from('projects')
-        .select('id, name, client_name')
-        .eq('user_id', user!.id);
+      const { data: projects, error: pe } = await supabase.from('projects')
+        .select('id, name, client_name').eq('user_id', user!.id);
       if (pe) throw pe;
       if (!projects?.length) return [];
-
-      const projectMap = new Map(projects.map(p => [p.id, p]));
-      const ids = projects.map(p => p.id);
-
-      const { data: quotes, error: qe } = await supabase
-        .from('quotes')
-        .select('id, quote_number, status, total, created_at, project_id')
-        .in('project_id', ids)
+      const projectMap = new Map(projects.map(project => [project.id, project]));
+      const { data: quotes, error } = await supabase.from('quotes')
+        .select('id, quote_number, status, subtotal, total, tax_amount, created_at, project_id, valid_until')
+        .in('project_id', projects.map(project => project.id))
         .order('created_at', { ascending: false });
-      if (qe) throw qe;
-
-      return (quotes ?? []).map(q => ({
-        ...q,
-        status: q.status as QuoteStatus,
-        projectName: projectMap.get(q.project_id)?.name ?? '',
-        clientName: projectMap.get(q.project_id)?.client_name ?? '',
-      }));
+      if (error) throw error;
+      return (quotes ?? []).map(quote => ({
+        ...quote,
+        projectName: projectMap.get(quote.project_id)?.name ?? '',
+        clientName: projectMap.get(quote.project_id)?.client_name ?? '',
+      })) as QuoteRow[];
     },
     staleTime: 30_000,
   });
 }
 
-const formatCurrency = (n: number | null) =>
-  n == null ? '—' : `$${n.toLocaleString('en-AU', { minimumFractionDigits: 0 })}`;
-
 export default function QuotesPage() {
   const navigate = useNavigate();
-  const { data: quotes, isLoading } = useAllQuotes();
+  const query = useAllQuotes();
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all');
+  const quotes = query.data ?? [];
+  const visible = useMemo(() => quotes.filter(quote => {
+    const status = quoteDisplayStatus(quote);
+    const matchesStatus = filter === 'all' || status === filter;
+    const needle = search.trim().toLocaleLowerCase();
+    const matchesSearch = !needle || [quote.projectName, quote.clientName, quote.quote_number]
+      .some(value => value.toLocaleLowerCase().includes(needle));
+    return matchesStatus && matchesSearch;
+  }), [quotes, filter, search]);
 
-  return (
-    <AppShell>
-      <main className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="mb-6">
-          <h1 className="font-heading text-2xl font-bold">Quotes</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">All quotes across your jobs</p>
+  return <AppShell>
+    <main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
+      <header className="mb-5">
+        <h1 className="font-heading text-2xl font-bold">Quotes</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Every quote, with the client-facing status and ex-GST value.</p>
+      </header>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:max-w-md">
+          <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input aria-label="Search quotes" name="quote-search" autoComplete="off" placeholder="Search quotes, jobs or clients…" value={search} onChange={event => setSearch(event.target.value)} className="pl-9" />
         </div>
-
-        <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
-          {/* Table header — desktop only */}
-          <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(90px,140px)_minmax(76px,100px)_minmax(84px,100px)_16px] gap-3 lg:gap-4 px-4 py-2.5 border-b bg-muted/30">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job / Client</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quote #</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</span>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">Total</span>
-            <span />
-          </div>
-
-          {isLoading ? (
-            <div className="divide-y">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-3.5">
-                  <div className="flex-1 space-y-1.5">
-                    <Skeleton className="h-4 w-40" />
-                    <Skeleton className="h-3 w-24" />
-                  </div>
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                  <Skeleton className="h-4 w-14" />
-                </div>
-              ))}
-            </div>
-          ) : !quotes?.length ? (
-            <div className="text-center py-12 px-4">
-              <FileText className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">No quotes yet. Create a job and add a quote to get started.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-border/50">
-              {quotes.map(q => (
-                <div
-                  key={q.id}
-                  onClick={() => navigate(`/manage/${q.project_id}?tab=quote`)}
-                  className="cursor-pointer hover:bg-muted/40 transition-colors group"
-                  data-testid={`quote-row-${q.id}`}
-                >
-                  {/* Mobile layout */}
-                  <div className="flex items-center gap-3 px-4 py-3.5 sm:hidden">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium break-words">{q.projectName}</p>
-                      <p className="text-xs text-muted-foreground break-words">{q.clientName} · {format(new Date(q.created_at), 'd MMM yyyy')}</p>
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-                        <span className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold capitalize', STATUS_VARIANTS[q.status])}>
-                          {q.status}
-                        </span>
-                        <span className="text-xs font-semibold text-muted-foreground">{formatCurrency(q.total)}</span>
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                  </div>
-
-                  {/* Desktop layout */}
-                  <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(90px,140px)_minmax(76px,100px)_minmax(84px,100px)_16px] gap-3 lg:gap-4 px-4 py-3.5 items-center">
-                    <div>
-                      <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{q.projectName}</p>
-                      <p className="text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">{q.clientName} · {format(new Date(q.created_at), 'd MMM yyyy')}</p>
-                    </div>
-                    <span className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-muted-foreground font-mono">{q.quote_number}</span>
-                    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold capitalize w-fit', STATUS_VARIANTS[q.status])}>
-                      {q.status}
-                    </span>
-                    <span className="text-sm font-semibold text-right">{formatCurrency(q.total)}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+        <p className="text-sm text-muted-foreground">{visible.length} {visible.length === 1 ? 'quote' : 'quotes'}</p>
+      </div>
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b [-webkit-overflow-scrolling:touch]">
+        {FILTERS.map(status => {
+          const count = status === 'all' ? quotes.length : quotes.filter(q => quoteDisplayStatus(q) === status).length;
+          return <button type="button" key={status} onClick={() => setFilter(status)}
+            className={cn('min-h-11 shrink-0 border-b-2 px-3 text-sm font-medium capitalize', filter === status ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>
+            {status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1)} <span className="ml-1 text-xs">{count}</span>
+          </button>;
+        })}
+      </div>
+      <div className="min-w-0 overflow-hidden rounded-xl border border-[#D8C3AD] bg-white shadow-card">
+        <div className="hidden grid-cols-[minmax(0,1fr)_minmax(100px,150px)_minmax(85px,110px)_minmax(112px,145px)_16px] gap-4 border-b bg-muted/30 px-4 py-3 text-xs font-semibold text-muted-foreground sm:grid">
+          <span>Job / Client</span><span>Quote #</span><span>Status</span><span className="text-right">Quote value (ex GST)</span><span />
         </div>
-      </main>
-    </AppShell>
-  );
+        {query.isLoading ? <div className="divide-y">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="flex items-center gap-4 p-4"><div className="flex-1 space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-3 w-1/4" /></div><Skeleton className="h-6 w-20" /></div>)}</div>
+          : query.isError ? <div className="px-5 py-12 text-center"><p role="alert" className="text-sm text-foreground">Quotes could not be loaded.</p><Button variant="outline" className="mt-3" onClick={() => query.refetch()}>Try again</Button></div>
+            : visible.length === 0 ? <div className="px-5 py-12 text-center"><FileText className="mx-auto mb-3 h-9 w-9 text-muted-foreground" /><p className="font-semibold">No matching quotes</p><p className="mt-1 text-sm text-muted-foreground">{search ? 'Try a different search.' : 'Quotes will appear here when they are created.'}</p></div>
+              : <div className="divide-y divide-border/70">{visible.map(quote => {
+                const status = quoteDisplayStatus(quote) ?? 'draft';
+                return <button key={quote.id} type="button" onClick={() => navigate(`/manage/${quote.project_id}?tab=quote`)}
+                  className="group grid w-full grid-cols-1 items-center gap-2 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_minmax(100px,150px)_minmax(85px,110px)_minmax(112px,145px)_16px] sm:gap-4"
+                  data-testid={`quote-row-${quote.id}`}>
+                  <span className="min-w-0"><span className="block break-words text-sm font-semibold">{quote.projectName}</span><span className="mt-0.5 block break-words text-sm text-muted-foreground">{quote.clientName} · {format(new Date(quote.created_at), 'd MMM yyyy')}</span></span>
+                  <span className="font-mono text-sm text-muted-foreground">{quote.quote_number}</span>
+                  <span><StatusBadge status={status} size="sm" /></span>
+                  <span className="text-sm font-semibold tabular-nums sm:text-right">{quote.subtotal == null ? '—' : aud(quote.subtotal)}<span className="ml-1 text-xs font-normal text-muted-foreground">ex GST</span></span>
+                  <ChevronRight className="hidden h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
+                </button>;
+              })}</div>}
+      </div>
+    </main>
+  </AppShell>;
 }

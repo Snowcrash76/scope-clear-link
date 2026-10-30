@@ -24,6 +24,7 @@ import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import { isVariationItem, stripVariationMeta, cleanVariationTitle } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
+import { aud } from '@/hooks/useJobCosts';
 
 type QuoteRow = Database['public']['Tables']['quotes']['Row'];
 type ProjectRow = Database['public']['Tables']['projects']['Row'];
@@ -195,9 +196,6 @@ export default function ClientQuote() {
     }
   };
 
-  const fmt = (n: number) =>
-    n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
   const approvedChangeCosts = new Set(changeRequests.filter(cr => cr.status === 'approved').map(cr => cr.cost_impact).filter((c): c is number => c !== null));
   // Use is_variation column; fall back to title heuristic for rows not yet migrated
   const isItemVariation = (li: typeof lineItems[number]) =>
@@ -366,7 +364,7 @@ export default function ClientQuote() {
                           <RichTextContent html={stripVariationMeta(li.description)} className="mt-0.5" />
                         )}
                       </div>
-                      <p className="font-medium whitespace-nowrap tabular-nums sm:self-start">${fmt(li.cost)}</p>
+                      <p className="font-medium whitespace-nowrap tabular-nums sm:self-start">{aud(li.cost)}</p>
                     </div>
                     {isExpanded && itemHistory.length > 0 && (
                       <div className="mx-4 mb-3 rounded-md bg-muted/30 border divide-y text-xs">
@@ -428,7 +426,7 @@ export default function ClientQuote() {
                         )}
                       </div>
                       <p className="font-medium whitespace-nowrap tabular-nums text-approved sm:self-start">
-                        +${fmt(li.cost)}
+                        +{aud(li.cost)}
                       </p>
                     </div>
                     {isExpanded && itemHistory.length > 0 && (
@@ -458,22 +456,22 @@ export default function ClientQuote() {
         {/* Totals */}
         <Card className="p-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-muted-foreground">Subtotal (ex GST)</span>
             <span className="tabular-nums" data-testid="text-quote-subtotal">
-              ${fmt(subtotal)}
+              {aud(subtotal)}
             </span>
           </div>
           {taxRate > 0 && (
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">GST ({taxRate}%)</span>
-              <span className="tabular-nums">${fmt(taxAmount)}</span>
+              <span className="tabular-nums">{aud(taxAmount)}</span>
             </div>
           )}
           <Separator />
           <div className="flex justify-between font-bold text-lg pt-1">
-            <span>Total</span>
+            <span>Total (inc GST)</span>
             <span className="tabular-nums" data-testid="text-quote-total">
-              ${fmt(total)}
+              {aud(total)}
             </span>
           </div>
         </Card>

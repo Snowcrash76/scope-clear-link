@@ -41,6 +41,7 @@ import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { toast } from 'sonner';
 import { cn, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { format } from 'date-fns';
+import { aud } from '@/hooks/useJobCosts';
 
 interface QuoteSectionProps {
   quote: Quote | null;
@@ -425,7 +426,7 @@ export function QuoteSection({
                   </div>
                   <div className="flex w-full sm:w-auto items-center gap-2">
                     <span className="font-medium whitespace-nowrap">
-                      ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      {aud(item.cost || 0)}
                     </span>
                     {isTradeView && onSaveScopeItem && (
                       <button
@@ -469,7 +470,7 @@ export function QuoteSection({
                       "font-medium whitespace-nowrap self-start",
                       change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                     )}>
-                      {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      {change.costImpact > 0 ? '+' : ''}{aud(change.costImpact)}
                     </span>
                   </div>
                 </div>
@@ -564,7 +565,7 @@ export function QuoteSection({
                           </div>
                           <div className="flex items-center gap-2 self-start">
                             <span className="text-sm font-medium whitespace-nowrap">
-                              ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                              {aud(item.cost || 0)}
                             </span>
                             <button
                               type="button"
@@ -644,14 +645,14 @@ export function QuoteSection({
         {/* Totals */}
         <div className="min-w-0 space-y-3 border-t pt-4">
           <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Subtotal</span>
+            <span className="text-muted-foreground">Subtotal (ex GST)</span>
             <span className="font-medium">
-              ${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+              {aud(subtotal)}
             </span>
           </div>
           
           <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <Label htmlFor="taxRate" className="text-muted-foreground whitespace-nowrap">Tax Rate (%)</Label>
+            <Label htmlFor="taxRate" className="text-muted-foreground whitespace-nowrap">GST rate (%)</Label>
             <Input
               id="taxRate"
               type="number"
@@ -659,15 +660,15 @@ export function QuoteSection({
               onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
               className="w-24"
             />
-            <span className="ml-auto font-medium whitespace-nowrap">
-              ${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+            <span className="ml-auto font-medium whitespace-nowrap" aria-label="GST amount">
+              GST {aud(taxAmount)}
             </span>
           </div>
 
           <div className="flex justify-between text-lg font-bold border-t pt-3">
-            <span>Total</span>
+            <span>Total (inc GST)</span>
             <span className="text-primary">
-              ${total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+              {aud(total)}
             </span>
           </div>
         </div>
@@ -949,7 +950,7 @@ export function QuoteSection({
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium whitespace-nowrap">
-                    ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    {aud(item.cost || 0)}
                   </span>
                   {isTradeView && onSaveScopeItem && (
                     <button
@@ -979,7 +980,7 @@ export function QuoteSection({
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium whitespace-nowrap">
-                        ${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        {aud(item.cost || 0)}
                       </span>
                       {hasHistory && isTradeView && (
                         <button
@@ -1040,7 +1041,7 @@ export function QuoteSection({
                   "text-sm font-medium whitespace-nowrap",
                   change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
                 )}>
-                  {change.costImpact > 0 ? '+' : ''}${change.costImpact.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                  {change.costImpact > 0 ? '+' : ''}{aud(change.costImpact)}
                 </span>
               </div>
             ))}
@@ -1075,7 +1076,7 @@ export function QuoteSection({
                       )}
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap text-approved">
-                      +${(item.cost || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      +{aud(item.cost || 0)}
                     </span>
                   </div>
                   {isExpanded && (
@@ -1104,17 +1105,17 @@ export function QuoteSection({
         {/* Totals - Always use live calculated values */}
         <div className="space-y-2 border-t pt-4">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+            <span className="text-muted-foreground">Subtotal (ex GST)</span>
+            <span>{aud(subtotal)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Tax ({quote!.taxRate}%)</span>
-            <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+            <span className="text-muted-foreground">GST ({quote!.taxRate}%)</span>
+            <span>{aud(taxAmount)}</span>
           </div>
           <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-            <span>Total</span>
+            <span>Total (inc GST)</span>
             <span className="text-primary">
-              ${total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+              {aud(total)}
             </span>
           </div>
         </div>

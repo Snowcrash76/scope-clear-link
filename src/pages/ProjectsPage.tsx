@@ -12,30 +12,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Search, FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Project } from '@/types/project';
 import { useJobProfitability, aud, profitability } from '@/hooks/useJobCosts';
-
-const STATUS_LABELS: Record<Project['status'], string> = {
-  draft: 'Draft',
-  sent: 'Sent',
-  acknowledged: 'Acknowledged',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-};
-
-const STATUS_VARIANTS: Record<Project['status'], string> = {
-  draft: 'bg-zinc-100 text-zinc-600',
-  sent: 'bg-amber-100 text-amber-800',
-  acknowledged: 'bg-amber-100 text-amber-800',
-  in_progress: 'bg-green-100 text-green-800',
-  completed: 'bg-zinc-100 text-zinc-600',
-};
+import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
+import { jobDisplayStatus } from '@/lib/quoteDisplay';
+import { StatusBadge } from '@/components/StatusBadge';
 
 const TABS = [
   { key: 'all', label: 'All' },
-  { key: 'active', label: 'Active' },
+  { key: 'lead', label: 'Lead' },
+  { key: 'quoted', label: 'Quoted' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'in_progress', label: 'In progress' },
   { key: 'completed', label: 'Completed' },
-  { key: 'draft', label: 'Drafts' },
 ] as const;
 
 type Tab = typeof TABS[number]['key'];
@@ -55,6 +43,12 @@ export default function ProjectsPage() {
   const { projects, loading, updateProjectStatus } = useProjects();
   const profitabilityQuery = useJobProfitability();
   const profitabilityById = new Map((profitabilityQuery.data ?? []).map(job => [job.jobId, job]));
+  const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
+  const latestQuoteByProject = new Map<string, NonNullable<typeof quoteQuery.data>[number]>();
+  for (const quote of [...(quoteQuery.data ?? [])].sort((a, b) =>
+    Number(a.status === 'declined') - Number(b.status === 'declined') || b.created_at.localeCompare(a.created_at))) {
+    if (!latestQuoteByProject.has(quote.project_id)) latestQuoteByProject.set(quote.project_id, quote);
+  }
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
@@ -63,17 +57,17 @@ export default function ProjectsPage() {
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.clientName.toLowerCase().includes(search.toLowerCase());
 
-    if (tab === 'active') return matchesSearch && ['in_progress','acknowledged','sent'].includes(p.status);
-    if (tab === 'completed') return matchesSearch && p.status === 'completed';
-    if (tab === 'draft') return matchesSearch && p.status === 'draft';
+    if (tab !== 'all') return matchesSearch && jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === tab;
     return matchesSearch;
   });
 
   const counts = {
     all: projects.length,
-    active: projects.filter(p => ['in_progress','acknowledged','sent'].includes(p.status)).length,
-    completed: projects.filter(p => p.status === 'completed').length,
-    draft: projects.filter(p => p.status === 'draft').length,
+    lead: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'lead').length,
+    quoted: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'quoted').length,
+    approved: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'approved').length,
+    in_progress: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'in_progress').length,
+    completed: projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'completed').length,
   };
 
   return (
@@ -161,12 +155,13 @@ export default function ProjectsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
                         <span className="min-w-0 font-semibold text-sm break-words">{project.name}</span>
-                        <span className={cn('inline-flex max-w-full items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
-                          {STATUS_LABELS[project.status]}
-                        </span>
+                        <StatusBadge status={jobDisplayStatus(project, latestQuoteByProject.get(project.id))} size="sm" />
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="min-w-0 flex items-start gap-1 break-words"><User className="mt-0.5 w-3 h-3 flex-shrink-0" />{project.clientName}</span>
+                        <span className="inline-flex items-center gap-1 font-medium text-foreground sm:hidden">
+                          Quote {latestQuoteByProject.get(project.id)?.subtotal == null ? '—' : aud(latestQuoteByProject.get(project.id)!.subtotal!)} <span className="font-normal text-muted-foreground">ex GST</span>
+                        </span>
                         {pending > 0 && <span className="flex items-center gap-1 text-warning font-medium"><GitBranch className="w-3 h-3 flex-shrink-0" />{pending} pending</span>}
                         {resolved > 0 && <span className="flex items-center gap-1"><GitBranch className="w-3 h-3 flex-shrink-0" />{resolved} resolved</span>}
                       </div>
@@ -176,13 +171,17 @@ export default function ProjectsPage() {
                           profitabilityById.has(project.id) ? (() => {
                             const item = profitabilityById.get(project.id)!;
                             const result = profitability(item, 'quoted');
-                            const tone = result.health === 'healthy' ? 'bg-emerald-100 text-emerald-800' : result.health === 'low' ? 'bg-amber-100 text-amber-900' : result.health === 'loss' ? 'bg-rose-100 text-rose-800' : 'bg-muted text-muted-foreground';
-                            return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${tone}`} data-testid={`profitability-badge-${project.id}`}>
-                              {result.profit === null ? 'Quote unavailable' : `${aud(result.profit)} · ${result.margin === null ? '—' : `${result.margin.toFixed(1)}%`}`}
+                            return <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/70 px-2.5 py-1 text-xs font-medium text-foreground" data-testid={`profitability-badge-${project.id}`}>
+                              {result.profit === null ? 'Costs so far · quote unavailable' : `Costs so far · ${aud(result.profit)} · ${result.margin === null ? '—' : `${result.margin.toFixed(1)}%`}`}
                             </span>;
                           })() : <span className="text-xs text-muted-foreground">Profitability unavailable</span>}
-                        <button type="button" className="text-[11px] font-medium text-amber-800 underline-offset-2 hover:underline" onClick={e => { e.stopPropagation(); navigate('/profitability'); }}>See all profitability</button>
+                        <span className="text-xs text-muted-foreground">Margin uses ex-GST revenue less confirmed costs inc GST. Costs may be incomplete.</span>
                       </div>
+                    </div>
+                    <div className="hidden min-w-28 text-right sm:block">
+                      <p className="text-xs text-muted-foreground">Quote value</p>
+                      <p className="font-semibold tabular-nums">{latestQuoteByProject.get(project.id)?.subtotal == null ? '—' : aud(latestQuoteByProject.get(project.id)!.subtotal!)}</p>
+                      <p className="text-xs text-muted-foreground">ex GST</p>
                     </div>
                     {total > 0 && (
                       <div className="hidden sm:flex items-center gap-2 flex-shrink-0">

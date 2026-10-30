@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, CircleDollarSign, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertTriangle, CircleDollarSign, RefreshCw } from 'lucide-react';
 import { useJobProfitability, aud, profitability, type RevenueBasis, COST_CATEGORIES } from '@/hooks/useJobCosts';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,14 +28,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
   if (!job) return null;
 
   const result = profitability(job, basis);
-  const ratio = job.quotedExGst !== null && job.quotedExGst > 0 ? Math.min(job.confirmedCostsExGst / job.quotedExGst * 100, 100) : 0;
-  const healthStyles = {
-    healthy: 'border-emerald-300 bg-emerald-50 text-emerald-800',
-    low: 'border-amber-300 bg-amber-50 text-amber-800',
-    loss: 'border-rose-300 bg-rose-50 text-rose-800',
-    unknown: 'border-border bg-muted/40 text-muted-foreground',
-  } as const;
-  const healthLabel = { healthy: 'On track', low: 'Tight margin', loss: 'Operating at a loss', unknown: 'Unavailable' }[result.health];
+  const ratio = job.quotedExGst !== null && job.quotedExGst > 0 ? Math.min(job.confirmedCostsIncGst / job.quotedExGst * 100, 100) : 0;
 
   return (
     <Card className="mb-6 min-w-0 [overflow-wrap:anywhere] border-[#D8C3AD] shadow-card" data-testid="job-profitability-panel">
@@ -45,7 +38,7 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
             <CircleDollarSign className="h-5 w-5 text-amber-700" />
             <h2 className="font-heading text-lg font-semibold">Job profitability</h2>
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">All figures AUD, ex GST. Draft costs are excluded.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Revenue is ex GST; confirmed cost totals include GST.</p>
         </div>
         <div className="flex rounded-lg border bg-background p-1" role="group" aria-label="Revenue basis">
           {(['quoted', 'invoiced'] as RevenueBasis[]).map(value => (
@@ -67,26 +60,27 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
               <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.invoicedExGst)}</p>
             </div>
             <div className="rounded-lg border bg-background p-3 sm:col-span-2">
-              <p className="text-xs text-muted-foreground">Confirmed costs</p>
-              <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.confirmedCostsExGst)}</p>
+              <p className="text-xs text-muted-foreground">Confirmed costs (inc GST)</p>
+              <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.confirmedCostsIncGst)}</p>
             </div>
           </div>
-          <div className={cn('mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-3 py-3', healthStyles[result.health])}>
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/60 px-3 py-3 text-foreground">
             <div>
-              <p className="text-xs font-medium">{healthLabel}</p>
+              <p className="text-sm font-semibold">Costs so far</p>
               <p className="mt-0.5 text-xs opacity-80">Profit · {result.margin === null ? 'Margin unavailable' : `${result.margin.toFixed(1)}% margin`}</p>
             </div>
             <p className="text-xl font-bold tabular-nums">{result.profit === null ? '—' : aud(result.profit)}</p>
           </div>
+          <p className="mt-2 text-sm text-muted-foreground">This is a snapshot of confirmed costs, not a final margin. Add remaining labour and expenses as they are recorded.</p>
           {job.quotedExGst === null && basis === 'quoted' && (
             <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Add a quote with an amount to calculate this job's profit and margin.</p>
           )}
           {job.quotedExGst === 0 && <p className="mt-3 text-xs leading-relaxed text-muted-foreground">Quoted revenue is recorded as $0.00, so a costs-to-quote comparison is unavailable.</p>}
           {job.quotedExGst !== null && job.quotedExGst > 0 && (
             <div className="mt-3">
-              <div className="mb-1 flex justify-between text-xs text-muted-foreground"><span>Confirmed costs vs quote</span><span>{job.confirmedCostsExGst > job.quotedExGst ? 'Over quoted amount' : `${ratio.toFixed(1)}%`}</span></div>
+              <div className="mb-1 flex justify-between text-xs text-muted-foreground"><span>Confirmed costs vs quote</span><span>{job.confirmedCostsIncGst > job.quotedExGst ? 'Over quoted amount' : `${ratio.toFixed(1)}%`}</span></div>
               <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Confirmed costs as a share of quoted revenue" aria-valuemin={0} aria-valuemax={100} aria-valuenow={ratio}>
-                <div className={cn('h-full rounded-full transition-all', job.confirmedCostsExGst > job.quotedExGst ? 'bg-rose-600' : 'bg-amber-600')} style={{ width: `${ratio}%` }} />
+                <div className={cn('h-full rounded-full transition-all', job.confirmedCostsIncGst > job.quotedExGst ? 'bg-rose-600' : 'bg-amber-600')} style={{ width: `${ratio}%` }} />
               </div>
             </div>
           )}
@@ -111,9 +105,9 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
           {basis === 'invoiced' && result.revenue === 0 && <p className="mt-2 text-xs text-muted-foreground">No issued invoice revenue is recorded yet.</p>}
         </div>
       </div>
-      <div className="flex items-center gap-2 border-t px-4 py-2.5 text-xs text-muted-foreground sm:px-5">
-        {result.health === 'loss' ? <TrendingDown className="h-3.5 w-3.5 text-rose-700" /> : <TrendingUp className="h-3.5 w-3.5 text-emerald-700" />}
-        Profit uses the selected revenue basis and confirmed costs. Draft costs are excluded. {basis === 'quoted' && job.quoteIsEstimate ? 'Profit and margin are estimates until the quote is approved.' : 'Quote line items are sale prices.'}
+      <div className="flex items-center gap-2 border-t px-4 py-3 text-sm text-muted-foreground sm:px-5">
+        <CircleDollarSign className="h-4 w-4 shrink-0" />
+        Profit uses ex-GST revenue less GST-inclusive confirmed costs. The cost record may be partial; margin is indicative only. Draft costs are excluded.
       </div>
     </Card>
   );

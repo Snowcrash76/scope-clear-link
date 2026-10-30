@@ -76,6 +76,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { JobCostsTab } from '@/components/job-costing/JobCostsTab';
 import { TeamHome } from '@/components/TeamPortalUI';
+import { jobDisplayStatus } from '@/lib/quoteDisplay';
 
 export default function ProjectManage() {
   const { id } = useParams();
@@ -481,13 +482,10 @@ export default function ProjectManage() {
             <div className="min-w-0 flex-1">
               <div className="flex min-w-0 items-start gap-2 sm:gap-3">
                 <h1 className="min-w-0 break-words font-heading text-xl font-bold sm:text-2xl">{project.name}</h1>
-                <Badge className="mt-0.5 shrink-0" variant={
-                  project.status === 'draft' ? 'secondary' :
-                  project.status === 'sent' ? 'pending' :
-                  project.status === 'completed' ? 'success' : 'default'
-                }>
-                  {project.status.replace('_', ' ')}
-                </Badge>
+                <StatusBadge className="mt-0.5 shrink-0" status={jobDisplayStatus(project, activeQuote ? {
+                  status: activeQuote.status,
+                  valid_until: activeQuote.validUntil?.toISOString() ?? null,
+                } : null)} />
               </div>
               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">

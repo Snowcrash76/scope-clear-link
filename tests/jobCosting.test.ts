@@ -86,18 +86,19 @@ test('profitability uses one accepted quote, never adds variations twice or incl
   assert.equal(job.draftCostsExGst, 900);
   assert.equal(job.costsByCategory.Materials, 100);
   assert.equal(job.costsByCategory.Labour, 0);
-  assert.deepEqual(profitability(job, 'quoted'), { revenue: 1000, profit: 900, margin: 90, health: 'healthy' });
-  assert.equal(profitability(job, 'invoiced').profit, 500);
+  assert.deepEqual(profitability(job, 'quoted'), { revenue: 1000, profit: 890, margin: 89, health: 'healthy' });
+  assert.deepEqual(profitability(job, 'quoted', 'ex-gst'), { revenue: 1000, profit: 900, margin: 90, health: 'healthy' });
+  assert.equal(profitability(job, 'invoiced').profit, 490);
 });
 
 test('margin thresholds handle zero, no accepted quote, low margin, boundary and loss', () => {
   const [base] = summarizeJobs([project], [], [], [], [cost]);
   assert.equal(profitability(base, 'quoted').revenue, null);
   assert.equal(profitability(base, 'quoted').margin, null);
-  assert.equal(profitability(base, 'invoiced').profit, -100);
+  assert.equal(profitability(base, 'invoiced').profit, -110);
   assert.equal(profitability(base, 'invoiced').health, 'loss');
   assert.equal(profitability({ ...base, quotedExGst: 110 }, 'quoted').health, 'low');
-  assert.equal(profitability({ ...base, quotedExGst: 1000, confirmedCostsExGst: 850 }, 'quoted').health, 'healthy');
+  assert.equal(profitability({ ...base, quotedExGst: 1000, confirmedCostsIncGst: 850 }, 'quoted').health, 'healthy');
   assert.equal(profitability({ ...base, quotedExGst: 99 }, 'quoted').health, 'loss');
 });
 
@@ -132,8 +133,8 @@ test('per-job profit uses the current unapproved quote as an explicitly labelled
   assert.equal(job.quotedExGst, 500);
   assert.equal(job.quoteIsEstimate, true);
   assert.equal(job.quoteStatus, 'draft');
-  assert.equal(profitability(job, 'quoted').profit, 400);
-  assert.equal(profitability(job, 'quoted').margin, 80);
+  assert.equal(profitability(job, 'quoted').profit, 390);
+  assert.equal(profitability(job, 'quoted').margin, 78);
 });
 
 test('approved revenue stays authoritative and quote alternatives are never added together', () => {
@@ -152,7 +153,7 @@ test('missing, declined and null-valued quotes are not mistaken for a valid zero
   assert.equal(summarize([quote]).quotedExGst, null);
   assert.equal(summarize([{ ...quote, status: 'declined', subtotal: 999 }]).quotedExGst, null);
   const zero = summarize([{ ...quote, subtotal: 0 }]);
-  assert.equal(profitability(zero, 'quoted').profit, -100);
+  assert.equal(profitability(zero, 'quoted').profit, -110);
   assert.equal(profitability(zero, 'quoted').margin, null);
 });
 

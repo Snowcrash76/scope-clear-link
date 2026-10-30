@@ -27,22 +27,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Project } from '@/types/project';
-
-const STATUS_LABELS: Record<Project['status'], string> = {
-  draft: 'Draft',
-  sent: 'Sent',
-  acknowledged: 'Acknowledged',
-  in_progress: 'In Progress',
-  completed: 'Completed',
-};
-
-const STATUS_VARIANTS: Record<Project['status'], string> = {
-  draft: 'bg-zinc-100 text-zinc-600',
-  sent: 'bg-amber-100 text-amber-800',
-  acknowledged: 'bg-amber-100 text-amber-800',
-  in_progress: 'bg-green-100 text-green-800',
-  completed: 'bg-zinc-100 text-zinc-600',
-};
+import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
+import { jobDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
+import { StatusBadge } from '@/components/StatusBadge';
 
 function ProjectInitial({ name }: { name: string }) {
   const colors = [
@@ -60,9 +47,11 @@ function ProjectInitial({ name }: { name: string }) {
 function ProjectListItem({
   project,
   onView,
+  quote,
 }: {
   project: Project;
   onView: (id: string) => void;
+  quote?: QuoteSummary;
 }) {
   const completedStages = project.stages.filter(s => s.status === 'completed').length;
   const totalStages = project.stages.length;
@@ -77,9 +66,7 @@ function ProjectListItem({
       <div className="flex-1 min-w-0">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
           <span className="min-w-0 font-semibold text-sm break-words">{project.name}</span>
-          <span className={cn('inline-flex max-w-full items-center px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide', STATUS_VARIANTS[project.status])}>
-            {STATUS_LABELS[project.status]}
-          </span>
+          <StatusBadge status={jobDisplayStatus(project, quote)} size="sm" />
         </div>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span className="min-w-0 flex items-start gap-1 break-words">
@@ -139,6 +126,12 @@ function SupportWidget() {
 export default function TradeDashboard() {
   const navigate = useNavigate();
   const { projects, loading } = useProjects();
+  const quoteQuery = useQuoteSummaries(projects.map(project => project.id));
+  const latestQuoteByProject = new Map<string, QuoteSummary>();
+  for (const quote of [...(quoteQuery.data ?? [])].sort((a, b) =>
+    Number(a.status === 'declined') - Number(b.status === 'declined') || b.created_at.localeCompare(a.created_at))) {
+    if (!latestQuoteByProject.has(quote.project_id)) latestQuoteByProject.set(quote.project_id, quote);
+  }
   const [searchQuery, setSearchQuery] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
@@ -178,9 +171,7 @@ export default function TradeDashboard() {
     }
   };
 
-  const activeProjects = projects.filter(p =>
-    p.status === 'in_progress' || p.status === 'acknowledged' || p.status === 'sent'
-  );
+  const activeProjects = projects.filter(p => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === 'in_progress');
 
   const filteredActive = activeProjects.filter(p =>
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -353,6 +344,7 @@ export default function TradeDashboard() {
                   <ProjectListItem
                     key={project.id}
                     project={project}
+                    quote={latestQuoteByProject.get(project.id)}
                     onView={handleViewProject}
                   />
                 ))}
