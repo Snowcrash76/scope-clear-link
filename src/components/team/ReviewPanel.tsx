@@ -516,7 +516,7 @@ export function ReviewPanel({
               </Button>
               <Button
                 type="button"
-                className={`${btn} border border-border bg-muted text-white hover:bg-muted`}
+                className={`${btn} border border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90`}
                 disabled={mutationBusy}
                 onClick={() => void deleteEntry()}
               >

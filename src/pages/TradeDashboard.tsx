@@ -231,7 +231,7 @@ function NeedsAttention({
           </Link>
         )}
       </div>
-      <div className="overflow-hidden rounded-xl border border-[#D8C3AD] bg-white shadow-card">
+      <div className="overflow-hidden rounded-xl border border-border bg-background shadow-card">
         {checking ? (
           <div
             className="space-y-3 p-4"
@@ -268,7 +268,7 @@ function NeedsAttention({
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11 gap-2 bg-white"
+                    className="min-h-11 gap-2 bg-background"
                     onClick={retry}
                   >
                     <RefreshCw className="h-4 w-4" />
@@ -352,18 +352,18 @@ function NeedsAttention({
 
 function ProjectInitial({ name }: { name: string }) {
   const colors = [
-    "bg-primary",
-    "bg-muted-foreground",
-    "bg-success",
-    "bg-warning",
-    "bg-info",
-    "bg-destructive",
+    "bg-primary text-primary-foreground",
+    "bg-muted text-muted-foreground",
+    "bg-success text-success-foreground",
+    "bg-warning text-warning-foreground",
+    "bg-info text-info-foreground",
+    "bg-destructive text-destructive-foreground",
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return (
     <div
       className={cn(
-        "w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-lg",
+        "w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 font-heading font-bold text-lg",
         colors[idx],
       )}
     >
@@ -750,7 +750,7 @@ export default function TradeDashboard() {
               </button>
             </div>
 
-            <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
+            <div className="min-w-0 rounded-xl border border-border bg-background overflow-hidden shadow-card">
               {loading ? (
                 <div className="divide-y">
                   {Array.from({ length: 3 }).map((_, i) => (

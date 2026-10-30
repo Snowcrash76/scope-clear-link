@@ -82,18 +82,18 @@ function nextAction(
 
 function ProjectInitial({ name }: { name: string }) {
   const colors = [
-    "bg-primary",
-    "bg-muted-foreground",
-    "bg-success",
-    "bg-warning",
-    "bg-info",
-    "bg-destructive",
+    "bg-primary text-primary-foreground",
+    "bg-muted text-muted-foreground",
+    "bg-success text-success-foreground",
+    "bg-warning text-warning-foreground",
+    "bg-info text-info-foreground",
+    "bg-destructive text-destructive-foreground",
   ];
   const idx = name.charCodeAt(0) % colors.length;
   return (
     <div
       className={cn(
-        "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-heading font-bold",
+        "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 font-heading font-bold",
         colors[idx],
       )}
     >
@@ -309,7 +309,7 @@ export default function ProjectsPage() {
           </label>
         </div>
 
-        <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white overflow-hidden shadow-card">
+        <div className="min-w-0 rounded-xl border border-border bg-background overflow-hidden shadow-card">
           {loading ? (
             <div className="divide-y">
               {Array.from({ length: 4 }).map((_, i) => (

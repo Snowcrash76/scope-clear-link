@@ -200,7 +200,7 @@ export default function ProfitabilityPage() {
           </Card>
         ) : (
           <>
-            <div className="hidden max-w-full overflow-x-auto rounded-xl border border-[#D8C3AD] bg-background shadow-card md:block">
+            <div className="hidden max-w-full overflow-x-auto rounded-xl border border-border bg-background shadow-card md:block">
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="bg-muted/60 text-xs text-muted-foreground">
                   <tr>
