@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -35,11 +35,11 @@
     /* Status colors */
     --success: 143 58% 29%;
     --success-foreground: 0 0% 100%;
-    
+
     --warning: 40 100% 48%;
     --warning-foreground: 30 10% 12%;
-    
-    --destructive: 0 72% 51%;
+
+    --destructive: 0 65% 35%;
     --destructive-foreground: 0 0% 100%;
 
     /* Pending state */
@@ -49,6 +49,12 @@
     /* Approved state */
     --approved: 158 60% 29%;
     --approved-foreground: 0 0% 100%;
+
+    /* Status text colours are intentionally dark enough for AA contrast on pale surfaces. */
+    --warning: 38 78% 35%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 65% 35%;
+    --info-foreground: 0 0% 100%;
 
     /* Quiet warm-gray boundaries */
     --border: 30 12% 86%;
@@ -69,29 +75,61 @@
     --sidebar-ring: 40 100% 48%;
 
     /* Compact, warm dashboard typography */
-    --font-heading: 'Manrope', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
+    --font-heading: "Manrope", sans-serif;
+    --font-body: "DM Sans", sans-serif;
 
     /* Shadows */
     --shadow-soft: 0 2px 8px -2px rgba(0, 0, 0, 0.06);
     --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04);
     --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.08);
   }
-
 }
 
-.portal-shell { background: #fff; color: #25302c; min-height: 100dvh; font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif; }
-.portal-shell h1, .portal-shell h2, .portal-shell h3, .portal-shell h4 { font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif; }
-.portal-mono { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; }
-.portal-grid { background-image: linear-gradient(to right, rgba(42,72,58,.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,72,58,.045) 1px, transparent 1px); background-size: 28px 28px; }
-.portal-enter { animation: portal-enter .35s ease-out both; }
-@keyframes portal-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.portal-shell {
+  background: #fff;
+  color: #25302c;
+  min-height: 100dvh;
+  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
+}
+.portal-shell h1,
+.portal-shell h2,
+.portal-shell h3,
+.portal-shell h4 {
+  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
+}
+.portal-mono {
+  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+.portal-grid {
+  background-image:
+    linear-gradient(to right, rgba(42, 72, 58, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(42, 72, 58, 0.045) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.portal-enter {
+  animation: portal-enter 0.35s ease-out both;
+}
+@keyframes portal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* Team management metadata stays readable without changing the employee portal. */
 .team-page [class~="text-xs"],
 .team-page [class~="text-[11px]"],
-.team-page [class~="text-[10px]"] { font-size: .875rem; line-height: 1.25rem; }
-.team-page .portal-mono { font-family: var(--font-body); }
+.team-page [class~="text-[10px]"] {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.team-page .portal-mono {
+  font-family: var(--font-body);
+}
 
 /* Main-app metadata is kept at a readable 14px floor; employee portal remains independent. */
 .main-app [class~="text-xs"],
@@ -99,25 +137,62 @@
 .main-app [class~="text-[10px]"],
 body:has(.main-app) [data-radix-portal] [class~="text-xs"],
 body:has(.main-app) [data-radix-portal] [class~="text-[11px]"],
-body:has(.main-app) [data-radix-portal] [class~="text-[10px]"] { font-size: .875rem; line-height: 1.25rem; }
+body:has(.main-app) [data-radix-portal] [class~="text-[10px]"] {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
 
 /* Keep pointer targets comfortable in management UI and its Radix portals. */
 .main-app button,
 .team-page button,
-body:has(.main-app) [data-radix-portal] button { min-height: 44px; }
+body:has(.main-app) [data-radix-portal] button {
+  min-height: 44px;
+}
 .main-app button[aria-label],
 .team-page button[aria-label],
-body:has(.main-app) [data-radix-portal] button[aria-label] { min-width: 44px; }
+body:has(.main-app) [data-radix-portal] button[aria-label] {
+  min-width: 44px;
+}
 .main-app input,
 .main-app select,
 .team-page input,
 .team-page select,
 body:has(.main-app) [data-radix-portal] input,
-body:has(.main-app) [data-radix-portal] select { min-height: 44px; }
+body:has(.main-app) [data-radix-portal] select {
+  min-height: 44px;
+}
 
-.main-app :where(button, a, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible,
-.team-page :where(button, a, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible,
-body:has(.main-app) [data-radix-portal] :where(button, a, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
+.main-app
+  :where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [tabindex="0"]
+  ):focus-visible,
+.team-page
+  :where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [tabindex="0"]
+  ):focus-visible,
+body:has(.main-app)
+  [data-radix-portal]
+  :where(
+    button,
+    a,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [tabindex="0"]
+  ):focus-visible {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 2px;
 }
@@ -132,7 +207,12 @@ body:has(.main-app) [data-radix-portal] :where(button, a, input, select, textare
     font-family: var(--font-body);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading);
   }
 }

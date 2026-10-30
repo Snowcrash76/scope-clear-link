@@ -44,3 +44,11 @@ No database, authentication or permission changes were made for this redesign. E
 - Full application TypeScript checking still reports nine errors in existing unrelated code. Build success is not a claim that full TypeScript checking passed.
 
 Republishing is required to make this workspace version live.
+
+## Round 2 — Section 1: team and employee maintainability
+
+- Formatted the Team and Employee portal modules with the repository's Prettier, preserving their existing named exports, hooks, request paths, state transitions, and route behavior.
+- Extracted shared employee page heading and empty-state components under `src/components/employee/`, and the scheduled-team assignment list under `src/components/team/`. The original portal modules remain the compatibility entry points.
+- Replaced the status badge palette with semantic `success`, `warning`, `destructive`, `info`, and muted tokens. Added the `info` theme token and adjusted warning/destructive token shades so foreground text remains readable on tinted status surfaces.
+- Replaced key hard-coded palette classes with semantic theme tokens in the team/employee portals, shell, dashboard, project list, invoice statuses, job section menu, and job-costing views. No business logic, calculations, data models, permissions, or server behavior changed.
+- Verification: production build passed. Employee portal, invitation, and timesheet-total suites passed (23 tests). The `jobSectionMenu.test.tsx` suite could not initialize in Bun's non-browser environment because the existing Supabase client reads `localStorage` at module load; no browser test harness is configured by the package scripts.
