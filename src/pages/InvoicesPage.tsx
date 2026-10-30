@@ -405,7 +405,7 @@ export default function InvoicesPage() {
           </p>
         )}
 
-        <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
+        <div className="min-w-0 rounded-xl border border-border bg-card overflow-hidden shadow-card">
           {/* Table header — desktop only */}
           <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(90px,140px)_minmax(76px,100px)_minmax(84px,100px)_minmax(76px,100px)_16px] gap-3 lg:gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">

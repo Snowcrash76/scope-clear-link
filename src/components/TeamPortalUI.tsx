@@ -50,6 +50,9 @@ import { PhotoGallery } from "@/components/EmployeePortalUI";
 import { PageLayout } from "@/components/PageLayout";
 import { TimesheetSummary } from "@/components/TimesheetSummary";
 import { AssignmentList as TeamAssignmentList } from "@/components/team/AssignmentList";
+import { UpdatesPanel as TeamUpdatesPanel } from "@/components/team/UpdatesPanel";
+import { PermissionCard as TeamPermissionCard } from "@/components/team/PermissionCard";
+import { AuditTrail as TeamAuditTrail } from "@/components/team/AuditTrail";
 import type {
   TeamBootstrap,
   EmployeeRole,
@@ -232,7 +235,7 @@ function TeamLoad({
               </label>
             </>
           )}
-          {setupError && <p className="mt-2 text-red-700">{setupError}</p>}
+          {setupError && <p className="mt-2 text-destructive">{setupError}</p>}
         </details>
       )}
       <Button onClick={retry} className={`${outline} mt-4`}>
@@ -599,7 +602,7 @@ export function TeamHome({
                 key={href}
                 to={href}
                 aria-current={location === href ? "page" : undefined}
-                className={`flex min-h-11 min-w-0 items-center justify-center border-b-2 px-2 py-2.5 text-center text-sm font-semibold transition-colors sm:shrink-0 sm:px-3 ${location === href ? "border-amber-600 text-zinc-950" : "border-transparent text-zinc-700 hover:text-zinc-950"}`}
+                className={`flex min-h-11 min-w-0 items-center justify-center border-b-2 px-2 py-2.5 text-center text-sm font-semibold transition-colors sm:shrink-0 sm:px-3 ${location === href ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
               >
                 {label}
               </Link>
@@ -682,7 +685,7 @@ export function TeamHome({
                             .map((e) => (
                               <label
                                 key={e.id}
-                                className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-amber-50"
+                                className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-accent/20"
                               >
                                 <input
                                   type="checkbox"
@@ -700,7 +703,7 @@ export function TeamHome({
                                 />
                                 <span className="text-sm">
                                   {e.name}
-                                  <small className="ml-2 text-zinc-700">
+                                  <small className="ml-2 text-muted-foreground">
                                     {roleLabelsLocal(e.role)}
                                   </small>
                                 </span>
@@ -801,20 +804,20 @@ export function TeamHome({
                     <h2 className="text-lg font-bold">
                       Assign team members to {activeJob?.name ?? "this job"}
                     </h2>
-                    <p className="mt-1 text-sm text-zinc-700">
+                    <p className="mt-1 text-sm text-muted-foreground">
                       Choose one or more team members and a site schedule.
                     </p>
                     <fieldset className="mt-4">
                       <legend className="mb-2 text-sm font-medium">
                         Team members
                       </legend>
-                      <div className="max-h-56 space-y-1 overflow-auto rounded-xl border border-zinc-300 p-2">
+                      <div className="max-h-56 space-y-1 overflow-auto rounded-xl border border-border p-2">
                         {team.employees
                           .filter((e) => e.active && !isArchived(e))
                           .map((e) => (
                             <label
                               key={e.id}
-                              className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-amber-50"
+                              className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-accent/20"
                             >
                               <input
                                 type="checkbox"
@@ -833,7 +836,7 @@ export function TeamHome({
                               />
                               <span className="text-sm">
                                 {e.name}
-                                <small className="ml-2 text-zinc-700">
+                                <small className="ml-2 text-muted-foreground">
                                   {roleLabelsLocal(e.role)}
                                 </small>
                               </span>
@@ -925,10 +928,10 @@ export function TeamHome({
                   <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
                     <div>
                       <h2 className="font-bold">Team members</h2>
-                      <p className="mt-1 text-sm text-zinc-700">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {visibleEmployees.length} team members
                       </p>
-                      <p className="mt-1 text-sm text-zinc-700">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         Accepted accounts show Active. Pending invite history is
                         not returned by the current team API.
                       </p>
@@ -1035,7 +1038,7 @@ export function TeamHome({
                                   className={`${field} mt-1`}
                                   defaultValue={emp.hourly_rate ?? ""}
                                 />
-                                <p className="mt-1 text-sm leading-5 text-zinc-700">
+                                <p className="mt-1 text-sm leading-5 text-muted-foreground">
                                   Private pay estimate and job labour rate.
                                   Visible to admins and this team member only.
                                 </p>
@@ -1082,19 +1085,19 @@ export function TeamHome({
                                   {emp.name}
                                 </p>
                                 <span
-                                  className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-sm font-semibold ${employeeStatus(emp) === "Active" ? "border-emerald-300 bg-emerald-50 text-emerald-900" : employeeStatus(emp) === "Invited" ? "border-amber-300 bg-amber-50 text-amber-950" : "border-zinc-300 bg-zinc-100 text-zinc-800"}`}
+                                  className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-sm font-semibold ${employeeStatus(emp) === "Active" ? "border-success/25 bg-success/10 text-success" : employeeStatus(emp) === "Invited" ? "border-warning/25 bg-warning/10 text-warning" : "border-border bg-muted text-muted-foreground"}`}
                                 >
                                   {employeeStatus(emp)}
                                 </span>
                               </div>
-                              <p className="mt-0.5 break-all text-sm text-zinc-700">
+                              <p className="mt-0.5 break-all text-sm text-muted-foreground">
                                 {emp.email}
                               </p>
-                              <p className="mt-0.5 text-sm text-zinc-700">
+                              <p className="mt-0.5 text-sm text-muted-foreground">
                                 {roleLabelsLocal(emp.role)}
                               </p>
                               {isAdmin && showRates && (
-                                <p className="mt-1 text-sm font-medium text-zinc-900">
+                                <p className="mt-1 text-sm font-medium text-foreground">
                                   Hourly rate:{" "}
                                   {emp.hourly_rate === null
                                     ? "Not set"
@@ -1107,7 +1110,7 @@ export function TeamHome({
                                 <button
                                   type="button"
                                   disabled={busy}
-                                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-300 bg-white text-zinc-800 hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 disabled:opacity-50"
+                                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-background text-foreground hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                                   aria-label={`Actions for ${emp.name}`}
                                   data-testid={`team-member-actions-${emp.id}`}
                                 >
@@ -1135,7 +1138,7 @@ export function TeamHome({
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
-                                  className="min-h-11 gap-2 text-red-800 focus:text-red-900"
+                                  className="min-h-11 gap-2 text-destructive focus:text-destructive"
                                   disabled={busy}
                                   onSelect={() => {
                                     setRemoveError("");
@@ -1153,9 +1156,9 @@ export function TeamHome({
                     ))
                   ) : (
                     <div className="p-8 text-center">
-                      <UserPlus className="mx-auto mb-3 h-9 w-9 text-amber-800" />
+                      <UserPlus className="mx-auto mb-3 h-9 w-9 text-warning" />
                       <p className="font-semibold">No team members yet</p>
-                      <p className="mx-auto mt-1 max-w-sm text-sm text-zinc-700">
+                      <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
                         Add a team member profile, then send their invitation
                         from the Actions menu.
                       </p>
@@ -1206,18 +1209,18 @@ export function TeamHome({
               removeCancelRef.current?.focus();
             }}
           >
-            <p className="text-sm font-semibold uppercase tracking-[.12em] text-red-800">
+            <p className="text-sm font-semibold uppercase tracking-[.12em] text-destructive">
               Remove team access
             </p>
             <AlertDialogTitle
               id="remove-staff-title"
-              className="mt-2 text-xl font-bold text-zinc-950"
+              className="mt-2 text-xl font-bold text-foreground"
             >
               Remove {removeTarget.name}?
             </AlertDialogTitle>
             <AlertDialogDescription
               id="remove-staff-description"
-              className="mt-3 space-y-2 text-sm leading-5 text-zinc-800"
+              className="mt-3 space-y-2 text-sm leading-5 text-foreground"
             >
               <span className="block">
                 This removes their access to the team and archives their
@@ -1232,7 +1235,7 @@ export function TeamHome({
             {removeError && (
               <p
                 role="alert"
-                className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-900"
+                className="mt-4 rounded-xl bg-destructive/10 p-3 text-sm text-destructive"
               >
                 {removeError}
               </p>
@@ -1251,7 +1254,7 @@ export function TeamHome({
               </AlertDialogCancel>
               <Button
                 type="button"
-                className={`${btn} bg-red-700 text-white hover:bg-red-800`}
+                className={`${btn} bg-destructive text-destructive-foreground hover:bg-destructive/90`}
                 disabled={busy}
                 onClick={() => void removeStaff()}
               >
@@ -1269,10 +1272,10 @@ export function TeamHome({
       >
         <SheetContent
           side="right"
-          className="flex h-full w-[min(28rem,100vw)] max-w-none flex-col gap-0 overflow-y-auto border-l border-zinc-200 bg-white p-0 text-zinc-950"
+          className="flex h-full w-[min(28rem,100vw)] max-w-none flex-col gap-0 overflow-y-auto border-l border-border bg-background p-0 text-foreground"
         >
           <form onSubmit={createStaff} className="flex min-h-0 flex-1 flex-col">
-            <SheetHeader className="border-b border-zinc-200 px-5 py-5 pr-14 text-left">
+            <SheetHeader className="border-b border-border px-5 py-5 pr-14 text-left">
               <SheetTitle className="font-heading text-xl">
                 Add team member
               </SheetTitle>
@@ -1350,7 +1353,7 @@ export function TeamHome({
                     }
                     placeholder="$ per hour"
                   />
-                  <p className="mt-1.5 text-sm leading-5 text-zinc-700">
+                  <p className="mt-1.5 text-sm leading-5 text-muted-foreground">
                     Used for team member pay estimates and job labour cost.
                     Visible to admins and this team member only.
                   </p>
@@ -1365,7 +1368,7 @@ export function TeamHome({
                 </p>
               )}
             </div>
-            <SheetFooter className="mt-auto border-t border-zinc-200 p-5">
+            <SheetFooter className="mt-auto border-t border-border p-5">
               <Button
                 type="button"
                 className={outline}
@@ -1461,7 +1464,7 @@ function AssignmentEditDialog({
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 grid place-items-center bg-zinc-950/45 p-4"
+      className="fixed inset-0 z-50 grid place-items-center bg-foreground/45 p-4"
       onMouseDown={(event) =>
         event.target === event.currentTarget && !busy && close()
       }
@@ -1474,13 +1477,13 @@ function AssignmentEditDialog({
         className={`${card} w-full max-w-lg p-5 sm:p-6`}
         onSubmit={submit}
       >
-        <p className="text-sm font-semibold uppercase tracking-[.12em] text-zinc-700">
+        <p className="text-sm font-semibold uppercase tracking-[.12em] text-muted-foreground">
           Shared appointment
         </p>
         <h2 id="assignment-edit-title" className="mt-2 text-xl font-bold">
           Edit schedule
         </h2>
-        <p className="mt-2 rounded-xl bg-amber-50 p-3 text-sm leading-5 text-zinc-900">
+        <p className="mt-2 rounded-xl bg-warning/10 p-3 text-sm leading-5 text-foreground">
           This updates the existing shared appointment. Every team member
           assigned to it will see the new date, time and notes.
         </p>
@@ -1533,7 +1536,7 @@ function AssignmentEditDialog({
           {visibleError && (
             <p
               role="alert"
-              className="rounded-xl bg-red-50 p-3 text-sm text-red-900"
+              className="rounded-xl bg-destructive/10 p-3 text-sm text-destructive"
             >
               {visibleError}
             </p>
@@ -1565,52 +1568,7 @@ function PermissionCard({
   initial: OperationalPermissions;
   save: (r: EmployeeRole, p: OperationalPermissions) => void;
 }) {
-  const [permissions, setPermissions] = useState(initial);
-  const labels: Record<keyof OperationalPermissions, string> = {
-    view_scope: "View job scope",
-    view_variations: "View approved variations",
-    view_documents: "View published documents",
-    add_photos: "Upload site photos",
-    add_notes: "Write private job notes",
-    review_timesheets: "Review timesheets",
-  };
-  return (
-    <form
-      className={`${card} p-5`}
-      onSubmit={(e) => {
-        e.preventDefault();
-        save(role, permissions);
-      }}
-    >
-      <div className="flex items-center gap-3">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#edf3ee] text-[#45634d]">
-          <ShieldCheck className="h-4 w-4" />
-        </span>
-        <h2 className="font-bold">{roleLabelsLocal(role)}</h2>
-      </div>
-      <div className="mt-4 space-y-2">
-        {permissionNames.map((key) => (
-          <label
-            key={key}
-            className="flex min-h-11 items-center gap-3 rounded-lg px-2 hover:bg-[#f7f9f7]"
-          >
-            <input
-              type="checkbox"
-              checked={permissions[key]}
-              onChange={(e) =>
-                setPermissions((p) => ({ ...p, [key]: e.target.checked }))
-              }
-            />
-            <span className="text-sm">{labels[key]}</span>
-          </label>
-        ))}
-      </div>
-      <Button className={`${primary} mt-4 w-full`}>
-        <Save className="h-4 w-4" />
-        Save role
-      </Button>
-    </form>
-  );
+  return <TeamPermissionCard role={role} initial={initial} save={save} />;
 }
 function ReviewPanel({
   team,
@@ -2204,7 +2162,7 @@ function TimeEntryEditor({
         className={`${card} max-h-[92dvh] w-full max-w-xl overflow-y-auto p-5 sm:p-6`}
         onSubmit={submit}
       >
-        <p className="text-sm font-semibold uppercase tracking-[.12em] text-zinc-700">
+        <p className="text-sm font-semibold uppercase tracking-[.12em] text-muted-foreground">
           Draft correction
         </p>
         <h2 id="team-entry-edit-title" className="mt-2 text-xl font-bold">
@@ -2236,7 +2194,7 @@ function TimeEntryEditor({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-sm text-zinc-700">
+            <p className="mt-1 text-sm text-muted-foreground">
               Historical job assignment is retained unless you select another
               job.
             </p>
@@ -2327,36 +2285,7 @@ function TimeEntryEditor({
   );
 }
 function AuditTrail({ rows }: { rows: TeamBootstrap["audit"] }) {
-  return (
-    <section className={`${card} mt-5 p-5`}>
-      <h2 className="font-bold">Immutable review audit</h2>
-      <p className="mt-1 text-sm text-[#77837a]">
-        Recorded decisions and changes, newest first.
-      </p>
-      {rows.length ? (
-        <ol className="mt-4 space-y-3">
-          {[...rows].reverse().map((row) => (
-            <li
-              key={row.id}
-              className="flex gap-3 border-t border-[#edf0ed] pt-3"
-            >
-              <span className="mt-1 h-2 w-2 rounded-full bg-[#56745e]" />
-              <span className="min-w-0 flex-1">
-                <b className="text-sm">{row.action.replace(/_/g, " ")}</b>
-                <span className="mt-1 block text-xs text-[#7d8980]">
-                  {showDate(row.created_at)} · actor {row.actor_id.slice(0, 8)}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <p className="mt-4 text-sm text-[#78847b]">
-          No review activity recorded yet.
-        </p>
-      )}
-    </section>
-  );
+  return <TeamAuditTrail rows={rows} />;
 }
 function ReviewDialog({
   review,
@@ -2476,177 +2405,5 @@ function UpdatesPanel({
   team: TeamBootstrap;
   jobId?: string;
 }) {
-  const notes = team.notes.filter((n) => !jobId || n.project_id === jobId);
-  const docs = team.documents.filter((d) => !jobId || d.project_id === jobId);
-  const jobs = team.jobs;
-  const refresh = useRefreshPortal();
-  const [job, setJob] = useState(jobId ?? jobs[0]?.id ?? "");
-  const [phone, setPhone] = useState(
-    jobs.find((j) => j.id === job)?.client_phone ?? "",
-  );
-  const [notesText, setNotesText] = useState(
-    jobs.find((j) => j.id === job)?.employee_notes ?? "",
-  );
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  async function saveDetails(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    setMessage("");
-    try {
-      await portalRequest(`/team/jobs/${job}`, {
-        client_phone: phone,
-        employee_notes: notesText,
-      });
-      await refresh();
-      setMessage("Job details saved.");
-    } catch (err) {
-      setError(errorText(err));
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function visibility(id: string, employee_visible: boolean) {
-    setError("");
-    try {
-      await portalRequest(`/team/documents/${id}/visibility`, {
-        employee_visible,
-      });
-      await refresh();
-    } catch (err) {
-      setError(errorText(err));
-    }
-  }
-  return (
-    <div className="grid gap-5 lg:grid-cols-2">
-      <div className="space-y-4">
-        <form className={`${card} p-5`} onSubmit={saveDetails}>
-          <h2 className="font-bold">Operational job details</h2>
-          <p className="mt-1 text-sm text-zinc-700">
-            Team member notes are private to the team. Do not include commercial
-            details.
-          </p>
-          <Label htmlFor="update-job" className="mt-4 block">
-            Job
-          </Label>
-          <select
-            id="update-job"
-            className={`${field} mt-1.5`}
-            value={job}
-            onChange={(e) => {
-              const j = jobs.find((x) => x.id === e.target.value);
-              setJob(e.target.value);
-              setPhone(j?.client_phone ?? "");
-              setNotesText(j?.employee_notes ?? "");
-            }}
-          >
-            {jobs.map((j) => (
-              <option key={j.id} value={j.id}>
-                {j.name}
-              </option>
-            ))}
-          </select>
-          <Label htmlFor="job-phone" className="mt-3 block">
-            Client site phone
-          </Label>
-          <Input
-            id="job-phone"
-            className={`${field} mt-1.5`}
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-          <Label htmlFor="job-notes" className="mt-3 block">
-            Team member notes
-          </Label>
-          <Textarea
-            id="job-notes"
-            className="mt-1.5 min-h-24"
-            value={notesText}
-            onChange={(e) => setNotesText(e.target.value)}
-          />
-          {error && (
-            <p role="alert" className="mt-3 text-sm text-red-900">
-              {error}
-            </p>
-          )}
-          {message && (
-            <p role="status" className="mt-3 text-sm text-zinc-800">
-              {message}
-            </p>
-          )}
-          <Button className={`${primary} mt-3 w-full`} disabled={busy}>
-            Save job details
-          </Button>
-        </form>
-        <section className={`${card} p-5`}>
-          <h2 className="font-bold">Team updates</h2>
-          {notes.length ? (
-            notes.map((n) => (
-              <div key={n.id} className="border-t border-border py-3">
-                <p className="text-sm">{n.body}</p>
-                <small className="text-sm text-zinc-700">
-                  {showDate(n.created_at)}
-                </small>
-              </div>
-            ))
-          ) : (
-            <p className="mt-3 text-sm text-zinc-700">
-              No team member notes have been added.
-            </p>
-          )}
-        </section>
-      </div>
-      <div className="space-y-4">
-        <PhotoGallery documents={docs} />
-        <section className={`${card} p-5`}>
-          <h2 className="font-bold">Team-member document access</h2>
-          <p className="mt-1 text-sm text-zinc-700">
-            Publishing to team members is separate from client visibility. Check
-            every file: it must not contain financial details.
-          </p>
-          {docs.length ? (
-            docs
-              .filter((d) => !(d.purpose || "").toLowerCase().includes("photo"))
-              .map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-center gap-3 border-t border-border py-3 first:mt-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <b className="block truncate text-sm">
-                      {d.display_name || d.file_name}
-                    </b>
-                    <small className="text-sm text-zinc-700">{d.purpose}</small>
-                  </div>
-                  <label className="flex min-h-11 items-center gap-2 text-sm font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={d.employee_visible}
-                      onChange={(e) => {
-                        if (
-                          e.target.checked &&
-                          !window.confirm(
-                            "Publish this file to assigned team members? Confirm it contains no financial details.",
-                          )
-                        )
-                          return;
-                        void visibility(d.id, e.target.checked);
-                      }}
-                    />
-                    Team-member visible
-                  </label>
-                </div>
-              ))
-          ) : (
-            <p className="mt-4 text-sm text-zinc-700">
-              No job documents. Publish a document from Documents section after
-              checking its contents.
-            </p>
-          )}
-        </section>
-      </div>
-    </div>
-  );
+  return <TeamUpdatesPanel team={team} jobId={jobId} />;
 }

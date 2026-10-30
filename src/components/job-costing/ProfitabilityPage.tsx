@@ -369,7 +369,7 @@ export default function ProfitabilityPage() {
                     );
                   })}
                 </tbody>
-                <tfoot className="border-t-2 border-[#D8C3AD] bg-amber-50/70 text-foreground">
+                <tfoot className="border-t-2 border-border bg-muted text-foreground">
                   <tr className="align-top">
                     <th scope="row" className="px-4 py-4 text-left">
                       Totals
@@ -425,7 +425,7 @@ export default function ProfitabilityPage() {
               </table>
             </div>
             <Card
-              className="border-[#D8C3AD] bg-amber-50/70 p-4 md:hidden"
+              className="border-border bg-muted p-4 md:hidden"
               data-testid="profitability-totals-mobile"
             >
               <h2 className="font-semibold">Totals</h2>
@@ -515,7 +515,7 @@ export default function ProfitabilityPage() {
                           <>
                             <Value amount={result.revenue} />
                             {estimated && (
-                              <span className="mt-1 inline-flex rounded-full border border-amber-400 bg-amber-50 px-2 py-0.5 text-sm font-semibold text-amber-950">
+                              <span className="mt-1 inline-flex rounded-full border border-warning/25 bg-warning/10 px-2 py-0.5 text-sm font-semibold text-warning">
                                 Estimated
                               </span>
                             )}
@@ -669,7 +669,7 @@ function MissingQuote({
     <Link
       to={`/manage/${jobId}?tab=quote`}
       className={cn(
-        "text-sm font-medium text-amber-900 underline decoration-amber-900/40 underline-offset-2 hover:decoration-amber-900",
+        "text-sm font-medium text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground",
         compact && "leading-snug",
       )}
     >
@@ -681,7 +681,7 @@ function DraftPending({ jobId, amount }: { jobId: string; amount: number }) {
   return (
     <Link
       to={`/manage/${jobId}?tab=costs`}
-      className="mt-1 block text-sm leading-snug text-amber-900 underline decoration-amber-900/30 underline-offset-2 hover:decoration-amber-900"
+      className="mt-1 block text-sm leading-snug text-foreground underline decoration-border underline-offset-2 hover:decoration-foreground"
     >
       Draft costs pending confirmation (inc GST): {aud(amount)}
     </Link>

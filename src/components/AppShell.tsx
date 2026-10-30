@@ -310,15 +310,17 @@ function SidebarInner({
         </button>
         {contactName && (
           <div className="flex items-center gap-3 px-4 py-2.5 mt-1">
-            <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-zinc-900 text-xs font-bold flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">
               {getInitials(contactName)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium truncate text-zinc-800">
+              <p className="text-xs font-medium truncate text-foreground">
                 {contactName}
               </p>
               {email && (
-                <p className="text-xs text-zinc-600 truncate">{email}</p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {email}
+                </p>
               )}
             </div>
             <button

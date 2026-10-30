@@ -325,7 +325,7 @@ function NeedsAttention({
           </>
         ) : sourceUnavailable ? (
           <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-zinc-800">
+            <p className="text-sm text-foreground">
               {costRecordsMissing > 0
                 ? `${costRecordsMissing} job${costRecordsMissing === 1 ? "" : "s"} have unavailable cost records. They are not treated as jobs with zero costs.`
                 : "Some attention checks could not be verified. Failed data is not treated as clear."}
@@ -341,7 +341,7 @@ function NeedsAttention({
             </Button>
           </div>
         ) : (
-          <p className="px-4 py-8 text-center text-sm font-medium text-zinc-800">
+          <p className="px-4 py-8 text-center text-sm font-medium text-foreground">
             You're all caught up
           </p>
         )}
@@ -440,7 +440,7 @@ function ProjectListItem({
           <div className="flex items-center gap-2">
             <div className="w-24 h-1.5 rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-amber-500 transition-all"
+                className="h-full rounded-full bg-primary transition-all"
                 style={{ width: `${stageProgress}%` }}
               />
             </div>
@@ -464,10 +464,13 @@ function SupportWidget() {
           <button
             type="button"
             aria-label="Need help?"
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 shadow-sm transition-colors hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-800"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             data-testid="button-contact-support"
           >
-            <HelpCircle className="h-4 w-4 text-amber-900" aria-hidden="true" />
+            <HelpCircle
+              className="h-4 w-4 text-muted-foreground"
+              aria-hidden="true"
+            />
             Help
           </button>
         </PopoverTrigger>
@@ -476,8 +479,8 @@ function SupportWidget() {
           side="top"
           className="z-40 w-[min(20rem,calc(100vw-2rem))]"
         >
-          <p className="font-semibold text-zinc-950">Workspace help</p>
-          <p className="mt-1 text-sm leading-5 text-zinc-700">
+          <p className="font-semibold text-foreground">Workspace help</p>
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">
             A support contact is not configured here. Please contact your
             workspace administrator.
           </p>

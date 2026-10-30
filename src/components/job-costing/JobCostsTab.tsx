@@ -817,7 +817,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
         </Card>
       ) : filtered.length === 0 && !error ? (
         <Card className="border-dashed px-5 py-10 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-warning/10 text-warning">
             <FileText className="h-5 w-5" />
           </div>
           <p className="font-semibold">
@@ -1376,7 +1376,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     disabled={scanBusy || submitting}
                     onAbnChange={setReceiptAbn}
                   />
-                  <label className="flex cursor-pointer items-start gap-2 border-t border-amber-200 pt-3 text-sm">
+                  <label className="flex cursor-pointer items-start gap-2 border-t border-warning/25 pt-3 text-sm">
                     <input
                       data-testid="checkbox-receipt-reviewed"
                       type="checkbox"
@@ -1435,7 +1435,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               </div>
             )}
             {removeReceipt && (
-              <p className="text-xs text-amber-800">
+              <p className="text-xs text-warning">
                 Existing attachment will be removed when saved.{" "}
                 <button
                   type="button"
@@ -1481,7 +1481,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                       ? selectedFile.name
                       : "Choose JPEG, PNG, WebP or PDF (max 10 MB)"}
                   </span>
-                  <span className="text-xs font-semibold text-amber-800">
+                  <span className="text-xs font-semibold text-warning">
                     Browse
                   </span>
                 </label>
@@ -1515,13 +1515,13 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
               </div>
             )}
             {duplicates.length > 0 && (
-              <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50/70 p-3">
-                <p className="text-sm font-semibold text-amber-950">
+              <div className="space-y-2 rounded-md border border-warning/25 bg-warning/10 p-3">
+                <p className="text-sm font-semibold text-warning">
                   Possible matching costs
                 </p>
                 <ul className="space-y-2">
                   {duplicates.map((item) => (
-                    <li key={item.id} className="text-xs text-amber-950">
+                    <li key={item.id} className="text-xs text-warning">
                       <span className="font-semibold">{item.job_name}</span> ·{" "}
                       {new Date(
                         `${item.cost_date}T00:00:00`,
@@ -1533,7 +1533,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     </li>
                   ))}
                 </ul>
-                <label className="flex items-start gap-2 text-xs text-amber-950">
+                <label className="flex items-start gap-2 text-xs text-warning">
                   <input
                     data-testid="checkbox-duplicate-acknowledged"
                     type="checkbox"
