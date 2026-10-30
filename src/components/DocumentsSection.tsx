@@ -8,9 +8,7 @@ import {
   Trash2,
   Download,
   Loader2,
-  File,
   Image as ImageIcon,
-  FileSpreadsheet,
   Eye,
   Pencil,
 } from "lucide-react";
@@ -31,18 +29,14 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  DocumentThumbnail,
+  filterProjectDocuments,
+  groupProjectDocument,
+  type ProjectDocumentItem,
+} from "@/components/documentThumbnails";
 
-interface ProjectDocument {
-  id: string;
-  file_name: string;
-  display_name: string | null;
-  file_url: string;
-  file_type: string | null;
-  file_size: number | null;
-  created_at: string;
-  employee_visible?: boolean;
-  purpose?: string | null;
-}
+type ProjectDocument = ProjectDocumentItem;
 
 interface DocumentsSectionProps {
   projectId: string;
@@ -71,29 +65,11 @@ export function DocumentsSection({
   const [photoUpload, setPhotoUpload] = useState(false);
 
   const documentGroups = useMemo(() => {
-    const filtered = documents.filter((doc) => {
-      const text = `${doc.display_name || doc.file_name} ${doc.purpose ?? ""} ${doc.file_type ?? ""}`.toLowerCase();
-      const matchesSearch = text.includes(search.trim().toLowerCase());
-      const type = (doc.file_type ?? "").toLowerCase();
-      const matchesType = typeFilter === "all"
-        || (typeFilter === "image" && type.startsWith("image/"))
-        || (typeFilter === "pdf" && type.includes("pdf"))
-        || (typeFilter === "spreadsheet" && (type.includes("spreadsheet") || type.includes("excel") || type.includes("csv")))
-        || (typeFilter === "other" && !type.startsWith("image/") && !type.includes("pdf") && !type.includes("spreadsheet") && !type.includes("excel") && !type.includes("csv"));
-      return matchesSearch && matchesType;
-    });
-    const groupFor = (doc: ProjectDocument) => {
-      const purpose = (doc.purpose ?? "").toLowerCase();
-      if (purpose.includes("photo")) return "Photos";
-      if (purpose.includes("plan") || purpose.includes("drawing")) return "Site plans & drawings";
-      if (purpose.includes("report") || purpose.includes("certificate")) return "Reports & certificates";
-      if (purpose === "client_upload" || purpose === "client_uploaded" || purpose === "uploaded_by_client") return "Client documents";
-      return "Other";
-    };
+    const filtered = filterProjectDocuments(documents, search, typeFilter);
     const order = ["Site plans & drawings", "Photos", "Reports & certificates", "Client documents", "Other"];
     return order.map((title) => ({
       title,
-      items: filtered.filter((doc) => groupFor(doc) === title),
+      items: filtered.filter((doc) => groupProjectDocument(doc) === title),
     })).filter((group) => group.items.length);
   }, [documents, search, typeFilter]);
 
@@ -167,19 +143,6 @@ export function DocumentsSection({
     } finally {
       setDeletingId(null);
     }
-  };
-
-  const getFileIcon = (fileType: string | null) => {
-    if (!fileType) return File;
-    if (fileType.startsWith("image/")) return ImageIcon;
-    if (
-      fileType.includes("spreadsheet") ||
-      fileType.includes("excel") ||
-      fileType.includes("csv")
-    )
-      return FileSpreadsheet;
-    if (fileType.includes("pdf")) return FileText;
-    return File;
   };
 
   const formatFileSize = (bytes: number | null) => {
@@ -310,7 +273,6 @@ export function DocumentsSection({
               <h3 id={`document-group-${title.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}`} className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">{title} <span className="ml-1 rounded-full bg-muted px-2 py-0.5 tabular-nums">{items.length}</span></h3>
               <Card className={cn(layout === "grid" ? "grid gap-3 border-0 bg-transparent shadow-none sm:grid-cols-2 xl:grid-cols-3" : "divide-y")}>
             {items.map((doc) => {
-              const FileIcon = getFileIcon(doc.file_type);
               const hasCustomName =
                 doc.display_name && doc.display_name !== doc.file_name;
               return (
@@ -318,22 +280,16 @@ export function DocumentsSection({
                   key={doc.id}
                   className={cn(
                     "p-3 sm:p-4 flex min-w-0 flex-wrap items-center gap-3 transition-colors",
-                    layout === "grid" ? "rounded-xl border border-border bg-card shadow-soft" : "sm:flex-nowrap hover:bg-secondary/30",
+                    layout === "grid"
+                      ? "flex-col items-stretch rounded-xl border border-border bg-card shadow-soft"
+                      : "sm:flex-nowrap hover:bg-secondary/30",
                   )}
                 >
-                  <div
-                    className={cn(
-                      "w-10 h-10 rounded-lg flex items-center justify-center",
-                      doc.file_type?.includes("pdf")
-                        ? "bg-destructive/10 text-destructive"
-                        : doc.file_type?.startsWith("image/")
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-muted-foreground",
-                    )}
-                  >
-                    <FileIcon className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 flex-1 basis-[calc(100%-3.5rem)] sm:basis-0">
+                  <DocumentThumbnail
+                    document={doc}
+                    className={layout === "grid" ? "h-40 w-full" : undefined}
+                  />
+                  <div className={cn("min-w-0 flex-1", layout === "list" && "basis-[calc(100%-3.5rem)] sm:basis-0")}>
                     <p className="break-words [overflow-wrap:anywhere] font-medium">
                       {displayName(doc)}
                     </p>
