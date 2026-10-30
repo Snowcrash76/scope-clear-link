@@ -13,7 +13,12 @@ test('job-section trigger identifies the current section on every existing job p
     ['changes', 'Variations'], ['stages', 'Stages'], ['documents', 'Documents'],
   ]) {
     const markup = renderToStaticMarkup(<JobSectionMenu value={value} onValueChange={() => {}} />);
-    assert.match(markup, new RegExp(`aria-label="Job sections, ${label}"`));
+    assert.match(markup, /aria-label="Job sections"/);
+    if (value === 'documents' || value === 'stages') {
+      assert.match(markup, new RegExp(`aria-label="More sections, ${label}"`));
+    } else {
+      assert.match(markup, new RegExp(`data-testid="job-section-${value}"`));
+    }
     assert.match(markup, /aria-haspopup="menu"/);
     assert.doesNotMatch(markup, /role="tablist"/);
   }
@@ -21,7 +26,8 @@ test('job-section trigger identifies the current section on every existing job p
 
 test('job page replaces only the selector and keeps each named content region and notification counts', () => {
   const source = readFileSync('src/pages/ProjectManage.tsx', 'utf8');
-  assert.match(source, /<JobSectionMenu[\s\S]*?value=\{activeTab\}[\s\S]*?onValueChange=\{setActiveTab\}/);
+  const header = readFileSync('src/components/project-manage/ProjectManageHeader.tsx', 'utf8');
+  assert.match(source, /<ProjectManageHeader[\s\S]*?activeTab=\{activeTab\}[\s\S]*?onTabChange=\{setActiveTab\}/);
   assert.doesNotMatch(source, /<TabsList|<TabsTrigger/);
   for (const [value, label] of [
     ['quote', 'Quote'], ['invoices', 'Invoices'], ['costs', 'Costs'],
@@ -29,12 +35,15 @@ test('job page replaces only the selector and keeps each named content region an
   ]) {
     assert.match(source, new RegExp(`<TabsContent value="${value}"[^>]+aria-label="${label}"`));
   }
+  assert.match(header, /invoiceCount=\{invoiceCount\}/);
   assert.match(source, /invoiceCount=\{invoices.length\}/);
-  assert.match(source, /pendingVariationCount=\{pendingClientRequests.length\}/);
+  assert.match(header, /pendingVariationCount=\{pendingVariationCount\}/);
+  assert.match(source, /pendingVariationCount=\{project\.changeRequests\.filter\(awaitingClientApproval\)\.length\}/);
+  assert.match(header, /documentNotificationCount=\{documentNotificationCount\}/);
   assert.match(source, /documentNotificationCount=/);
   assert.doesNotMatch(source, /headerActions=/);
-  assert.match(source, /<JobHeader>/);
-  assert.equal((source.match(/<JobSectionMenu/g) || []).length, 1);
+  assert.match(header, /<JobHeader>/);
+  assert.equal((header.match(/<JobSectionMenu/g) || []).length, 1);
   assert.match(source, /<QuoteSection/);
   assert.match(source, /<InvoiceSection/);
   assert.match(source, /<JobCostsTab/);
@@ -53,5 +62,5 @@ test('the job header holds the sticky selector separately from global navigation
   assert.match(markup, /lg:top-0/);
   assert.match(globalMarkup, /aria-label="Open navigation"/);
   assert.doesNotMatch(globalMarkup, /Job sections/);
-  assert.match(markup, /aria-label="Job sections, Documents"/);
+  assert.match(markup, /aria-label="More sections, Documents"/);
 });

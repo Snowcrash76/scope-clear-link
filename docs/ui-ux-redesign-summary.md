@@ -45,10 +45,45 @@ No database, authentication or permission changes were made for this redesign. E
 
 Republishing is required to make this workspace version live.
 
-## Round 2 — Section 1: team and employee maintainability
+## Round 2 — section log
 
-- Formatted the Team and Employee portal modules with the repository's Prettier, preserving their existing named exports, hooks, request paths, state transitions, and route behavior.
-- Extracted shared employee page heading, empty-state and photo-gallery components under `src/components/employee/`; extracted the scheduled-team assignment list, team updates panel, permission card and audit trail under `src/components/team/`. The original portal modules remain the compatibility entry points.
-- Replaced the status badge palette with semantic `success`, `warning`, `destructive`, `info`, and muted tokens. Added the `info` theme token and adjusted warning/destructive token shades so foreground text remains readable on tinted status surfaces.
-- Replaced key hard-coded palette classes with semantic theme tokens in the team/employee portals, shell, dashboard, project list, invoice statuses, job section menu, and job-costing views. No business logic, calculations, data models, permissions, or server behavior changed.
-- Verification: production build passed. Employee portal, invitation, and timesheet-total suites passed (23 tests). `timesheetManagement.browser.mjs` passed all employee/owner/admin workflows at 320px, 390px and 1280px. `mobileLayout.browser.mjs` passed receipt and entry layout checks at 320px, 360px, 390px, 768px and 1280px. The `jobSectionMenu.test.tsx` suite could not initialize in Bun's non-browser environment because the existing Supabase client reads `localStorage` at module load.
+### Section 1 — Team and Employee portal extraction
+
+- **Before:** `TeamPortalUI.tsx` and `EmployeePortalUI.tsx` held large, intertwined route and panel implementations; the extracted components were too few to make the public files maintainable.
+- **After:** kept the original modules as public compatibility facades and moved page views, dialogs, cards, lists, loading states, and shared portal helpers into focused `team/` and `employee/` modules. Existing routes, exports, API calls, permissions, and workflows were retained. Semantic status colors and responsive text/accessibility refinements were applied without changing calculations or server behavior.
+- **Files changed:** `src/components/TeamPortalUI.tsx`; `src/components/EmployeePortalUI.tsx`; `src/components/employee/AssignmentCard.tsx`; `src/components/employee/EmployeeAccept.tsx`; `src/components/employee/EmployeeGate.tsx`; `src/components/employee/EmployeeHome.tsx`; `src/components/employee/EmployeeJob.tsx`; `src/components/employee/EmployeeLogin.tsx`; `src/components/employee/EmployeeNotifications.tsx`; `src/components/employee/EmployeeReviewQueue.tsx`; `src/components/employee/EmployeeTimesheets.tsx`; `src/components/employee/Empty.tsx`; `src/components/employee/LoadState.tsx`; `src/components/employee/NavigateEmployee.tsx`; `src/components/employee/PageTitleView.tsx`; `src/components/employee/PhotoGalleryView.tsx`; `src/components/employee/PortalLayout.tsx`; `src/components/employee/UnreadDot.tsx`; `src/components/employee/portalShared.ts`; `src/components/team/AssignmentEditDialog.tsx`; `src/components/team/AssignmentListView.tsx`; `src/components/team/AuditTrailView.tsx`; `src/components/team/PermissionCardView.tsx`; `src/components/team/ReviewDialog.tsx`; `src/components/team/ReviewPanel.tsx`; `src/components/team/TeamHome.tsx`; `src/components/team/TeamLoadView.tsx`; `src/components/team/TimeEntryEditor.tsx`; `src/components/team/UpdatesPanelView.tsx`; `src/components/team/portalShared.ts`.
+- **Verification:** production build passed; 23 employee portal/invitation/timesheet-total unit tests passed; `timesheetManagement.browser.mjs` passed employee/owner/admin workflows at 320px, 390px and 1280px; `mobileLayout.browser.mjs` passed receipt and entry layouts at 320px, 360px, 390px, 768px and 1280px.
+- **Skip/limitation:** the existing signed-in employee UI is not available to the unauthenticated screenshot browser.
+
+### Section 2 — native popup replacements
+
+- **Before:** document, employee, and team actions used native browser popups, interrupting the app's visual and keyboard flow.
+- **After:** replaced the touched confirmations and prompts with accessible in-app dialog flows; clock-out and related team/employee actions remain on their existing handlers and permissions.
+- **Files changed:** `src/components/DocumentsSection.tsx`; `src/components/EmployeePortalUI.tsx`; `src/components/employee/PhotoGallery.tsx`; `src/components/team/AssignmentList.tsx`; `src/components/team/UpdatesPanel.tsx`; `tests/employeePortal.browser.mjs`.
+- **Verification:** production build passed. The existing browser suite was run and the team-member removal Escape/reopen scenario still fails: after dismissal, a body pointer event causes the menu to open and close before the next click. A non-modal dropdown and explicit dialog focus return were tried without fixing it; investigation stopped as requested.
+- **Skip/limitation:** the failing menu-reopen scenario is documented rather than further iterated. No model, auth, permission, or server changes were made.
+
+### Section 3 — accessibility and type safety
+
+- **Before:** several icon-only actions, upload controls, and status surfaces had missing or weak accessible names, small text, or low contrast; the production TypeScript check was not clean.
+- **After:** added accessible labels/tooltips and clearer input descriptions, improved text sizing and schedule contrast, and applied the nine requested type fixes plus the typecheck script. No business calculations, permissions, routes, or server paths changed.
+- **Files changed:** `package.json`; `src/components/ClientDocumentsSection.tsx`; `src/components/DocumentUploadModal.tsx`; `src/components/DocumentsSection.tsx`; `src/components/ImageUpload.tsx`; `src/components/InvoiceSection.tsx`; `src/components/MultiImageUpload.tsx`; `src/components/RichTextEditor.tsx`; `src/components/StageManager.tsx`; `src/components/TimesheetSummary.tsx`; `src/components/TodaySchedule.tsx`; `src/components/job-costing/JobCostsTab.tsx`; `src/components/job-costing/ReceiptLineItemsEditor.tsx`; `src/components/job-costing/ReceiptReviewFields.tsx`; `src/components/job-costing/ReceiptScanControls.tsx`; `src/hooks/useCreateProject.ts`; `src/integrations/supabase/types.ts`; `src/lib/exportReport.ts`.
+- **Verification:** `npm run typecheck` and production build passed; `timesheetManagement.browser.mjs` and `mobileLayout.browser.mjs` passed.
+- **Skip/limitation:** the independent team-removal Escape/reopen failure remains as recorded in Section 2.
+
+### Section 4 — client-facing project and quote experience
+
+- **Before:** client project and quote screens were dense, harder to scan on phones, and did not provide a cohesive decision flow.
+- **After:** redesigned the client project/quote surfaces for narrow screens, made accept/decline and request-change decisions explicit, retained the existing PDF generator, and used a same-page contact/request-change fallback rather than an invented endpoint. Existing calculations and approval permissions were preserved.
+- **Files changed:** `src/components/client/ClientPortalHeader.tsx`; `src/pages/ClientProjectView.tsx`; `src/pages/ClientQuote.tsx`.
+- **Verification:** typecheck and production build passed. `clientPages.browser.mjs` passed actual client project and quote components at 320px, 375px and 768px, invalid-link states, accept/decline persistence, PDF, and same-page change-request interactions.
+- **Skip/limitation:** a real contact phone number cannot be safely obtained for an invalid/unknown client record; contact details are shown only when loaded. No additional expired-quote server blocking behavior was introduced or represented as implemented.
+
+### Section 5 — ProjectManage and QuoteSection component split
+
+- **Before:** `src/pages/ProjectManage.tsx` was 1,360 lines and `src/components/QuoteSection.tsx` was 1,309 lines, with header, tab content, quote line-item rendering, and totals embedded in each monolith.
+- **After:** `ProjectManage.tsx` is 979 lines and keeps every route-level tab wrapper and existing route export; its focused header, notification, variation, and activity content are extracted to prop-driven components. `QuoteSection.tsx` is 1,064 lines and retains its public export; quote header/reference/status, editable and display totals, and included/approved line-item tables are separated into focused prop-driven modules. Cost calculations, status transitions, handlers, and permissions are unchanged.
+- **Files changed:** `src/pages/ProjectManage.tsx`; `src/components/project-manage/ProjectActivityContent.tsx`; `src/components/project-manage/ProjectManageHeader.tsx`; `src/components/project-manage/ProjectManageNotifications.tsx`; `src/components/project-manage/ProjectVariationsTabContent.tsx`; `src/components/QuoteSection.tsx`; `src/components/quote/QuoteHeader.tsx`; `src/components/quote/QuoteLineItemsTable.tsx`; `src/components/quote/QuoteTotals.tsx`; `tests/jobSectionMenu.test.tsx`.
+- **Verification after the ProjectManage split:** typecheck and production build passed; `jobSectionMenu.test.tsx` passed (3 tests) with a temporary in-memory `localStorage` preload for Bun.
+- **Verification after the QuoteSection split:** typecheck and production build passed; `jobSectionMenu.test.tsx`, `newQuoteDraft.test.ts`, and `additionVariations.test.tsx` passed (10 tests total) with the same temporary preload. `clientPages.browser.mjs` passed actual client project and quote routes at 320px, 375px and 768px, including accept/decline, persistent decisions/PDF and same-page change-request flows.
+- **Skip/limitation:** `quoteResponsive.test.tsx` requires `document.createElement` for the existing `RichTextContent` sanitizer and cannot run in Bun's non-DOM test environment. The browser client-route tests passed instead. Build output still reports the pre-existing stale Browserslist data and large-chunk warnings.

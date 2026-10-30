@@ -81,6 +81,10 @@ import { JobCostsTab } from '@/components/job-costing/JobCostsTab';
 import { TeamHome } from '@/components/TeamPortalUI';
 import { jobDisplayStatus } from '@/lib/quoteDisplay';
 import { awaitingClientApproval } from '@/lib/variationStatus';
+import { ProjectManageHeader } from '@/components/project-manage/ProjectManageHeader';
+import { ProjectManageNotifications } from '@/components/project-manage/ProjectManageNotifications';
+import { ProjectVariationsTabContent } from '@/components/project-manage/ProjectVariationsTabContent';
+import { ProjectActivityContent, type ProjectActivityEvent } from '@/components/project-manage/ProjectActivityContent';
 
 export default function ProjectManage() {
   const { id } = useParams();
@@ -649,219 +653,39 @@ export default function ProjectManage() {
 
   return (
     <AppShell>
-      <JobHeader>
-        <div className="min-w-0">
-          <div className="flex min-w-0 items-start gap-2 sm:gap-3">
-            <Button variant="ghost" size="icon" className="mt-0.5 h-11 w-11 flex-shrink-0" aria-label="Back to dashboard" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="min-w-0 flex-1">
-              <div className="flex min-w-0 items-start gap-2 sm:gap-3">
-                <h1 className="min-w-0 break-words font-heading text-xl font-bold sm:text-2xl">{project.name}</h1>
-                <StatusBadge className="mt-0.5 shrink-0" status={jobDisplayStatus(project, activeQuote ? {
-                  status: activeQuote.status,
-                  valid_until: activeQuote.validUntil?.toISOString() ?? null,
-                } : null)} />
-              </div>
-              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                <span className="flex shrink-0 items-center gap-1">
-                  <User className="w-3.5 h-3.5" />
-                  {project.clientName}
-                </span>
-                <span className="flex min-w-0 max-w-full items-center gap-1">
-                  <Mail className="w-3.5 h-3.5" />
-                  <span className="truncate">{project.clientEmail}</span>
-                </span>
-                {project.clientAddress && (
-                  <span className="flex min-w-0 max-w-full items-center gap-1" data-testid="text-client-address">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span className="truncate">{project.clientAddress}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 flex w-full min-w-0 items-center">
-            <div className="flex min-w-0 shrink-0 items-center gap-0 sm:gap-1">
-              {project.status === 'draft' && (
-                <Button variant="accent" size="sm" className="h-11 w-11 shrink-0 px-0 sm:w-auto sm:px-3" aria-label="Send job to client" onClick={handleSendToClient}>
-                  <Send className="w-4 h-4" />
-                  <span className="hidden sm:ml-2 sm:inline">Send to Client</span>
-                </Button>
-              )}
-              {/* Project actions menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-11 shrink-0 gap-2 border-zinc-400 bg-white px-3 text-sm text-zinc-900" aria-label="Actions" data-testid="button-project-actions-menu">
-                    <MoreVertical className="w-4 h-4" />
-                    <span>Actions</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-72">
-                  <DropdownMenuItem
-                    onClick={() => void handleDuplicateProject()}
-                    disabled={isDuplicating}
-                    className="min-h-11 gap-2"
-                    data-testid="menu-item-duplicate-project"
-                  >
-                    {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="w-4 h-4" />}
-                    {isDuplicating ? 'Creating copy…' : 'Duplicate job'}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => void handleCopyClientLink()}
-                    className="min-h-11 gap-2"
-                    data-testid="menu-item-share-link"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Share link
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={handlePreviewClientPage}
-                    className="min-h-11 gap-2"
-                    data-testid="menu-item-preview-client-page"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Preview client page
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Job status</DropdownMenuLabel>
-                  {project.status !== 'completed' ? (
-                    <DropdownMenuItem
-                      onClick={() => updateProjectStatus('completed')}
-                      className="min-h-11 gap-2"
-                      data-testid="menu-item-mark-completed"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-approved" />
-                      Mark as Completed
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={() => updateProjectStatus('in_progress')}
-                      className="min-h-11 gap-2"
-                      data-testid="menu-item-mark-in-progress"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      Mark as In Progress
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    disabled
-                    title="Job archiving is not available because the current project schema has no archive state."
-                    className="min-h-14 cursor-not-allowed items-start gap-2 opacity-100"
-                    data-testid="menu-item-archive-unavailable"
-                  >
-                    <FolderOpen className="mt-0.5 h-4 w-4 text-zinc-500" />
-                    <span className="min-w-0">
-                      <span className="block font-medium text-zinc-700">Archive unavailable</span>
-                      <span className="mt-0.5 block whitespace-normal text-xs leading-4 text-zinc-600">Jobs have no archive state in the current schema.</span>
-                    </span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </div>
-          <div className="mt-3 w-full min-w-0">
-            <JobSectionMenu
-              value={activeTab}
-              onValueChange={setActiveTab}
-              invoiceCount={invoices.length}
-              pendingVariationCount={project.changeRequests.filter(awaitingClientApproval).length}
-              documentNotificationCount={
-                showDocNotification
-                  ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
-                  : 0
-              }
-            />
-          </div>
-        </div>
-      </JobHeader>
+      <ProjectManageHeader
+        project={project}
+        activeQuote={activeQuote}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        invoiceCount={invoices.length}
+        pendingVariationCount={project.changeRequests.filter(awaitingClientApproval).length}
+        documentNotificationCount={
+          showDocNotification
+            ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
+            : 0
+        }
+        isDuplicating={isDuplicating}
+        onBack={() => navigate('/dashboard')}
+        onSendToClient={handleSendToClient}
+        onDuplicateProject={handleDuplicateProject}
+        onCopyClientLink={handleCopyClientLink}
+        onPreviewClientPage={handlePreviewClientPage}
+        onUpdateProjectStatus={updateProjectStatus}
+      />
 
       <PageLayout headerless className="!py-6">
-        {/* Notification banners */}
-        {(showActionRequired || showVariationUpdate || showDocNotification) && (
-          <div className="space-y-3 mb-6">
-            {showActionRequired && (
-              <Card className="p-4 bg-pending/5 border-pending/30">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-pending/20 flex-shrink-0">
-                    <AlertCircle className="w-5 h-5 text-pending-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Your client has submitted {pendingClientRequests.length} variation{pendingClientRequests.length > 1 ? 's' : ''} that {pendingClientRequests.length > 1 ? 'need' : 'needs'} your response — see the Variations tab.
-                    </p>
-                  </div>
-                  <button
-                    onClick={dismissActionRequired}
-                    data-testid="button-dismiss-action-required"
-                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Dismiss notification"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </Card>
-            )}
-            {showDocNotification && (
-              <Card className="p-4 bg-primary/5 border-primary/20">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-primary/10 flex-shrink-0">
-                    <FolderOpen className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-semibold text-primary">New Documents</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length === 1
-                        ? '1 document was uploaded recently — see the Documents tab.'
-                        : `${recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length} documents were uploaded recently — see the Documents tab.`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={dismissDocNotification}
-                    data-testid="button-dismiss-doc-notification"
-                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Dismiss notification"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </Card>
-            )}
-            {showVariationUpdate && (
-              <Card className="p-4 bg-approved/5 border-approved/20">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-full bg-approved/10 flex-shrink-0">
-                    <CheckCircle2 className="w-5 h-5 text-approved" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-semibold text-approved">Variations Update</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {(() => {
-                        const approvedCount = recentlyResolvedChanges.filter(cr => cr.status === 'approved').length;
-                        const declinedCount = recentlyResolvedChanges.filter(cr => cr.status === 'declined').length;
-                        const parts: string[] = [];
-                        if (approvedCount > 0) parts.push(`${approvedCount} variation${approvedCount > 1 ? 's' : ''} approved`);
-                        if (declinedCount > 0) parts.push(`${declinedCount} variation${declinedCount > 1 ? 's' : ''} declined`);
-                        return `${parts.join(' and ')} by your client recently — see the Variations tab for details.`;
-                      })()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={dismissVariationUpdate}
-                    data-testid="button-dismiss-variation-update"
-                    className="flex-shrink-0 p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Dismiss notification"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
+        <ProjectManageNotifications
+          showActionRequired={showActionRequired}
+          showVariationUpdate={showVariationUpdate}
+          showDocNotification={showDocNotification}
+          pendingClientRequestCount={pendingClientRequests.length}
+          recentlyResolvedChanges={recentlyResolvedChanges}
+          newDocumentCount={recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length}
+          onDismissActionRequired={dismissActionRequired}
+          onDismissVariationUpdate={dismissVariationUpdate}
+          onDismissDocNotification={dismissDocNotification}
+        />
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
           <TabsContent value="costs" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Costs">
@@ -870,80 +694,18 @@ export default function ProjectManage() {
 
           {/* Changes Tab */}
           <TabsContent value="changes" className="mt-0 space-y-6" role="region" aria-labelledby={undefined} aria-label="Variations">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <h2 className="font-heading text-lg font-semibold">Variations</h2>
-                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Record work outside the agreed quote, track client approval and keep every change tied to this job.</p>
-              </div>
-              <Button className="min-h-11 w-full sm:w-auto" onClick={() => setIsSendingChangeRequest(true)}>
-                <Plus className="w-4 h-4 mr-2" />
-                + Add Variation
-              </Button>
-            </div>
-
-            {/* Client's comment on the quote — shown here so it's in context */}
-            {activeQuote?.clientComment && (
-              <Card className="p-4 bg-secondary/40 border-dashed">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                  Client's comment on the quote
-                </p>
-                <p className="text-sm">{activeQuote.clientComment}</p>
-              </Card>
-            )}
-
-            {/* Respond to Client Modal — always present, controlled by state */}
-            <RespondToClientModal
-              isOpen={!!respondingToRequest}
-              onClose={() => setRespondingToRequest(null)}
-              request={respondingToRequest}
-              onSubmit={handleSubmitResponse}
+            <ProjectVariationsTabContent
+              project={project}
+              activeQuote={activeQuote}
+              quoteLineItems={quoteLineItems}
+              recentlyResolvedChanges={recentlyResolvedChanges}
+              respondingToRequest={respondingToRequest}
+              onAddVariation={() => setIsSendingChangeRequest(true)}
+              onCloseResponse={() => setRespondingToRequest(null)}
+              onSubmitResponse={handleSubmitResponse}
+              onRespondToClient={handleRespondToClient}
+              onEditChangeRequest={setEditingChangeRequest}
             />
-
-            {project.changeRequests.length === 0 ? (
-              <Card className="p-10 text-center">
-                <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
-                <p className="mb-4 text-muted-foreground">No variations yet</p>
-                <Button className="min-h-11" onClick={() => setIsSendingChangeRequest(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add first variation
-                </Button>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {recentlyResolvedChanges.some(cr => cr.status === 'approved') && (
-                  <div className="flex items-center gap-2 rounded-lg border border-approved/20 bg-approved/10 p-3">
-                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-approved" />
-                    <p className="text-sm font-medium text-approved">
-                      {recentlyResolvedChanges.filter(cr => cr.status === 'approved').length} variation{recentlyResolvedChanges.filter(cr => cr.status === 'approved').length === 1 ? '' : 's'} approved in the last 72 hours.
-                    </p>
-                  </div>
-                )}
-                {project.changeRequests.map(request => (
-                  <div
-                    key={request.id}
-                    id={`variation-${request.id}`}
-                    tabIndex={-1}
-                    className="scroll-mt-32 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-700"
-                  >
-                    {request.status === 'pending' ? (
-                      <ChangeRequestCard
-                        request={request}
-                        relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
-                        viewerRole="trade"
-                        onRespond={handleRespondToClient}
-                      />
-                    ) : (
-                      <ChangeRequestItem
-                        relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
-                        request={request}
-                        onEdit={() => setEditingChangeRequest(request)}
-                        isNew={recentlyResolvedChanges.some(resolved => resolved.id === request.id)}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
           </TabsContent>
 
           {/* Quote Tab */}
@@ -1048,49 +810,12 @@ export default function ProjectManage() {
           </TabsContent>
 
           <TabsContent value="activity" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Activity">
-            <Card className="overflow-hidden">
-              <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border px-4 py-4 sm:px-5">
-                <div>
-                  <h2 className="font-heading text-lg font-semibold">Job activity</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">A record of saved quote, line-item and variation events.</p>
-                </div>
-                <span className="text-sm tabular-nums text-muted-foreground">{activityEvents.length} {activityEvents.length === 1 ? 'event' : 'events'}</span>
-              </div>
-              {historyLoading ? (
-                <div className="space-y-3 p-5" aria-label="Loading job activity">
-                  <Skeleton className="h-14 w-full rounded-lg" />
-                  <Skeleton className="h-14 w-full rounded-lg" />
-                  <Skeleton className="h-14 w-full rounded-lg" />
-                </div>
-              ) : historyError ? (
-                <div className="p-4 sm:p-5">
-                  <LoadErrorState title="Job activity could not be loaded" description="A failed activity request is not evidence that no saved activity exists." onRetry={refetchHistory} />
-                </div>
-              ) : activityEvents.length === 0 ? (
-                <div className="px-5 py-12 text-center">
-                  <Clock className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-                  <p className="font-medium">No activity recorded yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Saved job events will appear here.</p>
-                </div>
-              ) : (
-                <ol className="divide-y divide-border">
-                  {activityEvents.map(event => (
-                    <li key={event.id} className="flex items-start gap-3 px-4 py-4 sm:px-5">
-                      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-900">
-                        <Clock className="h-4 w-4" aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold">{event.label}</p>
-                        <p className="mt-0.5 break-words text-sm text-muted-foreground">{event.detail}</p>
-                      </div>
-                      <time className="shrink-0 pt-0.5 text-right text-sm text-muted-foreground" dateTime={event.timestamp.toISOString()}>
-                        {format(event.timestamp, 'd MMM yyyy · h:mm a')}
-                      </time>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </Card>
+            <ProjectActivityContent
+              activityEvents={activityEvents as ProjectActivityEvent[]}
+              isLoading={historyLoading}
+              hasError={Boolean(historyError)}
+              onRetry={refetchHistory}
+            />
           </TabsContent>
 
           {/* Invoices Tab */}
@@ -1250,111 +975,5 @@ export default function ProjectManage() {
         </DialogContent>
       </Dialog>
     </AppShell>
-  );
-}
-
-function ChangeRequestItem({ request, onEdit, isNew, relatedItemTitle }: { request: ChangeRequest; onEdit?: () => void; isNew?: boolean; relatedItemTitle?: string }) {
-  const typeConfig = {
-    client_request: { icon: User, label: 'Client Request', color: 'text-primary' },
-    site_issue: { icon: AlertTriangle, label: 'Site Issue', color: 'text-warning' },
-    substitution: { icon: Package, label: 'Substitution', color: 'text-muted-foreground' },
-    addition: { icon: Package, label: 'Addition', color: 'text-primary' },
-  };
-
-  const config = typeConfig[request.type];
-  const Icon = config.icon;
-  const isApproved = request.status === 'approved';
-
-  return (
-    <Card className={cn(
-      "p-4 group overflow-hidden relative",
-      request.status === 'pending' && "ring-2 ring-pending/30",
-      isApproved && "border-approved/40 bg-approved/5"
-    )}>
-      {/* Green approved stripe along the left edge */}
-      {isApproved && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-approved" />
-      )}
-
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <Icon className={cn("w-4 h-4", config.color)} />
-          <Badge variant="secondary" className="text-xs">{config.label}</Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          {isNew && (
-            <Badge variant="success" className="text-xs gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              New
-            </Badge>
-          )}
-          {onEdit && (
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="h-7 w-7"
-              onClick={onEdit}
-            >
-              <Pencil className="w-3.5 h-3.5" />
-            </Button>
-          )}
-          <StatusBadge status={request.status} />
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2 mb-1">
-        {isApproved && (
-          <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
-        )}
-        <h4 className="font-medium">{request.title}</h4>
-      </div>
-      {relatedItemTitle && <p className="text-sm text-muted-foreground mb-2">Related quote item: {relatedItemTitle}</p>}
-      <p className="text-sm text-muted-foreground mb-3">{request.description}</p>
-
-      {request.imageUrl && (
-        <div className="mb-3">
-          <ImageDisplay src={request.imageUrl} alt={request.title} className="max-w-[200px]" />
-        </div>
-      )}
-
-      {/* Client's comment on this variation */}
-      {request.resolutionComment && request.status !== 'pending' && request.status !== 'awaiting_client' && (
-        <div className="mb-3 p-3 rounded-lg bg-secondary/60 border border-border/50">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
-            Client's comment
-          </p>
-          <p className="text-sm">{request.resolutionComment}</p>
-        </div>
-      )}
-
-      <div className="flex flex-wrap gap-3 text-sm">
-        <div className={cn(
-          "flex items-center gap-1.5 px-2 py-1 rounded",
-          request.costImpact > 0 ? "bg-warning/10 text-warning-foreground" :
-          request.costImpact < 0 ? "bg-approved/10 text-approved" :
-          "bg-secondary text-muted-foreground"
-        )}>
-          <DollarSign className="w-3.5 h-3.5" />
-          {request.costImpact === 0 ? 'No cost change' :
-           request.costImpact > 0 ? `+$${request.costImpact.toLocaleString()}` :
-           `-$${Math.abs(request.costImpact).toLocaleString()}`}
-        </div>
-        <div className={cn(
-          "flex items-center gap-1.5 px-2 py-1 rounded",
-          request.timeImpact > 0 ? "bg-warning/10 text-warning-foreground" :
-          request.timeImpact < 0 ? "bg-approved/10 text-approved" :
-          "bg-secondary text-muted-foreground"
-        )}>
-          <Clock className="w-3.5 h-3.5" />
-          {request.timeImpact === 0 ? 'No delay' :
-           request.timeImpact > 0 ? `+${request.timeImpact} days` :
-           `${request.timeImpact} days`}
-        </div>
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary text-muted-foreground">
-          <Calendar className="w-3.5 h-3.5" />
-          {format(request.createdAt, 'MMM d, yyyy')}
-        </div>
-      </div>
-    </Card>
   );
 }

@@ -40,6 +40,9 @@ import { toast } from 'sonner';
 import { cn, cleanVariationTitle, isVariationItem, stripVariationMeta } from '@/lib/utils';
 import { format } from 'date-fns';
 import { aud } from '@/hooks/useJobCosts';
+import { QuoteHeader } from '@/components/quote/QuoteHeader';
+import { EditableQuoteTotals, QuoteTotalsSummary } from '@/components/quote/QuoteTotals';
+import { QuoteLineItemsTable } from '@/components/quote/QuoteLineItemsTable';
 
 interface QuoteSectionProps {
   quote: Quote | null;
@@ -655,36 +658,13 @@ export function QuoteSection({
           )}
         </div>
 
-        {/* Totals */}
-        <div className="min-w-0 space-y-3 border-t pt-4">
-          <div className="flex justify-between gap-3">
-            <span className="text-muted-foreground">Subtotal (ex GST)</span>
-            <span className="font-medium">
-              {aud(subtotal)}
-            </span>
-          </div>
-          
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-            <Label htmlFor="taxRate" className="text-muted-foreground whitespace-nowrap">GST rate (%)</Label>
-            <Input
-              id="taxRate"
-              type="number"
-              value={taxRate}
-              onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-              className="w-24"
-            />
-            <span className="ml-auto font-medium whitespace-nowrap" aria-label="GST amount">
-              GST {aud(taxAmount)}
-            </span>
-          </div>
-
-          <div className="flex justify-between text-lg font-bold border-t pt-3">
-            <span>Total (inc GST)</span>
-            <span className="text-primary">
-              {aud(total)}
-            </span>
-          </div>
-        </div>
+        <EditableQuoteTotals
+          subtotal={subtotal}
+          taxRate={taxRate}
+          taxAmount={taxAmount}
+          total={total}
+          onTaxRateChange={setTaxRate}
+        />
 
         {/* Additional Fields */}
         <div className="space-y-4">
@@ -760,7 +740,6 @@ export function QuoteSection({
 
   // Display existing quote
   const config = statusConfig[quote!.status];
-  const StatusIcon = config.icon;
 
   return (
     <div className="w-full min-w-0 space-y-6">
@@ -776,71 +755,17 @@ export function QuoteSection({
           </div>
         </div>
       )}
-      {/* Quote Header */}
       <Card className="w-full min-w-0 p-4 sm:p-6">
-        <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div className="flex min-w-0 items-start sm:items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileText className="w-5 h-5 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <div className="flex flex-col gap-0.5">
-                <h3 className="font-heading font-semibold break-words [overflow-wrap:anywhere]">{quote!.quoteNumber}</h3>
-                {isTradeView ? (
-                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
-                    <Label htmlFor="quote-reference-field" className="sr-only">Quote reference</Label>
-                    <Input
-                      id="quote-reference-field"
-                      value={quoteRef}
-                      onChange={e => setQuoteRef(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') void handleSaveRef(); }}
-                      className="h-10 w-full max-w-sm text-sm"
-                      placeholder="Add reference"
-                      data-testid="input-quote-reference"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="min-h-10"
-                      onClick={() => void handleSaveRef()}
-                      disabled={isSavingRef || quoteRef.trim() === (quote!.reference ?? '')}
-                      data-testid="button-save-quote-reference"
-                    >
-                      {isSavingRef ? 'Saving…' : 'Save reference'}
-                    </Button>
-                  </div>
-                ) : (
-                  quote!.reference && <p className="mt-1 min-w-0 break-words text-sm text-muted-foreground">{quote!.reference}</p>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Created {format(quote!.createdAt, 'dd MMM yyyy')}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <Badge variant={config.variant} className="gap-1.5">
-              <StatusIcon className="w-3.5 h-3.5" />
-              {config.label}
-            </Badge>
-          </div>
-        </div>
-
-        <div className="mb-4 grid gap-3 rounded-lg border border-border bg-muted/25 p-4 sm:grid-cols-3">
-          <div className="flex items-center justify-between gap-3 sm:block">
-            <p className="text-sm text-muted-foreground">Subtotal <span className="text-xs">ex GST</span></p>
-            <p className="text-base font-semibold tabular-nums">{aud(subtotal)}</p>
-          </div>
-          <div className="flex items-center justify-between gap-3 sm:block">
-            <p className="text-sm text-muted-foreground">GST ({taxRate}%)</p>
-            <p className="text-base font-semibold tabular-nums">{aud(taxAmount)}</p>
-          </div>
-          <div className="flex items-center justify-between gap-3 border-t border-border pt-2 sm:block sm:border-0 sm:pt-0">
-            <p className="text-sm font-semibold text-foreground">Total <span className="text-xs font-normal text-muted-foreground">inc GST</span></p>
-            <p className="text-lg font-bold tabular-nums text-primary">{aud(total)}</p>
-          </div>
-        </div>
+        <QuoteHeader
+          quote={quote!}
+          config={config}
+          isTradeView={isTradeView}
+          quoteRef={quoteRef}
+          onQuoteRefChange={setQuoteRef}
+          onSaveReference={handleSaveRef}
+          isSavingReference={isSavingRef}
+        />
+        <QuoteTotalsSummary subtotal={subtotal} taxRate={taxRate} taxAmount={taxAmount} total={total} />
 
         {/* Actions (Trade View) */}
         {isTradeView && (
@@ -942,192 +867,22 @@ export function QuoteSection({
           </div>
         )}
 
-        {/* Included Items — scope + custom line items merged (no variation duplicates) */}
-        {(includedItems.length > 0 || baseQuoteLineItems.length > 0 || (isTradeView && onSaveScopeItem)) && (
-          <div className="border rounded-lg divide-y mb-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/30 px-3 py-2">
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <span className="text-sm font-semibold">Included items</span>
-                <span className="text-sm text-muted-foreground">Subtotal <span className="text-xs">ex GST</span>: <span className="font-semibold tabular-nums text-foreground">{aud(scopeSubtotal + customItemsTotal)}</span></span>
-              </div>
-              {isTradeView && onSaveScopeItem && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="min-h-11"
-                  onClick={() => { setAddScopeItemCategory('included'); setIsAddingScopeItem(true); }}
-                  data-testid="button-add-scope-item-read"
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Add item
-                </Button>
-              )}
-            </div>
-            {includedItems.map(item => (
-              <div key={item.id} className="p-3 flex flex-col sm:flex-row justify-between items-start gap-2">
-                <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
-                  <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
-                  {stripVariationMeta(item.description) && (
-                    <RichTextContent html={stripVariationMeta(item.description)} className="max-w-[75ch] text-sm mt-1 leading-6 break-words [overflow-wrap:anywhere]" />
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium whitespace-nowrap">
-                    {aud(item.cost || 0)}
-                  </span>
-                  {isTradeView && onSaveScopeItem && (
-                    <button
-                      type="button"
-                      onClick={() => setEditingScopeItem(item)}
-                      className="p-1 rounded hover:bg-muted text-muted-foreground transition-colors"
-                      data-testid={`button-edit-scope-item-read-${item.id}`}
-                    >
-                      <Pencil className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-            {baseQuoteLineItems.map(item => {
-              const itemHistory = lineItemHistory.filter(h => h.lineItemId === item.id);
-              const hasHistory = itemHistory.length > 0;
-              const isExpanded = expandedHistoryItemId === item.id;
-              return (
-                <div key={item.id} className="p-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                    <div className="w-full min-w-0 sm:flex-1 sm:pr-2">
-                      <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
-                      {stripVariationMeta(item.description) && (
-                        <RichTextContent html={stripVariationMeta(item.description)} className="max-w-[75ch] text-sm mt-1 leading-6 break-words [overflow-wrap:anywhere]" />
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-medium whitespace-nowrap">
-                        {aud(item.cost || 0)}
-                      </span>
-                      {hasHistory && isTradeView && (
-                        <button
-                          type="button"
-                          onClick={() => setExpandedHistoryItemId(isExpanded ? null : item.id)}
-                          className={cn(
-                            'p-1 rounded transition-colors',
-                            isExpanded
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                          )}
-                          title="View change history"
-                          data-testid={`button-item-history-${item.id}`}
-                        >
-                          <Clock className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  {isExpanded && (
-                    <div className="mt-2 pt-2 border-t border-dashed space-y-1">
-                      {itemHistory.map(h => (
-                        <div key={h.id} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
-                          <div className="flex-1 min-w-0">
-                            <span>{formatHistoryEntry(h)}</span>
-                            <span className="ml-2 opacity-60">
-                              {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {' '}
-                              {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Approved Variations — separate green section */}
-        {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
-          <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-6">
-            <div className="px-3 py-2 border-b border-approved/20">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
-                <span className="text-sm font-semibold tabular-nums text-approved">Subtotal {aud(changesImpact)}</span>
-              </div>
-            </div>
-            {approvedChanges.map(change => (
-              <div key={change.id} className="p-3 flex flex-col sm:flex-row justify-between items-start gap-2">
-                <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
-                  <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</span>
-                  {stripVariationMeta(change.description) && (
-                    <RichTextContent html={stripVariationMeta(change.description)} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
-                  )}
-                </div>
-                <span className={cn(
-                  "text-sm font-medium whitespace-nowrap",
-                  change.costImpact > 0 ? "text-approved" : change.costImpact < 0 ? "text-destructive" : ""
-                )}>
-                  {change.costImpact > 0 ? '+' : ''}{aud(change.costImpact)}
-                </span>
-              </div>
-            ))}
-            {variationLineItems.map(item => {
-              const itemHistory = lineItemHistory.filter(h => h.lineItemId === item.id);
-              const isExpanded = expandedHistoryItemId === item.id;
-              return (
-                <div key={item.id} className="p-3">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
-                    <div className="w-full min-w-0 sm:flex-1 sm:pr-2">
-                      <div className="flex min-w-0 items-center gap-1.5">
-                        <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</span>
-                        {itemHistory.length > 0 && isTradeView && (
-                          <button
-                            type="button"
-                            onClick={() => setExpandedHistoryItemId(isExpanded ? null : item.id)}
-                            className={cn(
-                              'p-1 rounded transition-colors',
-                              isExpanded
-                                ? 'bg-primary/10 text-primary'
-                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                            )}
-                            title="View change history"
-                            data-testid={`button-item-history-${item.id}`}
-                          >
-                            <Clock className="w-3 h-3" />
-                          </button>
-                        )}
-                      </div>
-                      {item.description && (
-                        <RichTextContent html={item.description} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
-                      )}
-                    </div>
-                    <span className="text-sm font-medium whitespace-nowrap text-approved">
-                      +{aud(item.cost || 0)}
-                    </span>
-                  </div>
-                  {isExpanded && (
-                    <div className="mt-2 pt-2 border-t border-dashed space-y-1">
-                      {itemHistory.map(h => (
-                        <div key={h.id} className="flex items-start gap-2 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-60" />
-                          <div className="flex-1 min-w-0">
-                            <span>{formatHistoryEntry(h)}</span>
-                            <span className="ml-2 opacity-60">
-                              {h.createdAt.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {' '}
-                              {h.createdAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <QuoteLineItemsTable
+          includedItems={includedItems}
+          baseQuoteLineItems={baseQuoteLineItems}
+          approvedChanges={approvedChanges}
+          variationLineItems={variationLineItems}
+          lineItemHistory={lineItemHistory}
+          scopeSubtotal={scopeSubtotal}
+          customItemsTotal={customItemsTotal}
+          changesImpact={changesImpact}
+          isTradeView={isTradeView}
+          canEditScopeItems={isTradeView && !!onSaveScopeItem}
+          expandedHistoryItemId={expandedHistoryItemId}
+          onAddIncludedItem={() => { setAddScopeItemCategory('included'); setIsAddingScopeItem(true); }}
+          onEditScopeItem={setEditingScopeItem}
+          onToggleHistoryItem={itemId => setExpandedHistoryItemId(expandedHistoryItemId === itemId ? null : itemId)}
+        />
 
         {/* Valid Until */}
         {quote!.validUntil && (
