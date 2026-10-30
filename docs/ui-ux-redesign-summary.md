@@ -41,7 +41,7 @@ No database, authentication or permission changes were made for this redesign. E
 - Employee/owner/admin timesheet edit, review, reopen and confirmed-delete interactions passed at 320px, 390px and 1280px.
 - Receipt camera-selection, scanning, editable review, saved items and view/edit layouts passed at phone/desktop widths. Public entry routes also passed the existing 320px layout checks.
 - Live signed-in user data/UI were not verified. The unauthenticated screenshot correctly redirects to sign-in.
-- Full application TypeScript checking still reports nine errors in existing unrelated code. Build success is not a claim that full TypeScript checking passed.
+- At the end of Round 1, full application TypeScript checking reported nine errors. Round 2 resolves them and adds `npm run typecheck`.
 
 Republishing is required to make this workspace version live.
 
@@ -98,3 +98,15 @@ Republishing is required to make this workspace version live.
 - **Final-cost flag:** define qualifying evidence, confirming actor/time, distinction between estimate and confirmed actual cost, and an audited reopen path.
 - **Files changed:** `docs/ui-ux-redesign-summary.md` only. No implementation or data-model changes.
 - **Verification:** documentation review only; obtain product approval before schema or workflow design.
+
+### Final integration notes
+
+- **Section 1:** removed remaining raw border/background colours from `ProjectsPage.tsx`, `TradeDashboard.tsx` and `job-costing/ProfitabilityPage.tsx`. Avatars now pair semantic backgrounds with their correct foregrounds instead of white on amber. Employee/Team destructive actions and employee brand marks also use matched token pairs.
+- **Section 3:** raised remaining employee metadata/unread counters to at least 12px in `employee/{EmployeeAccept,EmployeeHome,EmployeeLogin,EmployeeTimesheets,PageTitle,PortalLayout,UnreadDot}.tsx`. Unread counters use info tokens. Client text uses dark foreground tokens instead of amber text on white.
+- **Section 4:** `client/ClientChangeRequest.tsx`, `ClientProjectView.tsx` and `ClientQuote.tsx` now offer the same on-page “Request a change” dialog before and after a decision. It uses the existing `useProject.createChangeRequest` workflow, retains text if saving fails, and does not change the quote decision or price. The original image-capable project variation form remains available. A presentation-only `subject` prop in `ApprovalModal.tsx` makes quote confirmations say “Accept Quote”, not “Approve Variation”.
+- **Added tests:** `tests/clientPages.browser.mjs` checks real client components at 320/375/768px, invalid links, above-fold 44px actions, accept/decline on both routes, persistent decision panels, actual PDF downloads and same-page change submissions. All data and service replacements are synthetic and isolated to the test bundle. `tests/setup.ts` supplies in-memory localStorage to non-browser tests, without changing production auth.
+- **Measured contrast:** primary, success, warning, destructive and info token pairs measure approximately 7.94:1, 5.72:1, 4.55:1, 8.52:1 and 7.19:1. This is not a full WCAG audit.
+- **Unresolved interaction:** the full `employeePortal.browser.mjs` run passes clock-in/out (including break validation and GPS cases), ticking timers, supervisor review and pay visibility, but fails reopening the team actions menu immediately after cancelling removal with Escape. Changing dropdown modality and explicitly restoring focus did not make that scenario pass. This is not a passing suite; whether this failure existed before Round 2 has not been established.
+- **Test limitations:** Bun unit checks need `bun test --preload ./tests/setup.ts ...` because browser storage is absent. The quote SSR test additionally needs a DOM for the existing sanitizer; rendered client routes are covered by browser tests instead. No live customer session, production permission or production email-delivery test was performed.
+- No Round 2 changes to business calculations, server routes, database schema, authentication or permissions. Type metadata now describes the existing invite table; no migration was applied. Secure client capabilities remain in place.
+- **Final combined checks:** `npm run typecheck`, `npm run build`, editor diagnostics and `git diff --check` passed. The non-DOM test command passed **81 tests across 13 files** (quote SSR test excluded for the DOM requirement above). The management browser suite passed **36 route/viewport checks**; the client suite passed **12 layout/error/decision-flow scenarios**. The 375px screenshot of the real client quote with synthetic data fits the viewport and shows the primary action above the fold. The screenshot's history request correctly rejected the synthetic capability (401); the browser interaction suite uses isolated synthetic API responses. This is not a test against a real customer's link or account.

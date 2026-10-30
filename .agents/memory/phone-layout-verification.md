@@ -14,3 +14,9 @@ Modal menu verification must account for the accessibility tree and exit animati
 **Why:** Radix modal menus intentionally hide background controls from accessibility queries while open and may retain closing content during animation. Immediate absence assertions or visible-role queries for background controls can falsely report broken navigation.
 
 **How to apply:** Wait for the menu to finish closing before asserting dismissal or restored focus. For an intentional outside-click test, locate the background control without assuming it remains exposed to assistive technology during the modal state.
+
+Menu-to-dialog handoffs must be verified with Escape, Cancel and reopening the same actions menu, not just the initial confirmation.
+
+**Why:** A native-popup replacement passed initial dialog and timesheet checks but the broader employee portal suite exposed a team-removal Escape/reopen failure.
+
+**How to apply:** Include the full dismissal/reopen interaction when changing portal dialogs or menu modality. Do not infer that passing a timesheet suite proves the separate team-member removal flow works.
