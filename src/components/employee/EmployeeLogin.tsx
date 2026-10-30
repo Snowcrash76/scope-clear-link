@@ -40,12 +40,12 @@ export function EmployeeLogin() {
           to="/"
           className="inline-flex min-h-11 items-center gap-2 font-bold"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-muted text-xs text-white">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-xs text-primary-foreground">
             SC
           </span>
           ScopeClear
         </Link>
-        <p className="portal-mono mt-8 text-[10px] uppercase tracking-[.16em] text-muted-foreground">
+        <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
           Employee sign in
         </p>
         <h1 className="mt-2 text-3xl font-bold">Welcome to site.</h1>

@@ -533,7 +533,7 @@ export function EmployeeTimesheets() {
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-2">
-                            <span className="rounded-full bg-muted px-2 py-1 text-[10px] font-semibold capitalize">
+                            <span className="rounded-full bg-muted px-2 py-1 text-xs font-semibold capitalize">
                               {e.status}
                             </span>
                             {e.status === "draft" &&
@@ -650,7 +650,7 @@ export function EmployeeTimesheets() {
                     </Button>
                     <Button
                       type="button"
-                      className={`${btn} border border-border bg-muted text-white hover:bg-muted`}
+                      className={`${btn} border border-destructive bg-destructive text-destructive-foreground hover:bg-destructive/90`}
                       disabled={busy}
                       onClick={() => void remove()}
                     >

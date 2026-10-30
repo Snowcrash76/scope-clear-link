@@ -159,7 +159,7 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
           <>
             <section className="mb-6 grid gap-4 sm:grid-cols-[1.3fr_.7fr]">
               <div className={`${card} portal-grid p-5 sm:p-6`}>
-                <p className="portal-mono text-[10px] uppercase tracking-[.15em] text-muted-foreground">
+                <p className="portal-mono text-xs uppercase tracking-[.15em] text-muted-foreground">
                   Business date · {data?.timezone}
                 </p>
                 <p className="mt-3 text-2xl font-bold text-muted-foreground">

@@ -54,7 +54,7 @@ export function EmployeeAccept() {
         <Link to="/" className="font-bold">
           ScopeClear
         </Link>
-        <p className="portal-mono mt-8 text-[10px] uppercase tracking-[.16em] text-muted-foreground">
+        <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
           Team invitation
         </p>
         {!token ? (

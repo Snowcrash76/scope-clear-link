@@ -8,7 +8,7 @@ export function UnreadDot() {
   return count > 0 ? (
     <span
       aria-label={`${count} unread`}
-      className="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-muted px-1 text-[9px] font-bold text-white ring-2 ring-white"
+      className="absolute -right-1 -top-1 grid min-h-5 min-w-5 place-items-center rounded-full bg-info px-1 text-xs font-bold text-info-foreground ring-2 ring-background"
     >
       {count > 9 ? "9+" : count}
     </span>

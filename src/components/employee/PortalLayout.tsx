@@ -48,12 +48,12 @@ export function PortalLayout({
             className="flex min-h-11 items-center gap-3"
             aria-label="ScopeClear home"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-muted text-white">
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
               <span className="portal-mono text-xs">SC</span>
             </span>
             <span>
               <b className="block text-[15px] tracking-tight">ScopeClear</b>
-              <small className="block text-[10px] uppercase tracking-[.14em] text-muted-foreground">
+              <small className="block text-xs uppercase tracking-[.14em] text-muted-foreground">
                 {management ? "Team desk" : "Field portal"}
               </small>
             </span>
