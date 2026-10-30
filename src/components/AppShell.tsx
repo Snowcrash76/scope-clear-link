@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { CreateJobModal } from '@/components/CreateJobModal';
 import { AppHeader } from '@/components/AppHeader';
 import { useCreateProject, type CreateProjectData } from '@/hooks/useCreateProject';
@@ -37,10 +37,12 @@ import {
   FolderOpen,
   FileText,
   Receipt,
-  Users,
   KeyRound,
   ShieldCheck,
   ChartNoAxesCombined,
+  Search,
+  ContactRound,
+  UsersRound,
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PasswordInput } from '@/components/PasswordInput';
@@ -102,14 +104,18 @@ function SidebarInner({
 }: SidebarInnerProps) {
   const act = (fn: () => void) => { onClose?.(); fn(); };
 
-  const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', active: currentPath === '/dashboard', testId: 'nav-dashboard' },
-    { to: '/projects', icon: FolderOpen, label: 'Jobs', active: currentPath.startsWith('/projects') || currentPath.startsWith('/manage'), testId: 'nav-projects' },
-    { to: '/profitability', icon: ChartNoAxesCombined, label: 'Profitability', active: currentPath.startsWith('/profitability'), testId: 'nav-profitability' },
-    { to: '/quotes', icon: FileText, label: 'Quotes', active: currentPath.startsWith('/quotes'), testId: 'nav-quotes' },
-    { to: '/invoices', icon: Receipt, label: 'Invoices', active: currentPath.startsWith('/invoices'), testId: 'nav-invoices' },
-    { to: '/clients', icon: Users, label: 'Clients', active: currentPath.startsWith('/clients'), testId: 'nav-clients' },
-    { to: '/team', icon: Users, label: 'Team', active: currentPath.startsWith('/team'), testId: 'nav-team' },
+  const navGroups = [
+    { label: 'OVERVIEW', items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', active: currentPath === '/dashboard', testId: 'nav-dashboard' }] },
+    { label: 'WORK', items: [
+      { to: '/projects', icon: FolderOpen, label: 'Jobs', active: currentPath.startsWith('/projects') || currentPath.startsWith('/manage'), testId: 'nav-projects' },
+      { to: '/quotes', icon: FileText, label: 'Quotes', active: currentPath.startsWith('/quotes'), testId: 'nav-quotes' },
+      { to: '/invoices', icon: Receipt, label: 'Invoices', active: currentPath.startsWith('/invoices'), testId: 'nav-invoices' },
+    ] },
+    { label: 'MONEY', items: [{ to: '/profitability', icon: ChartNoAxesCombined, label: 'Profitability', active: currentPath.startsWith('/profitability'), testId: 'nav-profitability' }] },
+    { label: 'PEOPLE', items: [
+      { to: '/clients', icon: ContactRound, label: 'Clients', active: currentPath.startsWith('/clients'), testId: 'nav-clients' },
+      { to: '/team', icon: UsersRound, label: 'Team', active: currentPath.startsWith('/team'), testId: 'nav-team' },
+    ] },
   ];
 
   return (
@@ -120,7 +126,7 @@ function SidebarInner({
           <span className="font-heading font-black text-xl tracking-tighter text-amber-700">ScopeClear</span>
         </div>
         {businessName && (
-          <p className="text-xs text-zinc-600 mt-1 truncate">{businessName}</p>
+          <p className="text-sm text-zinc-700 mt-1 truncate">{businessName}</p>
         )}
       </div>
 
@@ -137,39 +143,36 @@ function SidebarInner({
       </div>
 
       {/* Nav items */}
-      <nav className="pt-3 flex-1 space-y-0.5 overflow-y-auto">
-        {navItems.map(({ to, icon: Icon, label, active, testId }) => (
-          <Link
-            key={label}
-            to={to}
-            onClick={() => onClose?.()}
-            className={cn(
-              'flex min-h-11 items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
-              active
-                ? 'border-l-4 border-amber-500 bg-amber-50 text-amber-800'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg mx-1'
-            )}
-            data-testid={testId}
-          >
-            <Icon className="w-4 h-4 flex-shrink-0" />
-            {label}
-          </Link>
-        ))}
+      <nav className="flex-1 space-y-4 overflow-y-auto px-2 pt-3" aria-label="Main navigation">
+        {navGroups.map(group => <div key={group.label}>
+          <p className="px-3 pb-1 text-sm font-semibold tracking-[.12em] text-zinc-700">{group.label}</p>
+          {group.items.map(({ to, icon: Icon, label, active, testId }) => (
+            <Link key={label} to={to} onClick={() => onClose?.()}
+              className={cn(
+                'mx-1 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                active ? 'bg-amber-100 text-zinc-950 ring-1 ring-inset ring-amber-300' : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950'
+              )}
+              aria-current={active ? 'page' : undefined}
+              data-testid={testId}>
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {label}
+            </Link>
+          ))}
+        </div>)}
         {ADMIN_EMAIL && authEmail === ADMIN_EMAIL && (
+          <div>
+          <p className="px-3 pb-1 text-sm font-semibold tracking-[.12em] text-zinc-700">ADMIN</p>
           <Link
             to="/admin"
             onClick={() => onClose?.()}
-            className={cn(
-              'flex min-h-11 items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors',
-              currentPath.startsWith('/admin')
-                ? 'border-l-4 border-amber-500 bg-amber-50 text-amber-800'
-                : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg mx-1'
-            )}
+            className={cn('mx-1 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              currentPath.startsWith('/admin') ? 'bg-amber-100 text-zinc-950 ring-1 ring-inset ring-amber-300' : 'text-zinc-700 hover:bg-zinc-100 hover:text-zinc-950')}
             data-testid="nav-admin"
           >
             <ShieldCheck className="w-4 h-4 flex-shrink-0" />
             Admin
           </Link>
+          </div>
         )}
       </nav>
 
@@ -207,6 +210,13 @@ function SidebarInner({
   );
 }
 
+interface GlobalSearchResult {
+  type: 'Job' | 'Quote' | 'Client';
+  title: string;
+  detail: string;
+  href: string;
+}
+
 interface AppShellProps {
   children: React.ReactNode;
   headerActions?: React.ReactNode;
@@ -221,8 +231,64 @@ export function AppShell({ children, headerActions }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const globalSearchQuery = useQuery({
+    queryKey: ['global-search-index', user?.id],
+    enabled: globalSearchOpen && !!user?.id,
+    staleTime: 30_000,
+    queryFn: async (): Promise<GlobalSearchResult[]> => {
+      const { data: projects, error: projectError } = await supabase.from('projects')
+        .select('id, name, client_name, client_email, client_address')
+        .eq('user_id', user!.id);
+      if (projectError) throw projectError;
+      const rows = projects ?? [];
+      if (!rows.length) return [];
+      const projectById = new Map(rows.map(row => [row.id, row]));
+      const projectResults: GlobalSearchResult[] = rows.map(row => ({
+        type: 'Job', title: row.name, detail: row.client_name || 'No client name',
+        href: `/manage/${row.id}`,
+      }));
+      const clientByKey = new Map<string, typeof rows[number]>();
+      for (const row of rows) {
+        const key = (row.client_email || row.client_name || row.id).toLocaleLowerCase();
+        if (!clientByKey.has(key)) clientByKey.set(key, row);
+      }
+      const clientResults: GlobalSearchResult[] = [...clientByKey.values()].map(row => ({
+        type: 'Client', title: row.client_name || 'Unnamed client',
+        detail: row.client_email || row.client_address || row.name,
+        href: `/manage/${row.id}`,
+      }));
+      const { data: quotes, error: quoteError } = await supabase.from('quotes')
+        .select('id, project_id, quote_number')
+        .in('project_id', rows.map(row => row.id));
+      if (quoteError) throw quoteError;
+      const quoteResults: GlobalSearchResult[] = (quotes ?? []).map(quote => ({
+        type: 'Quote', title: quote.quote_number,
+        detail: projectById.get(quote.project_id)?.name ?? 'Job quote',
+        href: `/manage/${quote.project_id}?tab=quote`,
+      }));
+      return [...projectResults, ...clientResults, ...quoteResults];
+    },
+  });
+  const globalSearchResults = (globalSearchQuery.data ?? []).filter(result => {
+    const search = globalSearchTerm.trim().toLocaleLowerCase();
+    return !search || `${result.type} ${result.title} ${result.detail}`.toLocaleLowerCase().includes(search);
+  }).slice(0, 10);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setGlobalSearchOpen(true);
+      }
+      if (event.key === 'Escape') setGlobalSearchOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const [settingsForm, setSettingsForm] = useState({
     businessName: '',
@@ -411,7 +477,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
   };
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div className="min-h-[100dvh] flex bg-background">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:z-40">
         <SidebarInner {...sidebarProps} />
@@ -427,10 +493,43 @@ export function AppShell({ children, headerActions }: AppShellProps) {
 
       {/* Page content */}
       <div className="flex-1 lg:pl-64 min-w-0 flex flex-col">
-        <AppHeader actions={headerActions} onOpenNavigation={() => setMobileOpen(true)} />
+        <AppHeader
+          actions={<div className="flex min-w-0 items-center gap-2">
+            <Button variant="outline" className="min-h-11 max-w-[min(62vw,22rem)] justify-start gap-2 px-3 text-sm text-zinc-700" onClick={() => { setGlobalSearchTerm(''); setGlobalSearchOpen(true); }} aria-label="Search jobs, quotes or clients">
+              <Search className="h-4 w-4 shrink-0" /><span className="truncate">Search jobs, quotes or clients…</span><kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-sm text-muted-foreground sm:inline-flex">Ctrl / ⌘ K</kbd>
+            </Button>
+            {headerActions}
+          </div>}
+          onOpenNavigation={() => setMobileOpen(true)}
+        />
 
         {children}
       </div>
+
+      <Dialog open={globalSearchOpen} onOpenChange={setGlobalSearchOpen}>
+        <DialogContent className="top-[12vh] translate-y-0 gap-0 p-0 sm:max-w-xl">
+          <DialogHeader className="border-b px-5 py-4">
+            <DialogTitle>Search jobs, quotes or clients</DialogTitle>
+            <DialogDescription>Search the records in your workspace.</DialogDescription>
+          </DialogHeader>
+          <div className="p-4">
+            <Input autoFocus value={globalSearchTerm} onChange={event => setGlobalSearchTerm(event.target.value)}
+              placeholder="Search jobs, quotes or clients…" aria-label="Search jobs, quotes or clients"
+              name="workspace-search" autoComplete="off" className="min-h-12" />
+            <div className="mt-3 max-h-[50dvh] overflow-y-auto" aria-live="polite">
+              {globalSearchQuery.isLoading ? <div className="space-y-2 p-2" aria-label="Searching"><div className="h-12 animate-pulse rounded-lg bg-muted" /><div className="h-12 animate-pulse rounded-lg bg-muted" /></div>
+                : globalSearchQuery.isError ? <div className="p-3 text-sm text-destructive" role="alert">Search could not load. Close and try again.</div>
+                  : globalSearchResults.length ? globalSearchResults.map((result, index) => <button key={`${result.type}-${result.title}-${index}`} type="button"
+                    onClick={() => { setGlobalSearchOpen(false); navigate(result.href); }}
+                    className="flex min-h-12 w-full items-center gap-3 rounded-lg px-3 text-left hover:bg-amber-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                     <span className="min-w-16 text-sm font-semibold uppercase tracking-wide text-amber-900">{result.type}</span>
+                    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium text-foreground">{result.title}</span><span className="block truncate text-sm text-muted-foreground">{result.detail}</span></span>
+                  </button>)
+                    : <p className="p-4 text-center text-sm text-muted-foreground">{globalSearchTerm ? 'No matching records.' : 'Type to find a job, quote or client.'}</p>}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* New Job Modal */}
       <CreateJobModal

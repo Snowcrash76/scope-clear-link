@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/AppShell';
+import { PageLayout } from '@/components/PageLayout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
-import { FileText, ChevronRight, Search } from 'lucide-react';
+import { FileText, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { StatusBadge } from '@/components/StatusBadge';
@@ -50,29 +50,17 @@ function useAllQuotes() {
 export default function QuotesPage() {
   const navigate = useNavigate();
   const query = useAllQuotes();
-  const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all');
   const quotes = query.data ?? [];
-  const visible = useMemo(() => quotes.filter(quote => {
+  const visible = quotes.filter(quote => {
     const status = quoteDisplayStatus(quote);
     const matchesStatus = filter === 'all' || status === filter;
-    const needle = search.trim().toLocaleLowerCase();
-    const matchesSearch = !needle || [quote.projectName, quote.clientName, quote.quote_number]
-      .some(value => value.toLocaleLowerCase().includes(needle));
-    return matchesStatus && matchesSearch;
-  }), [quotes, filter, search]);
+    return matchesStatus;
+  });
 
   return <AppShell>
-    <main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 sm:px-6 sm:py-8">
-      <header className="mb-5">
-        <h1 className="font-heading text-2xl font-bold">Quotes</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Every quote, with the client-facing status and ex-GST value.</p>
-      </header>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:max-w-md">
-          <Search aria-hidden="true" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input aria-label="Search quotes" name="quote-search" autoComplete="off" placeholder="Search quotes, jobs or clients…" value={search} onChange={event => setSearch(event.target.value)} className="pl-9" />
-        </div>
+    <PageLayout title="Quotes" description="Every quote, with the client-facing status and ex-GST value.">
+      <div className="mb-4 flex justify-end">
         <p className="text-sm text-muted-foreground">{visible.length} {visible.length === 1 ? 'quote' : 'quotes'}</p>
       </div>
       <div className="mb-4 flex gap-1 overflow-x-auto border-b [-webkit-overflow-scrolling:touch]">
@@ -80,7 +68,7 @@ export default function QuotesPage() {
           const count = status === 'all' ? quotes.length : quotes.filter(q => quoteDisplayStatus(q) === status).length;
           return <button type="button" key={status} onClick={() => setFilter(status)}
             className={cn('min-h-11 shrink-0 border-b-2 px-3 text-sm font-medium capitalize', filter === status ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>
-            {status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1)} <span className="ml-1 text-xs">{count}</span>
+             {status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1)} <span className="ml-1 text-sm">{count}</span>
           </button>;
         })}
       </div>
@@ -90,20 +78,20 @@ export default function QuotesPage() {
         </div>
         {query.isLoading ? <div className="divide-y">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="flex items-center gap-4 p-4"><div className="flex-1 space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-3 w-1/4" /></div><Skeleton className="h-6 w-20" /></div>)}</div>
           : query.isError ? <div className="px-5 py-12 text-center"><p role="alert" className="text-sm text-foreground">Quotes could not be loaded.</p><Button variant="outline" className="mt-3" onClick={() => query.refetch()}>Try again</Button></div>
-            : visible.length === 0 ? <div className="px-5 py-12 text-center"><FileText className="mx-auto mb-3 h-9 w-9 text-muted-foreground" /><p className="font-semibold">No matching quotes</p><p className="mt-1 text-sm text-muted-foreground">{search ? 'Try a different search.' : 'Quotes will appear here when they are created.'}</p></div>
+              : visible.length === 0 ? <div className="px-5 py-12 text-center"><FileText className="mx-auto mb-3 h-9 w-9 text-muted-foreground" /><p className="font-semibold">No matching quotes</p><p className="mt-1 text-sm text-muted-foreground">Quotes will appear here when they are created.</p></div>
               : <div className="divide-y divide-border/70">{visible.map(quote => {
                 const status = quoteDisplayStatus(quote) ?? 'draft';
                 return <button key={quote.id} type="button" onClick={() => navigate(`/manage/${quote.project_id}?tab=quote`)}
                   className="group grid w-full grid-cols-1 items-center gap-2 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:grid-cols-[minmax(0,1fr)_minmax(100px,150px)_minmax(85px,110px)_minmax(112px,145px)_16px] sm:gap-4"
                   data-testid={`quote-row-${quote.id}`}>
                   <span className="min-w-0"><span className="block break-words text-sm font-semibold">{quote.projectName}</span><span className="mt-0.5 block break-words text-sm text-muted-foreground">{quote.clientName} · {format(new Date(quote.created_at), 'd MMM yyyy')}</span></span>
-                  <span className="font-mono text-sm text-muted-foreground">{quote.quote_number}</span>
+          <span className="font-mono text-sm text-muted-foreground">{quote.quote_number}</span>
                   <span><StatusBadge status={status} size="sm" /></span>
                   <span className="text-sm font-semibold tabular-nums sm:text-right">{quote.subtotal == null ? '—' : aud(quote.subtotal)}<span className="ml-1 text-xs font-normal text-muted-foreground">ex GST</span></span>
                   <ChevronRight className="hidden h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 sm:block" />
                 </button>;
               })}</div>}
       </div>
-    </main>
+    </PageLayout>
   </AppShell>;
 }

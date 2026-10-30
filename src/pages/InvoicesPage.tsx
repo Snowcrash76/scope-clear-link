@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { AppShell } from '@/components/AppShell';
+import { PageLayout } from '@/components/PageLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -173,15 +174,8 @@ export default function InvoicesPage() {
 
   return (
     <AppShell>
-      <main className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Page heading + toolbar */}
-        <div className="flex items-start justify-between gap-4 mb-6 flex-wrap">
-          <div>
-            <h1 className="font-heading text-2xl font-bold">Invoices</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">All invoices across your jobs</p>
-          </div>
-
-          <div className="flex w-full items-center gap-2 flex-wrap sm:w-auto sm:justify-end">
+      <PageLayout title="Invoices" description="All invoices across your jobs">
+          <div className="mb-5 flex w-full items-center gap-2 flex-wrap sm:justify-end">
             {/* Status filter */}
             <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
               <PopoverTrigger asChild>
@@ -315,7 +309,6 @@ export default function InvoicesPage() {
               Export CSV
             </Button>
           </div>
-        </div>
 
         {/* Active filter summary */}
         {isFiltered && !isLoading && (
@@ -413,7 +406,7 @@ export default function InvoicesPage() {
             </div>
           )}
         </div>
-      </main>
+      </PageLayout>
     </AppShell>
   );
 }

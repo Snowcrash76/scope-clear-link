@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppShell } from '@/components/AppShell';
+import { PageLayout } from '@/components/PageLayout';
 import { useProjects } from '@/hooks/useProjects';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Search, FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, RotateCcw } from 'lucide-react';
+import { FolderOpen, User, GitBranch, ChevronRight, MoreVertical, CheckCircle2, RotateCcw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useJobProfitability, aud, profitability } from '@/hooks/useJobCosts';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
@@ -49,17 +49,9 @@ export default function ProjectsPage() {
     Number(a.status === 'declined') - Number(b.status === 'declined') || b.created_at.localeCompare(a.created_at))) {
     if (!latestQuoteByProject.has(quote.project_id)) latestQuoteByProject.set(quote.project_id, quote);
   }
-  const [search, setSearch] = useState('');
   const [tab, setTab] = useState<Tab>('all');
 
-  const filtered = projects.filter(p => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.clientName.toLowerCase().includes(search.toLowerCase());
-
-    if (tab !== 'all') return matchesSearch && jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === tab;
-    return matchesSearch;
-  });
+  const filtered = projects.filter(p => tab === 'all' || jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === tab);
 
   const counts = {
     all: projects.length,
@@ -72,27 +64,7 @@ export default function ProjectsPage() {
 
   return (
     <AppShell>
-      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-14 lg:top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
-          <div className="relative max-w-lg">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search jobs or clients..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
-              data-testid="input-projects-search"
-            />
-          </div>
-        </div>
-      </div>
-
-      <main className="w-full min-w-0 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="mb-6">
-          <h1 className="font-heading text-2xl font-bold">Jobs</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">All your jobs in one place</p>
-        </div>
-
+      <PageLayout title="Jobs" description="All your jobs in one place">
         {/* Tabs */}
         <div className="mb-5 -mx-4 flex items-center gap-1 overflow-x-auto border-b px-4 [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0">
           {TABS.map(t => (
@@ -132,7 +104,7 @@ export default function ProjectsPage() {
             <div className="text-center py-12 px-4">
               <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
-                {search ? `No projects matching "${search}"` : 'No projects here yet.'}
+                No jobs in this view yet.
               </p>
             </div>
           ) : (
@@ -229,7 +201,7 @@ export default function ProjectsPage() {
             </div>
           )}
         </div>
-      </main>
+      </PageLayout>
     </AppShell>
   );
 }

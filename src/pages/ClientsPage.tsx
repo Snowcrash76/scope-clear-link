@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { PageLayout } from '@/components/PageLayout';
 import { useProjects } from '@/hooks/useProjects';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Search, Users, Pencil, Trash2 } from 'lucide-react';
+import { Users, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -43,8 +44,6 @@ function ClientInitial({ name }: { name: string }) {
 export default function ClientsPage() {
   const { projects, loading } = useProjects();
   const qc = useQueryClient();
-  const [search, setSearch] = useState('');
-
   const [editClient, setEditClient] = useState<ClientInfo | null>(null);
   const [editForm, setEditForm] = useState({ name: '', email: '', address: '' });
   const [saving, setSaving] = useState(false);
@@ -68,12 +67,6 @@ export default function ClientsPage() {
       return acc;
     }, {})
   ).sort((a, b) => a.name.localeCompare(b.name));
-
-  const filtered = clients.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase()) ||
-    c.address.toLowerCase().includes(search.toLowerCase())
-  );
 
   function openEdit(client: ClientInfo) {
     setEditClient(client);
@@ -124,29 +117,9 @@ export default function ClientsPage() {
 
   return (
     <AppShell>
-      <div className="border-b border-zinc-200 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md shadow-sm sticky top-14 lg:top-0 z-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3">
-          <div className="relative max-w-lg">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search by name, email or address..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-9 bg-muted/50 border-0 focus-visible:ring-1"
-              data-testid="input-clients-search"
-            />
-          </div>
-        </div>
-      </div>
-
-      <main className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        <div className="mb-6">
-          <h1 className="font-heading text-2xl font-bold">Clients</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {loading ? 'Loading…' : `${clients.length} client${clients.length !== 1 ? 's' : ''}`}
-          </p>
-        </div>
-
+      <PageLayout title="Clients" description={
+          loading ? 'Loading…' : `${clients.length} client${clients.length !== 1 ? 's' : ''}`
+        }>
         <div className="min-w-0 rounded-xl border border-[#D8C3AD] bg-white dark:bg-zinc-900 overflow-hidden shadow-card">
           {/* Table header — desktop only */}
           <div className="hidden sm:grid sm:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,3fr)_72px] gap-3 lg:gap-4 px-4 py-2.5 border-b bg-muted/30">
@@ -168,16 +141,16 @@ export default function ClientsPage() {
                 </div>
               ))}
             </div>
-          ) : filtered.length === 0 ? (
+          ) : clients.length === 0 ? (
             <div className="text-center py-12 px-4">
               <Users className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
-                {search ? `No clients matching "${search}"` : 'No clients yet. Create a job to add your first client.'}
+                No clients yet. Create a job to add your first client.
               </p>
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {filtered.map(client => (
+              {clients.map(client => (
                 <div
                   key={client.key}
                   className="hover:bg-muted/40 transition-colors group"
@@ -249,7 +222,7 @@ export default function ClientsPage() {
             </div>
           )}
         </div>
-      </main>
+      </PageLayout>
 
       {/* Edit dialog */}
       <Dialog open={!!editClient} onOpenChange={open => !open && setEditClient(null)}>

@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { ArrowDownUp, CircleDollarSign, RefreshCw } from 'lucide-react';
 import { AppShell } from '@/components/AppShell';
+import { PageLayout } from '@/components/PageLayout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useJobProfitability, aud, profitability, type RevenueBasis } from '@/hooks/useJobCosts';
@@ -33,11 +34,9 @@ export default function ProfitabilityPage() {
   }, [query.data, basis, sort]);
   const toggleSort = (key: SortKey) => setSort(current => ({ key, direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc' }));
 
-  return <AppShell><main className="mx-auto w-full min-w-0 max-w-7xl px-4 py-6 [overflow-wrap:anywhere] sm:px-6 sm:py-8">
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div><div className="mb-2 inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900"><CircleDollarSign className="h-3.5 w-3.5" />Job costing</div><h1 className="font-heading text-2xl font-bold">Profitability</h1><p className="mt-1 text-sm text-muted-foreground">See what confirmed expenses leave behind across your jobs.</p></div>
-      <div className="flex w-fit rounded-lg border bg-background p-1" role="group" aria-label="Revenue basis">{(['quoted', 'invoiced'] as RevenueBasis[]).map(value => <button key={value} onClick={() => setBasis(value)} className={cn('rounded-md px-3 py-1.5 text-sm font-medium capitalize', basis === value ? 'bg-zinc-900 text-white' : 'text-muted-foreground hover:text-foreground')}>{value}</button>)}</div>
-    </div>
+  return <AppShell><PageLayout title="Profitability" description="See what confirmed expenses leave behind across your jobs."
+    className="[overflow-wrap:anywhere]"
+    actions={<div className="flex w-fit rounded-lg border bg-background p-1" role="group" aria-label="Revenue basis">{(['quoted', 'invoiced'] as RevenueBasis[]).map(value => <button key={value} type="button" onClick={() => setBasis(value)} aria-pressed={basis === value} className={cn('min-h-11 rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-colors', basis === value ? 'bg-amber-500 text-zinc-950' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}>{value}</button>)}</div>}>
       <Card className="mb-4 flex items-start gap-3 border-[#D8C3AD] bg-[#F7F2EB] p-4"><CircleDollarSign className="mt-0.5 h-4 w-4 shrink-0 text-amber-800" /><p className="text-sm leading-relaxed text-muted-foreground">Quote and invoice revenue is ex GST; confirmed costs include GST. Profit is revenue less confirmed costs, before overheads. Costs may be incomplete, so margins are indicative. Draft costs are excluded.</p></Card>
     {query.isLoading ? <Card className="space-y-3 p-5 animate-pulse"><div className="h-8 rounded bg-muted" /><div className="h-16 rounded bg-muted/70" /><div className="h-16 rounded bg-muted/70" /></Card>
       : query.isError ? <Card className="p-6"><h2 className="font-semibold">Could not load profitability</h2><p className="mt-2 text-sm text-muted-foreground">{query.error instanceof Error ? query.error.message : 'Please try again.'}</p>{isJobCostSetupError(query.error) && <JobCostSetupHelp />}<Button variant="outline" className="mt-4" onClick={() => query.refetch()}><RefreshCw className="mr-2 h-4 w-4" />Retry</Button></Card>
@@ -72,7 +71,7 @@ export default function ProfitabilityPage() {
           </Card>;
         })}</div>
       </>}
-  </main></AppShell>;
+  </PageLayout></AppShell>;
 }
 function Value({ amount, testId, prominent = false }: { amount: number; testId?: string; prominent?: boolean }) {
   return <span data-testid={testId} className={cn('tabular-nums', prominent ? 'text-base font-bold sm:text-lg' : 'font-medium', prominent && amount < 0 && 'text-rose-700')}>{aud(amount)}</span>;

@@ -17,6 +17,7 @@ import { StageManager } from '@/components/StageManager';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { JobSectionMenu } from '@/components/JobSectionMenu';
 import { JobHeader } from '@/components/JobHeader';
+import { PageLayout } from '@/components/PageLayout';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import {
   Dialog,
@@ -601,7 +602,7 @@ export default function ProjectManage() {
         </div>
       </JobHeader>
 
-      <main className="w-full min-w-0 max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <PageLayout headerless className="!py-6">
         {/* Notification banners */}
         {(showActionRequired || showVariationUpdate || showDocNotification) && (
           <div className="space-y-3 mb-6">
@@ -977,7 +978,7 @@ export default function ProjectManage() {
             <TeamHome panel="updates" embedded />
           </TabsContent>
         </Tabs>
-      </main>
+      </PageLayout>
 
       {/* Modals */}
       <SendChangeRequestModal

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, Navigate } from 'react-router-dom';
+import { useSearchParams, Navigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,11 +13,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import {
   Users, FolderOpen, FileText, Receipt, TicketCheck,
-  Copy, Plus, Trash2, Loader2, ArrowLeft, UserCheck,
+  Copy, Plus, Trash2, Loader2, UserCheck,
   TrendingUp, Building2, Search,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { InviteCodeSetupHelp } from '@/components/InviteCodeSetupHelp';
+import { PageLayout } from '@/components/PageLayout';
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
@@ -432,7 +433,6 @@ function ActivityTab() {
 // ─── Main dashboard ─────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const rawTab = searchParams.get('tab') ?? 'overview';
@@ -457,18 +457,7 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-full min-w-0 max-w-5xl mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <div className="flex min-w-0 items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')} data-testid="button-back-dashboard">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div className="min-w-0">
-            <h1 className="font-heading text-2xl font-bold">Admin</h1>
-            <p className="text-sm text-muted-foreground">Platform overview and management</p>
-          </div>
-        </div>
+      <PageLayout title="Admin" description="Platform overview and management" className="space-y-6">
 
         {/* Tabs */}
         <Tabs value={tab} onValueChange={setTab} className="min-w-0">
@@ -494,7 +483,6 @@ export default function AdminDashboard() {
             <ActivityTab />
           </TabsContent>
         </Tabs>
-      </div>
-    </div>
+      </PageLayout>
   );
 }

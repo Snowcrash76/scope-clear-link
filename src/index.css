@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -16,9 +16,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 30 10% 12%;
 
-    /* Amber-brown primary — #835500 */
-    --primary: 39 100% 26%;
-    --primary-foreground: 0 0% 100%;
+    /* Accessible amber primary */
+    --primary: 40 100% 48%;
+    --primary-foreground: 30 10% 12%;
 
     /* Warm cream secondary */
     --secondary: 40 20% 96%;
@@ -68,9 +68,9 @@
     --sidebar-border: 30 12% 90%;
     --sidebar-ring: 40 100% 48%;
 
-    /* Typography — Inter only */
-    --font-heading: 'Inter', sans-serif;
-    --font-body: 'Inter', sans-serif;
+    /* Compact, warm dashboard typography */
+    --font-heading: 'Manrope', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
 
     /* Shadows */
     --shadow-soft: 0 2px 8px -2px rgba(0, 0, 0, 0.06);
@@ -86,6 +86,12 @@
 .portal-grid { background-image: linear-gradient(to right, rgba(42,72,58,.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(42,72,58,.045) 1px, transparent 1px); background-size: 28px 28px; }
 .portal-enter { animation: portal-enter .35s ease-out both; }
 @keyframes portal-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Team management metadata stays readable without changing the employee portal. */
+.team-page [class~="text-xs"],
+.team-page [class~="text-[11px]"],
+.team-page [class~="text-[10px]"] { font-size: .875rem; line-height: 1.25rem; }
+.team-page .portal-mono { font-family: var(--font-body); }
 
 @layer base {
   * {

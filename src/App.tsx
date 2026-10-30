@@ -26,6 +26,7 @@ import NotFound from "./pages/NotFound";
 import ProfitabilityPage from "./components/job-costing/ProfitabilityPage";
 import { EmployeeAccept, EmployeeGate, EmployeeHome, EmployeeJob, EmployeeLogin, EmployeeNotifications, EmployeeTimesheets } from "./components/EmployeePortalUI";
 import { TeamHome } from "./components/TeamPortalUI";
+import { AppShell } from "./components/AppShell";
 
 const queryClient = new QueryClient();
 
@@ -83,7 +84,7 @@ const App = () => (
             <Route path="/quote/:token" element={<ClientQuote />} />
             <Route path="/admin" element={
               <ProtectedRoute>
-                <AdminDashboard />
+                <AppShell><AdminDashboard /></AppShell>
               </ProtectedRoute>
             } />
             <Route path="/admin/invites" element={<Navigate to="/admin?tab=invites" replace />} />
@@ -94,11 +95,11 @@ const App = () => (
             <Route path="/employee/jobs/:jobId" element={<EmployeeGate><EmployeeJob /></EmployeeGate>} />
             <Route path="/employee/timesheets" element={<EmployeeGate><EmployeeTimesheets /></EmployeeGate>} />
             <Route path="/employee/notifications" element={<EmployeeGate><EmployeeNotifications /></EmployeeGate>} />
-            <Route path="/team" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
-            <Route path="/team/assignments" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
-            <Route path="/team/timesheets" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
-            <Route path="/team/permissions" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
-            <Route path="/team/jobs/:id/:panel" element={<ProtectedRoute teamOnly><TeamHome /></ProtectedRoute>} />
+            <Route path="/team" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
+            <Route path="/team/assignments" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
+            <Route path="/team/timesheets" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
+            <Route path="/team/permissions" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
+            <Route path="/team/jobs/:id/:panel" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
