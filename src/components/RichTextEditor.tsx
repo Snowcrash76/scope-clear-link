@@ -130,6 +130,42 @@ export function htmlToText(html: string): string {
   return div.textContent || div.innerText || '';
 }
 
+const SAFE_RICH_TEXT_TAGS = new Set([
+  'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'ul', 'ol', 'li',
+  'blockquote', 'code', 'pre', 'h1', 'h2', 'h3', 'hr', 'table',
+  'thead', 'tbody', 'tr', 'th', 'td',
+]);
+const DROP_RICH_TEXT_SUBTREES = new Set(['script', 'style', 'iframe', 'object', 'embed', 'svg', 'math']);
+
+function sanitizeRichTextHtml(html: string): string {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+  const cleanRoot = document.createElement('div');
+
+  const cleanNode = (node: Node): Node[] => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return [document.createTextNode(node.textContent ?? '')];
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return [];
+
+    const element = node as Element;
+    const tag = element.tagName.toLowerCase();
+    if (DROP_RICH_TEXT_SUBTREES.has(tag)) return [];
+    const children = Array.from(element.childNodes).flatMap(cleanNode);
+
+    // Preserve harmless text from unsupported formatting tags, but never copy
+    // attributes such as event handlers, style, or unsafe URLs.
+    if (!SAFE_RICH_TEXT_TAGS.has(tag)) return children;
+
+    const cleanElement = document.createElement(tag);
+    children.forEach(child => cleanElement.appendChild(child));
+    return [cleanElement];
+  };
+
+  Array.from(template.content.childNodes).flatMap(cleanNode).forEach(node => cleanRoot.appendChild(node));
+  return cleanRoot.innerHTML;
+}
+
 interface RichTextContentProps {
   html: string;
   className?: string;
@@ -152,7 +188,7 @@ export function RichTextContent({ html, className }: RichTextContentProps) {
         '[&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0 [&_p]:my-0.5 [&_strong]:text-foreground [&_pre]:whitespace-pre-wrap [&_pre]:break-words [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto',
         className
       )}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: sanitizeRichTextHtml(html) }}
     />
   );
 }

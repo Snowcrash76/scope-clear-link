@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import type { Project } from '@/types/project';
 
 export interface CreateProjectLineItem {
   title: string;
@@ -15,6 +16,7 @@ export interface CreateProjectData {
   clientName: string;
   clientEmail: string;
   clientAddress?: string;
+  projectStatus?: Project['status'];
   quoteData: {
     lineItems: CreateProjectLineItem[];
     taxRate: number;
@@ -53,7 +55,7 @@ export function useCreateProject() {
           client_name: data.clientName,
           client_email: data.clientEmail,
           ...(data.clientAddress ? { client_address: data.clientAddress } : {}),
-          status: 'sent',
+          status: data.projectStatus ?? 'sent',
           total_value: total,
         })
         .select()

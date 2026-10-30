@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RichTextEditor, RichTextContent, htmlToText } from '@/components/RichTextEditor';
+import { RichTextEditor, RichTextContent } from '@/components/RichTextEditor';
 import { EditScopeItemModal } from '@/components/EditScopeItemModal';
 import { Quote, ScopeItem, ChangeRequest, QuoteLineItem } from '@/types/project';
 import { 
@@ -24,8 +24,6 @@ import {
   Trash2,
   Lock,
   Pencil,
-  Check,
-  X,
   MoveRight,
   Package,
   Ban,
@@ -72,7 +70,7 @@ interface QuoteSectionProps {
   }) => Promise<string | null>;
   onUpdateQuote: (quoteId: string, data: Partial<{
     quoteNumber: string;
-    reference: string;
+    reference: string | null;
     subtotal: number;
     taxRate: number;
     notes: string;
@@ -80,6 +78,8 @@ interface QuoteSectionProps {
     validUntil: Date;
   }>) => Promise<boolean>;
   onSendQuote: (quoteId: string) => Promise<boolean>;
+  onApproveQuote: (quoteId: string) => Promise<boolean>;
+  onCreateInvoice: (quoteId: string) => Promise<boolean>;
   onReviseQuote: (quoteId: string) => Promise<boolean>;
   defaultTerms?: string;
   isTradeView?: boolean;
@@ -110,6 +110,8 @@ export function QuoteSection({
   onCreateQuote,
   onUpdateQuote,
   onSendQuote,
+  onApproveQuote,
+  onCreateInvoice,
   onReviseQuote,
   isTradeView = true,
   onSaveScopeItem,
@@ -132,7 +134,6 @@ export function QuoteSection({
   const [isSaving, setIsSaving] = useState(false);
 
   // Inline reference editing state (read view)
-  const [editingRef, setEditingRef] = useState(false);
   const [quoteRef, setQuoteRef] = useState(quote?.reference ?? '');
   const [isSavingRef, setIsSavingRef] = useState(false);
   
@@ -231,9 +232,9 @@ export function QuoteSection({
   const handleSaveRef = async () => {
     if (!quote) return;
     setIsSavingRef(true);
-    const success = await onUpdateQuote(quote.id, { reference: quoteRef.trim() });
+    const success = await onUpdateQuote(quote.id, { reference: quoteRef.trim() || null });
     setIsSavingRef(false);
-    if (success) setEditingRef(false);
+    return success;
   };
 
   const handleSendQuote = async () => {
@@ -245,6 +246,16 @@ export function QuoteSection({
     if (!quote) return;
     await onReviseQuote(quote.id);
     setIsCreating(true);
+  };
+
+  const handleApproveQuote = async () => {
+    if (!quote) return;
+    await onApproveQuote(quote.id);
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!quote) return;
+    await onCreateInvoice(quote.id);
   };
 
   const handleExportToXero = () => {
@@ -403,15 +414,17 @@ export function QuoteSection({
                 Included Items
               </span>
               {isTradeView && onSaveScopeItem && (
-                <button
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11"
                   onClick={() => { setAddScopeItemCategory('included'); setIsAddingScopeItem(true); }}
-                  className="flex items-center gap-1 text-xs text-primary hover:underline"
                   data-testid="button-add-scope-item-included"
                 >
-                  <Plus className="w-3 h-3" />
+                  <Plus className="mr-1.5 h-4 w-4" />
                   Add item
-                </button>
+                </Button>
               )}
             </div>
 
@@ -421,7 +434,7 @@ export function QuoteSection({
                   <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
                     <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
                     {stripVariationMeta(item.description) && (
-                      <p className="text-xs text-muted-foreground mt-1 break-words [overflow-wrap:anywhere]">{htmlToText(stripVariationMeta(item.description))}</p>
+                      <RichTextContent html={stripVariationMeta(item.description)} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                     )}
                   </div>
                   <div className="flex w-full sm:w-auto items-center gap-2">
@@ -463,7 +476,7 @@ export function QuoteSection({
                     <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
                       <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</span>
                       {stripVariationMeta(change.description) && (
-                        <p className="text-xs text-muted-foreground mt-1 break-words [overflow-wrap:anywhere]">{htmlToText(stripVariationMeta(change.description))}</p>
+                        <RichTextContent html={stripVariationMeta(change.description)} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                       )}
                     </div>
                     <span className={cn(
@@ -560,7 +573,7 @@ export function QuoteSection({
                               )}
                             </div>
                             {item.description && (
-                              <p className="text-xs text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">{htmlToText(item.description)}</p>
+                              <RichTextContent html={item.description} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                             )}
                           </div>
                           <div className="flex items-center gap-2 self-start">
@@ -773,54 +786,32 @@ export function QuoteSection({
             <div className="min-w-0">
               <div className="flex flex-col gap-0.5">
                 <h3 className="font-heading font-semibold break-words [overflow-wrap:anywhere]">{quote!.quoteNumber}</h3>
-                {editingRef ? (
-                  <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                {isTradeView ? (
+                  <div className="mt-1 flex min-w-0 flex-wrap items-center gap-2">
+                    <Label htmlFor="quote-reference-field" className="sr-only">Quote reference</Label>
                     <Input
+                      id="quote-reference-field"
                       value={quoteRef}
                       onChange={e => setQuoteRef(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') handleSaveRef();
-                        if (e.key === 'Escape') { setEditingRef(false); setQuoteRef(quote!.reference ?? ''); }
-                      }}
-                      className="h-7 text-xs w-full max-w-44"
-                      autoFocus
-                      placeholder="e.g. job address or note"
+                      onKeyDown={e => { if (e.key === 'Enter') void handleSaveRef(); }}
+                      className="h-10 w-full max-w-sm text-sm"
+                      placeholder="Add reference"
                       data-testid="input-quote-reference"
                     />
-                    <button
-                      onClick={handleSaveRef}
-                      disabled={isSavingRef}
-                      className="p-1 rounded hover:bg-muted transition-colors text-primary"
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="min-h-10"
+                      onClick={() => void handleSaveRef()}
+                      disabled={isSavingRef || quoteRef.trim() === (quote!.reference ?? '')}
                       data-testid="button-save-quote-reference"
                     >
-                      <Check className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={() => { setEditingRef(false); setQuoteRef(quote!.reference ?? ''); }}
-                      className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
-                      data-testid="button-cancel-quote-reference"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
+                      {isSavingRef ? 'Saving…' : 'Save reference'}
+                    </Button>
                   </div>
                 ) : (
-                  <div className="flex min-w-0 flex-wrap items-center gap-1 group/ref">
-                    {(quote!.reference || isTradeView) && (
-                      <p className="min-w-0 text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
-                        {quote!.reference || <span className="italic opacity-60">Add reference</span>}
-                      </p>
-                    )}
-                    {isTradeView && (
-                      <button
-                        onClick={() => setEditingRef(true)}
-                        className="p-0.5 rounded opacity-0 group-hover/ref:opacity-100 hover:bg-muted transition-all text-muted-foreground"
-                        title="Edit reference"
-                        data-testid="button-edit-quote-reference"
-                      >
-                        <Pencil className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
+                  quote!.reference && <p className="mt-1 min-w-0 break-words text-sm text-muted-foreground">{quote!.reference}</p>
                 )}
               </div>
               <p className="text-sm text-muted-foreground">
@@ -836,48 +827,75 @@ export function QuoteSection({
           </div>
         </div>
 
+        <div className="mb-4 grid gap-3 rounded-lg border border-border bg-muted/25 p-4 sm:grid-cols-3">
+          <div className="flex items-center justify-between gap-3 sm:block">
+            <p className="text-sm text-muted-foreground">Subtotal <span className="text-xs">ex GST</span></p>
+            <p className="text-base font-semibold tabular-nums">{aud(subtotal)}</p>
+          </div>
+          <div className="flex items-center justify-between gap-3 sm:block">
+            <p className="text-sm text-muted-foreground">GST ({taxRate}%)</p>
+            <p className="text-base font-semibold tabular-nums">{aud(taxAmount)}</p>
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-border pt-2 sm:block sm:border-0 sm:pt-0">
+            <p className="text-sm font-semibold text-foreground">Total <span className="text-xs font-normal text-muted-foreground">inc GST</span></p>
+            <p className="text-lg font-bold tabular-nums text-primary">{aud(total)}</p>
+          </div>
+        </div>
+
         {/* Actions (Trade View) */}
         {isTradeView && (
-          <div className="mt-4 flex flex-col sm:flex-row sm:flex-wrap gap-2">
-            <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsViewModalOpen(true)}>
               <Eye className="w-4 h-4 mr-2" />
               View Quote
             </Button>
-            <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleDownloadPDF}>
+            <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={handleDownloadPDF}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
             {quote!.status === 'draft' && (
               <>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button className="w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
+                <Button className="min-h-11 w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
                   <Send className="w-4 h-4 mr-2" />
-                  Send to Client
+                  Send to client
                 </Button>
               </>
             )}
             {quote!.status === 'sent' && (
               <>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportToXero}>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportToXero}>
                   <FileText className="w-4 h-4 mr-2" />
                   Export to Xero
+                </Button>
+                <Button className="min-h-11 w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
+                  <Send className="w-4 h-4 mr-2" />
+                  Resend
+                </Button>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={handleApproveQuote}>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Mark approved
                 </Button>
               </>
             )}
             {quote!.status === 'approved' && (
               <>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="min-h-11 w-full sm:w-auto" size="sm" onClick={handleCreateInvoice}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Create invoice
+                </Button>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportToXero}>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={handleExportToXero}>
                   <FileText className="w-4 h-4 mr-2" />
                   Export to Xero
                 </Button>
@@ -885,11 +903,11 @@ export function QuoteSection({
             )}
             {quote!.status === 'revised' && (
               <>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button className="w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
+                <Button className="min-h-11 w-full sm:w-auto" size="sm" onClick={handleSendQuote}>
                   <Send className="w-4 h-4 mr-2" />
                   Notify Client &amp; Request Approval
                 </Button>
@@ -897,11 +915,11 @@ export function QuoteSection({
             )}
             {quote!.status === 'declined' && (
               <>
-                <Button className="w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                <Button className="min-h-11 w-full sm:w-auto" variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Quote
                 </Button>
-                <Button className="w-full sm:w-auto" size="sm" onClick={handleReviseQuote}>
+                <Button className="min-h-11 w-full sm:w-auto" size="sm" onClick={handleReviseQuote}>
                   <RefreshCw className="w-4 h-4 mr-2" />
                   Create Revised Quote
                 </Button>
@@ -927,25 +945,31 @@ export function QuoteSection({
         {/* Included Items — scope + custom line items merged (no variation duplicates) */}
         {(includedItems.length > 0 || baseQuoteLineItems.length > 0 || (isTradeView && onSaveScopeItem)) && (
           <div className="border rounded-lg divide-y mb-4">
-            {isTradeView && onSaveScopeItem && (
-              <div className="px-3 py-2 bg-muted/30 flex justify-end">
-                <button
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-muted/30 px-3 py-2">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <span className="text-sm font-semibold">Included items</span>
+                <span className="text-sm text-muted-foreground">Subtotal <span className="text-xs">ex GST</span>: <span className="font-semibold tabular-nums text-foreground">{aud(scopeSubtotal + customItemsTotal)}</span></span>
+              </div>
+              {isTradeView && onSaveScopeItem && (
+                <Button
                   type="button"
+                  variant="outline"
+                  size="sm"
+                  className="min-h-11"
                   onClick={() => { setAddScopeItemCategory('included'); setIsAddingScopeItem(true); }}
-                  className="flex items-center gap-1 text-xs text-primary hover:underline"
                   data-testid="button-add-scope-item-read"
                 >
-                  <Plus className="w-3 h-3" />
-                  Include item
-                </button>
-              </div>
-            )}
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Add item
+                </Button>
+              )}
+            </div>
             {includedItems.map(item => (
               <div key={item.id} className="p-3 flex flex-col sm:flex-row justify-between items-start gap-2">
                 <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
                   <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
                   {stripVariationMeta(item.description) && (
-                    <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5 break-words [overflow-wrap:anywhere]" />
+                    <RichTextContent html={stripVariationMeta(item.description)} className="max-w-[75ch] text-sm mt-1 leading-6 break-words [overflow-wrap:anywhere]" />
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -975,7 +999,7 @@ export function QuoteSection({
                     <div className="w-full min-w-0 sm:flex-1 sm:pr-2">
                       <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{cleanVariationTitle(item.title)}</span>
                       {stripVariationMeta(item.description) && (
-                        <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5 break-words [overflow-wrap:anywhere]" />
+                        <RichTextContent html={stripVariationMeta(item.description)} className="max-w-[75ch] text-sm mt-1 leading-6 break-words [overflow-wrap:anywhere]" />
                       )}
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -1027,14 +1051,17 @@ export function QuoteSection({
         {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
           <div className="border border-approved/30 rounded-lg divide-y bg-approved/5 mb-6">
             <div className="px-3 py-2 border-b border-approved/20">
-              <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
+                <span className="text-sm font-semibold tabular-nums text-approved">Subtotal {aud(changesImpact)}</span>
+              </div>
             </div>
             {approvedChanges.map(change => (
               <div key={change.id} className="p-3 flex flex-col sm:flex-row justify-between items-start gap-2">
                 <div className="w-full min-w-0 sm:flex-1 sm:pr-4">
                   <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</span>
                   {stripVariationMeta(change.description) && (
-                    <p className="text-xs text-muted-foreground mt-0.5 break-words [overflow-wrap:anywhere]">{htmlToText(stripVariationMeta(change.description))}</p>
+                    <RichTextContent html={stripVariationMeta(change.description)} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                   )}
                 </div>
                 <span className={cn(
@@ -1072,7 +1099,7 @@ export function QuoteSection({
                         )}
                       </div>
                       {item.description && (
-                        <RichTextContent html={item.description} className="text-xs mt-0.5 break-words [overflow-wrap:anywhere]" />
+                        <RichTextContent html={item.description} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                       )}
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap text-approved">
@@ -1101,24 +1128,6 @@ export function QuoteSection({
             })}
           </div>
         )}
-
-        {/* Totals - Always use live calculated values */}
-        <div className="space-y-2 border-t pt-4">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal (ex GST)</span>
-            <span>{aud(subtotal)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">GST ({quote!.taxRate}%)</span>
-            <span>{aud(taxAmount)}</span>
-          </div>
-          <div className="flex justify-between text-lg font-bold border-t pt-2 mt-2">
-            <span>Total (inc GST)</span>
-            <span className="text-primary">
-              {aud(total)}
-            </span>
-          </div>
-        </div>
 
         {/* Valid Until */}
         {quote!.validUntil && (
@@ -1189,9 +1198,7 @@ export function QuoteSection({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{item.title}</p>
                         {item.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {htmlToText(stripVariationMeta(item.description))}
-                          </p>
+                          <RichTextContent html={stripVariationMeta(item.description)} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                         )}
                       </div>
                       {isTradeView && onSaveScopeItem && (
@@ -1239,9 +1246,7 @@ export function QuoteSection({
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium">{item.title}</p>
                         {item.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {htmlToText(stripVariationMeta(item.description))}
-                          </p>
+                          <RichTextContent html={stripVariationMeta(item.description)} className="mt-1 max-w-[75ch] text-sm leading-6 break-words [overflow-wrap:anywhere]" />
                         )}
                       </div>
                       {isTradeView && onSaveScopeItem && (

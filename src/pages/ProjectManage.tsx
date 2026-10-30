@@ -31,12 +31,14 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { QuoteSection } from '@/components/QuoteSection';
 import { InvoiceSection } from '@/components/InvoiceSection';
 import { useProject } from '@/hooks/useProject';
+import { useCreateProject } from '@/hooks/useCreateProject';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
@@ -44,7 +46,6 @@ import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHisto
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { variationItemTitle } from '@/lib/variationItems';
 import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
@@ -63,7 +64,6 @@ import {
   CheckCircle2,
   Copy,
   Loader2,
-  FileText,
   RefreshCw,
   AlertCircle,
   X,
@@ -104,12 +104,14 @@ export default function ProjectManage() {
     clearAllStages,
     updateProjectStatus,
   } = useProject(id);
+  const { createProject } = useCreateProject();
 
   const {
     activeQuote,
     createQuote,
     updateQuote,
     sendQuote,
+    approveQuote,
     reviseQuote,
     regenerateQuoteToken,
   } = useQuotes(id);
@@ -179,6 +181,7 @@ export default function ProjectManage() {
     title: string;
   }>({ isOpen: false, action: 'approve', changeId: '', title: '' });
   const [isRegeneratingToken, setIsRegeneratingToken] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
   const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = useState(false);
   const [defaultTerms, setDefaultTerms] = useState<string>('');
   const [defaultQuoteTerms, setDefaultQuoteTerms] = useState<string>('');
@@ -398,6 +401,47 @@ export default function ProjectManage() {
     }
   };
 
+  const handleCreateFinalInvoice = async (quoteId: string) => {
+    if (!activeQuote || activeQuote.id !== quoteId) return false;
+    const approvedChanges = project.changeRequests.filter(change => change.status === 'approved');
+    const approvedChangeCosts = new Set(approvedChanges.map(change => change.costImpact));
+    const lineItems = [
+      ...project.scopeItems
+        .filter(item => item.category === 'included' && !isVariationItem(item.title) && !approvedChangeCosts.has(item.cost ?? -1))
+        .map(item => ({
+          description: cleanVariationTitle(item.title),
+          quantity: 1,
+          unitPrice: item.cost ?? 0,
+          scopeItemId: item.id,
+        })),
+      ...approvedChanges.map(change => ({
+        description: cleanVariationTitle(change.title),
+        quantity: 1,
+        unitPrice: change.costImpact,
+        changeRequestId: change.id,
+      })),
+      ...quoteLineItems
+        .filter(item => !item.isVariation && !approvedChangeCosts.has(item.cost))
+        .map(item => ({
+          description: cleanVariationTitle(item.title),
+          quantity: 1,
+          unitPrice: item.cost,
+        })),
+    ];
+    if (!lineItems.length) return false;
+
+    const invoiceId = await createInvoice({
+      type: 'final',
+      quoteId: activeQuote.id,
+      taxRate: activeQuote.taxRate,
+      notes: activeQuote.notes,
+      terms: activeQuote.terms,
+      lineItems,
+    });
+    if (invoiceId) setActiveTab('invoices');
+    return !!invoiceId;
+  };
+
   const handleSendToClient = async () => {
     const success = await updateProjectStatus('sent');
     if (success) {
@@ -434,12 +478,47 @@ export default function ProjectManage() {
     }
   };
 
+  const handleDuplicateProject = async () => {
+    // The current create flow persists a new job and draft quote. Copy the saved
+    // scope only; associated costs, invoices, stages, variations and team records
+    // remain attached to the original job.
+    if (isDuplicating) return;
+    setIsDuplicating(true);
+    try {
+      const duplicateId = await createProject({
+        name: `${project.name} (copy)`,
+        clientName: project.clientName,
+        clientEmail: project.clientEmail,
+        projectStatus: 'draft',
+        ...(project.clientAddress ? { clientAddress: project.clientAddress } : {}),
+        quoteData: {
+          lineItems: project.scopeItems.map(item => ({
+            title: item.title,
+            description: item.description ?? '',
+            cost: item.cost ?? 0,
+            category: item.category,
+            imageUrl: item.imageUrls?.[0] ?? item.imageUrl,
+          })),
+          taxRate: activeQuote?.taxRate ?? 10,
+          validUntil: null,
+          notes: activeQuote?.notes ?? '',
+          terms: activeQuote?.terms ?? '',
+        },
+      });
+      if (duplicateId) {
+        toast.success('Job copy created', {
+          description: 'Saved scope and quote terms copied. Costs, invoices, stages, variations and team records remain with the original.',
+        });
+        navigate(`/manage/${duplicateId}?tab=quote`);
+      }
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   // Separate pending changes into client requests (need trade response) and trade requests (awaiting client)
   const pendingClientRequests = project.changeRequests.filter(
     cr => cr.status === 'pending' && cr.type === 'client_request'
-  );
-  const pendingTradeRequests = project.changeRequests.filter(
-    cr => (cr.status === 'pending' && cr.type !== 'client_request') || cr.status === 'awaiting_client'
   );
   const resolvedChanges = project.changeRequests.filter(cr => cr.status === 'approved' || cr.status === 'declined');
   // Variations resolved in the last 72 hours — shown with a "New" badge
@@ -455,6 +534,56 @@ export default function ProjectManage() {
     doc => (Date.now() - new Date(doc.created_at).getTime()) < RECENTLY_RESOLVED_MS
   );
   const showDocNotification = recentlyUploadedDocs.length > 0 && recentlyUploadedDocs.some(doc => !dismissedDocIds.has(doc.id));
+  const activityEvents = [
+    { id: 'job-created', timestamp: project.createdAt, label: 'Job created', detail: project.name, kind: 'job' as const },
+    ...(activeQuote ? [
+      { id: 'quote-created', timestamp: activeQuote.createdAt, label: 'Quote created', detail: activeQuote.quoteNumber, kind: 'quote' as const },
+      ...(activeQuote.approvedAt ? [{ id: 'quote-approved', timestamp: activeQuote.approvedAt, label: 'Quote accepted by client', detail: activeQuote.quoteNumber, kind: 'quote' as const }] : []),
+      ...(activeQuote.declinedAt ? [{ id: 'quote-declined', timestamp: activeQuote.declinedAt, label: 'Quote declined by client', detail: activeQuote.quoteNumber, kind: 'quote' as const }] : []),
+    ] : []),
+    ...invoices.map(invoice => ({
+      id: `invoice-${invoice.id}`,
+      timestamp: invoice.updatedAt ?? invoice.createdAt,
+      label: invoice.status === 'paid'
+        ? 'Invoice marked paid'
+        : invoice.status === 'sent'
+          ? 'Invoice sent'
+          : invoice.status === 'overdue'
+            ? 'Invoice overdue'
+            : invoice.status === 'cancelled'
+              ? 'Invoice cancelled'
+              : 'Invoice created',
+      detail: invoice.invoiceNumber,
+      kind: 'invoice' as const,
+    })),
+    ...documents.map(document => ({
+      id: `document-${document.id}`,
+      timestamp: new Date(document.created_at),
+      label: 'Document added',
+      detail: document.display_name || document.file_name,
+      kind: 'document' as const,
+    })),
+    ...lineItemHistory.map(entry => ({
+      id: `line-item-${entry.id}`,
+      timestamp: entry.createdAt,
+      label: formatHistoryEntry(entry),
+      detail: 'Quote line item',
+      kind: 'line-item' as const,
+    })),
+    ...project.changeRequests.map(request => ({
+      id: `variation-${request.id}`,
+      timestamp: request.resolvedAt ?? request.createdAt,
+      label: request.status === 'approved'
+        ? 'Variation approved'
+        : request.status === 'declined'
+          ? 'Variation declined'
+          : request.status === 'awaiting_client'
+            ? 'Variation sent to client'
+            : 'Variation raised',
+      detail: cleanVariationTitle(request.title),
+      kind: 'variation' as const,
+    })),
+  ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   const dismissActionRequired = () => {
     const count = pendingClientRequests.length;
@@ -488,19 +617,19 @@ export default function ProjectManage() {
                   valid_until: activeQuote.validUntil?.toISOString() ?? null,
                 } : null)} />
               </div>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
+              <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+                <span className="flex shrink-0 items-center gap-1">
                   <User className="w-3.5 h-3.5" />
                   {project.clientName}
                 </span>
-                <span className="hidden items-center gap-1 sm:flex">
+                <span className="flex min-w-0 max-w-full items-center gap-1">
                   <Mail className="w-3.5 h-3.5" />
-                  {project.clientEmail}
+                  <span className="truncate">{project.clientEmail}</span>
                 </span>
                 {project.clientAddress && (
-                  <span className="hidden items-center gap-1 sm:flex" data-testid="text-client-address">
+                  <span className="flex min-w-0 max-w-full items-center gap-1" data-testid="text-client-address">
                     <MapPin className="w-3.5 h-3.5" />
-                    {project.clientAddress}
+                    <span className="truncate">{project.clientAddress}</span>
                   </span>
                 )}
               </div>
@@ -515,57 +644,46 @@ export default function ProjectManage() {
                   <span className="hidden sm:ml-2 sm:inline">Send to Client</span>
                 </Button>
               )}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-11 w-11 shrink-0"
-                      aria-label="Copy client preview link"
-                      onClick={handleCopyClientLink}
-                      data-testid="button-copy-client-link"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Copy preview link</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-11 w-11 shrink-0"
-                      aria-label="Preview client page"
-                      onClick={handlePreviewClientPage}
-                      data-testid="button-preview-client-page"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Preview Client Page</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
               {/* Project actions menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label="Project actions" data-testid="button-project-actions-menu">
+                  <Button variant="outline" className="h-11 shrink-0 gap-2 border-zinc-400 bg-white px-3 text-sm text-zinc-900" aria-label="Actions" data-testid="button-project-actions-menu">
                     <MoreVertical className="w-4 h-4" />
+                    <span>Actions</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuContent align="end" className="w-72">
+                  <DropdownMenuItem
+                    onClick={() => void handleDuplicateProject()}
+                    disabled={isDuplicating}
+                    className="min-h-11 gap-2"
+                    data-testid="menu-item-duplicate-project"
+                  >
+                    {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                    {isDuplicating ? 'Creating copy…' : 'Duplicate job'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => void handleCopyClientLink()}
+                    className="min-h-11 gap-2"
+                    data-testid="menu-item-share-link"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Share link
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handlePreviewClientPage}
+                    className="min-h-11 gap-2"
+                    data-testid="menu-item-preview-client-page"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Preview client page
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Job status</DropdownMenuLabel>
                   {project.status !== 'completed' ? (
                     <DropdownMenuItem
                       onClick={() => updateProjectStatus('completed')}
-                      className="gap-2"
+                      className="min-h-11 gap-2"
                       data-testid="menu-item-mark-completed"
                     >
                       <CheckCircle2 className="w-4 h-4 text-approved" />
@@ -574,30 +692,42 @@ export default function ProjectManage() {
                   ) : (
                     <DropdownMenuItem
                       onClick={() => updateProjectStatus('in_progress')}
-                      className="gap-2"
+                      className="min-h-11 gap-2"
                       data-testid="menu-item-mark-in-progress"
                     >
                       <RotateCcw className="w-4 h-4" />
                       Mark as In Progress
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled
+                    title="Job archiving is not available because the current project schema has no archive state."
+                    className="min-h-14 cursor-not-allowed items-start gap-2 opacity-100"
+                    data-testid="menu-item-archive-unavailable"
+                  >
+                    <FolderOpen className="mt-0.5 h-4 w-4 text-zinc-500" />
+                    <span className="min-w-0">
+                      <span className="block font-medium text-zinc-700">Archive unavailable</span>
+                      <span className="mt-0.5 block whitespace-normal text-xs leading-4 text-zinc-600">Jobs have no archive state in the current schema.</span>
+                    </span>
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-
-            <div className="ml-auto w-[108px] shrink-0 sm:w-auto">
-              <JobSectionMenu
-                value={activeTab}
-                onValueChange={setActiveTab}
-                invoiceCount={invoices.length}
-                pendingVariationCount={pendingClientRequests.length}
-                documentNotificationCount={
-                  showDocNotification
-                    ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
-                    : 0
-                }
-              />
-            </div>
+          </div>
+          <div className="mt-3 w-full min-w-0">
+            <JobSectionMenu
+              value={activeTab}
+              onValueChange={setActiveTab}
+              invoiceCount={invoices.length}
+              pendingVariationCount={pendingClientRequests.length}
+              documentNotificationCount={
+                showDocNotification
+                  ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
+                  : 0
+              }
+            />
           </div>
         </div>
       </JobHeader>
@@ -720,111 +850,44 @@ export default function ProjectManage() {
               onSubmit={handleSubmitResponse}
             />
 
-            {/* Unified chronological activity feed — line item changes + change requests */}
-            {(() => {
-              const quoteEvents = activeQuote ? [
-                { kind: 'quoteEvent' as const, id: 'qe-created', timestamp: activeQuote.createdAt, label: 'Quote issued' },
-                ...(activeQuote.approvedAt ? [{ kind: 'quoteEvent' as const, id: 'qe-approved', timestamp: activeQuote.approvedAt, label: 'Quote accepted by client' }] : []),
-                ...(activeQuote.declinedAt ? [{ kind: 'quoteEvent' as const, id: 'qe-declined', timestamp: activeQuote.declinedAt, label: 'Quote declined by client' }] : []),
-              ] : [];
-              const feed = [
-                ...quoteEvents,
-                ...lineItemHistory.map(h => ({
-                  kind: 'lineItem' as const,
-                  id: `li-${h.id}`,
-                  timestamp: h.createdAt,
-                  entry: h,
-                  request: undefined,
-                })),
-                ...project.changeRequests.map(cr => ({
-                  kind: 'changeRequest' as const,
-                  id: `cr-${cr.id}`,
-                  timestamp: cr.resolvedAt ?? cr.createdAt,
-                  entry: undefined,
-                  request: cr,
-                })),
-              ].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-
-              if (feed.length === 0) {
-                return (
-                  <Card className="p-12 text-center">
-                    <AlertTriangle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground mb-4">No variations yet</p>
-                    <Button onClick={() => setIsSendingChangeRequest(true)}>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add First Variation
-                    </Button>
-                  </Card>
-                );
-              }
-
-              const recentlyApproved = recentlyResolvedChanges.filter(cr => cr.status === 'approved');
-              return (
-                <div className="space-y-4">
-                  {recentlyApproved.length > 0 && (
-                    <div className="flex items-center gap-2 p-3 rounded-lg bg-approved/10 border border-approved/20">
-                      <CheckCircle2 className="w-4 h-4 text-approved flex-shrink-0" />
-                      <p className="text-sm text-approved font-medium">
-                        {recentlyApproved.length} extra{recentlyApproved.length > 1 ? 's' : ''} & change{recentlyApproved.length > 1 ? 's' : ''} approved in the last 72 hours — both parties notified by email.
-                      </p>
-                    </div>
-                  )}
-                  {feed.map(item => {
-                    if (item.kind === 'quoteEvent') {
-                      return (
-                        <div key={item.id} className="flex items-start gap-3 px-1">
-                          <FileText className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-1" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-muted-foreground">{item.label}</p>
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">
-                              {item.timestamp.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {' at '}
-                              {item.timestamp.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    }
-                    if (item.kind === 'lineItem') {
-                      return (
-                        <div key={item.id} className="flex items-start gap-3 px-1">
-                          <Clock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0 mt-1" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-muted-foreground">{formatHistoryEntry(item.entry!)}</p>
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">
-                              {item.timestamp.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
-                              {' at '}
-                              {item.timestamp.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    }
-                    const cr = item.request!;
-                    if (cr.status === 'pending') {
-                      return (
-                        <ChangeRequestCard
-                          key={item.id}
-                          request={cr}
-                          relatedItemTitle={variationItemTitle(cr, project.scopeItems, quoteLineItems)}
-                          viewerRole="trade"
-                          onRespond={handleRespondToClient}
-                        />
-                      );
-                    }
-                    return (
-                      <ChangeRequestItem
-                        key={item.id}
-                        relatedItemTitle={variationItemTitle(cr, project.scopeItems, quoteLineItems)}
-                        request={cr}
-                        onEdit={() => setEditingChangeRequest(cr)}
-                        isNew={recentlyResolvedChanges.some(r => r.id === cr.id)}
-                      />
-                    );
-                  })}
-                </div>
-              );
-            })()}
+            {project.changeRequests.length === 0 ? (
+              <Card className="p-10 text-center">
+                <AlertTriangle className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+                <p className="mb-4 text-muted-foreground">No variations yet</p>
+                <Button className="min-h-11" onClick={() => setIsSendingChangeRequest(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add first variation
+                </Button>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {recentlyResolvedChanges.some(cr => cr.status === 'approved') && (
+                  <div className="flex items-center gap-2 rounded-lg border border-approved/20 bg-approved/10 p-3">
+                    <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-approved" />
+                    <p className="text-sm font-medium text-approved">
+                      {recentlyResolvedChanges.filter(cr => cr.status === 'approved').length} variation{recentlyResolvedChanges.filter(cr => cr.status === 'approved').length === 1 ? '' : 's'} approved in the last 72 hours.
+                    </p>
+                  </div>
+                )}
+                {project.changeRequests.map(request => request.status === 'pending' ? (
+                  <ChangeRequestCard
+                    key={request.id}
+                    request={request}
+                    relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
+                    viewerRole="trade"
+                    onRespond={handleRespondToClient}
+                  />
+                ) : (
+                  <ChangeRequestItem
+                    key={request.id}
+                    relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
+                    request={request}
+                    onEdit={() => setEditingChangeRequest(request)}
+                    isNew={recentlyResolvedChanges.some(resolved => resolved.id === request.id)}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           {/* Quote Tab */}
@@ -906,10 +969,48 @@ export default function ProjectManage() {
               onCreateQuote={createQuote}
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}
+              onApproveQuote={approveQuote}
+              onCreateInvoice={handleCreateFinalInvoice}
               onReviseQuote={reviseQuote}
               onSaveScopeItem={handleSaveScopeItem}
               onDeleteScopeItem={handleDeleteScopeItem}
             />
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-0" role="region" aria-labelledby={undefined} aria-label="Activity">
+            <Card className="overflow-hidden">
+              <div className="flex flex-wrap items-end justify-between gap-2 border-b border-border px-4 py-4 sm:px-5">
+                <div>
+                  <h2 className="font-heading text-lg font-semibold">Job activity</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">A record of saved quote, line-item and variation events.</p>
+                </div>
+                <span className="text-sm tabular-nums text-muted-foreground">{activityEvents.length} {activityEvents.length === 1 ? 'event' : 'events'}</span>
+              </div>
+              {activityEvents.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <Clock className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
+                  <p className="font-medium">No activity recorded yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Saved job events will appear here.</p>
+                </div>
+              ) : (
+                <ol className="divide-y divide-border">
+                  {activityEvents.map(event => (
+                    <li key={event.id} className="flex items-start gap-3 px-4 py-4 sm:px-5">
+                      <span className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-amber-100 text-amber-900">
+                        <Clock className="h-4 w-4" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold">{event.label}</p>
+                        <p className="mt-0.5 break-words text-sm text-muted-foreground">{event.detail}</p>
+                      </div>
+                      <time className="shrink-0 pt-0.5 text-right text-sm text-muted-foreground" dateTime={event.timestamp.toISOString()}>
+                        {format(event.timestamp, 'd MMM yyyy · h:mm a')}
+                      </time>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
           </TabsContent>
 
           {/* Invoices Tab */}

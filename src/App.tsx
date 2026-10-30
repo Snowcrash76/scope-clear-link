@@ -55,6 +55,11 @@ const App = () => (
                 <ProjectManage />
               </ProtectedRoute>
             } />
+            <Route path="/jobs/:id" element={
+              <ProtectedRoute>
+                <ProjectManage />
+              </ProtectedRoute>
+            } />
             <Route path="/projects" element={
               <ProtectedRoute>
                 <ProjectsPage />
