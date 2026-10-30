@@ -112,7 +112,7 @@ function NeedsAttention({
         category: 'Variation',
         title: `${variation.title || 'Variation'} · ${project.name}`,
         detail: `Waiting for client approval · raised ${relativeTime(variation.createdAt)}`,
-        href: `/manage/${project.id}?tab=variations`,
+        href: `/manage/${project.id}?tab=changes&variation=${encodeURIComponent(variation.id)}`,
         timestamp: variation.createdAt.getTime(),
       });
     }

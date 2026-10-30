@@ -80,6 +80,7 @@ import { toast } from 'sonner';
 import { JobCostsTab } from '@/components/job-costing/JobCostsTab';
 import { TeamHome } from '@/components/TeamPortalUI';
 import { jobDisplayStatus } from '@/lib/quoteDisplay';
+import { awaitingClientApproval } from '@/lib/variationStatus';
 
 export default function ProjectManage() {
   const { id } = useParams();
@@ -184,10 +185,14 @@ export default function ProjectManage() {
     return { ...activeQuote, subtotal, taxAmount, total: subtotal + taxAmount };
   }, [activeQuote, quoteLineItems, project]);
 
-  // Check for tab query param (e.g., from job creation)
+  // Check for tab query param (e.g., from job creation or dashboard attention).
   const rawTab = searchParams.get('tab') || 'quote';
-  const initialTab = rawTab === 'scope' ? 'quote' : rawTab;
+  const initialTab = rawTab === 'scope' ? 'quote' : rawTab === 'variations' ? 'changes' : rawTab;
+  const targetVariationId = searchParams.get('variation');
   const [activeTab, setActiveTab] = useState(initialTab);
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
   const [isSendingChangeRequest, setIsSendingChangeRequest] = useState(false);
   const [editingChangeRequest, setEditingChangeRequest] = useState<ChangeRequest | null>(null);
   const [respondingToRequest, setRespondingToRequest] = useState<ChangeRequest | null>(null);
@@ -221,6 +226,14 @@ export default function ProjectManage() {
     if (!v) return new Set();
     try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
   });
+
+  useEffect(() => {
+    if (activeTab !== 'changes' || !targetVariationId || !project?.changeRequests.some(request => request.id === targetVariationId)) return;
+    const target = document.getElementById(`variation-${targetVariationId}`);
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, [activeTab, targetVariationId, project?.changeRequests]);
 
   // Rehydrate dismiss state if the project ID changes without a full remount
   useEffect(() => {
@@ -754,7 +767,7 @@ export default function ProjectManage() {
               value={activeTab}
               onValueChange={setActiveTab}
               invoiceCount={invoices.length}
-              pendingVariationCount={pendingClientRequests.length}
+              pendingVariationCount={project.changeRequests.filter(awaitingClientApproval).length}
               documentNotificationCount={
                 showDocNotification
                   ? recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length
@@ -858,7 +871,10 @@ export default function ProjectManage() {
           {/* Changes Tab */}
           <TabsContent value="changes" className="mt-0 space-y-6" role="region" aria-labelledby={undefined} aria-label="Variations">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="font-heading text-lg font-semibold">Variations</h2>
+              <div className="min-w-0">
+                <h2 className="font-heading text-lg font-semibold">Variations</h2>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Record work outside the agreed quote, track client approval and keep every change tied to this job.</p>
+              </div>
               <Button className="min-h-11 w-full sm:w-auto" onClick={() => setIsSendingChangeRequest(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 + Add Variation
@@ -902,22 +918,29 @@ export default function ProjectManage() {
                     </p>
                   </div>
                 )}
-                {project.changeRequests.map(request => request.status === 'pending' ? (
-                  <ChangeRequestCard
+                {project.changeRequests.map(request => (
+                  <div
                     key={request.id}
-                    request={request}
-                    relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
-                    viewerRole="trade"
-                    onRespond={handleRespondToClient}
-                  />
-                ) : (
-                  <ChangeRequestItem
-                    key={request.id}
-                    relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
-                    request={request}
-                    onEdit={() => setEditingChangeRequest(request)}
-                    isNew={recentlyResolvedChanges.some(resolved => resolved.id === request.id)}
-                  />
+                    id={`variation-${request.id}`}
+                    tabIndex={-1}
+                    className="scroll-mt-32 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-amber-700"
+                  >
+                    {request.status === 'pending' ? (
+                      <ChangeRequestCard
+                        request={request}
+                        relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
+                        viewerRole="trade"
+                        onRespond={handleRespondToClient}
+                      />
+                    ) : (
+                      <ChangeRequestItem
+                        relatedItemTitle={variationItemTitle(request, project.scopeItems, quoteLineItems)}
+                        request={request}
+                        onEdit={() => setEditingChangeRequest(request)}
+                        isNew={recentlyResolvedChanges.some(resolved => resolved.id === request.id)}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
             )}
