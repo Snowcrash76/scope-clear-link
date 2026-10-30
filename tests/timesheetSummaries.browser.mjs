@@ -35,12 +35,14 @@ const employee = {
   role: "labourer",
   active: true,
   hourly_rate: 42,
+  auth_user_id: "synthetic-self-auth",
 };
 const coworker = {
   ...employee,
   id: "other",
   name: "Other team member",
   hourly_rate: 99,
+  auth_user_id: "synthetic-reviewer-auth",
 };
 const job = {
   id: "job",
@@ -97,6 +99,22 @@ try {
         employee_id: coworker.id,
       });
       const management = mode === "owner" || mode === "admin";
+      const previousWeek = new Date(`${monday}T12:00:00Z`);
+      previousWeek.setUTCDate(previousWeek.getUTCDate() - 7);
+      const audit = [
+        ...Array.from({ length: 25 }, (_, index) => ({
+          id: `synthetic-review-${index}`, employee_id: employee.id,
+          actor_id: coworker.auth_user_id,
+          action: index === 23 ? "week.rejected" : "week.approved",
+          created_at: `${today}T01:00:${String(index).padStart(2, "0")}Z`,
+          detail: { week_start: monday, comment: index === 23 ? "Synthetic correction reason" : "" },
+        })),
+        { id: "other-person-event", employee_id: coworker.id, actor_id: "unresolved-private-actor",
+          action: "time.manual", created_at: `${today}T01:01:00Z`, detail: { work_date: today } },
+        { id: "old-week-event", employee_id: employee.id, actor_id: coworker.auth_user_id,
+          action: "week.approved", created_at: `${today}T01:02:00Z`,
+          detail: { week_start: previousWeek.toISOString().slice(0, 10) } },
+      ];
       await page.route("**/api/**", async (route) => {
         const path = new URL(route.request().url()).pathname;
         if (path === "/api/employee/session")
@@ -149,7 +167,7 @@ try {
               permissions: {},
               notes: [],
               documents: [],
-              audit: [],
+              audit,
             },
           });
         return route.fulfill({ json: [] });
@@ -160,7 +178,14 @@ try {
           (management ? "team-timesheets" : "timesheets"),
       );
       let summary;
+      assert.doesNotMatch(await page.locator("body").innerText(), /Time on site|Paid after breaks|Immutable review audit/);
       if (management) {
+        const total = page.getByRole("button", { name: /^Total hours:/ });
+        await total.waitFor();
+        assert.match(await total.innerText(), /11h 30m/);
+        await total.click();
+        await page.getByRole("dialog").getByText(/Includes 0h 30m of unpaid breaks removed/).waitFor();
+        await page.keyboard.press("Escape");
         const strip = page
           .getByText("Estimated approved pay", { exact: true })
           .locator("..");
@@ -176,20 +201,25 @@ try {
           .click();
         summary = page.getByTestId("timesheet-review-drawer");
         await summary.waitFor();
-        assert.match(await summary.innerText(), /Paid[\s\S]*1 h/);
-        assert.match(await summary.innerText(), /\$0\.00/);
-        assert.match(await summary.innerText(), /\$99\.00 \/ hr/);
+        assert.match(await summary.innerText(), /Total hours[\s\S]*1h/);
+        assert.doesNotMatch(await summary.innerText(), /Estimated approved pay|Paid after breaks/, "Per-person drawer does not repeat the global pay dashboard");
       } else {
+        const total = page.getByRole("button", { name: /Includes .*unpaid breaks removed/ });
+        await total.waitFor();
+        assert.match(await total.innerText(), /10h 30m/);
+        await total.click();
+        await page.getByRole("dialog").getByText(/Includes 0h 30m of unpaid breaks removed/).waitFor();
+        await page.keyboard.press("Escape");
         await page.locator("details summary").click();
         summary = page.getByRole("region", { name: "Timesheet details" });
         await summary.waitFor();
-        assert.match(await summary.innerText(), /10h 30m/);
-        assert.match(await summary.innerText(), /0h 30m/);
         assert.match(await summary.innerText(), /running clock is excluded/);
         assert.match(await summary.innerText(), /\$42\.00 \/ hr/);
         if (mode === "missing") {
           assert.match(await summary.innerText(), /Unavailable/);
-          assert.match(await summary.innerText(), /missing a recorded rate/);
+          await summary.getByRole("button", { name: /Missing recorded rate/ }).click();
+          await page.getByRole("dialog").getByText(/missing a recorded rate/).waitFor();
+          await page.keyboard.press("Escape");
         } else assert.match(await summary.innerText(), /\$300\.00/);
       }
       if (!management)
@@ -209,6 +239,31 @@ try {
         await page
           .getByRole("button", { name: "Close review", exact: true })
           .click();
+        const person = page.getByTestId("timesheet-member-self").filter({ visible: true });
+        assert.match(await person.innerText(), /Last reviewed by Other team member/);
+        const historyTrigger = person.getByRole("button", { name: "History", exact: true });
+        await historyTrigger.click();
+        const history = page.getByRole("dialog", { name: "Review history", exact: true });
+        await history.waitFor();
+        assert.equal(await history.locator("time").count(), 10, "Only ten events initially");
+        assert.doesNotMatch(await history.innerText(), /unresolved-private-actor|week\.approved|week\.rejected|other-person-event/);
+        assert.match(await history.innerText(), /Synthetic correction reason/);
+        await history.getByRole("button", { name: "Show more", exact: true }).click();
+        assert.equal(await history.locator("time").count(), 25, "History stays scoped to this person and week");
+        await page.keyboard.press("Escape");
+        await history.waitFor({ state: "hidden" });
+        await page.waitForFunction(() => document.activeElement?.textContent.trim() === "History" &&
+          document.activeElement.closest('[data-testid="timesheet-member-self"]'), undefined, { timeout: 3000 });
+        await page.getByRole("button", { name: "Timesheet options", exact: true }).click();
+        await page.getByRole("menuitem", { name: "Review history", exact: true }).click();
+        await history.waitFor();
+        assert.equal(await history.locator("time").count(), 20, "Global history paginates twenty loaded records");
+        await history.getByLabel("Person", { exact: true }).selectOption(coworker.id);
+        assert.equal(await history.locator("time").count(), 1);
+        assert.match(await history.innerText(), /Admin/);
+        await history.getByLabel("From", { exact: true }).fill("2099-01-01");
+        await history.getByText("No review activity for this week yet.", { exact: true }).waitFor();
+        await page.keyboard.press("Escape");
         await page
           .getByRole("button", { name: "Previous week", exact: true })
           .click();

@@ -439,7 +439,7 @@ export function EmployeeTimesheets() {
                 <summary className="min-h-11 cursor-pointer py-2 text-sm font-semibold text-muted-foreground">
                   Details{" "}
                   <span className="ml-2 font-normal">
-                    Break, paid hours and approved pay
+                    Hourly rate and approved pay
                   </span>
                 </summary>
                 <div className="mt-2">

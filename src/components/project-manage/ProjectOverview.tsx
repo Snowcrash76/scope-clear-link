@@ -100,9 +100,8 @@ export function ProjectOverview({
         </button>
         <button type="button" onClick={() => onChangeTab("quote")} className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">
           <div className="flex items-center justify-between gap-3"><span className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Quote value</span><Receipt className="h-4 w-4 text-muted-foreground" /></div>
-          <p className="mt-2 text-sm text-muted-foreground">Original quote <strong className="text-foreground">{money(originalQuoteTotal)}</strong></p>
-          <p className="mt-1 text-sm text-muted-foreground">Approved variations <strong className="text-foreground">{money(approvedVariationTotal)}</strong></p>
-          <p className="mt-2 border-t border-border pt-2 font-semibold">Current total {money(originalQuoteTotal + approvedVariationTotal)}</p>
+          <p className="mt-2 font-semibold">Current quote {money(originalQuoteTotal)} <span className="text-xs font-normal text-muted-foreground">ex GST</span></p>
+          <p className="mt-1 text-sm text-muted-foreground">Approved variations included <strong className="text-foreground">{money(approvedVariationTotal)}</strong></p>
           <p className="mt-1 text-xs text-muted-foreground">Costs so far are shown separately and may be partial.</p>
         </button>
       </div>

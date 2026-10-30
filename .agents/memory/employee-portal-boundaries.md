@@ -50,3 +50,9 @@ Timesheets need approval/denial plus employee and admin edit/delete controls. Em
 **Why:** The user explicitly requested both review decisions and editing/deletion for team members and admins. Approved hours already post job labour costs, so silent changes would make costs inaccurate.
 
 **How to apply:** Require explicit reopening before correcting submitted/approved weeks, reverse approved labour first, and preserve the correction/deletion audit. Admins must be able to resubmit corrected hours without requiring an inactive employee to sign in.
+
+Company document library schema, permissions, storage rules and acknowledgement features require explicit approval of the written proposal before implementation or migration execution.
+
+**Why:** The user requested the company library as a proposal-only phase, while permitting navigation, client-action, document-presentation and timesheet-presentation improvements separately.
+
+**How to apply:** Do not treat approval of those presentation changes as library approval. Include any newly needed document classification, independent client-sharing or durable client-send/view tracking fields in the proposal rather than silently adding storage or permissions.

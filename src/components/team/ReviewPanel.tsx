@@ -114,6 +114,7 @@ export function ReviewPanel({
   const entryActionTriggerRef = useRef<HTMLButtonElement | null>(null);
   const drawerCloseRef = useRef<HTMLButtonElement | null>(null);
   const auditTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const historyReturnTarget = useRef<HTMLButtonElement | null>(null);
   const todayDate = localDate(new Date(), team.timezone);
   const today = weekStart(todayDate);
   const entries = useMemo(
@@ -536,6 +537,7 @@ export function ReviewPanel({
           onClick={(event) => {
             event.stopPropagation();
             auditTriggerRef.current = event.currentTarget;
+            historyReturnTarget.current = event.currentTarget;
             setAuditDialog({ personId: person.id, personName: person.name, week: selectedWeek });
           }}
         >
@@ -611,6 +613,7 @@ export function ReviewPanel({
             onClick={(event) => {
               event.stopPropagation();
               auditTriggerRef.current = event.currentTarget;
+              historyReturnTarget.current = event.currentTarget;
               setAuditDialog({ personId: person.id, personName: person.name, week: selectedWeek });
             }}
           >
@@ -668,7 +671,7 @@ export function ReviewPanel({
             )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button ref={auditTriggerRef} type="button" variant="outline" className="min-h-11 gap-2" aria-label="Timesheet options">
+                <Button ref={auditTriggerRef} type="button" variant="outline" className="min-h-11 gap-2" aria-label="Timesheet options" onClick={(event) => { historyReturnTarget.current = event.currentTarget; }}>
                   <MoreHorizontal className="h-4 w-4" />
                   <span>More</span>
                 </Button>
@@ -887,6 +890,7 @@ export function ReviewPanel({
                   className="min-h-11 px-2"
                   onClick={(event) => {
                     auditTriggerRef.current = event.currentTarget;
+                    historyReturnTarget.current = event.currentTarget;
                     setAuditDialog({ personId: selected.id, personName: selected.name, week: selectedWeek });
                   }}
                 >
@@ -1196,10 +1200,10 @@ export function ReviewPanel({
         personName={auditDialog?.personName}
         week={auditDialog?.week}
         open={!!auditDialog}
+        onRestoreFocus={() => historyReturnTarget.current?.focus()}
         onOpenChange={(open) => {
           if (!open) {
             setAuditDialog(null);
-            window.setTimeout(() => auditTriggerRef.current?.focus(), 0);
           }
         }}
       />

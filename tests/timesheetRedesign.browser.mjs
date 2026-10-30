@@ -384,7 +384,7 @@ try {
       .waitFor();
     await statusContrast(employee.page);
     const text = await employee.page.locator("main").innerText();
-    assert.match(text, /10\.5 h/);
+    assert.match(text, /10h 30m/);
     assert.match(text, /8h 30m/);
     assert.match(text, /2h 0[0]?m/);
     assert.equal(

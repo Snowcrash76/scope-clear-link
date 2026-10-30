@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   auditActorName,
+  auditBusinessDate,
   auditEmployeeId,
   auditLabel,
   formatAuditTimestamp,
@@ -29,6 +30,7 @@ export function TimesheetAuditHistory({
   week,
   open,
   onOpenChange,
+  onRestoreFocus,
 }: {
   rows: AuditRow[];
   employees: TeamBootstrap["employees"];
@@ -38,6 +40,7 @@ export function TimesheetAuditHistory({
   week?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRestoreFocus?: () => void;
 }) {
   const [showAllWeek, setShowAllWeek] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState(personId ?? "");
@@ -50,17 +53,25 @@ export function TimesheetAuditHistory({
     return rows
       .filter((row) => auditLabel(row) !== null)
       .filter((row) => !selectedPerson || auditEmployeeId(row) === selectedPerson)
-      .filter((row) => !fromDate || row.created_at.slice(0, 10) >= fromDate)
-      .filter((row) => !toDate || row.created_at.slice(0, 10) <= toDate)
+      .filter((row) => !fromDate || auditBusinessDate(row.created_at, timezone) >= fromDate)
+      .filter((row) => !toDate || auditBusinessDate(row.created_at, timezone) <= toDate)
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
-  }, [rows, isFocusedWeek, personId, week, selectedPerson, fromDate, toDate]);
+  }, [rows, isFocusedWeek, personId, week, selectedPerson, fromDate, toDate, timezone]);
   const pageSize = isFocusedWeek ? (showAllWeek ? 10_000 : 10) : 20;
   const visible = isFocusedWeek ? candidates.slice(0, pageSize) : candidates.slice(page * pageSize, (page + 1) * pageSize);
   const hasMore = isFocusedWeek ? candidates.length > visible.length : candidates.length > (page + 1) * pageSize;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(90dvh,52rem)] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto">
+      <DialogContent
+        onCloseAutoFocus={(event) => {
+          if (onRestoreFocus) {
+            event.preventDefault();
+            onRestoreFocus();
+          }
+        }}
+        className="max-h-[min(90dvh,52rem)] w-[calc(100vw-1rem)] max-w-2xl overflow-y-auto"
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><History className="h-5 w-5 text-primary" />Review history</DialogTitle>
           <DialogDescription>

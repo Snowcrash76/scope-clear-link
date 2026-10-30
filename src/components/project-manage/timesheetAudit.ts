@@ -128,6 +128,12 @@ export function formatAuditTimestamp(value: string, timezone: string) {
   };
 }
 
+export function auditBusinessDate(value: string, timezone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date(value));
+}
+
 export function reviewAuditForPersonWeek(
   rows: AuditRow[],
   personId: string,

@@ -19,7 +19,7 @@ This covers Part D and the schema-dependent gaps discovered in Parts C and E. It
 - Standard job documents currently appear through the secure client page; there is no independent `client_visible` flag. Removing employee access does **not** make a file internal.
 - Existing purposes distinguish standard job documents, client uploads, employee photos and private receipt-related files. File MIME types support Photos versus other documents, but do not reliably establish whether a PDF is a site plan, report or certificate.
 - Before approval, preserve those audiences and group only using existing metadata/type evidence. Do not label a standard file “Internal only” or infer a site plan from its filename.
-- There is no verified client phone column. The profile phone belongs to the trade. Propose a real client/contact model separately rather than showing the trade's number as the client's.
+- The employee-portal migration already adds `projects.client_phone`. Surface that existing value when populated; never use the trade's profile phone as a substitute. No new phone column is needed.
 
 ## Proposed model
 
@@ -177,9 +177,10 @@ ALTER TABLE public.project_documents
 -- Preserve the existing employee-photo exclusion from client access.
 UPDATE public.project_documents SET client_visible = false
 WHERE purpose = 'employee_photo';
--- Other private purposes must be identified from the deployed schema and
--- existing client filters before approval; preserve every existing exclusion.
--- Do not use this migration to publish existing employee-only/private files.
+-- Current source excludes employee_photo. Preflight the deployed purpose
+-- values against that source before approval, preserving any newer exclusions.
+-- Receipt originals are stored by the separate private cost-file model;
+-- this migration does not move or publish receipt files.
 
 CREATE TABLE public.client_page_deliveries (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -197,6 +198,114 @@ CREATE INDEX client_page_deliveries_job_time_idx
 ALTER TABLE public.client_page_deliveries ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.client_page_deliveries FROM PUBLIC, anon, authenticated;
 GRANT SELECT, INSERT ON public.client_page_deliveries TO service_role;
+
+-- Transactional create/replace. Call ONLY after the route verifies the
+-- completed signed upload. p_document is allocated by the upload route.
+CREATE FUNCTION public.company_document_commit(
+  p_actor uuid, p_document uuid, p_expected_version integer,
+  p_metadata jsonb, p_file jsonb, p_notes text DEFAULT ''
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,pg_temp AS $$
+DECLARE
+  owner uuid := public.portal_owner(p_actor);
+  employee public.employees;
+  doc public.company_documents;
+  next_version integer := p_expected_version + 1;
+  object_metadata jsonb;
+  object_path text := p_file->>'file_reference';
+  object_type text := p_file->>'file_type';
+  object_size bigint := (p_file->>'size')::bigint;
+BEGIN
+  SELECT * INTO employee FROM public.employees WHERE auth_user_id=p_actor;
+  IF FOUND AND NOT public.portal_permission(owner,employee.role,'manage_company_documents') THEN
+    RAISE EXCEPTION 'Document management denied' USING ERRCODE='42501';
+  END IF;
+  IF p_expected_version < 0 OR length(coalesce(p_notes,'')) > 5000
+    OR p_document IS NULL OR object_path IS NULL
+    OR object_path NOT LIKE owner::text||'/'||p_document::text||'/'||next_version::text||'/%'
+    OR position('..' IN object_path) > 0 THEN
+    RAISE EXCEPTION 'Invalid document upload';
+  END IF;
+  SELECT metadata INTO object_metadata FROM storage.objects
+    WHERE bucket_id='company-documents' AND name=object_path;
+  IF NOT FOUND OR (object_metadata->>'size')::bigint IS DISTINCT FROM object_size
+    OR object_metadata->>'mimetype' IS DISTINCT FROM object_type THEN
+    RAISE EXCEPTION 'Completed file metadata does not match';
+  END IF;
+
+  IF p_expected_version=0 THEN
+    INSERT INTO public.company_documents(
+      id,owner_id,title,category,file_reference,file_type,size,description,
+      version,status,expires_on,visibility,allowed_roles,requires_acknowledgement,created_by
+    ) VALUES (
+      p_document,owner,p_metadata->>'title',p_metadata->>'category',object_path,
+      object_type,object_size,coalesce(p_metadata->>'description',''),1,
+      coalesce(p_metadata->>'status','active'),nullif(p_metadata->>'expires_on','')::date,
+      coalesce(p_metadata->>'visibility','admins'),
+      ARRAY(SELECT jsonb_array_elements_text(coalesce(p_metadata->'allowed_roles','[]'::jsonb))),
+      coalesce((p_metadata->>'requires_acknowledgement')::boolean,false),p_actor
+    ) RETURNING * INTO doc;
+  ELSE
+    SELECT * INTO doc FROM public.company_documents
+      WHERE id=p_document AND owner_id=owner FOR UPDATE;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Document unavailable' USING ERRCODE='42501';
+    END IF;
+    IF doc.version<>p_expected_version THEN
+      RAISE EXCEPTION 'Document version changed' USING ERRCODE='40001';
+    END IF;
+    IF doc.status='archived' THEN
+      RAISE EXCEPTION 'Restore the document before replacing it';
+    END IF;
+    UPDATE public.company_documents SET
+      version=next_version,file_reference=object_path,file_type=object_type,
+      size=object_size,updated_at=now()
+      WHERE id=doc.id RETURNING * INTO doc;
+  END IF;
+  INSERT INTO public.company_document_versions(
+    document_id,owner_id,version,file_reference,file_type,size,uploaded_by,notes
+  ) VALUES(doc.id,owner,next_version,object_path,object_type,object_size,p_actor,coalesce(p_notes,''));
+  RETURN jsonb_build_object('id',doc.id,'version',next_version,'status',doc.status);
+END $$;
+REVOKE ALL ON FUNCTION public.company_document_commit(uuid,uuid,integer,jsonb,jsonb,text)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.company_document_commit(uuid,uuid,integer,jsonb,jsonb,text)
+  TO service_role;
+
+CREATE FUNCTION public.company_document_acknowledge(
+  p_actor uuid, p_document uuid, p_version integer
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public,pg_temp AS $$
+DECLARE
+  employee public.employees;
+  doc public.company_documents;
+  acknowledged timestamptz;
+BEGIN
+  SELECT * INTO employee FROM public.employees WHERE auth_user_id=p_actor AND active;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Document unavailable' USING ERRCODE='42501'; END IF;
+  SELECT * INTO doc FROM public.company_documents
+    WHERE id=p_document AND owner_id=employee.owner_id AND status='active' FOR SHARE;
+  IF NOT FOUND
+    OR NOT public.portal_permission(employee.owner_id,employee.role,'view_company_documents')
+    OR NOT (doc.visibility='team'
+      OR (doc.visibility='admins' AND employee.role='admin')
+      OR (doc.visibility='roles' AND employee.role=ANY(doc.allowed_roles))) THEN
+    RAISE EXCEPTION 'Document unavailable' USING ERRCODE='42501';
+  END IF;
+  IF doc.version<>p_version THEN
+    RAISE EXCEPTION 'Document version changed' USING ERRCODE='40001';
+  END IF;
+  INSERT INTO public.document_acknowledgements(document_id,owner_id,version,employee_id)
+    VALUES(doc.id,doc.owner_id,doc.version,employee.id)
+    ON CONFLICT(document_id,version,employee_id) DO NOTHING;
+  SELECT acknowledged_at INTO acknowledged FROM public.document_acknowledgements
+    WHERE document_id=doc.id AND version=doc.version AND employee_id=employee.id;
+  RETURN jsonb_build_object('version',doc.version,'acknowledged_at',acknowledged);
+END $$;
+REVOKE ALL ON FUNCTION public.company_document_acknowledge(uuid,uuid,integer)
+  FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.company_document_acknowledge(uuid,uuid,integer)
+  TO service_role;
 
 COMMIT;
 ```
@@ -226,7 +335,7 @@ Common status rules: 401 unsigned, 403 role/visibility/assignment denial, 404 in
 | `POST /api/team/jobs/:id/company-documents` | Body `companyDocumentId`; verify both rows have the same owner. Attach an active document, idempotently. Warn/reject attaching a document whose audience excludes assigned staff if the action promises all assigned staff access. Never widen document audience implicitly. |
 | `DELETE /api/team/jobs/:id/company-documents/:documentId` | Delete only the same-owner link. Keep the library file, version history and acknowledgements. |
 
-Creation and version replacement need a **new transactional SQL function or equivalent transaction-capable service implementation** after approval; sequential REST inserts are not sufficient. Those functions will be service-role executable only, validate the resolved actor/business, and must be reviewed with the final approved migration. The SQL above defines the proposed tables/policies, not a claim that application transactions are already implemented.
+Creation and replacement use the proposed `company_document_commit` transaction above, not sequential REST inserts. Acknowledgement uses `company_document_acknowledge`; the share lock serializes it with a version replacement, so a stale acknowledgement cannot silently become an acknowledgement of a new file. Both functions are service-role executable only. Routes must validate completed upload capabilities and strictly validate file types/body keys before invoking them with the verified actor; map SQL `40001` to HTTP 409. These are review text, not installed functions. Validate the storage metadata fields against the project's actual Supabase Storage version during non-production testing.
 
 ### Employee reading and acknowledgement
 

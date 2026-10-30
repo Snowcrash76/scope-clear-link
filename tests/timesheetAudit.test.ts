@@ -2,11 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   auditActorName,
+  auditBusinessDate,
   auditLabel,
   auditMatchesPersonWeek,
   reviewAuditForPersonWeek,
   type AuditRow,
 } from "../src/components/project-manage/timesheetAudit";
+
+test("audit date filters use the same business timezone as the displayed timestamps", () => {
+  assert.equal(auditBusinessDate("2026-10-30T15:00:00Z", "Australia/Sydney"), "2026-10-31");
+});
 
 const movedEntry: AuditRow = {
   id: "event-1",
