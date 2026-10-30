@@ -2,7 +2,7 @@ import { variationItemTitle } from '@/lib/variationItems';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ProjectHeader } from '@/components/ProjectHeader';
+import { ClientPortalHeader } from '@/components/client/ClientPortalHeader';
 import { ActionRequired } from '@/components/ActionRequired';
 import { ExclusionsPanel } from '@/components/ExclusionsPanel';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
@@ -24,7 +24,7 @@ import { useInvoices } from '@/hooks/useInvoices';
 import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHistory';
 import { toast } from 'sonner';
-import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2, X, Clock } from 'lucide-react';
+import { RefreshCw, TrendingUp, FileText, Loader2, Calculator, Download, Eye, Receipt, FolderOpen, CheckCircle2, X, Clock, ChevronDown, Phone } from 'lucide-react';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { Invoice, ScopeItem } from '@/types/project';
@@ -48,6 +48,11 @@ export default function ClientProjectView() {
   const { history: lineItemHistory } = useLineItemHistory(activeQuote?.id, activeQuote?.quoteToken ?? undefined);
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+  const [activeTab, setActiveTab] = useState('quote');
+  const [quoteGroupsOpen, setQuoteGroupsOpen] = useState<Record<'included' | 'variations', boolean>>(() => ({
+    included: typeof window !== 'undefined' && window.innerWidth >= 640,
+    variations: typeof window !== 'undefined' && window.innerWidth >= 640,
+  }));
 
   // Move useState to top before any conditional returns (React hooks rule)
   // Tracks IDs that the client has already approved/declined optimistically
@@ -95,11 +100,16 @@ export default function ClientProjectView() {
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Client link unavailable</h1>
-          <p className="text-muted-foreground mt-2 px-4">This link may have been replaced. Please ask your trade for a new secure client link.</p>
-        </div>
+      <div className="min-h-[100dvh] bg-muted/20 px-4 py-10">
+        <Card className="mx-auto max-w-lg p-6 sm:p-8">
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-warning/10 text-warning">
+            <FileText className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Client link unavailable</p>
+          <h1 className="mt-2 font-heading text-2xl font-bold text-foreground">We couldn’t open this project</h1>
+          <p role="alert" className="mt-3 text-sm leading-relaxed text-muted-foreground">This link may have been replaced or is no longer available.</p>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Reply to the original project email to contact your trade and request a fresh secure link. Contact details aren’t available until the project loads.</p>
+        </Card>
       </div>
     );
   }
@@ -265,11 +275,175 @@ export default function ClientProjectView() {
     setSeenInvoiceIds(updated);
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <ProjectHeader project={project} />
+  const projectStatusLabel = project.status === 'draft'
+    ? 'Draft'
+    : project.status === 'sent'
+      ? 'Awaiting Response'
+      : project.status === 'acknowledged'
+        ? 'Quote Acknowledged'
+        : project.status === 'completed'
+          ? 'Completed'
+          : 'In Progress';
+  const projectStatusVariant = project.status === 'sent'
+    ? 'pending' as const
+    : project.status === 'in_progress' || project.status === 'completed' || project.status === 'acknowledged'
+      ? 'success' as const
+      : 'secondary' as const;
+  const activeQuoteStatusLabel = activeQuote?.status === 'sent'
+    ? 'Awaiting your response'
+    : activeQuote?.status === 'approved'
+      ? 'Accepted'
+      : activeQuote?.status === 'declined'
+        ? 'Declined'
+        : activeQuote?.status === 'revised'
+          ? 'Revised'
+          : 'Quote';
+  const quoteGroupKeys = [
+    ...(includedItems.length > 0 || baseQuoteLineItems.length > 0 ? ['included' as const] : []),
+    ...(approvedChanges.length > 0 || variationLineItems.length > 0 ? ['variations' as const] : []),
+  ];
+  const allQuoteGroupsExpanded = quoteGroupKeys.length > 0 && quoteGroupKeys.every(group => quoteGroupsOpen[group]);
+  const toggleAllQuoteGroups = () => setQuoteGroupsOpen({
+    included: quoteGroupKeys.length > 0 && !allQuoteGroupsExpanded && quoteGroupKeys.includes('included'),
+    variations: quoteGroupKeys.length > 0 && !allQuoteGroupsExpanded && quoteGroupKeys.includes('variations'),
+  });
+  const handleDownloadCurrentQuote = async () => {
+    if (!activeQuote) return;
+    try {
+      await downloadQuotePDF(
+        activeQuote,
+        tradeProjectInfo,
+        project.scopeItems,
+        project.changeRequests,
+        quoteLineItems,
+        project.tradeLogoUrl,
+      );
+      toast.success('Quote PDF downloaded');
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast.error('Failed to download PDF');
+    }
+  };
 
-      <main className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+  return (
+    <div className="min-h-[100dvh] bg-muted/20 pb-24 sm:pb-0">
+      <ClientPortalHeader
+        businessName={project.tradeBusinessName || project.tradeName}
+        projectName={project.name}
+        clientName={project.clientName}
+        statusLabel={projectStatusLabel}
+        statusVariant={projectStatusVariant}
+        logoUrl={project.tradeLogoUrl}
+        createdAt={project.createdAt}
+      />
+
+      <main className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-5 sm:py-8 pb-24 sm:pb-10 space-y-6">
+        {activeQuote && activeQuote.status !== 'draft' ? (
+          <Card className="min-w-0 overflow-hidden border-primary/20 bg-card shadow-sm" data-testid="client-project-quote-summary">
+            <div className="border-b border-border bg-primary/5 p-4 sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Quote {activeQuote.quoteNumber}</p>
+                  <h2 className="mt-1 font-heading text-xl font-bold text-foreground sm:text-2xl">
+                    {activeQuote.status === 'sent' ? 'Review and accept your quote' : activeQuote.status === 'approved' ? 'Your accepted quote' : activeQuote.status === 'declined' ? 'Your quote decision' : 'Your project quote'}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{project.name}</p>
+                </div>
+                <Badge variant={activeQuote.status === 'approved' ? 'success' : activeQuote.status === 'declined' ? 'destructive' : 'pending'}>
+                  {activeQuoteStatusLabel}
+                </Badge>
+              </div>
+            </div>
+            <div className="space-y-4 p-4 sm:p-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl bg-muted/40 p-3">
+                  <p className="text-sm text-muted-foreground">Subtotal (ex GST)</p>
+                  <p className="mt-1 break-words font-semibold tabular-nums">{`$${(activeQuote.subtotal ?? 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`}</p>
+                </div>
+                <div className="rounded-xl bg-muted/40 p-3">
+                  <p className="text-sm text-muted-foreground">GST ({activeQuote.taxRate ?? 0}%)</p>
+                  <p className="mt-1 break-words font-semibold tabular-nums">{`$${(activeQuote.taxAmount ?? 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`}</p>
+                </div>
+                <div className="col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-1">
+                  <p className="text-sm font-medium text-muted-foreground">Total (inc GST)</p>
+                  <p className="mt-1 break-words font-heading text-xl font-bold tabular-nums">{`$${(activeQuote.total ?? 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`}</p>
+                </div>
+              </div>
+              {activeQuote.validUntil && (
+                <p className="text-sm text-muted-foreground">
+                  Listed validity: <span className="font-medium text-foreground">{format(activeQuote.validUntil, 'dd MMM yyyy')}</span>
+                  {activeQuote.validUntil.getTime() < Date.now() && activeQuote.status === 'sent' && (
+                    <span className="mt-1 block">This date has passed, but the quote is still marked pending. This page does not block a response based on the date; please confirm the price is current before proceeding.</span>
+                  )}
+                </p>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                {activeQuote.status === 'sent' && (
+                  <>
+                    <Button variant="approve" className="min-h-11 flex-1" onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'approve' })}>
+                      <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />
+                      Accept quote
+                    </Button>
+                    <Button variant="outline" className="min-h-11" onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'decline' })}>
+                      Decline
+                    </Button>
+                    <Button variant="outline" className="min-h-11" onClick={() => setActiveTab('changes')}>
+                      Ask for a change
+                    </Button>
+                  </>
+                )}
+                <Button variant="outline" className="min-h-11" onClick={handleDownloadCurrentQuote}>
+                  <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+                  Download PDF
+                </Button>
+              </div>
+              {activeQuote.status === 'sent' && project.tradePhone && (
+                <p className="text-sm text-muted-foreground">
+                  Need to discuss the quote? <a className="font-medium text-primary underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeBusinessName || project.tradeName}</a>
+                </p>
+              )}
+            </div>
+          </Card>
+        ) : (
+          <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Project update</p>
+              <h2 className="mt-1 font-heading text-xl font-bold text-foreground">{project.name}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Follow progress, review documents, and see any requests that need your attention.</p>
+            </div>
+            {project.tradePhone && (
+              <a href={`tel:${project.tradePhone}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-medium hover:bg-muted">
+                <Phone className="h-4 w-4" aria-hidden="true" />
+                Contact your trade
+              </a>
+            )}
+          </Card>
+        )}
+
+        {activeQuote && (activeQuote.status === 'approved' || activeQuote.status === 'declined') && (
+          <Card className={activeQuote.status === 'approved' ? 'border-approved/25 bg-approved/5 p-4 sm:p-5' : 'border-destructive/25 bg-destructive/5 p-4 sm:p-5'} data-testid="persistent-project-quote-decision" aria-live="polite">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className={`text-sm font-semibold ${activeQuote.status === 'approved' ? 'text-approved' : 'text-destructive'}`}>
+                  Decision recorded: you {activeQuote.status === 'approved' ? 'accepted' : 'declined'} Quote {activeQuote.quoteNumber}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {activeQuote.approvedAt
+                    ? `Accepted ${format(activeQuote.approvedAt, "dd MMM yyyy 'at' h:mm a")}`
+                    : activeQuote.declinedAt
+                      ? `Declined ${format(activeQuote.declinedAt, "dd MMM yyyy 'at' h:mm a")}`
+                      : 'The decision is saved to this quote.'}
+                </p>
+                {activeQuote.clientComment && <p className="mt-2 break-words text-sm text-foreground">Your note: {activeQuote.clientComment}</p>}
+              </div>
+              <Button variant="outline" className="min-h-11 shrink-0" onClick={handleDownloadCurrentQuote}>
+                <Download className="mr-2 h-4 w-4" aria-hidden="true" />
+                Download PDF
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {/* Action Required Banner */}
         <ActionRequired 
           pendingChanges={pendingChanges}
@@ -279,7 +453,7 @@ export default function ClientProjectView() {
         />
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="quote" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="w-full overflow-x-auto [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="w-max sm:w-auto inline-flex flex-nowrap justify-start">
               <TabsTrigger value="quote" className="gap-2">
@@ -354,16 +528,6 @@ export default function ClientProjectView() {
                         </span>
                       )}
                     </div>
-                    {activeQuote.approvedAt && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Approved on {new Date(activeQuote.approvedAt).toLocaleDateString()}
-                      </p>
-                    )}
-                    {activeQuote.declinedAt && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Declined on {new Date(activeQuote.declinedAt).toLocaleDateString()}
-                      </p>
-                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button variant="outline" onClick={() => setIsQuoteModalOpen(true)}>
@@ -394,15 +558,48 @@ export default function ClientProjectView() {
 
                 <Separator />
 
+                {quoteGroupKeys.length > 0 && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={toggleAllQuoteGroups}
+                      aria-label={allQuoteGroupsExpanded ? 'Collapse all quote categories' : 'Expand all quote categories'}
+                    >
+                      <ChevronDown className={`mr-2 h-4 w-4 transition-transform ${allQuoteGroupsExpanded ? 'rotate-180' : ''}`} aria-hidden="true" />
+                      {allQuoteGroupsExpanded ? 'Collapse all' : 'Expand all'}
+                    </Button>
+                  </div>
+                )}
+
                 {/* Included Items — base scope + base custom line items only (no variation duplicates) */}
                 {(includedItems.length > 0 || baseQuoteLineItems.length > 0) && (
-                  <div className="border rounded-lg divide-y">
+                  <div className="overflow-hidden rounded-lg border">
+                    <button
+                      type="button"
+                      className="flex min-h-16 w-full items-center justify-between gap-3 px-3 py-3 text-left hover:bg-muted/30 sm:px-4"
+                      aria-expanded={quoteGroupsOpen.included}
+                      onClick={() => setQuoteGroupsOpen(current => ({ ...current, included: !current.included }))}
+                    >
+                      <span>
+                        <span className="block font-semibold text-foreground">Included work</span>
+                        <span className="mt-0.5 block text-sm text-muted-foreground">{includedItems.length + baseQuoteLineItems.length} items</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-3">
+                        <span className="text-right">
+                          <span className="block text-xs text-muted-foreground">Category subtotal</span>
+                          <span className="block font-semibold tabular-nums text-foreground">${(scopeSubtotal + customItemsTotal).toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                        </span>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${quoteGroupsOpen.included ? 'rotate-180' : ''}`} aria-hidden="true" />
+                      </span>
+                    </button>
+                    {quoteGroupsOpen.included && <div className="divide-y border-t">
                     {includedItems.map(item => (
                       <div key={item.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
                         <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
                           <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                           {stripVariationMeta(item.description) && (
-                            <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
+                            <RichTextContent html={stripVariationMeta(item.description)} className="text-sm mt-0.5" />
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
@@ -415,7 +612,7 @@ export default function ClientProjectView() {
                         <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
                           <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                           {stripVariationMeta(item.description) && (
-                            <RichTextContent html={stripVariationMeta(item.description)} className="text-xs mt-0.5" />
+                            <RichTextContent html={stripVariationMeta(item.description)} className="text-sm mt-0.5" />
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap">
@@ -423,21 +620,38 @@ export default function ClientProjectView() {
                         </span>
                       </div>
                     ))}
+                    </div>}
                   </div>
                 )}
 
                 {/* Approved Variations — separate green section */}
                 {(approvedChanges.length > 0 || variationLineItems.length > 0) && (
-                  <div className="border border-approved/30 rounded-lg divide-y bg-approved/5">
-                    <div className="px-3 py-2 border-b border-approved/20">
-                      <span className="text-xs font-semibold text-approved uppercase tracking-wide">Approved Variations</span>
-                    </div>
+                  <div className="overflow-hidden rounded-lg border border-approved/30 bg-approved/5">
+                    <button
+                      type="button"
+                      className="flex min-h-16 w-full items-center justify-between gap-3 px-3 py-3 text-left hover:bg-approved/10 sm:px-4"
+                      aria-expanded={quoteGroupsOpen.variations}
+                      onClick={() => setQuoteGroupsOpen(current => ({ ...current, variations: !current.variations }))}
+                    >
+                      <span>
+                        <span className="block font-semibold text-approved">Approved variations</span>
+                        <span className="mt-0.5 block text-sm text-muted-foreground">{approvedChanges.length + variationLineItems.length} items</span>
+                      </span>
+                      <span className="flex shrink-0 items-center gap-3">
+                        <span className="text-right">
+                          <span className="block text-xs text-muted-foreground">Category subtotal</span>
+                          <span className="block font-semibold tabular-nums text-approved">${(changesImpact + variationLineItems.reduce((sum, item) => sum + (item.cost || 0), 0)).toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                        </span>
+                        <ChevronDown className={`h-4 w-4 text-approved transition-transform ${quoteGroupsOpen.variations ? 'rotate-180' : ''}`} aria-hidden="true" />
+                      </span>
+                    </button>
+                    {quoteGroupsOpen.variations && <div className="divide-y divide-approved/20 border-t border-approved/20">
                     {approvedChanges.map(change => (
                       <div key={change.id} className="p-3 flex flex-col sm:flex-row sm:justify-between items-start gap-2">
                         <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
                           <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{change.title}</p>
                           {stripVariationMeta(change.description) && (
-                            <p className="text-xs text-muted-foreground mt-0.5">{stripVariationMeta(change.description)}</p>
+                            <p className="text-sm text-muted-foreground mt-0.5">{stripVariationMeta(change.description)}</p>
                           )}
                         </div>
                         <span className={cn(
@@ -453,7 +667,7 @@ export default function ClientProjectView() {
                         <div className="min-w-0 w-full sm:flex-1 sm:pr-4">
                           <p className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</p>
                           {item.description && (
-                            <RichTextContent html={item.description} className="text-xs mt-0.5" />
+                            <RichTextContent html={item.description} className="text-sm mt-0.5" />
                           )}
                         </div>
                         <span className="text-sm font-medium whitespace-nowrap text-approved">
@@ -461,22 +675,23 @@ export default function ClientProjectView() {
                         </span>
                       </div>
                     ))}
+                    </div>}
                   </div>
                 )}
 
                 {/* Totals */}
                 <div className="space-y-1.5 p-4 rounded-lg bg-muted/50">
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Subtotal</span>
+                    <span>Subtotal (ex GST)</span>
                     <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Tax ({taxRate}%)</span>
+                    <span>GST ({taxRate}%)</span>
                     <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
+                    <span>Total (inc GST)</span>
                     <span className="text-primary">
                       ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </span>
@@ -485,7 +700,7 @@ export default function ClientProjectView() {
 
                 {/* Approve/Decline Buttons for sent quotes */}
                 {activeQuote.status === 'sent' && (
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
+                  <div className="hidden gap-3 border-t pt-4 sm:flex sm:flex-row">
                     <Button 
                       variant="decline" 
                       className="flex-1"
@@ -522,7 +737,7 @@ export default function ClientProjectView() {
                         }
                       }}
                     >
-                      Approve Quote
+                      Accept quote
                     </Button>
                   </div>
                 )}
@@ -858,6 +1073,20 @@ export default function ClientProjectView() {
         </Tabs>
       </main>
 
+      {activeQuote?.status === 'sent' && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] shadow-[0_-8px_24px_rgba(50,40,25,0.08)] backdrop-blur sm:hidden">
+          <div className="mx-auto flex max-w-4xl gap-2">
+            <Button variant="outline" className="min-h-11 flex-1" onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'decline' })}>
+              Decline
+            </Button>
+            <Button variant="approve" className="min-h-11 flex-[1.3]" onClick={() => setQuoteApprovalModal({ isOpen: true, action: 'approve' })}>
+              <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden="true" />
+              Accept quote
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Change Request Approval Modal */}
       <ApprovalModal
         isOpen={approvalModal.isOpen}
@@ -893,7 +1122,11 @@ export default function ClientProjectView() {
       <footer className="border-t mt-12">
         <div className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center text-sm text-muted-foreground">
           <p className="break-words [overflow-wrap:anywhere]">This job page is provided by {project.tradeBusinessName}</p>
-          <p className="mt-1 break-words [overflow-wrap:anywhere]">Questions? Contact {project.tradeName} directly.</p>
+          <p className="mt-1 break-words [overflow-wrap:anywhere]">
+            Questions? {project.tradePhone
+              ? <a className="font-medium text-primary underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeName || project.tradeBusinessName}</a>
+              : 'Reply to the original project email to contact your trade.'}
+          </p>
         </div>
       </footer>
     </div>
