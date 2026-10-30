@@ -87,3 +87,14 @@ Republishing is required to make this workspace version live.
 - **Verification after the ProjectManage split:** typecheck and production build passed; `jobSectionMenu.test.tsx` passed (3 tests) with a temporary in-memory `localStorage` preload for Bun.
 - **Verification after the QuoteSection split:** typecheck and production build passed; `jobSectionMenu.test.tsx`, `newQuoteDraft.test.ts`, and `additionVariations.test.tsx` passed (10 tests total) with the same temporary preload. `clientPages.browser.mjs` passed actual client project and quote routes at 320px, 375px and 768px, including accept/decline, persistent decisions/PDF and same-page change-request flows.
 - **Skip/limitation:** `quoteResponsive.test.tsx` requires `document.createElement` for the existing `RichTextContent` sanitizer and cannot run in Bun's non-DOM test environment. The browser client-route tests passed instead. Build output still reports the pre-existing stale Browserslist data and large-chunk warnings.
+
+### Section 6 — proposals only
+
+- **Before:** current records do not support a real client phone contact, an archive state, room/area quote grouping, or a final-cost confirmation flag.
+- **After:** proposals only; no feature, schema, API, permission, calculation, or task-creation changes are made.
+- **Client records and phone:** establish a client/contact record with validated phone data, consent and access boundaries; link existing jobs and plan migration of project-derived legacy contact details.
+- **Archive state:** define archive/restore, list visibility and retention separately from completion or deletion; preserve historical quotes, invoices, costs and margin calculations.
+- **Room/area grouping:** support optional named groups and an explicit sort order for quote items; retain existing ungrouped items and preserve quote totals/PDF behavior.
+- **Final-cost flag:** define qualifying evidence, confirming actor/time, distinction between estimate and confirmed actual cost, and an audited reopen path.
+- **Files changed:** `docs/ui-ux-redesign-summary.md` only. No implementation or data-model changes.
+- **Verification:** documentation review only; obtain product approval before schema or workflow design.
