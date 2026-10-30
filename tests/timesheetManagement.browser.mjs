@@ -47,43 +47,51 @@ try{
   });
   const management=mode!=='employee';
   await page.goto(base+'/generated-artifacts/timesheet-management.html?view='+(management?'team-timesheets':'timesheets'));
-  const editName=management?'Edit entry':'Edit time';
-  await page.getByRole('button',{name:editName,exact:true}).click();
+   if(management) await page.getByRole('button',{name:'Review Test field worker',exact:true}).click();
+   const editName=management?'Edit':'Edit time';
+   if(management) await page.getByRole('button',{name:'Entry actions',exact:true}).click();
+   await page.getByRole(management?'menuitem':'button',{name:editName,exact:true}).click();
   await page.locator(management?'#team-entry-notes':'#entry-notes').fill('Corrected finish record');
   const saved=page.waitForResponse(r=>new URL(r.url()).pathname.endsWith('/time/entry')&&r.request().method()==='PATCH');
   await page.getByRole('button',{name:management?'Save correction':'Update draft',exact:true}).click();
   await saved;
-  if(management)await page.getByRole('dialog').waitFor({state:'hidden'});
-  else await page.getByRole('button',{name:'Save time entry',exact:true}).waitFor();
+   if(management)await page.getByRole('heading',{name:'Edit time entry',exact:true}).waitFor({state:'hidden'});
+   else await page.getByRole('button',{name:'Add time',exact:true}).first().waitFor();
   assert.ok(state.calls.some(c=>c.method==='PATCH'&&c.path===`/api/${management?'team':'employee'}/time/entry`&&c.body.notes==='Corrected finish record'),JSON.stringify(state.calls));
   const submitted=page.waitForResponse(r=>/\/(employee\/submit|team\/time\/entry\/submit)$/.test(new URL(r.url()).pathname)&&r.request().method()==='POST');
-  await page.getByRole('button',{name:management?'Submit for review':'Submit week',exact:true}).click();
+   await (management
+    ? page.getByTestId('timesheet-review-drawer').getByRole('button',{name:'Submit for review',exact:true})
+    : page.getByRole('button',{name:'Submit week',exact:true})).click();
   await submitted;
   await page.waitForFunction(()=>!Array.from(document.querySelectorAll('button')).some(b=>b.textContent.trim()==='Submit for review'));
   if(management){
    await page.getByRole('button',{name:'Deny week',exact:true}).click();
    await page.locator('#review-comment').fill('Please check the finish time');
-   await page.getByRole('dialog').getByRole('button').last().click();
-   await page.getByRole('button',{name:'Submit for review',exact:true}).waitFor();
+    await page.locator('form[role="dialog"]').filter({has:page.locator('#review-comment')}).getByRole('button').last().click();
+    await page.getByTestId('timesheet-review-drawer').getByRole('button',{name:'Submit for review',exact:true}).waitFor();
    assert.ok(state.calls.some(c=>c.path==='/api/team/review'&&c.body.decision==='rejected'));
-   await page.getByRole('button',{name:'Submit for review',exact:true}).click();
+    await page.getByTestId('timesheet-review-drawer').getByRole('button',{name:'Submit for review',exact:true}).click();
    await page.getByRole('button',{name:'Approve week',exact:true}).click();
-   await page.getByRole('dialog').getByRole('button').last().click();
+    await page.locator('form[role="dialog"]').filter({has:page.locator('#review-comment')}).getByRole('button').last().click();
    await page.getByRole('button',{name:'Reopen week',exact:true}).waitFor();
    await page.getByRole('button',{name:'Reopen week',exact:true}).click();
-   await page.getByRole('dialog').getByText(/posted.*labour|labour.*revers/i).waitFor();
+    await page.locator('form[role="dialog"]').filter({has:page.locator('#review-comment')}).getByText(/posted.*labour|labour.*revers/i).waitFor();
    await page.locator('#review-comment').fill('Correcting a duplicate');
-   await page.getByRole('dialog').getByRole('button').last().click();
-   await page.getByRole('button',{name:'Delete entry',exact:true}).first().waitFor();
+    await page.locator('form[role="dialog"]').filter({has:page.locator('#review-comment')}).getByRole('button').last().click();
+    await page.getByRole('button',{name:'Entry actions',exact:true}).waitFor();
   }else{
    state.entries[0].status='draft';state.submission.status='rejected';await page.reload();
-   await page.getByRole('button',{name:'Delete',exact:true}).waitFor();
+    await page.getByRole('button',{name:'Entry actions',exact:true}).waitFor();
   }
-  const deleteName=management?'Delete entry':'Delete';
-  await page.getByRole('button',{name:deleteName,exact:true}).first().click();
+   const deleteName='Delete';
+   if(management) await page.getByRole('button',{name:'Entry actions',exact:true}).first().click();
+   if(!management) await page.getByRole('button',{name:'Entry actions',exact:true}).click();
+   await page.getByRole(management?'menuitem':'button',{name:deleteName,exact:true}).first().click();
   await page.getByRole('alertdialog').getByRole('button',{name:'Cancel',exact:true}).click();
   assert.equal(state.calls.filter(c=>c.method==='DELETE').length,0);
-  await page.getByRole('button',{name:deleteName,exact:true}).first().click();
+   if(management) await page.getByRole('button',{name:'Entry actions',exact:true}).first().click();
+   else await page.getByRole('button',{name:'Entry actions',exact:true}).click();
+   await page.getByRole(management?'menuitem':'button',{name:deleteName,exact:true}).first().click();
   state.failDelete=true;
   await page.getByRole('alertdialog').getByRole('button',{name:'Delete entry',exact:true}).click();
   await page.getByRole('alertdialog').getByRole('alert').waitFor();

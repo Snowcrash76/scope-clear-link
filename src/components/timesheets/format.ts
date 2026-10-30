@@ -10,22 +10,22 @@ export function formatDay(date: string) {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
-  }).format(new Date(`${date.slice(0, 10)}T12:00:00Z`));
+  }).format(new Date(`${date.slice(0, 10)}T12:00:00Z`)).replace(",", "");
 }
 
 export function formatWeek(weekStart: string) {
   const start = new Date(`${weekStart}T12:00:00Z`);
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 6);
-  const date = (d: Date) =>
+  const date = (d: Date, includeYear: boolean) =>
     new Intl.DateTimeFormat("en-AU", {
       day: "numeric",
       month: "short",
-      year: "numeric",
+      ...(includeYear ? { year: "numeric" as const } : {}),
       timeZone: "UTC",
     }).format(d);
-  const left = date(start);
-  return `${left} – ${date(end)}`;
+  const left = date(start, start.getUTCFullYear() !== end.getUTCFullYear());
+  return `${left} – ${date(end, true)}`;
 }
 
 export const formatClock = (value: string | null, timezone: string) =>

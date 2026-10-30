@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatWeek } from "./format";
 import { weekStart } from "../../../shared/employeePortal";
+import { shiftWeek } from "./model";
 
 export function WeekSwitcher({
   value,
@@ -16,11 +17,7 @@ export function WeekSwitcher({
   id?: string;
 }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const move = (amount: number) => {
-    const date = new Date(`${value}T12:00:00Z`);
-    date.setUTCDate(date.getUTCDate() + amount * 7);
-    onChange(weekStart(date.toISOString().slice(0, 10)));
-  };
+  const move = (amount: number) => onChange(weekStart(shiftWeek(value, amount)));
   return (
     <div className="flex flex-wrap items-center gap-2" aria-label="Week navigation">
       <Button type="button" variant="outline" size="icon" className="h-11 w-11" aria-label="Previous week" onClick={() => move(-1)}>

@@ -43,20 +43,35 @@ try {
       return route.fulfill({json:[]});
     });
     await page.goto(base+'/generated-artifacts/timesheet-summary.html?view='+(management?'team-timesheets':'timesheets'));
-    const summaries=page.getByRole('region',{name:'Timesheet totals'}); await summaries.first().waitFor();
-    const summary=management?summaries.nth(1):summaries.first();
-    assert.match(await summary.innerText(),/11h 00m/);
-    assert.match(await summary.innerText(),/0h 30m/);
-    assert.match(await summary.innerText(),/10h 30m/);
-    assert.match(await summary.innerText(),/1 running clock excluded/);
-    if(mode==='missing') {
-      assert.match(await summary.innerText(),/Unavailable/);
-      assert.match(await summary.innerText(),/missing recorded rate/);
-    } else assert.match(await summary.innerText(),/\$300\.00/);
-    assert.match(await summary.innerText(),/\$42\.00 \/ hr/);
+    let summary;
+    if(management) {
+      const strip=page.getByText('Estimated approved pay',{exact:true}).locator('..');
+      if(mode==='missing') {
+        assert.match(await strip.innerText(),/Unavailable/);
+        assert.match(await strip.innerText(),/missing a recorded rate/);
+      } else assert.match(await strip.innerText(),/\$300\.00/);
+      await page.getByRole('button',{name:'Review Other team member',exact:true}).click();
+      summary=page.getByRole('region',{name:'Timesheet details'});
+      await summary.waitFor();
+      assert.match(await summary.innerText(),/No approved hours/);
+      assert.match(await summary.innerText(),/\$99\.00 \/ hr/);
+    } else {
+      await page.locator('details summary').click();
+      summary=page.getByRole('region',{name:'Timesheet details'});
+      await summary.waitFor();
+      assert.match(await summary.innerText(),/10h 30m/);
+      assert.match(await summary.innerText(),/0h 30m/);
+      assert.match(await summary.innerText(),/running clock is excluded/);
+      assert.match(await summary.innerText(),/\$42\.00 \/ hr/);
+      if(mode==='missing') {
+        assert.match(await summary.innerText(),/Unavailable/);
+        assert.match(await summary.innerText(),/missing a recorded rate/);
+      } else assert.match(await summary.innerText(),/\$300\.00/);
+    }
     if(!management) assert.equal(await page.getByText('Other team member',{exact:true}).count(),0);
     else {
-      assert.equal(await page.getByText('Other team member',{exact:true}).count(),1);
+      assert.equal(await page.getByText('Other team member',{exact:true}).count(),2,'desktop table and mobile card share the team row');
+      await page.getByRole('button',{name:'Close review',exact:true}).click();
       await page.getByRole('button',{name:'Previous week',exact:true}).click();
       await page.getByText('No time recorded this week',{exact:true}).waitFor();
       await page.getByRole('button',{name:'Next week',exact:true}).click();
