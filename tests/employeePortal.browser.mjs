@@ -33,18 +33,20 @@ function entry(id, employeeId, startedAt, endedAt, notes, breakMinutes = 30) {
   return { id, employee_id: employeeId, project_id: job.id, work_date: today, started_at: startedAt, ended_at: endedAt, break_minutes: breakMinutes, notes, status: endedAt ? 'submitted' : 'draft', paid_minutes: null, created_at: startedAt };
 }
 
-function makeApi(page, { owner = false, running = false } = {}) {
+function makeApi(page, { owner = false, running = false, admin = false } = {}) {
   const state = {
     isRunning: running,
     start: new Date(Date.now() - 7_000).toISOString(),
     calls: [],
+    teamEmployees: [{ ...employee, hourly_rate: 42.75, archived_at: null }],
+    rejectRemoval: false,
   };
   page.route('**/api/**', async route => {
     const request = route.request();
     const url = new URL(request.url());
     const method = request.method();
     if (url.pathname === '/api/employee/session') {
-      return route.fulfill({ json: { employee: owner ? null : employee, canManageTeam: owner } });
+      return route.fulfill({ json: { employee: owner ? null : { ...employee, role: admin ? 'admin' : employee.role }, canManageTeam: owner || admin } });
     }
     if (url.pathname === '/api/employee/bootstrap') {
       const active = state.isRunning ? entry('clock-live', employee.id, state.start, null, '') : null;
@@ -83,7 +85,7 @@ function makeApi(page, { owner = false, running = false } = {}) {
     }
     if (url.pathname === '/api/team/bootstrap') {
       return route.fulfill({ json: {
-        employees: [{ ...employee, hourly_rate: 42.75 }],
+        employees: state.teamEmployees,
         jobs: [job], appointments: [], assignments: [{ id: 'fixture-assignment', employee_id: employee.id, employee_name: employee.name, project_id: job.id, appointment_id: 'fixture-appointment', date: today, start_time: '07:00:00', end_time: '15:30:00', notes: 'Meet at rear gate.' }], entries: [], submissions: [],
         permissions: {
           labourer: { view_scope: true, view_variations: true, view_documents: true, add_photos: true, add_notes: true, review_timesheets: false },
@@ -92,6 +94,14 @@ function makeApi(page, { owner = false, running = false } = {}) {
         },
         timezone: 'Australia/Sydney', notes: [], documents: [], audit: [],
       } });
+    }
+    if (url.pathname === '/api/team/employees/fixture-self' && ['PATCH','DELETE'].includes(method)) {
+      const body = request.postDataJSON();
+      state.calls.push({ path: url.pathname, method, body });
+      if (method === 'DELETE' && state.rejectRemoval) return route.fulfill({status:409,json:{error:'This member has a running timer. Have them clock out first.'}});
+      if (method === 'PATCH') Object.assign(state.teamEmployees[0], body);
+      else Object.assign(state.teamEmployees[0], { active:false, archived_at:new Date().toISOString() });
+      return route.fulfill({json:{success:true}});
     }
     if (url.pathname === '/api/employee/notes' && method === 'POST') {
       state.calls.push({path:url.pathname,body:request.postDataJSON()});
@@ -245,6 +255,54 @@ try {
     assert.deepEqual(errors, []);
     console.log('PASS cost rate is shown in Team UI and absent from employee UI at 320px');
     await teamContext.close();
+  }
+
+  for (const width of [320, 390, 1280]) {
+    const context = await browser.newContext({viewport:{width,height:844}});
+    const state = makeApi(context,{owner:true});
+    const {page,errors}=await openFixture(context,'team');
+    await page.getByRole('link',{name:'Back to main app'}).waitFor();
+    assert.equal(await page.getByRole('link',{name:'Back to main app'}).getAttribute('href'),'/dashboard');
+    await page.getByRole('button',{name:'Edit',exact:true}).click();
+    await page.getByLabel('Email',{exact:true}).last().fill('corrected@example.invalid');
+    await page.getByRole('button',{name:'Save changes'}).click();
+    await page.getByRole('status').filter({hasText:/invitation/i}).waitFor();
+    assert.equal(state.calls[0].method,'PATCH');
+    assert.equal(state.calls[0].body.email,'corrected@example.invalid');
+    await page.getByRole('button',{name:'Remove',exact:true}).click();
+    let dialog=page.getByRole('alertdialog');
+    await dialog.getByRole('button',{name:'Cancel',exact:true}).focus();
+    await page.keyboard.press('Escape');
+    await dialog.waitFor({state:'hidden'});
+    assert.equal(state.calls.length,1);
+    await page.getByRole('button',{name:'Remove',exact:true}).click();
+    dialog=page.getByRole('alertdialog');
+    await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+    assert.equal(state.calls.length,1);
+    await page.getByRole('button',{name:'Remove',exact:true}).click();
+    dialog=page.getByRole('alertdialog');
+    assert.match(await dialog.innerText(),/history/i);
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+    state.rejectRemoval=true;
+    await dialog.getByRole('button',{name:/Remove/}).click();
+    await dialog.getByRole('alert').filter({hasText:/running timer/i}).waitFor();
+    state.rejectRemoval=false;
+    await dialog.getByRole('button',{name:/Remove/}).click();
+    await page.getByRole('status').filter({hasText:/removed from the team/i}).waitFor();
+    assert.equal(await page.getByRole('button',{name:'Edit',exact:true}).count(),0);
+    assert.equal(state.calls.at(-1).method,'DELETE');
+    assert.equal(state.calls.at(-1).body,null);
+    assert.deepEqual(errors,[]);
+    console.log(`PASS Team email edit, removal confirmation/cancel/error/success, and dashboard navigation at ${width}px`);
+    await context.close();
+  }
+  {
+    const context=await browser.newContext({viewport:{width:320,height:844}});
+    makeApi(context,{admin:true});
+    const {page}=await openFixture(context,'team');
+    await page.getByRole('link',{name:'Back to main app'}).waitFor();
+    assert.equal(await page.getByRole('link',{name:'Back to main app'}).getAttribute('href'),'/employee');
+    await context.close();
   }
 
   // Rescheduling edits the shared existing appointment and warns all assigned staff.

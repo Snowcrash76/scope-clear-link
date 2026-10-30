@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Bell, CalendarDays, Camera, Check, ChevronRight, Clock3, FileText, LogOut, MapPin, Menu, X } from 'lucide-react';
+import { ArrowLeft, Bell, CalendarDays, Camera, Check, ChevronRight, Clock3, FileText, LogOut, MapPin, Menu, X } from 'lucide-react';
 import { usePortal, usePortalSession, useRefreshPortal, portalRequest, uploadEmployeePhoto } from '@/hooks/useEmployeePortal';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -54,6 +54,7 @@ export function PortalLayout({ children, management=false, embedded=false }: {ch
   const location = useLocation().pathname;
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
+  const mainAppHref = employee ? '/employee' : '/dashboard';
   const active = (href:string) => location === href || (href !== '/employee' && location.startsWith(href));
   const items = management ? [['/team','Team'],['/team/assignments','Assignments'],['/team/timesheets','Timesheets'],['/team/permissions','Permissions']] : [['/employee','Today'],['/employee/week','This week'],['/employee/timesheets','Timesheets'],['/employee/notifications','Updates']];
   if(embedded)return <div className="portal-shell">{children}</div>;
@@ -69,6 +70,7 @@ export function PortalLayout({ children, management=false, embedded=false }: {ch
           <button className={`${outline} hidden sm:inline-flex`} onClick={async()=>{await signOut();navigate('/employee/login');}}><LogOut className="h-4 w-4"/>Sign out</button>
         </div>
       </div>
+      {management && canManageTeam && <div className="border-t border-[#edf0ed]"><div className="mx-auto max-w-6xl px-4 py-2 sm:px-6"><Link to={mainAppHref} className="inline-flex min-h-10 max-w-full items-center gap-2 rounded-xl border border-[#d9e1db] bg-white px-3 text-sm font-semibold text-[#34483a] hover:bg-[#f5f8f5]"><ArrowLeft className="h-4 w-4 shrink-0"/><span>Back to main app</span></Link></div></div>}
       {menu && <nav className="grid grid-cols-2 gap-2 border-t border-[#e7ebe7] p-3 md:hidden">{items.map(([to,label])=><Link key={to} to={to} onClick={()=>setMenu(false)} className={`${outline} justify-start`}>{label}</Link>)}</nav>}
     </header>
     <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-9">

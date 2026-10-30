@@ -8,7 +8,7 @@ export const defaultPermissions: Record<EmployeeRole, OperationalPermissions> = 
   admin: { view_scope: true, view_variations: true, view_documents: true, add_photos: true, add_notes: true, review_timesheets: true },
 };
 export interface PortalEmployee {
-  id: string; name: string; email: string; role: EmployeeRole; active: boolean; auth_user_id?: string | null;
+  id: string; name: string; email: string; role: EmployeeRole; active: boolean; auth_user_id?: string | null; archived_at?: string | null;
 }
 export interface PortalSession {
   employee: PortalEmployee | null; canManageTeam: boolean; setupRequired?: boolean;

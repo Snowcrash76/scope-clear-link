@@ -10,6 +10,7 @@ import {
   safeDocumentColumns, safeEmployeeColumns, safeEntryColumns, safeJobColumns, verifyFileCapability, type PortalActor,
 } from './employeeAccess';
 import { defaultPermissions, employeeRoles, localDate, permissionNames, type EmployeeRole } from '../shared/employeePortal';
+import { publicWebOrigin } from '../shared/publicUrls';
 
 const id = z.string().uuid();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -20,7 +21,7 @@ const employeeCreate = z.object({
   name: z.string().trim().min(1).max(200), email: z.string().trim().email().transform(s => s.toLowerCase()),
   role: z.enum(employeeRoles), active: z.boolean().default(true), hourly_rate: z.number().min(0).max(100000).nullable().optional(),
 }).strict();
-const employeeEdit = employeeCreate.omit({ email: true }).partial().strict();
+const employeeEdit = employeeCreate.partial().strict();
 const timeBody = z.object({ project_id: id, started_at: z.string().datetime({ offset: true }), ended_at: z.string().datetime({ offset: true }), break_minutes: z.number().int().min(0).max(1439).default(0), notes: text.default('') }).strict();
 const hash = (token: string) => createHash('sha256').update(token).digest('hex');
 const tokenSchema = z.string().regex(/^[a-f0-9]{64}$/);
@@ -54,10 +55,13 @@ function objectPath(doc: any, ownerId: string) {
 
 export function createEmployeeRouter() {
   const router = Router();
-  router.get('/team/setup', portalHandler(async (_req, _db, actor) => {
+  router.get('/team/setup', portalHandler(async (_req, db, actor) => {
     if (actor.employee) throw new CostApiError(403, 'Database setup is available to the business owner only.');
     return {
-      sql: readFileSync(path.resolve('supabase/migrations/20261029000000_employee_portal.sql'), 'utf8'),
+      sql: [
+        ...(actor.setupRequired ? ['20261029000000_employee_portal.sql'] : []),
+        '20261030000000_team_member_management.sql',
+      ].map(file => readFileSync(path.resolve('supabase/migrations', file), 'utf8')).join('\n\n'),
       editor_url: 'https://supabase.com/dashboard/project/aswmcyldowvpugmfmykf/sql/new',
     };
   }));
@@ -105,7 +109,7 @@ export function createEmployeeRouter() {
     if (filterJob && !jobs.length) throw new CostApiError(404, 'Job not found.');
     const jobIds = jobs.map(j => j.id);
     const [employees, rates, appointments, assignments, entries, submissions, settings, notes, documents, audit] = await Promise.all([
-      portalRows(() => db.from('employees').select(safeEmployeeColumns).eq('owner_id', actor.ownerId).order('name')),
+      portalRows(() => db.from('employees').select(`${safeEmployeeColumns},archived_at`).eq('owner_id', actor.ownerId).order('name')),
       portalRows(() => db.from('employee_cost_rates').select('employee_id,hourly_rate').eq('owner_id', actor.ownerId)),
       portalRows(() => { let q = db.from('appointments').select('id,project_id,title,date,start_time,end_time,notes').eq('user_id', actor.ownerId); return filterJob ? q.eq('project_id', filterJob) : q; }),
       portalRows(() => { let q = db.from('employee_assignments').select('id,employee_id,project_id,appointment_id').eq('owner_id', actor.ownerId); return filterJob ? q.eq('project_id', filterJob) : q; }),
@@ -146,16 +150,33 @@ export function createEmployeeRouter() {
     requireTeam(actor); return portalMutate(db, actor, 'team_employee', employeeCreate.parse(req.body));
   }));
   router.patch('/team/employees/:id', portalHandler(async (req, db, actor) => {
-    requireTeam(actor); return portalMutate(db, actor, 'team_employee', { ...employeeEdit.parse(req.body), id: paramsId(req.params.id) });
+    requireTeam(actor);
+    const { data, error } = await db.rpc('portal_manage_employee', {
+      p_actor: actor.userId, p_employee: paramsId(req.params.id), p_action: 'update', p_payload: employeeEdit.parse(req.body),
+    });
+    portalDbCheck(error); return data;
+  }));
+  router.delete('/team/employees/:id', portalHandler(async (req, db, actor) => {
+    requireTeam(actor);
+    const { data, error } = await db.rpc('portal_manage_employee', {
+      p_actor: actor.userId, p_employee: paramsId(req.params.id), p_action: 'remove', p_payload: {},
+    });
+    portalDbCheck(error); return data;
   }));
   router.post('/team/employees/:id/invite', portalHandler(async (req, db, actor) => {
     requireTeam(actor);
     if (!process.env.RESEND_API_KEY) throw new CostApiError(503, 'Invitation email is not configured.');
+    let base: string;
+    try {
+      base = publicWebOrigin(process.env.VITE_PUBLIC_BASE_URL || '');
+      if (!base.startsWith('https://')) throw new Error('HTTPS required');
+    } catch {
+      throw new CostApiError(503, 'Set VITE_PUBLIC_BASE_URL to the app’s public HTTPS address before sending invitations.');
+    }
     const token = randomBytes(32).toString('hex');
     const invite = await portalMutate(db, actor, 'team_invite', { employee_id: paramsId(req.params.id), token_hash: hash(token) });
-    const base = process.env.VITE_PUBLIC_BASE_URL?.replace(/\/$/, '');
-    if (!base || !/^https:\/\//.test(base)) throw new CostApiError(503, 'Set VITE_PUBLIC_BASE_URL to the app’s public HTTPS address before sending invitations.');
-    const url = `${base}/employee/accept?token=${token}`;
+    const url = new URL('/employee/accept', base);
+    url.searchParams.set('token', token);
     const result = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({
       from: process.env.RESEND_FROM_EMAIL || 'ScopeClear <onboarding@resend.dev>', to: [invite.email], subject: 'You are invited to the ScopeClear employee portal',
       text: `You have been invited to your employer's ScopeClear employee portal.\n\nAccept your invitation: ${url}\n\nThis invitation expires in 7 days. If you were not expecting it, you can ignore this email.`,

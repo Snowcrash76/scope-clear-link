@@ -55,7 +55,7 @@ VITE_SUPABASE_URL = "https://aswmcyldowvpugmfmykf.supabase.co"
 VITE_SUPABASE_PROJECT_ID = "aswmcyldowvpugmfmykf"
 VITE_SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzd21jeWxkb3d2cHVnbWZteWtmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MzM1ODQsImV4cCI6MjA5MjUwOTU4NH0.4Fu1v4gPBEQPneT4bRWvdG8n4gWu9_GxQRj82OYsvyY"
 VITE_ADMIN_EMAIL = "jadenmeek76@outlook.com"
-VITE_PUBLIC_BASE_URL = "https://bb60443a-da23-4481-aa12-acffd8d6fd4b-00-2oh0g1qw5l91t.kirk.replit.dev/login"
+VITE_PUBLIC_BASE_URL = "https://scope-clear-link.replit.app"
 RESEND_FROM_EMAIL = "ScopeClear <noreply@fixtpropertyservices.com.au>"
 
 [postMerge]

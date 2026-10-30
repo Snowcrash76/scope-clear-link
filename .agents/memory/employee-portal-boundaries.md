@@ -20,3 +20,15 @@ Replace job-ID-only client project links with separate secure capabilities, and 
 **Why:** Assigned employees necessarily know job IDs. Keeping those IDs as financial client access keys would defeat employee financial restrictions. The user explicitly approved replacing existing client project links after being told they must be resent.
 
 **How to apply:** Do not restore anonymous job-ID access for compatibility. Coordinate the matching app build and external Supabase policy migration during release; the older published client cannot read through the new security boundary. Preserve quote-token flows and pre-existing file references through scoped access, not reopened public buckets.
+
+Retain employee work and audit history when removing a team member. An email correction must require a new invitation and must not let the old identity become a business owner.
+
+**Why:** Employee removal must not erase approved labour costs or timesheets. Email addresses are access identities, not just contact text.
+
+**How to apply:** Preserve historical employee references when adding future removal, rehire or account-change flows; do not reuse a removed profile for a different person.
+
+Use an authorised sending domain for staff invitations rather than the email provider's development sender.
+
+**Why:** The user confirmed receiving invitations after the verified sender was configured.
+
+**How to apply:** Keep sender configuration server-side and republish when changing it; do not add a second email provider just to deliver staff invites.

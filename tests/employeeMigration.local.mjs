@@ -20,6 +20,7 @@ for (const name of readdirSync('supabase/migrations').filter(n => n.endsWith('.s
   sql(content,name);
 }
 sql(readFileSync('tests/employeeTransactions.sql','utf8'),'employee transactions and RLS');
+sql(readFileSync('tests/teamMemberManagement.sql','utf8'),'team member management and identity revocation');
 // Concurrent real database transactions, not simulated promise retries.
 const run = promisify(execFile);
 const clockSql = "SELECT public.portal_mutate('10000000-0000-4000-8000-000000000003','clock_in','{\"project_id\":\"20000000-0000-4000-8000-000000000001\"}')";

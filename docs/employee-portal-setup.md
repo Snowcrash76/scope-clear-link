@@ -28,6 +28,20 @@ The owner can obtain the exact SQL from **Team → Database setup instructions**
 The SQL editor is:
 https://supabase.com/dashboard/project/aswmcyldowvpugmfmykf/sql/new
 
+## Team member management update
+
+Existing Phase 1 installations also need
+`supabase/migrations/20261030000000_team_member_management.sql` before publishing
+the team email/removal controls. This additive update keeps existing staff and
+work records unchanged. Fresh installations apply both migrations in order;
+the Team setup helper supplies the required SQL.
+
+Removal archives the member, revokes access and unused invitations, and retains
+timesheets, costs and audit history. A removed email may be used for a new
+profile, but a fresh invitation is required. Changing an enrolled member's email
+also revokes their old identity and invitations until the new address accepts
+a fresh invitation. Clock out any running shift before either operation.
+
 ## Settings
 
 - `VITE_PUBLIC_BASE_URL`: the verified published HTTPS application address, used

@@ -11,6 +11,8 @@ export const safeDocumentColumns = 'id,project_id,file_name,display_name,file_ty
 export const safeEmployeeColumns = 'id,name,email,role,active,auth_user_id';
 export function portalDbCheck(error: { code?: string; message: string } | null) {
   if (!error) return;
+  if (['42703','PGRST202','PGRST204'].includes(error.code ?? '') && /archived_at|revoked_auth_user_ids|portal_manage_employee/.test(error.message))
+    throw new CostApiError(503, 'Team management database setup is required. Apply supabase/migrations/20261030000000_team_member_management.sql in Supabase, then retry.');
   if (['42P01','42703','PGRST202','PGRST204','PGRST205'].includes(error.code ?? '')) throw new CostApiError(503,
     'Employee portal database setup is required. Apply supabase/migrations/20261029000000_employee_portal.sql in Supabase, then retry.');
   if (error.code === '42501') throw new CostApiError(403, error.message);
@@ -35,6 +37,12 @@ export async function portalActor(db: SupabaseClient, userId: string): Promise<P
   if (error?.code === 'PGRST205' || error?.code === '42P01') return { userId, employee: null, ownerId: userId, canManageTeam: true, setupRequired: true };
   portalDbCheck(error);
   if (data && !data.active) throw new CostApiError(403, 'Your employee account is inactive. Contact your employer.');
+  if (!data) {
+    const revoked = await db.from('employees').select('id').contains('revoked_auth_user_ids', [userId]).limit(1);
+    // Before the additive team update there cannot be any retired identities.
+    if (!['42703','PGRST204'].includes(revoked.error?.code ?? '')) portalDbCheck(revoked.error);
+    if (revoked.data?.length) throw new CostApiError(403, 'Your employee access has changed. Use the latest invitation from your employer.');
+  }
   return { userId, employee: data, ownerId: data?.owner_id ?? userId, canManageTeam: !data || data.role === 'admin' };
 }
 export function requireEmployee(actor: PortalActor) {

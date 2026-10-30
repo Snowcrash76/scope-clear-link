@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { supabase } from '@/integrations/supabase/client';
+import { publicWebOrigin } from '../../shared/publicUrls';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -8,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getPublicBaseUrl(): string {
   const configured = (import.meta.env.VITE_PUBLIC_BASE_URL as string | undefined)?.trim();
-  if (configured) return configured.replace(/\/+$/, "");
+  if (configured) return publicWebOrigin(configured);
   if (typeof window !== "undefined") return window.location.origin;
   return "";
 }

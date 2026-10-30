@@ -2,7 +2,37 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultPermissions, labourCost, localDate, localDateTimeToUtc, paidMinutes, weekStart } from '../shared/employeePortal';
 import { validateClientPatch, validateClientSelect } from '../server/clientAccess';
-import { fileCapability, verifyFileCapability } from '../server/employeeAccess';
+import { fileCapability, verifyFileCapability, portalActor, portalDbCheck } from '../server/employeeAccess';
+import { publicWebOrigin } from '../shared/publicUrls';
+
+test('public links use the website origin even when configured with a login page', () => {
+  for (const configured of ['https://example.test/login', ' https://example.test/login/?next=dashboard#heading ']) {
+    const origin=publicWebOrigin(configured);
+    assert.equal(origin,'https://example.test');
+    assert.equal(new URL('/employee/accept?token=test',origin).pathname,'/employee/accept');
+    assert.equal(new URL('/project/test?access=test',origin).pathname,'/project/test');
+    assert.equal(new URL('/quote/test',origin).pathname,'/quote/test');
+  }
+  assert.throws(()=>publicWebOrigin('javascript:alert(1)'));
+  assert.throws(()=>publicWebOrigin('https://user:password@example.test/login'));
+});
+
+test('retired staff identities cannot fall through to business-owner access', async () => {
+  const db = {
+    from: () => ({
+      select: () => ({
+        eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
+        contains: () => ({ limit: async () => ({ data: [{ id: 'retired-member' }], error: null }) }),
+      }),
+    }),
+  };
+  await assert.rejects(portalActor(db as any, 'retired-user'), /latest invitation/);
+});
+
+test('missing team management schema identifies the additive update, not the original setup', () => {
+  assert.throws(() => portalDbCheck({ code: '42703', message: 'column archived_at does not exist' }),
+    /20261030000000_team_member_management/);
+});
 
 test('employee labour uses paid minutes, cents rounding and no GST uplift', () => {
   assert.equal(paidMinutes('2026-10-25T21:00:00Z','2026-10-26T05:00:00Z',30),450);

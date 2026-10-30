@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { publicWebOrigin } from '../shared/publicUrls';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co';
 
@@ -15,8 +16,8 @@ function getResendKey() {
 }
 
 function getSiteUrl() {
-  if (process.env.VITE_PUBLIC_BASE_URL) return process.env.VITE_PUBLIC_BASE_URL.replace(/\/$/, '');
-  if (process.env.SITE_URL) return process.env.SITE_URL;
+  if (process.env.VITE_PUBLIC_BASE_URL) return publicWebOrigin(process.env.VITE_PUBLIC_BASE_URL);
+  if (process.env.SITE_URL) return publicWebOrigin(process.env.SITE_URL);
   if (process.env.REPLIT_DEV_DOMAIN) return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   return 'http://localhost:5000';
 }
@@ -24,7 +25,9 @@ function getSiteUrl() {
 async function secureProjectLink(projectId: string, baseUrl: string) {
   const { data, error } = await getSupabaseAdmin().from('projects').select('client_access_token').eq('id', projectId).single();
   if (error || !data?.client_access_token) throw new Error('Secure client links need the employee portal database migration.');
-  return `${baseUrl}/project/${projectId}?access=${data.client_access_token}`;
+  const link = new URL(`/project/${encodeURIComponent(projectId)}`, publicWebOrigin(baseUrl));
+  link.searchParams.set('access', data.client_access_token);
+  return link.toString();
 }
 
 async function sendViaResend(to: string, subject: string, html: string) {

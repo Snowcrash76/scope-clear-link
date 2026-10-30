@@ -14,3 +14,17 @@ mtime_ms = 1793276917688
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/00c49cab-d45e-4720-931a-8db88f2c4d66/671ed247-c7cb-4fd9-888a-680e63262a14"
 storage_version_token = "1793277029911766"
 content_type = "text/html"
+
+[[outputs]]
+id = "xHLICFLUYUO-K-p9U3q_v"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-10-30T08-11-21-379Z.html"
+type = "html"
+title = "Encrypted backup before the team changes"
+description = "Save this outside Replit and keep your database password privately to decrypt it. Archive readability and decryption were verified; a full restore was not tested. Actual photo and receipt files are not included."
+logical_id = "75e4f780-2f3f-46b6-bcb9-ea2ddf50f937"
+content_hash = "sha256:dd54e871ea47c2f2e255bb2231c12cd6219126c8de5e9ac80314b3f114db8e19"
+size = 590536
+mtime_ms = 1793347929697
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/75e4f780-2f3f-46b6-bcb9-ea2ddf50f937/2292d206-8f87-4452-8e06-61726ed92ca8"
+storage_version_token = "1793348939059848"
+content_type = "text/html"
