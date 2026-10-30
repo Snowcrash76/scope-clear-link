@@ -51,7 +51,10 @@ try {
       console.error({ width, staff, errors, body: (await page.locator('body').innerText()).slice(0, 2500) });
       throw error;
     });
-    if (width === 375) assert.equal(requests.at(-1)[0], requests.at(-1)[1], 'mobile defaults to Day');
+    if (width === 375) {
+      assert.equal(requests.at(-1)[0], requests.at(-1)[1], 'mobile defaults to Day');
+      assert.equal(requests.at(-1)[0], new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney' }).format(new Date()), 'initial day is Sydney-local even in a US browser');
+    }
     else assert.notEqual(requests.at(-1)[0], requests.at(-1)[1], 'desktop defaults to Week');
     await booking.click();
     await page.getByRole('dialog').waitFor();
@@ -69,10 +72,25 @@ try {
     await page.getByRole('gridcell').first().waitFor();
     await page.getByRole('gridcell').first().focus();
     await page.keyboard.press('ArrowRight');
-    assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'gridcell');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('[role="gridcell"]')[1]), true);
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('[role="gridcell"]')[8]), true);
+    await page.keyboard.press('ArrowUp');
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('[role="gridcell"]')[1]), true);
+    await page.getByRole('button', { name: 'Toggle list view', exact: true }).click();
+    await page.locator('.sc-list-row').first().waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Toggle list view', exact: true }).getAttribute('aria-pressed'), 'true');
     assert.ok(requests.at(-1)[0] < requests.at(-1)[1]);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: `generated-artifacts/schedule-${staff ? 'employee' : 'owner'}-${width}.png` });
+    if (width === 375 && !staff) {
+      fail = true;
+      await page.getByRole('button', { name: 'Next date range', exact: true }).click();
+      await page.getByRole('heading', { name: 'Schedule could not load', exact: true }).waitFor({ timeout: 20000 });
+      fail = false;
+      await page.getByRole('button', { name: 'Retry', exact: true }).click();
+      await page.getByRole('button', { name: /^Kitchen booking,/ }).first().waitFor();
+    }
     assert.deepEqual(errors, []);
     await page.close();
     console.log(`Schedule ${staff ? 'employee' : 'owner'} ${width}px passed`);

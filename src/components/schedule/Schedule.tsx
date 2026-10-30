@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type KeyboardEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { addDays, format, parseISO } from "date-fns";
 import { ArrowLeft, ArrowRight, CalendarDays, Clock3, ExternalLink, List, MapPin, Phone, Users, X } from "lucide-react";
@@ -94,6 +94,20 @@ export default function Schedule() {
     setSelectedEvent(event);
   };
   const allByDate = (day: Date) => visibleEvents.filter((event) => event.appointment.date === dateKey(day) || (event.appointment.date < dateKey(day) && event.endDate >= dateKey(day)));
+  const onCellKey = (event: KeyboardEvent<HTMLDivElement>, bookings: CalendarEvent[]) => {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === "Enter" && bookings[0]) {
+      event.preventDefault();
+      openEvent(bookings[0], event.currentTarget);
+      return;
+    }
+    const offsets: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 7, ArrowUp: -7 };
+    if (!(event.key in offsets)) return;
+    event.preventDefault();
+    const selector = event.currentTarget.classList.contains("sc-month-cell") ? ".sc-month-cell" : ".sc-grid-cell";
+    const cells = Array.from(event.currentTarget.closest(".sc-calendar")?.querySelectorAll<HTMLElement>(selector) ?? []);
+    cells[cells.indexOf(event.currentTarget) + offsets[event.key]]?.focus();
+  };
   const dateHeader = (day: Date) => <span className={`sc-date-heading${dateKey(day) === todayKey ? " is-today" : ""}`}><small>{format(day, "EEE")}</small><b>{format(day, "d")}</b></span>;
 
   if (authLoading || (user && session.isLoading)) return <div className="sc-page"><ScheduleSkeleton /></div>;
@@ -135,7 +149,7 @@ export default function Schedule() {
             : view === "day" ? <section className="sc-day-view"><div className="sc-day-title">{format(selectedDate, "EEEE, d MMMM")} <span>{selectedDayEvents.length} {selectedDayEvents.length === 1 ? "booking" : "bookings"}</span></div>{selectedDayEvents.length ? selectedDayEvents.map((event) => <EventCard key={event.appointment.id} event={event} data={data} onOpen={(trigger) => openEvent(event, trigger)} />) : <div className="sc-empty"><CalendarDays /><b>A clear day.</b><span>No bookings are scheduled.</span></div>}</section>
             : view === "month" ? <div className="sc-month-grid" role="grid" aria-label={`${rangeTitle(selectedDate, view)} month`}>
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => <div className="sc-month-weekday" key={label}>{label}</div>)}
-              {dates.map((day, index) => <div className={`sc-month-cell${format(day, "M") !== format(selectedDate, "M") ? " is-outside" : ""}`} key={dateKey(day)} role="gridcell" tabIndex={0} aria-label={`${format(day, "EEEE d MMMM")}, ${allByDate(day).length} bookings`} onKeyDown={(e) => { if (e.key === "ArrowRight") (e.currentTarget.nextElementSibling as HTMLElement | null)?.focus(); if (e.key === "ArrowLeft") (e.currentTarget.previousElementSibling as HTMLElement | null)?.focus(); if (e.key === "ArrowDown") (e.currentTarget.parentElement?.children[index + 7] as HTMLElement | undefined)?.focus(); if (e.key === "ArrowUp") (e.currentTarget.parentElement?.children[index - 7] as HTMLElement | undefined)?.focus(); if (e.key === "Enter" && allByDate(day)[0]) openEvent(allByDate(day)[0]); }}>
+              {dates.map((day) => <div className={`sc-month-cell${format(day, "M") !== format(selectedDate, "M") ? " is-outside" : ""}`} key={dateKey(day)} role="gridcell" tabIndex={0} aria-label={`${format(day, "EEEE d MMMM")}, ${allByDate(day).length} bookings`} onKeyDown={(event) => onCellKey(event, allByDate(day))}>
                 <button className={`sc-month-date${dateKey(day) === todayKey ? " is-today" : ""}`} onClick={() => { setSelectedDate(day); setView("day"); }} aria-label={`View ${format(day, "EEEE d MMMM")}`}>{format(day, "d")}</button>
                 {allByDate(day).slice(0, 3).map((event) => <EventCard key={event.appointment.id} event={event} data={data} compact onOpen={(trigger) => openEvent(event, trigger)} />)}
                 {allByDate(day).length > 3 && <span className="sc-month-more">+{allByDate(day).length - 3} more</span>}
@@ -145,7 +159,7 @@ export default function Schedule() {
               <div className="sc-grid-head"><span className="sc-row-label">{layout === "job" && data.canManage ? "JOB" : "TEAM"}</span>{dates.map((day) => <div key={dateKey(day)}>{dateHeader(day)}</div>)}</div>
               {(layout === "job" && data.canManage ? data.jobs.map((job) => ({ id: job.id, name: job.name })) : data.employees.map((person) => ({ id: person.id, name: person.name }))).map((row) => <div className="sc-grid-row" key={row.id}><div className="sc-row-label">{row.name}</div>{dates.map((day) => {
                 const cellEvents = allByDate(day).filter((event) => layout === "job" && data.canManage ? event.appointment.project_id === row.id : event.assignments.some((assignment) => assignment.employee_id === row.id));
-                return <div className="sc-grid-cell" key={dateKey(day)} tabIndex={0} aria-label={`${row.name}, ${format(day, "EEEE d MMMM")}, ${cellEvents.length} bookings`} onKeyDown={(e) => { if (e.key === "Enter" && cellEvents[0]) openEvent(cellEvents[0], e.currentTarget); if (e.key === "ArrowRight") (e.currentTarget.nextElementSibling as HTMLElement | null)?.focus(); if (e.key === "ArrowLeft") (e.currentTarget.previousElementSibling as HTMLElement | null)?.focus(); if (e.key === "ArrowDown") (e.currentTarget.parentElement?.nextElementSibling?.children[Array.from(e.currentTarget.parentElement.children).indexOf(e.currentTarget)] as HTMLElement | undefined)?.focus(); if (e.key === "ArrowUp") (e.currentTarget.parentElement?.previousElementSibling?.children[Array.from(e.currentTarget.parentElement.children).indexOf(e.currentTarget)] as HTMLElement | undefined)?.focus(); }}>
+                return <div className="sc-grid-cell" key={dateKey(day)} tabIndex={0} aria-label={`${row.name}, ${format(day, "EEEE d MMMM")}, ${cellEvents.length} bookings`} onKeyDown={(event) => onCellKey(event, cellEvents)}>
                   {cellEvents.map((event) => <EventCard key={event.appointment.id} event={event} data={data} onOpen={(trigger) => openEvent(event, trigger)} />)}
                   {!cellEvents.length && <span className="sc-cell-empty">—</span>}
                 </div>;
