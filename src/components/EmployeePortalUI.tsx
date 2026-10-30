@@ -34,6 +34,15 @@ import { TimesheetSummary } from "@/components/TimesheetSummary";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { PageTitle as EmployeePageTitle } from "@/components/employee/PageTitle";
 import { EmptyState } from "@/components/employee/EmptyState";
 import { PhotoGallery as EmployeePhotoGallery } from "@/components/employee/PhotoGallery";
@@ -120,7 +129,7 @@ async function openCapabilityUrl(path: string) {
     viewer.location.href = response.url;
   } catch (error) {
     viewer?.close();
-    alert(getError(error));
+    toast.error(getError(error));
   }
 }
 
@@ -403,6 +412,11 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [gpsConsent, setGpsConsent] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [clockOutOpen, setClockOutOpen] = useState(false);
+  const [breakMinutes, setBreakMinutes] = useState("30");
+  const [shiftNote, setShiftNote] = useState("");
+  const [clockOutError, setClockOutError] = useState("");
+  const [clockOutBusy, setClockOutBusy] = useState(false);
   const assignments = useMemo(
     () =>
       (data?.assignments ?? [])
@@ -444,143 +458,229 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
       });
       await refresh();
     } catch (e) {
-      alert(getError(e));
+      toast.error(getError(e));
     } finally {
       setBusy(null);
     }
   }
-  async function clockOut() {
+  async function clockOut(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (!running) return;
-    const rawBreak = window.prompt("Unpaid break in minutes", "30");
-    if (rawBreak === null) return;
-    const break_minutes = Number(rawBreak);
-    if (!Number.isInteger(break_minutes) || break_minutes < 0) {
-      alert("Enter a whole number of break minutes.");
+    const break_minutes = Number(breakMinutes);
+    if (
+      breakMinutes.trim() === "" ||
+      !Number.isInteger(break_minutes) ||
+      break_minutes < 0
+    ) {
+      setClockOutError("Enter a whole number of break minutes, zero or more.");
       return;
     }
-    const note = window.prompt("Add a note for this shift (optional)") ?? "";
+    setClockOutBusy(true);
+    setClockOutError("");
     try {
       const gps = await getGps();
       await portalRequest("/employee/clock-out", {
         entry_id: running.id,
         break_minutes,
-        notes: note,
+        notes: shiftNote,
         ...(gps ? { gps } : {}),
       });
       await refresh();
+      setClockOutOpen(false);
+      setBreakMinutes("30");
+      setShiftNote("");
     } catch (e) {
-      alert(getError(e));
+      setClockOutError(getError(e));
+    } finally {
+      setClockOutBusy(false);
     }
   }
   return (
-    <PortalLayout>
-      <PageTitle
-        eyebrow={week ? "Planning / next up" : "Field portal / today"}
-        title={week ? "This week" : "Today"}
-        description={
-          week
-            ? "Your upcoming booked work, in business local time."
-            : "Your next job, contact details and work clock."
-        }
-        action={
-          <Link className={outline} to="/employee/timesheets">
-            <Clock3 className="h-4 w-4" />
-            Timesheets
-          </Link>
-        }
-      />
-      {q.isLoading ? (
-        <LoadState retry={() => q.refetch()} />
-      ) : q.error ? (
-        <LoadState error={q.error} retry={() => q.refetch()} />
-      ) : (
-        <>
-          <section className="mb-6 grid gap-4 sm:grid-cols-[1.3fr_.7fr]">
-            <div className={`${card} portal-grid p-5 sm:p-6`}>
-              <p className="portal-mono text-[10px] uppercase tracking-[.15em] text-[#76877b]">
-                Business date · {data?.timezone}
-              </p>
-              <p className="mt-3 text-2xl font-bold text-[#304a37]">
-                {fmtDate(data?.today)}
-              </p>
-              <p className="mt-1 text-sm text-[#718076]">
-                {assignments.length
-                  ? `${assignments.length} scheduled ${assignments.length === 1 ? "job" : "jobs"}`
-                  : "No assignments on the board yet."}
-              </p>
-            </div>
-            <div
-              className={`${card} flex flex-wrap items-center justify-between gap-3 p-5`}
-            >
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#758178]">
-                  Shift clock
+    <>
+      <PortalLayout>
+        <PageTitle
+          eyebrow={week ? "Planning / next up" : "Field portal / today"}
+          title={week ? "This week" : "Today"}
+          description={
+            week
+              ? "Your upcoming booked work, in business local time."
+              : "Your next job, contact details and work clock."
+          }
+          action={
+            <Link className={outline} to="/employee/timesheets">
+              <Clock3 className="h-4 w-4" />
+              Timesheets
+            </Link>
+          }
+        />
+        {q.isLoading ? (
+          <LoadState retry={() => q.refetch()} />
+        ) : q.error ? (
+          <LoadState error={q.error} retry={() => q.refetch()} />
+        ) : (
+          <>
+            <section className="mb-6 grid gap-4 sm:grid-cols-[1.3fr_.7fr]">
+              <div className={`${card} portal-grid p-5 sm:p-6`}>
+                <p className="portal-mono text-[10px] uppercase tracking-[.15em] text-[#76877b]">
+                  Business date · {data?.timezone}
                 </p>
-                <p className="mt-2 text-lg font-bold">
-                  {running ? "On the clock" : "Not clocked in"}
+                <p className="mt-3 text-2xl font-bold text-[#304a37]">
+                  {fmtDate(data?.today)}
                 </p>
-                <p className="mt-1 text-xs text-[#758178]">
-                  {running
-                    ? `Started ${fmtTime(running.started_at, data?.timezone)} · ${elapsed(running.started_at, now)}`
-                    : "Location stays off unless you opt in."}
+                <p className="mt-1 text-sm text-[#718076]">
+                  {assignments.length
+                    ? `${assignments.length} scheduled ${assignments.length === 1 ? "job" : "jobs"}`
+                    : "No assignments on the board yet."}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <label className="flex min-h-11 items-center gap-2 text-xs text-[#748077]">
-                  <input
-                    type="checkbox"
-                    checked={gpsConsent}
-                    onChange={(e) => setGpsConsent(e.target.checked)}
+              <div
+                className={`${card} flex flex-wrap items-center justify-between gap-3 p-5`}
+              >
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#758178]">
+                    Shift clock
+                  </p>
+                  <p className="mt-2 text-lg font-bold">
+                    {running ? "On the clock" : "Not clocked in"}
+                  </p>
+                  <p className="mt-1 text-xs text-[#758178]">
+                    {running
+                      ? `Started ${fmtTime(running.started_at, data?.timezone)} · ${elapsed(running.started_at, now)}`
+                      : "Location stays off unless you opt in."}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <label className="flex min-h-11 items-center gap-2 text-xs text-[#748077]">
+                    <input
+                      type="checkbox"
+                      checked={gpsConsent}
+                      onChange={(e) => setGpsConsent(e.target.checked)}
+                    />
+                    Include GPS
+                  </label>
+                  {running ? (
+                    <Button
+                      className={`${btn} bg-destructive text-destructive-foreground hover:bg-destructive/90`}
+                      onClick={() => {
+                        setClockOutError("");
+                        setClockOutOpen(true);
+                      }}
+                    >
+                      Clock out
+                    </Button>
+                  ) : (
+                    <Clock3 className="h-8 w-8 text-[#54705b]" />
+                  )}
+                </div>
+              </div>
+            </section>
+            {assignments.length === 0 ? (
+              <Empty
+                title={
+                  week ? "Nothing booked just yet" : "You are clear for today"
+                }
+                detail="When your manager adds you to a job, it will appear here with the site and schedule."
+              />
+            ) : (
+              <div className="grid gap-3">
+                {assignments.map((a) => (
+                  <AssignmentCard
+                    key={a.id}
+                    assignment={a}
+                    job={data?.jobs.find((j) => j.id === a.project_id)}
+                    onOpen={() => nav(`/employee/jobs/${a.project_id}`)}
+                    onClock={!running ? () => clockIn(a.project_id) : undefined}
+                    busy={busy === a.project_id}
                   />
-                  Include GPS
-                </label>
-                {running ? (
-                  <Button
-                    className={`${btn} bg-[#b85b40] text-white hover:bg-[#9c4934]`}
-                    onClick={clockOut}
-                  >
-                    Clock out
-                  </Button>
-                ) : (
-                  <Clock3 className="h-8 w-8 text-[#54705b]" />
-                )}
+                ))}
               </div>
+            )}
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link className={outline} to="/employee/week">
+                <CalendarDays className="h-4 w-4" />
+                Upcoming work
+              </Link>
+              <Link className={outline} to="/employee/notifications">
+                <Bell className="h-4 w-4" />
+                Updates
+              </Link>
             </div>
-          </section>
-          {assignments.length === 0 ? (
-            <Empty
-              title={
-                week ? "Nothing booked just yet" : "You are clear for today"
-              }
-              detail="When your manager adds you to a job, it will appear here with the site and schedule."
-            />
-          ) : (
-            <div className="grid gap-3">
-              {assignments.map((a) => (
-                <AssignmentCard
-                  key={a.id}
-                  assignment={a}
-                  job={data?.jobs.find((j) => j.id === a.project_id)}
-                  onOpen={() => nav(`/employee/jobs/${a.project_id}`)}
-                  onClock={!running ? () => clockIn(a.project_id) : undefined}
-                  busy={busy === a.project_id}
-                />
-              ))}
+          </>
+        )}
+      </PortalLayout>
+      <Dialog
+        open={clockOutOpen}
+        onOpenChange={(open) => {
+          if (!clockOutBusy) setClockOutOpen(open);
+        }}
+      >
+        <DialogContent>
+          <form onSubmit={clockOut} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Clock out of this shift?</DialogTitle>
+              <DialogDescription>
+                Confirm your unpaid break and add an optional note before ending
+                the running timer.
+              </DialogDescription>
+            </DialogHeader>
+            <div>
+              <Label htmlFor="clock-out-break">Unpaid break (minutes)</Label>
+              <Input
+                id="clock-out-break"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                step="any"
+                className={`${field} mt-1.5`}
+                value={breakMinutes}
+                onChange={(event) => setBreakMinutes(event.target.value)}
+                aria-invalid={!!clockOutError}
+                aria-describedby={
+                  clockOutError ? "clock-out-break-error" : undefined
+                }
+                autoFocus
+              />
             </div>
-          )}
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link className={outline} to="/employee/week">
-              <CalendarDays className="h-4 w-4" />
-              Upcoming work
-            </Link>
-            <Link className={outline} to="/employee/notifications">
-              <Bell className="h-4 w-4" />
-              Updates
-            </Link>
-          </div>
-        </>
-      )}
-    </PortalLayout>
+            <div>
+              <Label htmlFor="clock-out-note">Shift note (optional)</Label>
+              <Textarea
+                id="clock-out-note"
+                className="mt-1.5 min-h-24"
+                value={shiftNote}
+                onChange={(event) => setShiftNote(event.target.value)}
+                placeholder="Add context about this shift"
+              />
+            </div>
+            {clockOutError && (
+              <p
+                id="clock-out-break-error"
+                role="alert"
+                className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive"
+              >
+                {clockOutError}
+              </p>
+            )}
+            <DialogFooter className="gap-2">
+              <Button
+                type="button"
+                className={outline}
+                disabled={clockOutBusy}
+                onClick={() => setClockOutOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className={`${btn} bg-destructive text-destructive-foreground hover:bg-destructive/90`}
+                disabled={clockOutBusy}
+              >
+                {clockOutBusy ? "Clocking out…" : "Clock out"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -602,7 +702,7 @@ export function EmployeeJob() {
       setCaption("");
       await refresh();
     } catch (e) {
-      alert(getError(e));
+      toast.error(getError(e));
     } finally {
       setBusy(false);
     }
@@ -618,7 +718,7 @@ export function EmployeeJob() {
       setNote("");
       await refresh();
     } catch (e) {
-      alert(getError(e));
+      toast.error(getError(e));
     } finally {
       setBusy(false);
     }
@@ -2073,7 +2173,7 @@ export function EmployeeNotifications() {
       await portalRequest(`/employee/notifications/${n.id}/read`, {});
       await refresh();
     } catch (err) {
-      alert(getError(err));
+      toast.error(getError(err));
     }
   }
   return (

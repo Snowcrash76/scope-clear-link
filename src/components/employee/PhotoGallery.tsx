@@ -1,5 +1,6 @@
 import { Camera } from "lucide-react";
 import { portalRequest } from "@/hooks/useEmployeePortal";
+import { toast } from "sonner";
 import type { PortalDocument } from "../../../shared/employeePortal";
 
 async function openCapabilityUrl(path: string) {
@@ -19,7 +20,7 @@ async function openCapabilityUrl(path: string) {
     viewer.location.href = response.url;
   } catch (error) {
     viewer?.close();
-    window.alert(
+    toast.error(
       error instanceof Error
         ? error.message
         : "Something went wrong. Please try again.",
