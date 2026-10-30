@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { publicWebOrigin } from '../shared/publicUrls';
+import { sendClientPageLink } from './clientPageEmail';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co';
 
@@ -30,18 +31,25 @@ async function secureProjectLink(projectId: string, baseUrl: string) {
   return link.toString();
 }
 
-async function sendViaResend(to: string, subject: string, html: string) {
+async function sendViaResend(to: string, subject: string, html: string, bcc?: string[]) {
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getResendKey()}`,
     },
-    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL || 'ScopeClear <onboarding@resend.dev>', to: [to], subject, html }),
+    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL || 'ScopeClear <onboarding@resend.dev>', to: [to], subject, html, ...(bcc?.length ? { bcc } : {}) }),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(`Resend error: ${JSON.stringify(result)}`);
   return result;
+}
+
+export function handleSendClientPageLink(body: unknown, authenticatedUserId: string) {
+  return sendClientPageLink(body, authenticatedUserId, {
+    db: getSupabaseAdmin(), baseUrl: getSiteUrl(),
+    makeLink: secureProjectLink, send: sendViaResend,
+  });
 }
 
 /**

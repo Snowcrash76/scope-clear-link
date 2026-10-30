@@ -4,7 +4,8 @@ import { inviteErrorMessage } from '../shared/adminInvites';
 import { createJobCostRouter } from './jobCostRoutes';
 import { createEmployeeRouter } from './employeeRoutes';
 import { createClientAccessRouter, requireOwnerOrClient } from './clientAccess';
-import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt } from './emailHandlers';
+import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt, handleSendClientPageLink } from './emailHandlers';
+import { ClientPageEmailError } from './clientPageEmail';
 
 export const app = express();
 // Compressed scan images can exceed the default 100 KB JSON limit.
@@ -58,6 +59,20 @@ app.post('/api/send-quote-to-client', async (req, res) => {
       : 500;
     console.error('[email] send-quote-to-client:', message);
     res.status(status).json({ error: message });
+  }
+});
+
+app.post('/api/send-client-page-link', async (req, res) => {
+  try {
+    const userId = await validateSupabaseJwt(req.headers.authorization);
+    res.json(await handleSendClientPageLink(req.body, userId));
+  } catch (error) {
+    const status = error instanceof ClientPageEmailError ? error.status
+      : error instanceof Error && error.message === 'Unauthorized' ? 401 : 500;
+    res.status(status).json({
+      error: error instanceof ClientPageEmailError ? error.message
+        : status === 401 ? 'Please sign in.' : 'Could not send the client page. Please retry.',
+    });
   }
 });
 
