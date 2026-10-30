@@ -6,7 +6,11 @@ import type { PortalTimeEntry } from "../shared/employeePortal";
 import { timesheetTotals } from "../shared/timesheetTotals";
 import { TimesheetStatusBadge } from "../src/components/timesheets/TimesheetStatusBadge";
 import { WeekSwitcher } from "../src/components/timesheets/WeekSwitcher";
-import { groupEntriesByDay, shiftWeek, sortReviewRows } from "../src/components/timesheets/model";
+import {
+  groupEntriesByDay,
+  shiftWeek,
+  sortReviewRows,
+} from "../src/components/timesheets/model";
 
 function entry(id: string, date: string, minutes: number): PortalTimeEntry {
   return {
@@ -25,8 +29,16 @@ function entry(id: string, date: string, minutes: number): PortalTimeEntry {
 }
 
 test("status badge maps every workflow state to readable text and an icon", () => {
-  for (const status of ["draft", "submitted", "approved", "rejected", "running"] as const) {
-    const html = renderToStaticMarkup(createElement(TimesheetStatusBadge, { status }));
+  for (const status of [
+    "draft",
+    "submitted",
+    "approved",
+    "rejected",
+    "running",
+  ] as const) {
+    const html = renderToStaticMarkup(
+      createElement(TimesheetStatusBadge, { status }),
+    );
     const expected = status[0].toUpperCase() + status.slice(1);
     assert.match(html, new RegExp(expected));
     assert.match(html, /<svg/);
@@ -34,11 +46,13 @@ test("status badge maps every workflow state to readable text and an icon", () =
 });
 
 test("week switcher exposes named previous/next controls and week label", () => {
-  const html = renderToStaticMarkup(createElement(WeekSwitcher, {
-    value: "2026-10-26",
-    onChange: () => undefined,
-    today: "2026-10-29",
-  }));
+  const html = renderToStaticMarkup(
+    createElement(WeekSwitcher, {
+      value: "2026-10-26",
+      onChange: () => undefined,
+      today: "2026-10-29",
+    }),
+  );
   assert.match(html, /Previous week/);
   assert.match(html, /Next week/);
   assert.match(html, /This week/);
@@ -58,7 +72,10 @@ test("manager review rows prioritize submitted work, then sort names", () => {
     { name: "Ari", status: "submitted" },
     { name: "Ben", status: "draft" },
   ]);
-  assert.deepEqual(rows.map((row) => row.name), ["Ari", "Mina", "Ben", "Zara"]);
+  assert.deepEqual(
+    rows.map((row) => row.name),
+    ["Ari", "Mina", "Ben", "Zara"],
+  );
 });
 
 test("employee entries group by work date and retain chronological day totals", () => {
@@ -68,7 +85,10 @@ test("employee entries group by work date and retain chronological day totals", 
     entry("c", "2026-10-27", 30),
   ];
   const groups = groupEntriesByDay(entries);
-  assert.deepEqual(groups.map(([date]) => date), ["2026-10-26", "2026-10-27"]);
+  assert.deepEqual(
+    groups.map(([date]) => date),
+    ["2026-10-26", "2026-10-27"],
+  );
   assert.equal(timesheetTotals(groups[0][1]).paidMinutes, 450);
   assert.equal(timesheetTotals(groups[1][1]).paidMinutes, 120);
 });

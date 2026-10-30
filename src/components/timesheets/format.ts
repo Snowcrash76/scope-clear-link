@@ -10,7 +10,9 @@ export function formatDay(date: string) {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
-  }).format(new Date(`${date.slice(0, 10)}T12:00:00Z`)).replace(",", "");
+  })
+    .format(new Date(`${date.slice(0, 10)}T12:00:00Z`))
+    .replace(",", "");
 }
 
 export function formatWeek(weekStart: string) {

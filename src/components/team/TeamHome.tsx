@@ -73,6 +73,7 @@ import { ReviewPanel } from "./ReviewPanel";
 import { AuditTrail } from "./AuditTrailView";
 import { ReviewDialog } from "./ReviewDialog";
 import { UpdatesPanel } from "./UpdatesPanelView";
+import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
 
 export function TeamHome({
   panel,
@@ -439,7 +440,11 @@ export function TeamHome({
           </nav>
         )}
         {q.isLoading ? (
-          <TeamLoad retry={() => q.refetch()} />
+          location === "/team/timesheets" || activePanel === "timesheets" ? (
+            <TimesheetSkeleton manager />
+          ) : (
+            <TeamLoad retry={() => q.refetch()} />
+          )
         ) : q.error ? (
           <TeamLoad error={q.error} retry={() => q.refetch()} />
         ) : (
