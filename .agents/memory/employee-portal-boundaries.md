@@ -32,3 +32,9 @@ Use an authorised sending domain for staff invitations rather than the email pro
 **Why:** The user confirmed receiving invitations after the verified sender was configured.
 
 **How to apply:** Keep sender configuration server-side and republish when changing it; do not add a second email provider just to deliver staff invites.
+
+Treat creating an invited account separately from accepting an invitation with an existing account. A different account already signed in to the browser must not determine the new employee's identity.
+
+**Why:** The user reported new-password acceptance being rejected because the browser still carried another account's session.
+
+**How to apply:** Create only the invited email's account; never reset an existing account through an invitation. Existing-account acceptance must still authenticate the invited email.

@@ -11,6 +11,7 @@ import {
 } from './employeeAccess';
 import { defaultPermissions, employeeRoles, localDate, permissionNames, type EmployeeRole } from '../shared/employeePortal';
 import { publicWebOrigin } from '../shared/publicUrls';
+import { resolveInvitationAccount } from './employeeInvitations';
 
 const id = z.string().uuid();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -285,18 +286,11 @@ export function createEmployeeRouter() {
     try {
       const body = z.object({ token: tokenSchema, password: z.string().min(12).max(128).optional() }).strict().parse(req.body);
       const invite = await validInvitation(db, body.token);
-      let userId: string;
-      if (req.headers.authorization?.startsWith('Bearer ')) {
-        const { data, error } = await db.auth.getUser(req.headers.authorization.slice(7));
-        if (error || !data.user || data.user.email?.toLowerCase() !== invite.employee.email) throw new CostApiError(403, 'Sign in with the email address this invitation was sent to.');
-        userId = data.user.id;
-      } else {
-        if (!body.password) throw new CostApiError(400, 'Enter a password of at least 12 characters, or sign in to your existing account.');
-        const { data, error } = await db.auth.admin.createUser({ email: invite.employee.email, password: body.password, email_confirm: true });
-        if (error || !data.user) throw new CostApiError(409, 'An account may already exist. Sign in with your existing email and password, then accept the invitation.');
-        createdId = userId = data.user.id;
-      }
-      const { data, error } = await db.rpc('portal_accept_invitation', { p_hash: hash(body.token), p_user: userId });
+      const account = await resolveInvitationAccount(db, {
+        email: invite.employee.email, password: body.password, authorization: req.headers.authorization,
+      });
+      createdId = account.created ? account.userId : null;
+      const { data, error } = await db.rpc('portal_accept_invitation', { p_hash: hash(body.token), p_user: account.userId });
       portalDbCheck(error); createdId = null;
       res.setHeader('Cache-Control', 'no-store'); res.json(data);
     } catch (error) {
