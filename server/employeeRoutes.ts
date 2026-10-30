@@ -12,6 +12,7 @@ import {
 import { defaultPermissions, employeeRoles, localDate, permissionNames, type EmployeeRole } from '../shared/employeePortal';
 import { publicWebOrigin } from '../shared/publicUrls';
 import { resolveInvitationAccount } from './employeeInvitations';
+import { readSchedule } from './scheduleRead';
 
 const id = z.string().uuid();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -56,6 +57,8 @@ function objectPath(doc: any, ownerId: string) {
 
 export function createEmployeeRouter() {
   const router = Router();
+  router.get('/schedule', portalHandler(async (req, db, actor) =>
+    readSchedule(db, actor, { from: req.query.from, to: req.query.to })));
   router.get('/team/setup', portalHandler(async (_req, db, actor) => {
     if (actor.employee) throw new CostApiError(403, 'Database setup is available to the business owner only.');
     return {

@@ -30,18 +30,30 @@ export function AssignmentCard({
           <span className="my-1 h-px w-5 bg-muted" />
           <span>{assignment.end_time?.slice(0, 5) || "—"}</span>
         </div>
-        <button className="min-w-0 flex-1 text-left" onClick={onOpen}>
-          <span className="block truncate text-base font-bold">
-            {job?.name ?? "Scheduled job"}
-          </span>
-          <span className="mt-1 block truncate text-sm text-muted-foreground">
-            {job?.client_name ?? ""}
-          </span>
+        <div className="min-w-0 flex-1 text-left">
+          <button type="button" className="block min-h-11 w-full text-left" onClick={onOpen}>
+            <span className="block truncate text-base font-bold">
+              {job?.name ?? "Scheduled job"}
+            </span>
+            <span className="mt-1 block truncate text-sm text-muted-foreground">
+              {job?.client_name ?? ""}
+            </span>
+          </button>
           <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            {job?.client_address || "Address to be confirmed"}
+            {job?.client_address ? (
+              <a
+                className="underline decoration-muted-foreground/40 underline-offset-2"
+                href={`https://maps.google.com/?q=${encodeURIComponent(job.client_address)}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(event) => event.stopPropagation()}
+              >
+                {job.client_address}
+              </a>
+            ) : "Address to be confirmed"}
           </span>
-        </button>
+        </div>
         <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
       </div>
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-3 sm:px-5">

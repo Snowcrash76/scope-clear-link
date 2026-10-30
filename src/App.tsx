@@ -28,6 +28,7 @@ import ProfitabilityPage from "./components/job-costing/ProfitabilityPage";
 import { EmployeeAccept, EmployeeGate, EmployeeHome, EmployeeJob, EmployeeLogin, EmployeeNotifications, EmployeeTimesheets } from "./components/EmployeePortalUI";
 import { TeamHome } from "./components/TeamPortalUI";
 import { AppShell } from "./components/AppShell";
+import Schedule from "./components/schedule/Schedule";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,7 @@ const App = () => (
                 <TradeDashboard />
               </ProtectedRoute>
             } />
+            <Route path="/schedule" element={<Schedule />} />
             <Route path="/manage/:id" element={
               <ProtectedRoute>
                 <ProjectManage />

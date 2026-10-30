@@ -29,12 +29,14 @@ export function PortalLayout({
     ? [
         ["/team", "Team"],
         ["/team/assignments", "Assignments"],
+        ["/schedule", "Schedule"],
         ["/team/timesheets", "Timesheets"],
         ["/team/permissions", "Permissions"],
       ]
     : [
         ["/employee", "Today"],
         ["/employee/week", "This week"],
+        ["/schedule", "Schedule"],
         ["/employee/timesheets", "Timesheets"],
         ["/employee/notifications", "Updates"],
       ];

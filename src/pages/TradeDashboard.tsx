@@ -695,6 +695,10 @@ export default function TradeDashboard() {
           actions={
             <div className="flex flex-wrap items-center gap-2">
               <NewJobButton testId="dashboard-new-job" />
+              <Link to="/schedule" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground" data-testid="link-dashboard-schedule">
+                <Clock3 className="h-4 w-4" />
+                Open Schedule
+              </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button

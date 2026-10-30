@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { ArrowRight, CalendarDays, FileText, Receipt, Users } from "lucide-react";
 import type { Project } from "@/types/project";
 import type { TeamBootstrap } from "../../../shared/employeePortal";
@@ -119,7 +120,11 @@ export function ProjectOverview({
             })}
           </ul>
         ) : <p className="mt-1 text-sm text-muted-foreground">No upcoming assignments are scheduled for this job.</p>}
-        <Button type="button" variant="outline" className="mt-3 min-h-11 gap-2" onClick={() => onChangeTab("staff")}>Open team <ArrowRight className="h-4 w-4" /></Button>
+        {upcomingAssignments[0] && <p className="mt-3 text-sm"><strong>Next scheduled:</strong> {upcomingAssignments[0].date} · {upcomingAssignments[0].start_time} (Australia/Sydney)</p>}
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" variant="outline" className="mt-3 min-h-11 gap-2" onClick={() => onChangeTab("staff")}>Open team <ArrowRight className="h-4 w-4" /></Button>
+          <Link to={`/schedule?job=${encodeURIComponent(project.id)}`} className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold underline">Open in schedule</Link>
+        </div>
       </div>
       <article className="rounded-xl border border-border bg-card p-4">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Costs so far</p>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
 import { Calendar, Plus, Pencil, Trash2, X, Check, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -261,6 +262,7 @@ export function TodaySchedule() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <span className="text-sm text-muted-foreground">{dateLabel}</span>
+          <Link to="/schedule" className="inline-flex min-h-11 items-center rounded px-2 text-sm font-medium text-warning hover:underline" data-testid="link-open-schedule">Open schedule</Link>
           {!showForm && !editingId && (
             <button
               type="button"

@@ -465,6 +465,7 @@ export function TeamHome({
                   {message}
                 </p>
               )}
+              {isJobStaff && jobId && <Link to={`/schedule?job=${encodeURIComponent(jobId)}`} className="mb-4 inline-flex min-h-11 items-center text-sm font-semibold underline">Open this job in schedule</Link>}
               {isSettings ? (
                 <div className="grid gap-4 md:grid-cols-3">
                   {(["labourer", "supervisor", "admin"] as EmployeeRole[]).map(

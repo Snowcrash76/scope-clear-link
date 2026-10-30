@@ -47,6 +47,7 @@ import {
   ContactRound,
   UsersRound,
   GitBranch,
+  CalendarDays,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PasswordInput } from "@/components/PasswordInput";
@@ -168,6 +169,13 @@ function SidebarInner({
             currentPath.startsWith("/projects") ||
             currentPath.startsWith("/manage"),
           testId: "nav-projects",
+        },
+        {
+          to: "/schedule",
+          icon: CalendarDays,
+          label: "Schedule",
+          active: currentPath.startsWith("/schedule"),
+          testId: "nav-schedule",
         },
         {
           to: "/quotes",
