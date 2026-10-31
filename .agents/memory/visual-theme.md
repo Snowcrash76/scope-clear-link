@@ -15,7 +15,7 @@ Verify semantic colours against the actual rendered background, including opacit
 
 **How to apply:** Use complete semantic foreground/background pairs for status badges, or foreground text on tinted notices. Measure rendered contrast rather than assuming that using token names alone guarantees accessibility.
 
-Keep business Schedule in the normal app layout, put job section navigation above the content rather than beside it, and keep Variations in jobs rather than the main menu.
+Keep business Schedule in the normal app layout, put job section navigation above the content rather than beside it without an additional “All sections” button, and keep Variations in jobs rather than the main menu.
 
 **Why:** The user explicitly requested consistent navigation across these pages.
 

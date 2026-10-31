@@ -16,7 +16,7 @@ test('job-section navigation exposes the current section and the complete sectio
     assert.match(markup, /aria-label="Job sections"/);
     assert.match(markup, new RegExp(`aria-label="${label}"`));
     assert.match(markup, new RegExp(`data-testid="job-section-${value}"`));
-    assert.match(markup, /All sections/);
+    assert.doesNotMatch(markup, /All sections|All job sections/);
     assert.doesNotMatch(markup, /More job sections/);
     assert.doesNotMatch(markup, /role="tablist"/);
   }
@@ -49,15 +49,16 @@ test('job page uses a grouped section selector and keeps each named content regi
   assert.match(source, /<DocumentsSection/);
 });
 
-test('the job section selector sits in a sticky desktop column and stays separate from global navigation', () => {
+test('the job section selector stays in a scrollable top row separate from global navigation', () => {
   const globalMarkup = renderToStaticMarkup(<AppHeader onOpenNavigation={() => {}} />);
   const markup = renderToStaticMarkup(<JobSectionMenu value="documents" onValueChange={() => {}} />);
   const header = renderToStaticMarkup(<JobHeader><span>Job heading</span></JobHeader>);
-  assert.match(markup, /sticky/);
+  assert.match(markup, /overflow-x-auto/);
+  assert.doesNotMatch(markup, /sticky|lg:flex-col/);
   assert.match(header, /data-testid="job-header"/);
   assert.match(globalMarkup, /aria-label="Open navigation"/);
   assert.doesNotMatch(globalMarkup, /Job sections/);
   assert.match(markup, /aria-current="page"/);
   const source = readFileSync("src/components/JobSectionMenu.tsx", "utf8");
-  assert.match(source, /h-\[100dvh\][\s\S]*sm:max-h-none sm:max-w-none sm:rounded-none[\s\S]*lg:inset-auto/);
+  assert.doesNotMatch(source, /<Dialog|All sections/);
 });

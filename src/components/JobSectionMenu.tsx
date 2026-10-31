@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   Activity,
   BriefcaseBusiness,
@@ -8,11 +8,8 @@ import {
   FileText,
   Users,
   Wallet,
-  LayoutGrid,
   type LucideIcon,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 export interface JobSectionMenuProps {
@@ -69,7 +66,6 @@ export function JobSectionMenu({
   stageCount = 0,
   stageBadge,
 }: JobSectionMenuProps) {
-  const [allOpen, setAllOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const countFor = (section: string) =>
     section === "invoices"
@@ -83,14 +79,13 @@ export function JobSectionMenu({
     section === "stages" && stageCount > 0 ? stageBadge ?? `${stageCount}` : countFor(section);
   const setSection = (next: string) => {
     onValueChange(next);
-    setAllOpen(false);
   };
 
   useEffect(() => {
     navRef.current
       ?.querySelector<HTMLButtonElement>('button[data-section-item][aria-current="page"]')
       ?.scrollIntoView({ inline: "nearest", block: "nearest" });
-  }, [value, allOpen]);
+  }, [value]);
 
   const renderItem = (section: { value: string; label: string; icon: LucideIcon }) => {
     const selected = section.value === value ||
@@ -182,44 +177,6 @@ export function JobSectionMenu({
       </nav>
       <div className="pointer-events-none absolute inset-y-2 left-0 w-4 bg-gradient-to-r from-background to-transparent" />
       <div className="pointer-events-none absolute inset-y-2 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
-      <Button
-        type="button"
-        variant="outline"
-        className="mt-2 min-h-11 w-full gap-2"
-        onClick={() => setAllOpen(true)}
-      >
-        <LayoutGrid className="h-4 w-4" />
-        All sections
-      </Button>
-      <Dialog open={allOpen} onOpenChange={setAllOpen}>
-        <DialogContent className="inset-0 flex h-[100dvh] w-screen max-h-none max-w-none translate-x-0 translate-y-0 flex-col rounded-none border-0 p-5 sm:max-h-none sm:max-w-none sm:rounded-none lg:inset-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[85dvh] lg:w-[min(44rem,calc(100vw-2rem))] lg:max-w-[44rem] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-2xl lg:border">
-          <DialogTitle className="text-xl">All job sections</DialogTitle>
-          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-2">
-            {groups.map((group, index) => (
-              <section key={`${group.label}-${index}`} aria-label={group.label || "Overview"}>
-                {group.label && (
-                  <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                    {group.label}
-                  </h3>
-                )}
-                <div className="grid grid-cols-2 gap-2">
-                  {group.items.map((item) => (
-                    <div key={item.value}>{renderItem(item)}</div>
-                  ))}
-                </div>
-              </section>
-            ))}
-            <section aria-label="Team views">
-              <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">Team views</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {renderItem({ value: "staff", label: "Assignments", icon: Users })}
-                {renderItem({ value: "employee-updates", label: "Updates", icon: Activity })}
-              </div>
-            </section>
-          </div>
-          <Button variant="outline" className="min-h-11 w-full" onClick={() => setAllOpen(false)}>Close sections</Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

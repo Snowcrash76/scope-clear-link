@@ -122,14 +122,9 @@ try {
     const navBox = await nav.boundingBox();
     assert.ok(navBox.y + navBox.height <= overviewBox.y + 2, 'Job navigation sits above content, not beside it');
     assert.equal(await page.getByTestId('nav-variations').count(), 0, 'Variations is not in the global menu');
+    assert.equal(await page.getByRole('button', { name: 'All sections', exact: true }).count(), 0, 'No redundant All sections button');
     if (width < 1024) {
-      await page.getByRole('button', { name: 'All sections', exact: true }).click();
-      const sheet = page.getByRole('dialog', { name: 'All job sections' });
-      await sheet.waitFor();
-      const sheetBox = await sheet.boundingBox();
-      assert.ok(sheetBox.width >= width - 2 && sheetBox.height >= 898, 'All sections fills screens below 1024px');
-      await sheet.getByRole('button', { name: /^Stages/ }).click();
-      await sheet.waitFor({ state: 'hidden' });
+      await page.getByTestId('job-section-stages').click();
       assert.equal(await page.getByTestId('job-section-stages').getAttribute('aria-current'), 'page');
       await page.waitForFunction(() => {
         const button = document.querySelector('[data-testid="job-section-stages"]');
