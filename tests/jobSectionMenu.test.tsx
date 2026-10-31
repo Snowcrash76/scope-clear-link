@@ -42,6 +42,7 @@ test('job page uses a grouped section selector and keeps each named content regi
   assert.equal((header.match(/<JobSectionMenu/g) || []).length, 0);
   assert.match(header, /<ClientPageActions/);
   assert.match(header, /<ClientDetailsCard/);
+  assert.doesNotMatch(header, /Add stages|onTabChange\("stages"\)/);
   assert.match(source, /<QuoteSection/);
   assert.match(source, /<InvoiceSection/);
   assert.match(source, /<JobCostsTab/);

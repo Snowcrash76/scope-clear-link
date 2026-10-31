@@ -675,7 +675,6 @@ function ProjectManageContent() {
         activeQuote={activeQuote}
         onTabChange={setActiveTab}
         pendingVariationCount={pendingClientRequests.length + project.changeRequests.filter(awaitingClientApproval).length}
-        stageCount={project.stages.length}
         isDuplicating={isDuplicating}
         onBack={() => navigate('/dashboard')}
         onAddVariation={() => setIsSendingChangeRequest(true)}

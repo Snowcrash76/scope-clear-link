@@ -20,7 +20,6 @@ type ProjectManageHeaderProps = {
   activeQuote: Quote | null;
   onTabChange: (tab: string) => void;
   pendingVariationCount: number;
-  stageCount: number;
   isDuplicating: boolean;
   onBack: () => void;
   onAddVariation: () => void;
@@ -38,7 +37,6 @@ export function ProjectManageHeader({
   activeQuote,
   onTabChange,
   pendingVariationCount,
-  stageCount,
   isDuplicating,
   onBack,
   onAddVariation,
@@ -50,8 +48,6 @@ export function ProjectManageHeader({
   onClientEditOpenChange,
   onUpdateProjectStatus,
 }: ProjectManageHeaderProps) {
-  const currentStageIndex = project.stages.findIndex((stage) => stage.status === 'current');
-  const currentStage = currentStageIndex >= 0 ? project.stages[currentStageIndex] : null;
   return (
     <JobHeader>
       <div className="min-w-0">
@@ -125,9 +121,6 @@ export function ProjectManageHeader({
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" className="min-h-11 gap-2" onClick={() => onTabChange("stages")}>
-            {currentStage ? `Stage ${currentStageIndex + 1} of ${stageCount} · ${currentStage.name}` : stageCount ? `${stageCount} stages` : "Add stages"}
-          </Button>
           {pendingVariationCount > 0 && (
             <Button type="button" variant="outline" className="min-h-11 gap-2 border-warning/40 text-warning" onClick={() => onTabChange("changes")}>
               {pendingVariationCount} variation{pendingVariationCount === 1 ? "" : "s"} need action
