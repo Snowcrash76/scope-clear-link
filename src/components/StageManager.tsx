@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { ProjectStage, Invoice, Quote } from '@/types/project';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,9 +14,11 @@ import {
   ChevronUp,
   ChevronDown,
   Receipt,
-  DollarSign
+  DollarSign,
+  Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { activeStageInvoice, getStageBilling } from '@/lib/stageBilling';
 import { EditStageModal } from './EditStageModal';
 import {
   AlertDialog,
@@ -43,7 +44,8 @@ interface StageManagerProps {
   onDeleteStage?: (stageId: string) => Promise<boolean>;
   onReorderStages?: (stageIds: string[]) => Promise<boolean>;
   onClearAllStages?: () => Promise<boolean>;
-  onGenerateStageInvoice?: (stage: ProjectStage, amount: number) => void;
+  onGenerateStageInvoice?: (stage: ProjectStage) => void;
+  onViewStageInvoice?: (invoice: Invoice) => void;
 }
 
 export function StageManager({ 
@@ -59,6 +61,7 @@ export function StageManager({
   onReorderStages,
   onClearAllStages,
   onGenerateStageInvoice,
+  onViewStageInvoice,
 }: StageManagerProps) {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<ProjectStage | undefined>();
@@ -112,31 +115,23 @@ export function StageManager({
     }
   };
 
-  // Helper to get invoice for a stage
+  // Cancelled invoices do not reserve a stage allocation.
   const getStageInvoice = (stageId: string) => {
-    return invoices.find(inv => inv.stageId === stageId);
+    return activeStageInvoice(invoices, stageId);
   };
 
-  // Helper to calculate stage billing amount (always returns ex-tax subtotal).
-  // Gate on quote.total (reliably non-zero) rather than quote.subtotal which can
-  // be 0 for older records mapped as `q.subtotal || 0` in useQuotes.
+  // Display the same validated ex-GST allocation used by invoice creation.
   const getStageBillingAmount = (stage: ProjectStage) => {
-    if (stage.invoiceAmount) return stage.invoiceAmount;
-    if (stage.invoicePercentage && quote?.total) {
-      const taxRate = quote.taxRate || 0;
-      // Use stored subtotal when available; derive from total otherwise.
-      const subtotal =
-        quote.subtotal && quote.subtotal > 0
-          ? quote.subtotal
-          : quote.total / (1 + taxRate / 100);
-      return (subtotal * stage.invoicePercentage) / 100;
+    try {
+      return getStageBilling(stage, quote ?? null).subtotal;
+    } catch {
+      return null;
     }
-    return null;
   };
 
   // Check if stage has billing configured
   const hasBilling = (stage: ProjectStage) => {
-    return !!(stage.invoiceAmount || stage.invoicePercentage);
+    return stage.invoiceAmount !== undefined || stage.invoicePercentage !== undefined;
   };
 
   const handleDeleteStage = async () => {
@@ -271,18 +266,17 @@ export function StageManager({
                     {(() => {
                       const stageInvoice = getStageInvoice(stage.id);
                       if (stageInvoice) {
-                        if (stageInvoice.status === 'paid') {
-                          return (
-                            <Badge variant="success" className="text-xs gap-1">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Paid
-                            </Badge>
-                          );
-                        }
+                        const statusLabels: Record<Invoice['status'], string> = {
+                          draft: 'Draft invoice',
+                          sent: 'Sent',
+                          paid: 'Paid',
+                          overdue: 'Overdue',
+                          cancelled: 'Cancelled',
+                        };
                         return (
-                          <Badge variant="secondary" className="text-xs gap-1">
-                            <Receipt className="w-3 h-3" />
-                            Invoiced
+                          <Badge variant={stageInvoice.status === 'paid' ? 'success' : 'secondary'} className="text-xs gap-1">
+                            {stageInvoice.status === 'paid' ? <CheckCircle2 className="w-3 h-3" /> : <Receipt className="w-3 h-3" />}
+                            {statusLabels[stageInvoice.status]}
                           </Badge>
                         );
                       }
@@ -354,24 +348,25 @@ export function StageManager({
 
                 {/* Status Actions */}
                 <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-2">
-                  {/* Generate Invoice Button for completed stages with billing */}
-                  {stage.status === 'completed' && hasBilling(stage) && !getStageInvoice(stage.id) && onGenerateStageInvoice && (
+                  {/* Invoice actions are independent of the stage progress workflow. */}
+                  {hasBilling(stage) && !getStageInvoice(stage.id) && onGenerateStageInvoice && (
                     <Button 
                       size="sm" 
                       variant="outline"
-                      onClick={() => {
-                        const amount = getStageBillingAmount(stage);
-                        if (amount) {
-                          onGenerateStageInvoice(stage, amount);
-                        } else if (stage.invoicePercentage) {
-                          toast.error('Quote total not available. Open the quote, save it with line items, then try again.');
-                        } else {
-                          toast.error('No billing amount configured for this stage.');
-                        }
-                      }}
+                      onClick={() => onGenerateStageInvoice(stage)}
                     >
                       <Receipt className="w-4 h-4 mr-1" />
-                      Invoice
+                      Generate invoice
+                    </Button>
+                  )}
+                  {getStageInvoice(stage.id) && onViewStageInvoice && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => onViewStageInvoice(getStageInvoice(stage.id)!)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      View invoice
                     </Button>
                   )}
                   

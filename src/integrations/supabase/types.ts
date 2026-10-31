@@ -707,6 +707,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_stage_invoice: {
+        Args: {
+          p_project_id: string
+          p_stage_id: string
+          p_expected_quote_id: string | null
+          p_expected_percentage: number | null
+          p_expected_amount: number | null
+          p_expected_subtotal: number
+          p_expected_tax_rate: number
+          p_due_date?: string | null
+          p_notes?: string | null
+          p_terms?: string | null
+        }
+        Returns: string
+      }
       respond_to_quote_by_token: {
         Args: {
           p_token: string

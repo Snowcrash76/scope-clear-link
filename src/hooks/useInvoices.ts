@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Invoice, InvoiceLineItem } from '@/types/project';
+import { Invoice, InvoiceLineItem, ProjectStage, Quote } from '@/types/project';
+import { getStageBilling } from '@/lib/stageBilling';
 
 type DbInvoice = {
   id: string;
@@ -39,6 +40,7 @@ type DbInvoiceLineItem = {
 
 export function useInvoices(projectId: string | undefined) {
   const queryClient = useQueryClient();
+  const stageInFlight = useRef(new Set<string>());
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown | null>(null);
@@ -230,6 +232,52 @@ export function useInvoices(projectId: string | undefined) {
     }
   };
 
+  /** One atomic transaction in Supabase also rechecks owner, quote, stage and duplicate billing. */
+  const createStageInvoice = async (
+    stage: ProjectStage,
+    quote: Quote | null,
+    options: { dueDate?: string; notes?: string; terms?: string } = {},
+  ): Promise<string | null> => {
+    if (!projectId || stageInFlight.current.has(stage.id)) return null;
+    stageInFlight.current.add(stage.id);
+    try {
+      const preview = getStageBilling(stage, quote);
+      const { data, error: rpcError } = await supabase.rpc('create_stage_invoice', {
+        p_project_id: projectId,
+        p_stage_id: stage.id,
+        p_expected_quote_id: quote?.id ?? null,
+        p_expected_percentage: stage.invoicePercentage ?? null,
+        p_expected_amount: stage.invoiceAmount ?? null,
+        p_expected_subtotal: preview.subtotal,
+        p_expected_tax_rate: preview.taxRate,
+        p_due_date: options.dueDate || null,
+        p_notes: options.notes?.trim() || null,
+        p_terms: options.terms?.trim() || null,
+      });
+      if (rpcError) {
+        if (['PGRST202', '42883'].includes(rpcError.code)) {
+          throw new Error('Stage invoicing needs database setup. Apply the stage invoice migration in Supabase, then retry.');
+        }
+        if (rpcError.code === '23505') {
+          throw new Error('This stage has already been invoiced. Refresh the job to view its invoice.');
+        }
+        if (rpcError.code === 'P0001' || rpcError.code === '42501' || rpcError.code === '23503') {
+          throw new Error(rpcError.message);
+        }
+        throw new Error('Unable to save the stage invoice. Please try again.');
+      }
+      if (typeof data !== 'string' || !data) throw new Error('Stage invoice was not confirmed. Refresh before retrying.');
+      await fetchInvoices(false);
+      toast.success('Stage invoice saved as draft');
+      return data;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to save the stage invoice.');
+      return null;
+    } finally {
+      stageInFlight.current.delete(stage.id);
+    }
+  };
+
   const updateInvoiceStatus = async (invoiceId: string, status: Invoice['status'], silent = false) => {
     try {
       const updateData: Record<string, unknown> = { status };
@@ -365,6 +413,7 @@ export function useInvoices(projectId: string | undefined) {
     error,
     refetch: fetchInvoices,
     createInvoice,
+    createStageInvoice,
     updateInvoiceStatus,
     updateInvoiceNumber,
     sendInvoice,

@@ -8,3 +8,9 @@ Keep one application server on the forwarded preview port, and isolate browser f
 **Why:** An orphaned server can keep serving old source while a restarted workflow silently binds a different port. Rebuilding fixture bundles can also trigger reloads in other test pages. Both produced misleading failures during a presentation-only change.
 
 **How to apply:** Check which process actually owns the preview port when workflow readiness and browser results disagree. Run fixture suites serially and isolate their development reload transport, not application authentication. Wait for the page's meaningful elements rather than unrelated third-party requests.
+
+An open dialog hides background job sections from accessible role locators.
+
+**Why:** Successful invoice navigation can immediately open its invoice viewer. Waiting for the background job section then incorrectly reports failed navigation while the correct invoice is already visible.
+
+**How to apply:** Verify the new dialog first and close it before asserting background navigation. Keep the application's focus and accessibility handling intact.

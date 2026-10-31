@@ -14,6 +14,7 @@ import { SendChangeRequestModal } from '@/components/SendChangeRequestModal';
 import { EditChangeRequestModal } from '@/components/EditChangeRequestModal';
 import { RespondToClientModal } from '@/components/RespondToClientModal';
 import { StageManager } from '@/components/StageManager';
+import { StageInvoiceDialog, type CreateStageInvoiceOptions } from '@/components/StageInvoiceDialog';
 import { DocumentsSection } from '@/components/DocumentsSection';
 import { JobSectionMenu } from '@/components/JobSectionMenu';
 import { JobHeader } from '@/components/JobHeader';
@@ -48,7 +49,7 @@ import { useQuoteLineItems } from '@/hooks/useQuoteLineItems';
 import { useLineItemHistory, formatHistoryEntry } from '@/hooks/useLineItemHistory';
 import { ChangeRequestCard } from '@/components/ChangeRequestCard';
 import { variationItemTitle } from '@/lib/variationItems';
-import { ScopeItem, ChangeRequest, ProjectStage } from '@/types/project';
+import { ScopeItem, ChangeRequest, ProjectStage, Invoice } from '@/types/project';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   ArrowLeft, 
@@ -154,6 +155,7 @@ function ProjectManageContent() {
     error: invoicesError,
     refetch: refetchInvoices,
     createInvoice,
+    createStageInvoice,
     updateInvoiceNumber,
     sendInvoice,
     markAsPaid,
@@ -200,6 +202,8 @@ function ProjectManageContent() {
     : rawTab;
   const targetVariationId = searchParams.get('variation');
   const [activeTab, setActiveTab] = useState(initialTab);
+  const [stageInvoiceTarget, setStageInvoiceTarget] = useState<ProjectStage | null>(null);
+  const [requestedInvoiceId, setRequestedInvoiceId] = useState<string | null>(null);
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -424,27 +428,20 @@ function ProjectManageContent() {
     }
   };
 
-  const handleGenerateStageInvoice = async (stage: ProjectStage, amount: number) => {
-    // Navigate to invoices tab and create an invoice for this stage
+  const handleViewStageInvoice = (invoice: Invoice) => {
+    setStageInvoiceTarget(null);
+    setRequestedInvoiceId(invoice.id);
     setActiveTab('invoices');
-    
-    // Create invoice with stage details
-    // amount is already the ex-tax subtotal (invoiceAmount is ex-tax; invoicePercentage uses subtotal)
-    const invoiceId = await createInvoice({
-      type: 'staged',
-      quoteId: effectiveQuote?.id,
-      stageId: stage.id,
-      taxRate: effectiveQuote?.taxRate ?? 10,
-      lineItems: [{
-        description: `Stage Payment: ${stage.name}`,
-        quantity: 1,
-        unitPrice: amount,
-      }],
-    });
+  };
 
+  const handleCreateStageInvoice = async (stage: ProjectStage, options: CreateStageInvoiceOptions) => {
+    const invoiceId = await createStageInvoice(stage, activeQuote, options);
     if (invoiceId) {
-      toast.success(`Invoice created for "${stage.name}"`);
+      setStageInvoiceTarget(null);
+      setRequestedInvoiceId(invoiceId);
+      setActiveTab('invoices');
     }
+    return invoiceId;
   };
 
   const handleCreateQuoteInvoice = async (quoteId: string, allocation?: QuoteInvoiceAllocation) => {
@@ -818,6 +815,10 @@ function ProjectManageContent() {
             ) : <InvoiceSection
               invoices={invoices}
               quote={activeQuote}
+              stages={project.stages}
+              onCreateStageInvoice={handleCreateStageInvoice}
+              viewInvoiceId={requestedInvoiceId}
+              onViewedInvoice={() => setRequestedInvoiceId(null)}
               scopeItems={project.scopeItems}
               changeRequests={project.changeRequests}
               quoteLineItems={quoteLineItems}
@@ -849,7 +850,7 @@ function ProjectManageContent() {
               stages={project.stages}
               currentStageIndex={project.currentStageIndex}
               invoices={invoices}
-              quote={effectiveQuote}
+              quote={activeQuote}
               onUpdateStage={handleUpdateStage}
               onSetCurrentStage={handleSetCurrentStage}
               onAddStage={addStage}
@@ -857,7 +858,8 @@ function ProjectManageContent() {
               onDeleteStage={deleteStage}
               onReorderStages={reorderStages}
               onClearAllStages={clearAllStages}
-              onGenerateStageInvoice={handleGenerateStageInvoice}
+              onGenerateStageInvoice={setStageInvoiceTarget}
+              onViewStageInvoice={handleViewStageInvoice}
             />
           </TabsContent>
 
@@ -888,6 +890,17 @@ function ProjectManageContent() {
       </PageLayout>
 
       {/* Modals */}
+      <StageInvoiceDialog
+        open={!!stageInvoiceTarget}
+        stage={stageInvoiceTarget}
+        quote={activeQuote}
+        invoices={invoices}
+        onOpenChange={open => { if (!open) setStageInvoiceTarget(null); }}
+        onCreate={handleCreateStageInvoice}
+        onViewInvoice={handleViewStageInvoice}
+        defaultNotes={defaultPaymentInstructions}
+        defaultTerms={defaultTerms}
+      />
       <SendChangeRequestModal
         open={isSendingChangeRequest}
         onOpenChange={setIsSendingChangeRequest}

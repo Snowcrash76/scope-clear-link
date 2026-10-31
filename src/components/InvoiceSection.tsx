@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/RichTextEditor';
-import { Invoice, ScopeItem, ChangeRequest, Quote } from '@/types/project';
+import { Invoice, ScopeItem, ChangeRequest, Quote, ProjectStage } from '@/types/project';
 import { 
   FileText, 
   Send, 
@@ -43,7 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { StageInvoiceForm } from '@/components/StageInvoiceDialog';
 
 interface InvoiceSectionProps {
   invoices: Invoice[];
@@ -51,6 +51,10 @@ interface InvoiceSectionProps {
   scopeItems: ScopeItem[];
   changeRequests: ChangeRequest[];
   quoteLineItems?: Array<{ id: string; title: string; cost: number | null }>;
+  stages?: ProjectStage[];
+  onCreateStageInvoice?: (stage: ProjectStage, options: { dueDate?: string; notes?: string; terms?: string }) => Promise<string | null>;
+  viewInvoiceId?: string | null;
+  onViewedInvoice?: () => void;
   projectName: string;
   clientName: string;
   clientEmail: string;
@@ -93,6 +97,7 @@ export function InvoiceSection({
   scopeItems,
   changeRequests,
   quoteLineItems = [],
+  stages = [],
   projectName,
   clientName,
   clientEmail,
@@ -108,6 +113,9 @@ export function InvoiceSection({
   defaultPaymentInstructions,
   onUpdateInvoiceNumber,
   onCreateInvoice,
+  onCreateStageInvoice,
+  viewInvoiceId,
+  onViewedInvoice,
   onSendInvoice,
   onMarkAsPaid,
   onCancelInvoice,
@@ -116,6 +124,14 @@ export function InvoiceSection({
 }: InvoiceSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+  useEffect(() => {
+    if (!viewInvoiceId) return;
+    const invoice = invoices.find(candidate => candidate.id === viewInvoiceId);
+    if (invoice) {
+      setViewingInvoice(invoice);
+      onViewedInvoice?.();
+    }
+  }, [viewInvoiceId, invoices, onViewedInvoice]);
 
   // Inline invoice reference editing
   const [editingInvRef, setEditingInvRef] = useState<string | null>(null);
@@ -130,7 +146,7 @@ export function InvoiceSection({
     if (success) setEditingInvRef(null);
   };
 
-  const [invoiceType, setInvoiceType] = useState<'staged' | 'final' | 'deposit' | 'custom'>('staged');
+  const [invoiceType, setInvoiceType] = useState<'staged' | 'final' | 'deposit' | 'custom' | 'stage'>('staged');
   const [customTypeLabel, setCustomTypeLabel] = useState('');
   const [taxRate, setTaxRate] = useState(quote?.taxRate ?? 10);
   const [dueDate, setDueDate] = useState('');
@@ -281,7 +297,7 @@ export function InvoiceSection({
     }
 
     await onCreateInvoice({
-      type: invoiceType === 'custom' ? 'staged' : invoiceType,
+      type: invoiceType === 'deposit' || invoiceType === 'final' ? invoiceType : 'staged',
       quoteId: quote?.id,
       taxRate,
       dueDate: dueDate ? new Date(dueDate) : undefined,
@@ -306,6 +322,18 @@ export function InvoiceSection({
       ...prev,
       [id]: !prev[id],
     }));
+  };
+
+  const restoreInvoiceForm = () => {
+    setIsCreating(false);
+    setInvoiceType('staged');
+    setSelectedItems({});
+    setCustomDescription('');
+    setCustomAmount('');
+    setCustomTypeLabel('');
+    setNotes(defaultPaymentInstructions || '');
+    setTerms(defaultTerms || '');
+    setDueDate('');
   };
 
   return (
@@ -574,17 +602,40 @@ export function InvoiceSection({
             <DialogTitle>Create Invoice</DialogTitle>
           </DialogHeader>
           
+          {invoiceType === 'stage' ? (
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain py-4">
+              {onCreateStageInvoice ? (
+                <StageInvoiceForm
+                  stages={stages}
+                  quote={quote}
+                  invoices={invoices}
+                  onCreate={onCreateStageInvoice}
+                  onViewInvoice={setViewingInvoice}
+                  onCancel={restoreInvoiceForm}
+                  onCreated={restoreInvoiceForm}
+                  defaultNotes={defaultPaymentInstructions || ''}
+                  defaultTerms={defaultTerms || ''}
+                />
+              ) : (
+                <p className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900" role="status">
+                  Stage invoicing is not available for this project yet.
+                </p>
+              )}
+            </div>
+          ) : (
+          <>
           <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain py-4">
             {/* Invoice Type */}
             <div className="space-y-2">
               <Label>Invoice Type</Label>
-              <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final' | 'deposit' | 'custom')}>
+              <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final' | 'deposit' | 'custom' | 'stage')}>
                 <SelectTrigger className="w-full min-w-0" data-testid="select-invoice-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="deposit">Deposit</SelectItem>
                   <SelectItem value="staged">Progress Payment</SelectItem>
+                  <SelectItem value="stage">Saved stage</SelectItem>
                   <SelectItem value="final">Final Invoice</SelectItem>
                   <SelectItem value="custom">Custom</SelectItem>
                 </SelectContent>
@@ -692,13 +743,15 @@ export function InvoiceSection({
           </div>
 
           <DialogFooter className="shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button className="w-full sm:w-auto" variant="outline" onClick={() => setIsCreating(false)}>
+            <Button className="w-full sm:w-auto" variant="outline" onClick={restoreInvoiceForm}>
               Cancel
             </Button>
             <Button className="w-full sm:w-auto" onClick={handleCreateInvoice} disabled={isSaving}>
               {isSaving ? 'Creating...' : 'Create Invoice'}
             </Button>
           </DialogFooter>
+          </>
+          )}
         </DialogContent>
       </Dialog>
 
