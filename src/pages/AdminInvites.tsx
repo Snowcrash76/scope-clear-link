@@ -122,7 +122,7 @@ export default function AdminInvites() {
               <Label htmlFor="label">Label (optional)</Label>
               <Input
                 id="label"
-                placeholder="e.g. John Smith - paid"
+                placeholder="Add an internal note"
                 value={label}
                 onChange={e => setLabel(e.target.value)}
               />

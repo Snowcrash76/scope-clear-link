@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -29,8 +30,12 @@ import { EmployeeAccept, EmployeeGate, EmployeeHome, EmployeeJob, EmployeeLogin,
 import { TeamHome } from "./components/TeamPortalUI";
 import { AppShell } from "./components/AppShell";
 import Schedule from "./components/schedule/Schedule";
+import { AuthShell } from "./components/AuthShell";
 
 const queryClient = new QueryClient();
+const DesignPreview = import.meta.env.DEV
+  ? lazy(() => import("./pages/DesignPreview"))
+  : null;
 
 const App = () => (
   <ThemeProvider>
@@ -42,10 +47,10 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/login" element={<AuthShell><Login /></AuthShell>} />
+            <Route path="/signup" element={<AuthShell><Signup /></AuthShell>} />
+            <Route path="/forgot-password" element={<AuthShell><ForgotPassword /></AuthShell>} />
+            <Route path="/reset-password" element={<AuthShell><ResetPassword /></AuthShell>} />
             <Route path="/demo" element={<DemoProjectView />} />
             <Route path="/dashboard" element={
               <ProtectedRoute>
@@ -113,6 +118,12 @@ const App = () => (
             <Route path="/team/timesheets" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
             <Route path="/team/permissions" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
             <Route path="/team/jobs/:id/:panel" element={<ProtectedRoute teamOnly><AppShell><TeamHome /></AppShell></ProtectedRoute>} />
+            {import.meta.env.DEV && DesignPreview && (
+              <Route
+                path="/design-preview"
+                element={<Suspense fallback={<div className="min-h-[100dvh] animate-pulse bg-muted" aria-label="Loading design preview" />}><DesignPreview /></Suspense>}
+              />
+            )}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

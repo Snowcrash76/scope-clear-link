@@ -217,7 +217,7 @@ export function CreateJobModal({ open, onOpenChange, onCreateJob, defaultQuoteTe
               <Input
                 id="clientEmail"
                 type="email"
-                placeholder="e.g., sarah@email.com"
+                placeholder="Email address"
                 value={clientEmail}
                 onChange={(e) => setClientEmail(e.target.value)}
               />

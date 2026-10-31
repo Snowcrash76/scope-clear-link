@@ -107,9 +107,11 @@ export default function ResetPassword() {
   if (checking) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <p className="text-sm">Verifying reset link…</p>
+        <div className="auth-verify-skeleton space-y-3" aria-live="polite" aria-label="Verifying reset link">
+          <i />
+          <i />
+          <i />
+          <p className="pt-2 text-sm text-muted-foreground">Verifying secure reset link…</p>
         </div>
       </div>
     );

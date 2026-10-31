@@ -111,7 +111,7 @@ export default function Signup() {
               <Input
                 id="businessName"
                 type="text"
-                placeholder="e.g., Thompson Landscapes"
+                placeholder="Business name"
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 required
@@ -123,7 +123,7 @@ export default function Signup() {
               <Input
                 id="contactName"
                 type="text"
-                placeholder="e.g., Mike Thompson"
+                placeholder="Your full name"
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
                 required
@@ -135,7 +135,7 @@ export default function Signup() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

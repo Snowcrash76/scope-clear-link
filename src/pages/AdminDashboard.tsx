@@ -304,7 +304,7 @@ function InviteCodesTab() {
             <Label htmlFor="invite-label">Label (optional)</Label>
             <Input
               id="invite-label"
-              placeholder="e.g. John Smith - paid"
+              placeholder="Add an internal note"
               value={label}
               onChange={e => setLabel(e.target.value)}
               data-testid="input-invite-label"

@@ -928,7 +928,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
                               businessName: e.target.value,
                             }))
                           }
-                          placeholder="Acme Electrical"
+                          placeholder="Business name"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -947,7 +947,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
                               contactName: e.target.value,
                             }))
                           }
-                          placeholder="Jane Smith"
+                          placeholder="Contact name"
                         />
                       </div>
                       <div className="space-y-1.5">
@@ -985,7 +985,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
                               email: e.target.value,
                             }))
                           }
-                          placeholder="you@example.com"
+                          placeholder="Enter your email"
                           data-testid="input-settings-email"
                         />
                       </div>

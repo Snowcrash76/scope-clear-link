@@ -92,7 +92,7 @@ export default function Index() {
                 "I thought that was included"
               </h3>
               <p className="text-sm text-muted-foreground">
-                Scope misunderstandings cause 80% of trade disputes
+                A vague scope turns a clear job into a difficult conversation.
               </p>
             </Card>
             
