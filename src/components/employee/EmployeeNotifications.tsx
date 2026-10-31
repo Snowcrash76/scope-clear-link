@@ -16,12 +16,14 @@ import { LoadState } from "./LoadState";
 import { PortalLayout } from "./PortalLayout";
 import { PageTitle } from "./PageTitleView";
 import { Empty } from "./Empty";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 
 export function EmployeeNotifications() {
   const q = usePortal<EmployeeBootstrap>("/employee/bootstrap");
   const refresh = useRefreshPortal();
+  const readOnly = useEmployeeAssistance().active;
   async function mark(n: PortalNotification) {
-    if (n.read_at) return;
+    if (n.read_at || readOnly) return;
     try {
       await portalRequest(`/employee/notifications/${n.id}/read`, {});
       await refresh();
@@ -46,8 +48,11 @@ export function EmployeeNotifications() {
             {q.data.notifications.map((n) => (
               <button
                 key={n.id}
-                onClick={() => mark(n)}
-                className={`${card} flex min-h-20 w-full items-start gap-4 p-4 text-left ${n.read_at ? "opacity-70" : ""}`}
+                type="button"
+                disabled={readOnly || !!n.read_at}
+                onClick={() => void mark(n)}
+                aria-label={`${n.title}${n.read_at ? ", read" : readOnly ? ", read-only preview" : ", mark read"}`}
+                className={`${card} flex min-h-20 w-full items-start gap-4 p-4 text-left disabled:cursor-default ${n.read_at ? "opacity-70" : ""}`}
               >
                 <span
                   className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${n.read_at ? "bg-muted" : "bg-muted"}`}
@@ -61,7 +66,7 @@ export function EmployeeNotifications() {
                     {fmtDate(n.created_at)}
                   </small>
                 </span>
-                {!n.read_at && (
+                {!n.read_at && !readOnly && (
                   <span className="self-center text-xs font-semibold text-muted-foreground">
                     Mark read
                   </span>

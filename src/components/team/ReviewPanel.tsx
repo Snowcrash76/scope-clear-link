@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Check, ChevronRight, History, MoreHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { portalRequest } from "@/hooks/useEmployeePortal";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 import type {
   TeamBootstrap,
   PortalSubmission,
@@ -89,12 +90,18 @@ export function ReviewPanel({
   refresh: () => unknown;
 }) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const assistance = useEmployeeAssistance();
+  const preview = assistance.active;
   const selectedJobId = searchParams.get("job") ?? "";
   const [selectedWeek, setSelectedWeek] = useState(() =>
     weekStart(localDate(new Date(), team.timezone)),
   );
   const [filter, setFilter] = useState<Filter>("All");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const queryTarget = searchParams.get("employee");
+  const queryWeek = searchParams.get("week");
+  const queryHandled = useRef("");
+  const [targetNotice, setTargetNotice] = useState("");
   const [editingEntry, setEditingEntry] = useState<PortalTimeEntry | null>(
     null,
   );
@@ -149,6 +156,7 @@ export function ReviewPanel({
           ...team.employees.filter((e) => e.active).map((e) => e.id),
           ...entries.map((entry) => entry.employee_id),
           ...allSubmissions.map((submission) => submission.employee_id),
+          ...(queryTarget && team.employees.some((employee) => employee.id === queryTarget) ? [queryTarget] : []),
         ]);
     const list = [...ids].map((id) => {
       const memberEntries = entries.filter((entry) => entry.employee_id === id);
@@ -189,14 +197,49 @@ export function ReviewPanel({
       };
     });
     return sortReviewRows(list);
-  }, [team.employees, entries, allWeekEntries, allSubmissions, selectedWeek, reviewerId, selectedJobId]);
+  }, [team.employees, entries, allWeekEntries, allSubmissions, selectedWeek, reviewerId, selectedJobId, queryTarget]);
   const selected = people.find((person) => person.id === selectedId) ?? null;
+  useEffect(() => {
+    if (!queryTarget) return;
+    const key = `${queryTarget}:${queryWeek ?? ""}`;
+    if (queryHandled.current === key) return;
+    const memberExists = team.employees.some((person) => person.id === queryTarget);
+    if (!memberExists) {
+      queryHandled.current = key;
+      setTargetNotice("The requested employee week is unavailable.");
+      return;
+    }
+    let targetWeek: string | undefined;
+    if (queryWeek) {
+      try {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(queryWeek) || weekStart(queryWeek) !== queryWeek) throw new Error();
+        targetWeek = queryWeek;
+      } catch {
+        queryHandled.current = key;
+        setTargetNotice("The requested week is invalid. Choose a week from the calendar.");
+        return;
+      }
+    }
+    if (targetWeek && targetWeek !== selectedWeek) {
+      setSelectedWeek(targetWeek);
+      return;
+    }
+    if (selectedJobId) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("job");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+    if (!people.some((person) => person.id === queryTarget)) return;
+    queryHandled.current = key;
+    setTargetNotice("");
+    setSelectedId(queryTarget);
+  }, [queryTarget, queryWeek, team.employees, selectedWeek, people, selectedJobId, searchParams, setSearchParams]);
   const reviewerRole = team.employees.find(
     (employee) => employee.id === reviewerId,
   )?.role;
-  const canReview =
-    canEdit ||
-    Boolean(reviewerRole && team.permissions[reviewerRole]?.review_timesheets);
+  const canEditRecords = canEdit && !preview;
+  const canReview = canEditRecords || Boolean(!preview && reviewerRole && team.permissions[reviewerRole]?.review_timesheets);
   const filtered = people.filter((person) => {
     if (filter === "Needs review") return person.status === "submitted";
     if (filter === "Approved") return person.status === "approved";
@@ -292,6 +335,7 @@ export function ReviewPanel({
       reason?: string;
     },
   ) {
+    if (preview) return;
     setBusy(true);
     setError("");
     setMessage("");
@@ -310,6 +354,7 @@ export function ReviewPanel({
     }
   }
   async function deleteEntry() {
+    if (preview) return;
     if (!deleteTarget) return;
     setBusy(true);
     setError("");
@@ -333,6 +378,7 @@ export function ReviewPanel({
     }
   }
   async function submitForReview(person: PersonWeek) {
+    if (preview) return;
     if (selectedJobId) return;
     if (person.entries.some((entry) => !entry.ended_at)) {
       setError("Clock out all running entries before submitting this week.");
@@ -356,6 +402,7 @@ export function ReviewPanel({
     }
   }
   async function approveAll() {
+    if (preview) return;
     if (selectedJobId) return;
     setBusy(true);
     setBatchResult("");
@@ -398,7 +445,7 @@ export function ReviewPanel({
       entry.status !== "draft" ||
       selected?.locked ||
       !entry.ended_at ||
-      !canEdit
+      !canEdit || preview
     )
       return null;
     return (
@@ -507,7 +554,7 @@ export function ReviewPanel({
           </strong>
         </p>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          {canEdit &&
+          {canEditRecords &&
             !person.locked &&
             person.entries.some(
               (entry) => entry.status === "draft" && !!entry.ended_at,
@@ -654,6 +701,7 @@ export function ReviewPanel({
   return (
     <section className={card} aria-labelledby="review-weekly-title">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 p-4 backdrop-blur sm:p-5">
+        {targetNotice && <p role="status" className="mb-3 rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">{targetNotice}</p>}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2
@@ -1067,7 +1115,7 @@ export function ReviewPanel({
               )}
             </div>
             <footer className="sticky bottom-0 flex flex-wrap justify-end gap-2 border-t border-border bg-background p-4 sm:p-5">
-              {canEdit &&
+              {canEditRecords &&
                 !selected.locked &&
                 selected.entries.some(
                   (entry) => entry.status === "draft" && !!entry.ended_at,

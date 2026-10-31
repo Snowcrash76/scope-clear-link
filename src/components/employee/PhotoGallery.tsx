@@ -1,9 +1,10 @@
 import { Camera } from "lucide-react";
 import { portalRequest } from "@/hooks/useEmployeePortal";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 import { toast } from "sonner";
 import type { PortalDocument } from "../../../shared/employeePortal";
 
-async function openCapabilityUrl(path: string) {
+async function openCapabilityUrl(path: string, assistanceId?: string | null) {
   const viewer = window.open("about:blank", "_blank");
   if (viewer) viewer.opener = null;
   try {
@@ -16,6 +17,7 @@ async function openCapabilityUrl(path: string) {
       path,
       undefined,
       "GET",
+      { assistanceId },
     );
     viewer.location.href = response.url;
   } catch (error) {
@@ -42,6 +44,7 @@ export function PhotoGallery({
   documents: PortalDocument[];
   employee?: boolean;
 }) {
+  const assistance = useEmployeeAssistance();
   const photos = documents.filter(
     (document) =>
       (document.purpose || "").toLowerCase().includes("photo") ||
@@ -61,7 +64,7 @@ export function PhotoGallery({
               key={document.id}
               className="min-h-20 rounded-xl border border-border p-3 text-left hover:bg-muted"
               onClick={() =>
-                void openCapabilityUrl(`${prefix}/documents/${document.id}/url`)
+                void openCapabilityUrl(`${prefix}/documents/${document.id}/url`, assistance.memberId)
               }
             >
               <span className="block truncate text-sm font-semibold">

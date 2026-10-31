@@ -40,12 +40,15 @@ import { PortalLayout } from "./PortalLayout";
 import { PageTitle } from "./PageTitleView";
 import { Empty } from "./Empty";
 import { AssignmentCard } from "./AssignmentCard";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 
 export function EmployeeHome({ week = false }: { week?: boolean }) {
   const path = "/employee/bootstrap";
   const q = usePortal<EmployeeBootstrap>(path);
   const refresh = useRefreshPortal();
   const nav = useNavigate();
+  const assistance = useEmployeeAssistance();
+  const readOnly = assistance.active;
   const data = q.data;
   const [busy, setBusy] = useState<string | null>(null);
   const [gpsConsent, setGpsConsent] = useState(false);
@@ -87,6 +90,7 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
         )
       : undefined;
   async function clockIn(project_id: string) {
+    if (readOnly) return;
     setBusy(project_id);
     try {
       const gps = await getGps();
@@ -103,6 +107,7 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
   }
   async function clockOut(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (readOnly) return;
     if (!running) return;
     const break_minutes = Number(breakMinutes);
     if (
@@ -145,7 +150,7 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
               : "Your next job, contact details and work clock."
           }
           action={
-            <Link className={outline} to="/employee/timesheets">
+            <Link className={outline} to={assistance.href("/employee/timesheets")}>
               <Clock3 className="h-4 w-4" />
               Timesheets
             </Link>
@@ -188,15 +193,15 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
                   </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                  <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
+                  {!readOnly && <label className="flex min-h-11 items-center gap-2 text-xs text-muted-foreground">
                     <input
                       type="checkbox"
                       checked={gpsConsent}
                       onChange={(e) => setGpsConsent(e.target.checked)}
                     />
                     Include GPS
-                  </label>
-                  {running ? (
+                  </label>}
+                  {readOnly ? <span className="rounded-full border border-warning/40 px-3 py-2 text-xs font-semibold text-muted-foreground">Existing shift shown · read-only</span> : running ? (
                     <Button
                       className={`${btn} bg-destructive text-destructive-foreground hover:bg-destructive/90`}
                       onClick={() => {
@@ -226,19 +231,19 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
                     key={a.id}
                     assignment={a}
                     job={data?.jobs.find((j) => j.id === a.project_id)}
-                    onOpen={() => nav(`/employee/jobs/${a.project_id}`)}
-                    onClock={!running ? () => clockIn(a.project_id) : undefined}
+                    onOpen={() => nav(assistance.href(`/employee/jobs/${a.project_id}`))}
+                    onClock={!readOnly && !running ? () => clockIn(a.project_id) : undefined}
                     busy={busy === a.project_id}
                   />
                 ))}
               </div>
             )}
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link className={outline} to="/employee/week">
+              <Link className={outline} to={assistance.href("/employee/week")}>
                 <CalendarDays className="h-4 w-4" />
                 Upcoming work
               </Link>
-              <Link className={outline} to="/employee/notifications">
+              <Link className={outline} to={assistance.href("/employee/notifications")}>
                 <Bell className="h-4 w-4" />
                 Updates
               </Link>
@@ -246,7 +251,7 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
           </>
         )}
       </PortalLayout>
-      <Dialog
+      {!readOnly && <Dialog
         open={clockOutOpen}
         onOpenChange={(open) => {
           if (!clockOutBusy) setClockOutOpen(open);
@@ -317,7 +322,7 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
             </DialogFooter>
           </form>
         </DialogContent>
-      </Dialog>
+      </Dialog>}
     </>
   );
 }

@@ -10,7 +10,14 @@ export const defaultPermissions: Record<EmployeeRole, OperationalPermissions> = 
 export interface PortalEmployee {
   id: string; name: string; email: string; role: EmployeeRole; active: boolean; auth_user_id?: string | null; archived_at?: string | null;
 }
+export interface PortalAssistance {
+  ownerId: string;
+  memberId: string;
+  status: 'active' | 'setup_required' | 'inactive' | 'removed';
+  readOnly: true;
+}
 export interface PortalSession {
+  assistance?: PortalAssistance;
   employee: PortalEmployee | null; canManageTeam: boolean; setupRequired?: boolean;
 }
 export interface PortalJob {

@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { ZodError } from 'zod';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { jobCostClient, CostApiError } from './jobCostAccess';
-import { defaultPermissions, type EmployeeRole, type OperationalPermissions } from '../shared/employeePortal';
+import { defaultPermissions, type EmployeeRole, type OperationalPermissions, type PortalAssistance } from '../shared/employeePortal';
 
 export const safeJobColumns = 'id,name,client_name,client_address,client_phone,employee_notes';
 export const safeEntryColumns = 'id,employee_id,project_id,work_date,started_at,ended_at,break_minutes,notes,status,paid_minutes,created_at';
@@ -37,7 +37,45 @@ export async function portalRows<T = any>(build: () => any): Promise<T[]> {
     if (!data || data.length < 500) return result;
   }
 }
-export type PortalActor = { userId: string; employee: any | null; ownerId: string; canManageTeam: boolean; setupRequired?: boolean };
+export type PortalActor = { userId: string; employee: any | null; ownerId: string; canManageTeam: boolean; setupRequired?: boolean; assistance?: PortalAssistance };
+/** The authenticated actor remains the owner. Only employee-facing reads use a
+ * verified target's effective permissions; this never mints an employee session. */
+export async function employeePreviewActor(
+  db: SupabaseClient, actor: PortalActor, memberId: string, allowUnavailable = false,
+): Promise<PortalActor> {
+  requireTeam(actor);
+  if (actor.employee || actor.ownerId !== actor.userId) {
+    throw new CostApiError(403, 'Only the business owner can preview employee portals.');
+  }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(memberId)) {
+    throw new CostApiError(400, 'Choose a valid team member.');
+  }
+  const { data: employee, error } = await db.from('employees').select('*')
+    .eq('id', memberId).eq('owner_id', actor.userId).maybeSingle();
+  portalDbCheck(error);
+  if (!employee) throw new CostApiError(404, 'Team member not found or unavailable.');
+  const status: PortalAssistance['status'] = employee.archived_at ? 'removed'
+    : !employee.active ? 'inactive' : !employee.auth_user_id ? 'setup_required' : 'active';
+  if (!allowUnavailable && status !== 'active') {
+    throw new CostApiError(409, 'This employee does not currently have an active portal. Check their account setup from Team.');
+  }
+  return {
+    userId: actor.userId, ownerId: actor.userId, employee,
+    canManageTeam: employee.role === 'admin',
+    assistance: { ownerId: actor.userId, memberId: employee.id, status, readOnly: true },
+  };
+}
+export async function employeePreviewRequest(
+  db: SupabaseClient, actor: PortalActor, memberId: string, method: string, path: string,
+) {
+  const allowed = /^\/employee\/(?:session|bootstrap|reviews)$/.test(path) ||
+    /^\/employee\/jobs\/[0-9a-f-]+$/i.test(path) ||
+    /^\/employee\/documents\/[0-9a-f-]+\/url$/i.test(path) || path === '/schedule';
+  if (method !== 'GET' || !allowed) {
+    throw new CostApiError(403, 'Employee portal preview is read-only. Use Help edit to make changes as yourself.');
+  }
+  return employeePreviewActor(db, actor, memberId, path === '/employee/session');
+}
 export async function portalActor(db: SupabaseClient, userId: string): Promise<PortalActor> {
   const { data, error } = await db.from('employees').select('*').eq('auth_user_id', userId).maybeSingle();
   // Existing owner routes keep working before the additive migration. There
@@ -89,7 +127,12 @@ export const portalHandler = (handler: Handler) => async (req: Request, res: Res
     const db = jobCostClient();
     const { data: { user }, error } = await db.auth.getUser(auth.slice(7));
     if (error || !user) throw new CostApiError(401, 'Your session has expired. Please sign in again.');
-    const actor = await portalActor(db, user.id);
+    let actor = await portalActor(db, user.id);
+    const preview = req.headers['x-employee-preview'];
+    if (preview !== undefined) {
+      if (typeof preview !== 'string' || !preview) throw new CostApiError(400, 'Choose a valid team member.');
+      actor = await employeePreviewRequest(db, actor, preview, req.method, req.path);
+    }
     res.setHeader('Cache-Control', 'no-store');
     res.json(await handler(req, db, actor));
   } catch (error) { portalError(res, error); }
@@ -103,13 +146,14 @@ export function portalError(res: Response, error: unknown) {
 }
 /** Authenticated download capabilities are re-authorised on every file request,
  * unlike Supabase signed URLs which survive assignment revocation until expiry. */
-export function fileCapability(actorId: string, documentId: string, employeeOnly = false): string {
+export function fileCapability(actorId: string, documentId: string, employeeOnly = false, previewEmployeeId?: string): string {
   const key = process.env.SESSION_SECRET;
   if (!key) throw new CostApiError(503, 'Private file access is not configured.');
-  const payload = Buffer.from(JSON.stringify({ actorId, documentId, employeeOnly, exp: Date.now() + 5 * 60 * 1000 })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ actorId, documentId, employeeOnly,
+    ...(previewEmployeeId ? { previewEmployeeId } : {}), exp: Date.now() + 5 * 60 * 1000 })).toString('base64url');
   return `${payload}.${createHmac('sha256', key).update(payload).digest('base64url')}`;
 }
-export function verifyFileCapability(token: string): { actorId: string; documentId: string; employeeOnly: boolean } {
+export function verifyFileCapability(token: string): { actorId: string; documentId: string; employeeOnly: boolean; previewEmployeeId?: string } {
   const key = process.env.SESSION_SECRET;
   if (!key || token.length > 1500) throw new CostApiError(403, 'File link is invalid or expired.');
   const [payload, supplied, extra] = token.split('.');
@@ -119,5 +163,7 @@ export function verifyFileCapability(token: string): { actorId: string; document
   let data: any;
   try { data = JSON.parse(Buffer.from(payload, 'base64url').toString()); } catch { throw new CostApiError(403, 'File link is invalid or expired.'); }
   if (data.exp < Date.now() || typeof data.actorId !== 'string' || typeof data.documentId !== 'string') throw new CostApiError(403, 'File link is invalid or expired.');
+  if (data.previewEmployeeId !== undefined && (!data.employeeOnly || typeof data.previewEmployeeId !== 'string' ||
+    !/^[0-9a-f-]{36}$/i.test(data.previewEmployeeId))) throw new CostApiError(403, 'File link is invalid or expired.');
   return data;
 }

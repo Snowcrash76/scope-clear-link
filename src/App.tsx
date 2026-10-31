@@ -21,6 +21,7 @@ import { VariationsPage } from "./components/project-manage/VariationsPage";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import EmployeeAssistancePage from "./pages/EmployeeAssistancePage";
 import ResetPassword from "./pages/ResetPassword";
 import AdminDashboard from "./pages/AdminDashboard";
 import { Navigate } from "react-router-dom";
@@ -106,7 +107,8 @@ const App = () => (
               </ProtectedRoute>
             } />
             <Route path="/admin/invites" element={<Navigate to="/admin?tab=invites" replace />} />
-            <Route path="/employee/login" element={<EmployeeLogin />} />
+              <Route path="/team/assist/:memberId/*" element={<EmployeeAssistancePage />} />
+              <Route path="/employee/login" element={<EmployeeLogin />} />
             <Route path="/employee/accept" element={<EmployeeAccept />} />
             <Route path="/employee" element={<EmployeeGate><EmployeeHome /></EmployeeGate>} />
             <Route path="/employee/week" element={<EmployeeGate><EmployeeHome week /></EmployeeGate>} />

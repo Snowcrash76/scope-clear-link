@@ -17,6 +17,7 @@ import type {
   PortalSubmission,
 } from "../../../shared/employeePortal";
 import { weekStart } from "../../../shared/employeePortal";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 import {
   card,
   primary,
@@ -37,6 +38,7 @@ export function EmployeeReviewQueue({
   timezone: string;
 }) {
   const q = usePortal<PortalReviews>("/employee/reviews", enabled);
+  const readOnly = useEmployeeAssistance().active;
   const refresh = useRefreshPortal();
   const [selected, setSelected] = useState<PortalSubmission | null>(null);
   const [decision, setDecision] = useState<"approved" | "rejected" | "reopen">(
@@ -58,6 +60,7 @@ export function EmployeeReviewQueue({
   }
   async function review(e: React.FormEvent) {
     e.preventDefault();
+    if (readOnly) return;
     if (!selected) return;
     if (decision !== "approved" && !comment.trim()) {
       setError("Add a comment before denying or reopening this week.");
@@ -157,7 +160,7 @@ export function EmployeeReviewQueue({
                     {s.status}
                   </span>
                 </div>
-                {s.status === "submitted" ? (
+                {!readOnly && s.status === "submitted" ? (
                   <div className="flex flex-wrap gap-2">
                     <Button
                       className={outline}
@@ -179,14 +182,14 @@ export function EmployeeReviewQueue({
                       Approve week
                     </Button>
                   </div>
-                ) : (
+                ) : !readOnly ? (
                   <Button
                     className={outline}
                     onClick={() => begin(s, "reopen")}
                   >
                     Reopen week
                   </Button>
-                )}
+                ) : <span className="text-sm text-muted-foreground">Review view only</span>}
               </div>
               <div className="mt-3 space-y-2">
                 {entries.map((entry) => (
@@ -225,7 +228,7 @@ export function EmployeeReviewQueue({
           No team submissions need review.
         </div>
       )}
-      {selected && (
+      {selected && !readOnly && (
         <div
           role="presentation"
           className="fixed inset-0 z-50 grid place-items-center bg-muted/45 p-4"

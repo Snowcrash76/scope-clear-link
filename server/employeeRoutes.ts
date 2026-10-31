@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { CostApiError, jobCostClient } from './jobCostAccess';
 import {
-  assignedJobs, fileCapability, portalActor, portalDbCheck, portalError, portalHandler, portalMutate, ownEmployeeHourlyRate,
+  assignedJobs, fileCapability, portalActor, employeePreviewActor, portalDbCheck, portalError, portalHandler, portalMutate, ownEmployeeHourlyRate,
   portalPermissions, portalRows, requireAssigned, requireEmployee, requireTeam,
   safeDocumentColumns, safeEmployeeColumns, safeEntryColumns, safeJobColumns, verifyFileCapability, type PortalActor,
 } from './employeeAccess';
@@ -73,6 +73,7 @@ export function createEmployeeRouter() {
   router.get('/employee/session', portalHandler(async (_req, _db, actor) => ({
     employee: actor.employee ? publicEmployee(actor.employee) : null,
     canManageTeam: actor.canManageTeam, setupRequired: !!actor.setupRequired,
+    ...(actor.assistance ? { assistance: actor.assistance } : {}),
   })));
   router.get('/employee/bootstrap', portalHandler(async (_req, db, actor) => {
     const employee = requireEmployee(actor);
@@ -266,12 +267,13 @@ export function createEmployeeRouter() {
     if (prefix === 'team') requireTeam(actor);
     else { requireEmployee(actor); await requireAssigned(db, actor, (await authorisedEmployeeDocument(db, actor, documentId)).project_id); }
     await (prefix === 'employee' ? authorisedEmployeeDocument(db, actor, documentId) : authorisedDocument(db, actor, documentId));
-    return { url: `/api/employee/files/${fileCapability(actor.userId, documentId, prefix === 'employee')}` };
+    return { url: `/api/employee/files/${fileCapability(actor.userId, documentId, prefix === 'employee', actor.assistance?.memberId)}` };
   }));
   router.get('/employee/files/:token', async (req, res) => {
     try {
-      const { actorId, documentId, employeeOnly } = verifyFileCapability(String(req.params.token));
-      const db = jobCostClient(); const actor = await portalActor(db, actorId);
+      const { actorId, documentId, employeeOnly, previewEmployeeId } = verifyFileCapability(String(req.params.token));
+      const db = jobCostClient(); let actor = await portalActor(db, actorId);
+      if (previewEmployeeId) actor = await employeePreviewActor(db, actor, previewEmployeeId);
       // This capability remembers whether it was issued for employee or team
       // access through current document rights; employees still require current
       // assignment for ordinary field roles.

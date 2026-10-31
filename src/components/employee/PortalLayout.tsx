@@ -4,6 +4,8 @@ import { ArrowLeft, Bell, LogOut, Menu, X } from "lucide-react";
 import { usePortalSession } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
 import { BrandLogo } from "@/components/BrandLogo";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
+import { EmployeeAssistanceBanner } from "./EmployeeAssistanceBanner";
 
 import { roleLabels } from "../../../shared/employeePortal";
 import { shell, outline } from "./portalShared";
@@ -18,15 +20,21 @@ export function PortalLayout({
   management?: boolean;
   embedded?: boolean;
 }) {
-  const { employee, canManageTeam } = usePortalSession().data ?? {};
+  const { employee } = usePortalSession().data ?? {};
+  const assistance = useEmployeeAssistance();
   const { signOut } = useAuth();
   const location = useLocation().pathname;
   const [menu, setMenu] = useState(false);
   const navigate = useNavigate();
+  const preview = assistance.active;
+  const showManagement = management && !preview;
+  const href = assistance.href;
   const mainAppHref = employee ? "/employee" : "/dashboard";
-  const active = (href: string) =>
-    location === href || (href !== "/employee" && location.startsWith(href));
-  const items = management
+  const active = (normalPath: string) => {
+    const target = showManagement ? normalPath : href(normalPath);
+    return location === target || (normalPath !== "/employee" && location.startsWith(target));
+  };
+  const items = showManagement
     ? [
         ["/team", "Team"],
         ["/team/assignments", "Assignments"],
@@ -41,19 +49,19 @@ export function PortalLayout({
         ["/employee/timesheets", "Timesheets"],
         ["/employee/notifications", "Updates"],
       ];
-  if (embedded) return <div className="portal-shell">{children}</div>;
+  if (embedded) return <div className="portal-shell">{preview && !showManagement && <EmployeeAssistanceBanner />}{children}</div>;
   return (
     <div className={shell}>
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
-            to={management ? "/team" : "/employee"}
+            to={showManagement ? "/team" : href("/employee")}
             className="flex min-h-11 items-center gap-3"
           >
             <span>
               <BrandLogo variant="horizontal" className="w-36" />
               <small className="block text-xs uppercase tracking-[.14em] text-muted-foreground">
-                {management ? "Team desk" : "Field portal"}
+                {showManagement ? "Team desk" : "Field portal"}
               </small>
             </span>
           </Link>
@@ -64,7 +72,7 @@ export function PortalLayout({
             {items.map(([to, label]) => (
               <Link
                 key={to}
-                to={to}
+                to={showManagement ? to : href(to)}
                 className={`min-h-11 rounded-xl px-3.5 py-3 text-sm font-medium ${active(to) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
                 aria-current={active(to) ? "page" : undefined}
               >
@@ -73,9 +81,9 @@ export function PortalLayout({
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            {!management && (
+            {!showManagement && (
               <Link
-                to="/employee/notifications"
+                to={href("/employee/notifications")}
                 className={`${outline} relative !w-11 !px-0`}
                 aria-label="Notifications"
               >
@@ -83,7 +91,6 @@ export function PortalLayout({
                 <UnreadDot />
               </Link>
             )}
-            {management && !canManageTeam && null}
             <button
               className={`${outline} !w-11 !px-0 md:hidden`}
               aria-label="Open navigation"
@@ -91,7 +98,7 @@ export function PortalLayout({
             >
               {menu ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
-            <button
+            {!preview && <button
               className={`${outline} hidden sm:inline-flex`}
               onClick={async () => {
                 await signOut();
@@ -100,10 +107,10 @@ export function PortalLayout({
             >
               <LogOut className="h-4 w-4" />
               Sign out
-            </button>
+            </button>}
           </div>
         </div>
-        {management && canManageTeam && (
+        {showManagement && (
           <div className="border-t border-border">
             <div className="mx-auto max-w-6xl px-4 py-2 sm:px-6">
               <Link
@@ -121,14 +128,14 @@ export function PortalLayout({
             {items.map(([to, label]) => (
               <Link
                 key={to}
-                to={to}
+                to={showManagement ? to : href(to)}
                 onClick={() => setMenu(false)}
                 className={`${outline} justify-start`}
               >
                 {label}
               </Link>
             ))}
-            <button
+            {!preview && <button
               type="button"
               className={`${outline} col-span-2 justify-start`}
               onClick={async () => {
@@ -138,12 +145,13 @@ export function PortalLayout({
             >
               <LogOut className="h-4 w-4" />
               Sign out
-            </button>
+            </button>}
           </nav>
         )}
+        {preview && <div className="mx-auto max-w-6xl px-4 pt-2 sm:px-6"><EmployeeAssistanceBanner /></div>}
       </header>
       <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-9">
-        {!management && employee && (
+        {!showManagement && employee && !preview && (
           <div className="mb-6 flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">Signed in as</p>

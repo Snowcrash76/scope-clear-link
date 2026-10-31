@@ -31,9 +31,12 @@ import { LoadState } from "./LoadState";
 import { PortalLayout } from "./PortalLayout";
 import { PageTitle } from "./PageTitleView";
 import { PhotoGallery } from "./PhotoGalleryView";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 
 export function EmployeeJob() {
   const { jobId = "" } = useParams();
+  const assistance = useEmployeeAssistance();
+  const readOnly = assistance.active;
   const q = usePortal<EmployeeJobDetail>(`/employee/jobs/${jobId}`, !!jobId);
   const refresh = useRefreshPortal();
   const [file, setFile] = useState<File | null>(null);
@@ -42,6 +45,7 @@ export function EmployeeJob() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   async function savePhoto() {
+    if (readOnly) return;
     if (!file) return;
     setBusy(true);
     try {
@@ -56,6 +60,7 @@ export function EmployeeJob() {
     }
   }
   async function saveNote() {
+    if (readOnly) return;
     if (!note.trim()) return;
     setBusy(true);
     try {
@@ -74,7 +79,7 @@ export function EmployeeJob() {
   return (
     <PortalLayout>
       <Link
-        to="/employee"
+        to={assistance.href("/employee")}
         className="mb-5 inline-flex min-h-11 items-center text-sm font-semibold text-muted-foreground"
       >
         ← Back to Today
@@ -176,7 +181,7 @@ export function EmployeeJob() {
                 </section>
               </div>
               <div className="min-w-0 space-y-4">
-                <section className={`${card} min-w-0 p-5`}>
+                {!readOnly && <section className={`${card} min-w-0 p-5`}>
                   <div className="flex items-center gap-2">
                     <Camera className="h-4 w-4 text-muted-foreground" />
                     <h2 className="font-bold">Site photos</h2>
@@ -233,8 +238,8 @@ export function EmployeeJob() {
                       {busy ? "Uploading…" : "Add photo"}
                     </Button>
                   </div>
-                </section>
-                <section className={`${card} p-5`}>
+                </section>}
+                {!readOnly && <section className={`${card} p-5`}>
                   <h2 className="font-bold">Private update</h2>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Only your team can see this note.
@@ -253,7 +258,7 @@ export function EmployeeJob() {
                   >
                     Save update
                   </Button>
-                </section>
+                </section>}
                 <PhotoGallery documents={q.data.documents} employee />
                 <section className={`${card} p-5`}>
                   <h2 className="font-bold">Shared documents</h2>
@@ -267,6 +272,7 @@ export function EmployeeJob() {
                             onClick={() =>
                               void openCapabilityUrl(
                                 `/employee/documents/${d.id}/url`,
+                                assistance.memberId,
                               )
                             }
                             className="flex min-h-11 w-full items-center gap-3 rounded-xl border border-border px-3 text-left text-sm"

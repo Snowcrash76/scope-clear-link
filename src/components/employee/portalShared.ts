@@ -64,7 +64,7 @@ export const elapsed = (from: string, to: number) => {
 export const getError = (e: unknown) =>
   e instanceof Error ? e.message : "Something went wrong. Please try again.";
 
-export async function openCapabilityUrl(path: string) {
+export async function openCapabilityUrl(path: string, assistanceId?: string | null) {
   const viewer = window.open("about:blank", "_blank");
   if (viewer) viewer.opener = null;
   try {
@@ -76,6 +76,7 @@ export async function openCapabilityUrl(path: string) {
       path,
       undefined,
       "GET",
+      { assistanceId },
     );
     viewer.location.href = response.url;
   } catch (error) {

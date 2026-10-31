@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, CalendarDays, Clock3, ExternalLink, List, MapPin
 import { localDate } from "../../../shared/employeePortal";
 import { usePortal, usePortalSession } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 import { PortalLayout } from "@/components/employee/PortalLayout";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
@@ -23,9 +24,10 @@ function ScheduleSkeleton() {
   return <div className="sc-skeleton" aria-label="Loading schedule">{Array.from({ length: 5 }, (_, i) => <i key={i} />)}</div>;
 }
 
-function DetailDialog({ event, data, events, onClose, triggerRef }: {
+function DetailDialog({ event, data, events, onClose, triggerRef, previewMemberId, href }: {
   event: CalendarEvent; data: ScheduleData; events: CalendarEvent[]; onClose: () => void;
   triggerRef: MutableRefObject<HTMLElement | null>;
+  previewMemberId?: string | null; href: (path: string) => string;
 }) {
   const conflicts = appointmentConflicts(event, events);
   const address = event.job?.client_address;
@@ -47,7 +49,7 @@ function DetailDialog({ event, data, events, onClose, triggerRef }: {
         {conflicts.length > 0 && <aside className="sc-conflict"><b>Possible schedule overlap · local times</b><p>These displayed wall-clock times overlap. Repeated or missing times at daylight-saving transitions are not resolved to UTC in this read-only view.</p>{conflicts.map((conflict, index) => <p key={`${conflict.appointment}-${index}`}>{conflict.employee} is also assigned to {conflict.appointment} at {conflict.time}.</p>)}</aside>}
       </div>
       <footer className="sc-dialog-foot">
-        {event.job ? <Link className="sc-manage-link" to={data.canManage ? `/team/jobs/${event.job.id}/staff` : `/employee/jobs/${event.job.id}`}>{data.canManage ? "Open job assignment management" : "Open job details"} <ArrowRight /></Link> : <span className="sc-readonly-note">Schedule details are read-only.</span>}
+        {event.job && data.canManage ? <Link className="sc-manage-link" to={`/team/jobs/${event.job.id}/staff`}>Open job assignment management <ArrowRight /></Link> : event.job && (!previewMemberId || event.assignments.some((assignment) => assignment.employee_id === previewMemberId)) ? <Link className="sc-manage-link" to={href(`/employee/jobs/${event.job.id}`)}>Open job details <ArrowRight /></Link> : <span className="sc-readonly-note">Schedule details are read-only.</span>}
         <Button variant="outline" className="min-h-11" onClick={onClose}>Done</Button>
       </footer>
     </DialogContent>
@@ -68,6 +70,8 @@ function EventCard({ event, data, onOpen, compact = false }: {
 export default function Schedule() {
   const { user, loading: authLoading } = useAuth();
   const session = usePortalSession(!!user);
+  const assistance = useEmployeeAssistance();
+  const preview = assistance.active;
   const [searchParams] = useSearchParams();
   const [view, setView] = useState<ScheduleView>(() => window.matchMedia("(max-width: 767px)").matches ? "day" : "week");
   const [layout, setLayout] = useState<ScheduleLayout>(() => (localStorage.getItem("schedule-layout") as ScheduleLayout) || "team");
@@ -82,13 +86,14 @@ export default function Schedule() {
   useEffect(() => { localStorage.setItem("schedule-layout", layout); }, [layout]);
   const data = query.data;
   const events = useMemo(() => data ? toCalendarEvents(data) : [], [data]);
+  const isManager = Boolean(data?.canManage && !preview);
   const visibleEvents = useMemo(() => events.filter((event) => !jobFilter || event.appointment.project_id === jobFilter), [events, jobFilter]);
   const dates = range.dates;
   const todayKey = data ? new Intl.DateTimeFormat("en-CA", { timeZone: data.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()) : dateKey(new Date());
   const selectedDayEvents = visibleEvents.filter((event) => event.appointment.date === dateKey(selectedDate) || (event.appointment.date < dateKey(selectedDate) && event.endDate >= dateKey(selectedDate)));
   // The endpoint is range-scoped: this is only a view-local list, never a claim
   // that a job has no booking outside the dates currently loaded.
-  const jobsWithoutBookingInView = data ? jobsWithoutBookingInRange(data.jobs, visibleEvents) : [];
+  const jobsWithoutBookingInView = data ? jobsWithoutBookingInRange(data.jobs, visibleEvents).filter((job) => !preview || data.assignments.some((assignment) => assignment.employee_id === assistance.memberId && assignment.project_id === job.id)) : [];
 
   const openEvent = (event: CalendarEvent, trigger?: HTMLElement) => {
     if (trigger) bookingTriggerRef.current = trigger;
@@ -139,8 +144,8 @@ export default function Schedule() {
         <button className={`sc-list-toggle${listMode ? " is-active" : ""}`} aria-label="Toggle list view" aria-pressed={listMode} onClick={() => setListMode((current) => !current)}><List />List</button>
       </div>
       <div className="sc-toolbar-bottom"><span className="sc-zone"><Clock3 />{data?.timezone ?? "Australia/Sydney"} · local business time</span>
-        {data?.canManage && <div className="sc-segment sc-layout-toggle" aria-label="Group schedule by">{(["team", "job"] as const).map((item) => <button key={item} className={layout === item ? "is-active" : ""} onClick={() => setLayout(item)}>{item === "team" ? "By team" : "By job"}</button>)}</div>}
-        {jobFilter && <Link className="sc-filter-chip" to="/schedule">Filtered job · {data?.jobs.find((job) => job.id === jobFilter)?.name ?? "Selected job"} <X /></Link>}
+        {isManager && <div className="sc-segment sc-layout-toggle" aria-label="Group schedule by">{(["team", "job"] as const).map((item) => <button key={item} className={layout === item ? "is-active" : ""} onClick={() => setLayout(item)}>{item === "team" ? "By team" : "By job"}</button>)}</div>}
+        {jobFilter && <Link className="sc-filter-chip" to={assistance.href("/schedule")}>Filtered job · {data?.jobs.find((job) => job.id === jobFilter)?.name ?? "Selected job"} <X /></Link>}
       </div>
     </section>
 
@@ -161,10 +166,10 @@ export default function Schedule() {
                 {allByDate(day).length > 3 && <span className="sc-month-more">+{allByDate(day).length - 3} more</span>}
               </div>)}
             </div>
-            : <div className={`sc-grid ${layout === "job" && data.canManage ? "by-job" : ""}`}>
-              <div className="sc-grid-head"><span className="sc-row-label">{layout === "job" && data.canManage ? "JOB" : "TEAM"}</span>{dates.map((day) => <div key={dateKey(day)}>{dateHeader(day)}</div>)}</div>
-              {(layout === "job" && data.canManage ? data.jobs.map((job) => ({ id: job.id, name: job.name })) : data.employees.map((person) => ({ id: person.id, name: person.name }))).map((row) => <div className="sc-grid-row" key={row.id}><div className="sc-row-label">{row.name}</div>{dates.map((day) => {
-                const cellEvents = allByDate(day).filter((event) => layout === "job" && data.canManage ? event.appointment.project_id === row.id : event.assignments.some((assignment) => assignment.employee_id === row.id));
+            : <div className={`sc-grid ${layout === "job" && isManager ? "by-job" : ""}`}>
+              <div className="sc-grid-head"><span className="sc-row-label">{layout === "job" && isManager ? "JOB" : "TEAM"}</span>{dates.map((day) => <div key={dateKey(day)}>{dateHeader(day)}</div>)}</div>
+              {(layout === "job" && isManager ? data.jobs.map((job) => ({ id: job.id, name: job.name })) : data.employees.filter((person) => !preview || person.id === assistance.memberId).map((person) => ({ id: person.id, name: person.name }))).map((row) => <div className="sc-grid-row" key={row.id}><div className="sc-row-label">{row.name}</div>{dates.map((day) => {
+                const cellEvents = allByDate(day).filter((event) => layout === "job" && isManager ? event.appointment.project_id === row.id : event.assignments.some((assignment) => assignment.employee_id === row.id));
                 return <div className="sc-grid-cell" key={dateKey(day)} tabIndex={0} aria-label={`${row.name}, ${format(day, "EEEE d MMMM")}, ${cellEvents.length} bookings`} onKeyDown={(event) => onCellKey(event, cellEvents)}>
                   {cellEvents.map((event) => <EventCard key={event.appointment.id} event={event} data={data} onOpen={(trigger) => openEvent(event, trigger)} />)}
                   {!cellEvents.length && <span className="sc-cell-empty">—</span>}
@@ -174,16 +179,16 @@ export default function Schedule() {
             </div>}
         </section>
         <aside className="sc-unscheduled"><div className="sc-panel-heading"><div><span className="sc-eyebrow">CURRENT DATE RANGE</span><h2>Jobs without a booking in this view</h2></div><span>{jobsWithoutBookingInView.length}</span></div><p className="sc-panel-intro">A read-only job list for this date range. Jobs may have bookings outside the dates shown.</p>
-          {jobsWithoutBookingInView.length ? <ul>{jobsWithoutBookingInView.map((job) => <li key={job.id}><span className="sc-job-dot" style={{ background: jobColor(job.id).foreground }} /><div><b>{job.name}</b>{job.client_name && <small>{job.client_name}</small>}<Link to={data.canManage ? `/team/jobs/${job.id}/staff` : `/employee/jobs/${job.id}`}>Open job assignment details <ArrowRight /></Link></div></li>)}</ul> : <div className="sc-empty-small">Each listed job has a booking in this range.</div>}
+          {jobsWithoutBookingInView.length ? <ul>{jobsWithoutBookingInView.map((job) => <li key={job.id}><span className="sc-job-dot" style={{ background: jobColor(job.id).foreground }} /><div><b>{job.name}</b>{job.client_name && <small>{job.client_name}</small>}{isManager ? <Link to={`/team/jobs/${job.id}/staff`}>Open job assignment details <ArrowRight /></Link> : <Link to={assistance.href(`/employee/jobs/${job.id}`)}>Open job assignment details <ArrowRight /></Link>}</div></li>)}</ul> : <div className="sc-empty-small">Each listed job has a booking in this range.</div>}
           <p className="sc-panel-foot">Schedule creation and changes remain in existing assignment management.</p>
         </aside>
       </div>
-      <div className="sc-mobile-management"><span>Read-only view</span><Link to={data.canManage ? (jobFilter ? `/team/assignments?job=${jobFilter}` : "/team/assignments") : "/employee"}>{data.canManage ? "Open assignment management" : "Back to employee home"} <ArrowRight /></Link></div>
+      <div className="sc-mobile-management"><span>Read-only view</span>{isManager ? <Link to={jobFilter ? `/team/assignments?job=${jobFilter}` : "/team/assignments"}>Open assignment management <ArrowRight /></Link> : <Link to={assistance.href("/employee")}>Back to employee home <ArrowRight /></Link>}</div>
       <footer className="sc-legend"><span className="sc-legend-mark" />Stable job colour · “BOOKING” label · crew initials when available</footer>
     </>}
-      {selectedEvent && data && <DetailDialog event={selectedEvent} data={data} events={visibleEvents} onClose={() => setSelectedEvent(null)} triggerRef={bookingTriggerRef} />}
+      {selectedEvent && data && <DetailDialog event={selectedEvent} data={{ ...data, canManage: isManager }} events={visibleEvents} onClose={() => setSelectedEvent(null)} triggerRef={bookingTriggerRef} previewMemberId={preview ? assistance.memberId : null} href={assistance.href} />}
   </main>;
-  return session.data.employee
+  return preview || session.data.employee
     ? <PortalLayout>{calendar}</PortalLayout>
     : <AppShell>{calendar}</AppShell>;
 }

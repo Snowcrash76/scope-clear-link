@@ -57,6 +57,12 @@ Company document library schema, permissions, storage rules and acknowledgement 
 
 **How to apply:** Do not treat approval of those presentation changes as library approval. Include any newly needed document classification, independent client-sharing or durable client-send/view tracking fields in the proposal rather than silently adding storage or permissions.
 
+Owner assistance must keep the owner's real session and provide a read-only employee-facing preview, not impersonation.
+
+**Why:** The approved assistance approach lets the business owner help staff with setup and corrections without employee passwords, session switching or actions falsely attributed to an employee.
+
+**How to apply:** Restrict preview access to the business owner and a currently verified owned member. Show true inactive, removed or incomplete setup states. Keep member context throughout preview navigation and private-file access. Explicit Help edit actions leave preview for existing owner tools; preserve timesheet locking, reversal rules and owner audit attribution. Isolate preview data by both real account and selected member, and do not display stale private data during fresh access checks.
+
 Timesheet review belongs under Team by person/week, with jobs as a display filter rather than a job-page timesheet section.
 
 **Why:** The user explained that jobs can last one day or many months, so weekly payroll review under Team is simpler.

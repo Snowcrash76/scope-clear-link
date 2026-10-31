@@ -57,6 +57,7 @@ import { PageTitle } from "./PageTitleView";
 import { EmployeeReviewQueue } from "./EmployeeReviewQueue";
 import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
 import { InfoPopover } from "@/components/timesheets/InfoPopover";
+import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 
 const statusFor = (value: string | undefined): TimesheetStatus =>
   value === "submitted" || value === "approved" || value === "rejected"
@@ -66,6 +67,8 @@ const statusFor = (value: string | undefined): TimesheetStatus =>
 const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))]`;
 
 export function EmployeeTimesheets() {
+  const assistance = useEmployeeAssistance();
+  const readOnly = assistance.active;
   const q = usePortal<EmployeeBootstrap>("/employee/bootstrap");
   const refresh = useRefreshPortal();
   const [mode, setMode] = useState<"manual" | "duration">("manual");
@@ -141,6 +144,7 @@ export function EmployeeTimesheets() {
     }
   }
   function openForm(entry?: PortalTimeEntry, trigger?: HTMLElement) {
+    if (readOnly) return;
     if (trigger) entryFormTriggerRef.current = trigger;
     setError("");
     setMessage("");
@@ -199,6 +203,7 @@ export function EmployeeTimesheets() {
       : undefined;
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (readOnly) return;
     setError("");
     setMessage("");
     if (!data) return;
@@ -251,6 +256,7 @@ export function EmployeeTimesheets() {
     }
   }
   async function submitWeek() {
+    if (readOnly) return;
     setBusy(true);
     setError("");
     setMessage("");
@@ -266,6 +272,7 @@ export function EmployeeTimesheets() {
     }
   }
   async function remove() {
+    if (readOnly) return;
     if (!deleteTarget) return;
     setBusy(true);
     setError("");
@@ -287,6 +294,7 @@ export function EmployeeTimesheets() {
   }
   async function clockOut(event: FormEvent) {
     event.preventDefault();
+    if (readOnly) return;
     if (!running) return;
     const break_minutes = Number(clockOutBreak);
     if (!Number.isInteger(break_minutes) || break_minutes < 0) {
@@ -331,7 +339,7 @@ export function EmployeeTimesheets() {
         title="Timesheets"
         description="Record site hours, check your week and submit for review."
         action={
-          <Link to="/employee/week" className={outline}>
+          <Link to={assistance.href("/employee/week")} className={outline}>
             <CalendarDays className="h-4 w-4" />
             My schedule
           </Link>
@@ -363,7 +371,7 @@ export function EmployeeTimesheets() {
                     </p>
                   </div>
                 </div>
-                <Button
+                {!readOnly && <Button
                   type="button"
                   ref={clockOutTriggerRef}
                   className={primary}
@@ -373,7 +381,7 @@ export function EmployeeTimesheets() {
                   }}
                 >
                   Clock out
-                </Button>
+                </Button>}
               </section>
             )}
             {message && (
@@ -415,7 +423,7 @@ export function EmployeeTimesheets() {
                     </InfoPopover>
                   </div>
                   <TimesheetStatusBadge status={statusFor(submitted?.status)} />
-                  {canSubmit && (
+                  {canSubmit && !readOnly && (
                     <Button
                       className={primary}
                       disabled={busy}
@@ -488,7 +496,7 @@ export function EmployeeTimesheets() {
                       <div className="divide-y divide-border">
                         {dayEntries.map((entry) => {
                           const editable =
-                            entry.status === "draft" &&
+                            !readOnly && entry.status === "draft" &&
                             !!entry.ended_at &&
                             !weekLocked;
                           const noteExpanded = expandedNotes.includes(entry.id);
@@ -645,7 +653,7 @@ export function EmployeeTimesheets() {
                 </p>
               )}
             </section>
-            <Button
+            {!readOnly && <Button
               type="button"
               aria-label="Add time"
               className={`${primary} fixed bottom-4 left-4 right-4 z-20 shadow-elevated sm:hidden`}
@@ -655,20 +663,20 @@ export function EmployeeTimesheets() {
                 +
               </span>
               Add time
-            </Button>
-            <Button
+            </Button>}
+            {!readOnly && <Button
               type="button"
               className={`${primary} fixed bottom-6 right-8 z-20 hidden shadow-elevated sm:inline-flex`}
               onClick={(event) => openForm(undefined, event.currentTarget)}
             >
               Add time
-            </Button>
+            </Button>}
             <EmployeeReviewQueue
               enabled={data.permissions.review_timesheets}
               employeeId={data.employee.id}
               timezone={data.timezone}
             />
-            {formOpen && (
+            {formOpen && !readOnly && (
               <div
                 className="fixed inset-0 z-40 bg-foreground/35"
                 onMouseDown={(event) =>
@@ -863,7 +871,7 @@ export function EmployeeTimesheets() {
                 </section>
               </div>
             )}
-            {clockOutOpen && (
+            {clockOutOpen && !readOnly && (
               <div
                 className="fixed inset-0 z-50 grid place-items-center bg-foreground/35 p-4"
                 onMouseDown={(event) =>
@@ -939,7 +947,7 @@ export function EmployeeTimesheets() {
                 </form>
               </div>
             )}
-            {deleteTarget && (
+            {deleteTarget && !readOnly && (
               <div
                 className="fixed inset-0 z-50 grid place-items-center bg-foreground/35 p-4"
                 onMouseDown={(event) =>

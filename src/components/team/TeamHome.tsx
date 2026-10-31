@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Link, Navigate, useLocation, useParams } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, Navigate, useLocation, useParams, useSearchParams } from "react-router-dom";
 import {
   CalendarDays,
   Eye,
@@ -83,6 +83,7 @@ export function TeamHome({
   embedded?: boolean;
 }) {
   const params = useParams();
+  const [searchParams] = useSearchParams();
   const jobId = params.id ?? params.jobId;
   const routePanel = params.panel;
   const activePanel =
@@ -103,6 +104,7 @@ export function TeamHome({
   const [busy, setBusy] = useState(false);
   const session = usePortalSession();
   const isAdmin = Boolean(session.data?.canManageTeam);
+  const ownerAssist = Boolean(session.data?.canManageTeam && !session.data?.employee);
   const [staff, setStaff] = useState({
     name: "",
     email: "",
@@ -113,6 +115,8 @@ export function TeamHome({
   const [showRates, setShowRates] = useState(false);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(() => new Set());
   const [editing, setEditing] = useState<string | null>(null);
+  const [assistNotice, setAssistNotice] = useState("");
+  const assistHandled = useRef("");
   const [removeTarget, setRemoveTarget] = useState<
     TeamBootstrap["employees"][number] | null
   >(null);
@@ -227,6 +231,8 @@ export function TeamHome({
     }
   }
   async function invite(id: string) {
+    const target = visibleEmployees.find((employee) => employee.id === id);
+    if (!target || !window.confirm(`Send an account invitation to ${target.name} at ${target.email}?`)) return;
     const ok = await action(`/team/employees/${id}/invite`, {});
     if (ok) {
       setInvitedIds((previous) => new Set(previous).add(id));
@@ -357,6 +363,22 @@ export function TeamHome({
     );
   const visibleEmployees =
     team?.employees.filter((employee) => !isArchived(employee)) ?? [];
+  const assistId = ownerAssist ? searchParams.get("assist") : null;
+  const editId = ownerAssist && searchParams.get("edit") === assistId ? assistId : null;
+  const accountId = ownerAssist && searchParams.get("account") === assistId ? assistId : null;
+  const assistEmployee = assistId ? visibleEmployees.find((employee) => employee.id === assistId) : undefined;
+  useEffect(() => {
+    if (!team || !assistId) return;
+    const key = `${assistId}:${editId ?? ""}:${accountId ?? ""}`;
+    if (assistHandled.current === key) return;
+    assistHandled.current = key;
+    if (!assistEmployee) {
+      setAssistNotice("This employee assistance link is unavailable. The team member may have been removed, or this link may no longer be valid.");
+      return;
+    }
+    setAssistNotice("");
+    if (editId) setEditing(editId);
+  }, [team, assistId, editId, accountId, assistEmployee]);
   const isTeamIndex = !embedded && !jobId && location === "/team";
   const employeeStatus = (employee: TeamBootstrap["employees"][number]) =>
     !employee.active
@@ -470,6 +492,25 @@ export function TeamHome({
                 >
                   {message}
                 </p>
+              )}
+              {assistId && (
+                <section className={`${card} mb-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}>
+                  <div>
+                    <p className="font-semibold">{assistEmployee ? `Helping ${assistEmployee.name} · ${accountId ? "Account setup as yourself" : "Editing as yourself"}` : "Employee assistance unavailable"}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{assistNotice || (assistEmployee ? accountId ? `Account setup for ${assistEmployee.email}. Confirm before sending an invitation.` : "Make owner-side changes here; the employee preview remains read-only." : "This target could not be resolved within your team.")}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {assistEmployee && <Link className={outline} to={`/team/assist/${encodeURIComponent(assistEmployee.id)}`}>Back to employee portal</Link>}
+                    <Link className={outline} to="/team">Back to Team</Link>
+                  </div>
+                  {accountId && assistEmployee && (
+                    <div className="sm:basis-full">
+                      <p className="mb-2 text-sm">Invite recipient: <strong>{assistEmployee.name}</strong> · {assistEmployee.email}</p>
+                      <Button type="button" className={primary} disabled={busy || !assistEmployee.active} onClick={() => void invite(assistEmployee.id)}>{assistEmployee.auth_user_id ? "Resend invitation" : "Send account invitation"}</Button>
+                      {assistEmployee.auth_user_id && <Link className="ml-3 inline-flex min-h-11 items-center text-sm font-semibold underline" to={`/forgot-password?email=${encodeURIComponent(assistEmployee.email)}&fromTeam=1`}>Help with password recovery</Link>}
+                    </div>
+                  )}
+                </section>
               )}
               {isJobStaff && jobId && <Link to={`/schedule?job=${encodeURIComponent(jobId)}`} className="mb-4 inline-flex min-h-11 items-center text-sm font-semibold underline">Open this job in schedule</Link>}
               {isSettings ? (
@@ -938,6 +979,15 @@ export function TeamHome({
                               <p className="mt-0.5 text-sm text-muted-foreground">
                                 {roleLabelsLocal(emp.role)}
                               </p>
+                              {ownerAssist && (
+                                <div className="mt-2 flex flex-wrap gap-3">
+                                  <Link className="inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold underline underline-offset-2" to={`/team/assist/${encodeURIComponent(emp.id)}`}>
+                                    <Eye className="h-4 w-4" />View employee portal
+                                  </Link>
+                                  {!emp.auth_user_id && <Link className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-2" to={`/team?assist=${encodeURIComponent(emp.id)}&account=${encodeURIComponent(emp.id)}`}>Account setup</Link>}
+                                  {emp.auth_user_id && <Link className="inline-flex min-h-11 items-center text-sm font-semibold underline underline-offset-2" to={`/forgot-password?email=${encodeURIComponent(emp.email)}&fromTeam=1`}>Help with password recovery</Link>}
+                                </div>
+                              )}
                               {isAdmin && showRates && (
                                 <p className="mt-1 text-sm font-medium text-foreground">
                                   Hourly rate:{" "}
