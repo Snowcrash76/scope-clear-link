@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 
 import { shell, card, primary, field } from "./portalShared";
 import { NavigateEmployee } from "./NavigateEmployee";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function EmployeeLogin() {
   const { signIn, user } = useAuth();
@@ -38,12 +39,9 @@ export function EmployeeLogin() {
       <div className={`${card} portal-enter w-full max-w-md p-6 sm:p-9`}>
         <Link
           to="/"
-          className="inline-flex min-h-11 items-center gap-2 font-bold"
+          className="inline-flex min-h-11 items-center"
         >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-xs text-primary-foreground">
-            SC
-          </span>
-          ScopeClear
+          <BrandLogo variant="horizontal" className="w-40" />
         </Link>
         <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
           Employee sign in

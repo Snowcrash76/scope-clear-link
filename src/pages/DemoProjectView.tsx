@@ -71,7 +71,7 @@ export default function DemoProjectView() {
       <div className="bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 flex-wrap">
           <p className="text-sm font-medium">
-            You're viewing a live demo — this is what your clients see when you use ScopeClear.
+            You're viewing a live demo — this is what your clients see when you use ScopeStream.
           </p>
           <Link
             to="/signup"

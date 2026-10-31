@@ -184,8 +184,8 @@ export function createEmployeeRouter() {
     const url = new URL('/employee/accept', base);
     url.searchParams.set('token', token);
     const result = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || 'ScopeClear <onboarding@resend.dev>', to: [invite.email], subject: 'You are invited to the ScopeClear employee portal',
-      text: `You have been invited to your employer's ScopeClear employee portal.\n\nAccept your invitation: ${url}\n\nThis invitation expires in 7 days. If you were not expecting it, you can ignore this email.`,
+      from: process.env.RESEND_FROM_EMAIL || 'ScopeStream <onboarding@resend.dev>', to: [invite.email], subject: 'You are invited to the ScopeStream employee portal',
+      text: `You have been invited to your employer's ScopeStream employee portal.\n\nAccept your invitation: ${url}\n\nThis invitation expires in 7 days. If you were not expecting it, you can ignore this email.`,
     }) });
     if (!result.ok) throw new CostApiError(502, 'The invitation was created but the email could not be sent. Check your email sender configuration, then resend.');
     return { success: true };

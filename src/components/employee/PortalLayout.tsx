@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, Bell, LogOut, Menu, X } from "lucide-react";
 import { usePortalSession } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
+import { BrandLogo } from "@/components/BrandLogo";
 
 import { roleLabels } from "../../../shared/employeePortal";
 import { shell, outline } from "./portalShared";
@@ -48,13 +49,9 @@ export function PortalLayout({
           <Link
             to={management ? "/team" : "/employee"}
             className="flex min-h-11 items-center gap-3"
-            aria-label="ScopeClear home"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground">
-              <span className="portal-mono text-xs">SC</span>
-            </span>
             <span>
-              <b className="block text-[15px] tracking-tight">ScopeClear</b>
+              <BrandLogo variant="horizontal" className="w-36" />
               <small className="block text-xs uppercase tracking-[.14em] text-muted-foreground">
                 {management ? "Team desk" : "Field portal"}
               </small>

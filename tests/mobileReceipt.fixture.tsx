@@ -7,7 +7,7 @@ import { ReceiptItemsSummary } from '../src/components/job-costing/ReceiptItemsS
 
 createRoot(document.getElementById('root')!).render(
   <div className="min-h-screen bg-background">
-    <header className="border-b p-4 font-bold">ScopeClear — receipt layout test</header>
+    <header className="border-b p-4 font-bold">ScopeStream — receipt layout test</header>
     <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-6">
       {new URLSearchParams(location.search).get('view') === 'itemised' ? (
         <ReceiptItemsSummary items={[

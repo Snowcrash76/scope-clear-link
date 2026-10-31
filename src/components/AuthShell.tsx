@@ -1,13 +1,13 @@
 import type { PropsWithChildren } from "react";
 import { Link } from "react-router-dom";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function AuthShell({ children }: PropsWithChildren) {
   return (
     <div className="auth-shell">
-      <aside className="auth-art" aria-label="ScopeClear account">
-        <Link to="/" className="auth-brand" aria-label="ScopeClear home">
-          <span className="auth-brand-mark">SC</span>
-          <span className="auth-brand-name">ScopeClear</span>
+      <aside className="auth-art" aria-label="ScopeStream account">
+        <Link to="/" className="auth-brand">
+          <BrandLogo variant="horizontal" inverse className="w-48 max-w-[65vw]" />
         </Link>
         <div className="auth-art-copy">
           <p className="auth-art-kicker">For the work that matters</p>

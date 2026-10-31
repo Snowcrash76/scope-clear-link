@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { BrandLogo } from '@/components/BrandLogo';
 import { 
   CheckCircle2, 
   Shield, 
@@ -23,7 +24,12 @@ export default function Index() {
       {/* Hero */}
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5" />
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
+        <div className="relative mx-auto max-w-6xl px-4 pt-5 sm:px-6 sm:pt-7">
+          <Link to="/" className="inline-flex min-h-11 items-center">
+            <BrandLogo variant="horizontal" className="w-40" />
+          </Link>
+        </div>
+        <div className="relative max-w-6xl mx-auto px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-12">
           <div className="text-center max-w-3xl mx-auto">
             <Badge variant="secondary" className="mb-4 px-4 py-1.5">
               <Sparkles className="w-3.5 h-3.5 mr-1.5" />

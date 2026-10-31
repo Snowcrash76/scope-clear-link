@@ -41,7 +41,7 @@ try{
    return route.fulfill({json:[]});
   });
   await page.goto(base+'/generated-artifacts/redesign.html?view='+encodeURIComponent(routePath));
-  await page.waitForFunction(()=>document.body.innerText.includes('ScopeClear')&&document.querySelectorAll('main').length>0);
+  await page.waitForFunction(()=>(document.querySelector('[role="img"][aria-label="ScopeStream"]')||document.body.innerText.includes('ScopeStream'))&&document.querySelectorAll('main').length>0);
   // Wait for asynchronous data, not a network-idle condition (the app has polling).
   await page.getByRole('heading').first().waitFor();await page.waitForTimeout(250);
   assert.deepEqual(errors,[],`${routePath} runtime errors`);

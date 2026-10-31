@@ -38,7 +38,7 @@ async function sendViaResend(to: string, subject: string, html: string, bcc?: st
       'Content-Type': 'application/json',
       Authorization: `Bearer ${getResendKey()}`,
     },
-    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL || 'ScopeClear <onboarding@resend.dev>', to: [to], subject, html, ...(bcc?.length ? { bcc } : {}) }),
+    body: JSON.stringify({ from: process.env.RESEND_FROM_EMAIL || 'ScopeStream <onboarding@resend.dev>', to: [to], subject, html, ...(bcc?.length ? { bcc } : {}) }),
   });
   const result = await res.json();
   if (!res.ok) throw new Error(`Resend error: ${JSON.stringify(result)}`);

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 
 import { shell, card, primary, field, fmtDate, getError } from "./portalShared";
 import { LoadState } from "./LoadState";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export function EmployeeAccept() {
   const [params] = useSearchParams();
@@ -51,8 +52,8 @@ export function EmployeeAccept() {
       className={`${shell} portal-grid flex min-h-[100dvh] items-center justify-center p-4`}
     >
       <div className={`${card} w-full max-w-md p-6 sm:p-9`}>
-        <Link to="/" className="font-bold">
-          ScopeClear
+        <Link to="/" className="inline-flex min-h-11 items-center">
+          <BrandLogo variant="horizontal" className="w-40" />
         </Link>
         <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
           Team invitation

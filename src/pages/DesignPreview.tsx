@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { KpiCard } from "@/components/KpiCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BrandLogo } from "@/components/BrandLogo";
 
 const swatches = [
   { label: "Ink", color: "bg-foreground" },
@@ -25,9 +26,8 @@ export default function DesignPreview() {
       <header className="border-b border-border bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
           <Link to="/" className="flex items-center gap-3 text-foreground no-underline">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary font-heading text-sm font-extrabold tracking-tight text-primary-foreground">SC</span>
+            <BrandLogo variant="horizontal" className="w-40" />
             <span>
-              <span className="block font-heading text-base font-extrabold tracking-tight">ScopeClear</span>
               <span className="block text-xs text-muted-foreground">Interface preview · Development only</span>
             </span>
           </Link>
@@ -175,7 +175,7 @@ export default function DesignPreview() {
           </Dialog>
         </section>
         <footer className="flex flex-col justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center">
-          <p>ScopeClear interface preview · This page contains no customer or job data.</p>
+          <p>ScopeStream interface preview · This page contains no customer or job data.</p>
           <Link to="/login" className="font-semibold text-primary hover:underline">Return to sign in</Link>
         </footer>
       </div>

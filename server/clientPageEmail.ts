@@ -53,12 +53,12 @@ export async function sendClientPageLink(input: unknown, userId: string, depende
       url.pathname !== `/project/${project.id}` || !z.string().uuid().safeParse(url.searchParams.get('access')).success)
     throw new ClientPageEmailError(500, 'Could not generate a secure client link.');
 
-  const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#202520;line-height:1.6">
+  const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;color:#0f172a;line-height:1.6">
     <h1>${escapeHtml(project.name)}</h1>
     <p style="white-space:pre-wrap">${escapeHtml(body.message)}</p>
-    <p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#f0ad00;color:#202520;text-decoration:none;border-radius:8px">View your client page</a></p>
+    <p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:8px">View your client page</a></p>
     <p>This private link lets you view the client sections available for this job. Only share it with people you trust.</p>
-    <p style="font-size:12px">Sent using ScopeClear.</p></body></html>`;
+    <p style="font-size:12px">Sent using ScopeStream.</p></body></html>`;
   let delivery: { id?: string };
   try {
     delivery = await dependencies.send(body.to, body.subject, html,

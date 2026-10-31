@@ -26,3 +26,14 @@ Keep one compact, full-width job header with client details only once and suppor
 **Why:** The user explicitly requested these refinements after finding repeated client details, redundant variation banners and an idle next-action card confusing.
 
 **How to apply:** Preserve this job-page structure in later design work. Do not restore resolved variation-update banners or invent unsupported archive, delete or client-link rotation actions.
+
+Use the product name ScopeStream and the supplied vector symbol/wordmark artwork,
+not the former ScopeClear name or SC/S letter placeholders.
+
+**Why:** The user supplied ScopeStream logo examples and requested incorporation
+of the logo and brand name, allowing colour adjustments.
+
+**How to apply:** Preserve the supplied shapes. Use navy/blue artwork on light
+surfaces and white/periwinkle artwork on dark panels, keeping the app's white
+surfaces and existing blue accents. Product branding is separate from a trade's
+own business name and uploaded business logo.

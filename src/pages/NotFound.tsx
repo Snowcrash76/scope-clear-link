@@ -15,7 +15,7 @@ const NotFound = () => {
         <h1 className="auth-not-found-code mt-4">404</h1>
         <p className="mx-auto mt-5 max-w-md text-base leading-7 text-muted-foreground">This page may have moved, or the address may be incomplete.</p>
         <Link to="/" className="mt-8 inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 font-semibold text-primary-foreground hover:bg-[hsl(var(--primary-hover))]">
-          Return to ScopeClear
+          Return to ScopeStream
         </Link>
       </div>
     </div>

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CreateJobModal } from "@/components/CreateJobModal";
 import { AppHeader } from "@/components/AppHeader";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   useCreateProject,
   type CreateProjectData,
@@ -233,12 +234,7 @@ function SidebarInner({
     <div className="flex flex-col h-full bg-background text-foreground border-r border-border">
       {/* Brand */}
       <div className="border-b border-border px-5 pb-4 pt-5">
-        <div className="flex items-center gap-3">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-soft" aria-hidden="true">S</span>
-          <span className="font-heading text-lg font-bold tracking-tight text-foreground">
-            ScopeClear
-          </span>
-        </div>
+        <BrandLogo variant="horizontal" className="w-44 max-w-full" />
         {businessName && (
           <p className="text-sm text-muted-foreground mt-1 truncate">
             {businessName}

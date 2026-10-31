@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Menu } from 'lucide-react';
+import { BrandLogo } from '@/components/BrandLogo';
 
 interface AppHeaderProps {
   actions?: ReactNode;
@@ -31,11 +32,11 @@ export function AppHeader({ actions, onOpenNavigation }: AppHeaderProps) {
       </button>
 
       <span
-        className={`min-w-0 flex-1 truncate font-heading text-base font-bold ${
+        className={`min-w-0 flex-1 ${
           hasActions ? 'lg:hidden' : ''
         }`}
       >
-        ScopeClear
+        <BrandLogo variant="horizontal" className="w-[min(8.5rem,34vw)] sm:w-36" />
       </span>
 
       {hasActions && (
