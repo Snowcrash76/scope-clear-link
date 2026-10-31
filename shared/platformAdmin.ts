@@ -1,6 +1,9 @@
 export type PlatformStatus = 'active' | 'suspended' | 'archived';
 export type PlatformKind = 'account' | 'business';
-export interface PlatformControl { status: PlatformStatus; reason: string; updated_at?: string }
+export interface PlatformControl {
+  status: PlatformStatus; reason: string; updated_at?: string;
+  deletedAt?: string | null; deletionState?: 'pending' | 'failed' | 'completed' | null;
+}
 export interface PlatformMembership {
   id: string; ownerId: string; name: string; email: string; role: string;
   active: boolean; removed: boolean; accountId: string | null;
@@ -21,6 +24,7 @@ export interface PlatformDirectory {
   ready: boolean; setupMessage?: string; accounts: PlatformAccount[];
   businesses: PlatformBusiness[]; memberships: PlatformMembership[];
   deletionPolicy: 'history_preserving_only';
+  deletionReady?: boolean; deletionSetupMessage?: string;
 }
 export interface PlatformBusinessDetail {
   business: PlatformBusiness; memberships: PlatformMembership[];

@@ -18,7 +18,11 @@ export async function platformReady(db: SupabaseClient): Promise<boolean> {
   return true;
 }
 /** Never let preview controls restrict users while an older published API bypasses those controls. */
-export async function platformReleaseReady(send: typeof fetch = fetch): Promise<boolean> {
+export async function platformReleaseReady(send: typeof fetch = fetch, deployment = process.env.REPLIT_DEPLOYMENT): Promise<boolean> {
+  // Replit sets this only on the published runtime. A production request is
+  // already executing this build; fetching its own public URL can queue behind
+  // itself on autoscale and falsely disable every administrator action.
+  if (deployment === '1') return true;
   try {
     const origin = new URL(process.env.VITE_PUBLIC_BASE_URL || '');
     if (origin.protocol !== 'https:') return false;

@@ -4,6 +4,8 @@ import { z, ZodError } from 'zod';
 import { jobCostClient } from './jobCostAccess';
 import { businessDetail, loadDirectory } from './platformDirectory';
 import { configuredAdminEmail, platformReady, platformReleaseReady, platformBuild, releaseMessage, PlatformError, requirePlatformAdmin, setupMessage } from './platformAccess';
+import { deletePlatformIdentity, deletionReady, deletionSetupMessage } from './platformDeletion';
+import { deliverPlatformRecovery, RecoveryDeliveryError } from './platformRecovery';
 
 const idSchema = z.string().uuid();
 const actionSchema = z.object({
@@ -16,7 +18,7 @@ function checked(error: any) {
   if (error) throw new PlatformError(error.code === '42501' ? 403 : error.code === 'P0001' ? 409 : 503,
     error.code === 'P0001' ? error.message : 'The administrator action could not be completed.');
 }
-export function createPlatformRouter(client: () => SupabaseClient = jobCostClient, releaseReady: () => Promise<boolean> = platformReleaseReady) {
+export function createPlatformRouter(client: () => SupabaseClient = jobCostClient, releaseReady: () => Promise<boolean> = platformReleaseReady, recover: typeof deliverPlatformRecovery = deliverPlatformRecovery) {
   const router = Router();
   router.get('/platform/version', (_req, res) => { res.set('Cache-Control', 'no-store').json({ build: platformBuild }); });
   const handle = (fn: (req: any, db: SupabaseClient, actor: any) => Promise<any>) => async (req: any, res: any) => {
@@ -33,7 +35,15 @@ export function createPlatformRouter(client: () => SupabaseClient = jobCostClien
   router.get('/platform/directory', handle(async (_req, db) => {
     const { directory } = await loadDirectory(db);
     if (directory.ready && !await releaseReady()) { directory.ready = false; directory.setupMessage = releaseMessage; }
+    directory.deletionReady = directory.ready && await deletionReady(db);
+    if (!directory.deletionReady) directory.deletionSetupMessage = directory.ready ? deletionSetupMessage : directory.setupMessage;
     return directory;
+  }));
+  router.post('/platform/:collection/:id/delete', handle(async (req, db, actor) => {
+    await ready(db);
+    const kind = req.params.collection === 'accounts' ? 'account' : req.params.collection === 'businesses' ? 'business' : null;
+    if (!kind) throw new PlatformError(400, 'Unsupported deletion target.');
+    return deletePlatformIdentity(db, actor.id, kind, idSchema.parse(req.params.id), removalSchema.parse(req.body));
   }));
   router.get('/platform/businesses/:id', handle(async (req, db) => businessDetail(db, idSchema.parse(req.params.id))));
   router.get('/platform/audit', handle(async (_req, db) => {
@@ -50,6 +60,9 @@ export function createPlatformRouter(client: () => SupabaseClient = jobCostClien
     const target = idSchema.parse(req.params.id), input = actionSchema.parse(req.body);
     const kind = req.params.collection === 'accounts' ? 'account' : req.params.collection === 'businesses' ? 'business' : null;
     if (!kind || (kind === 'business' && input.action === 'password_reset')) throw new PlatformError(400, 'Unsupported administrator action.');
+    const { data: controls, error: controlError } = await db.from('platform_controls').select('*').eq('kind', kind).eq('target_id', target);
+    checked(controlError);
+    if (controls?.some(c => c.deletion_state)) throw new PlatformError(409, 'Deletion has started. Retry deletion instead of resetting or changing this access.');
     if (input.action !== 'password_reset') {
       const { error } = await db.rpc('platform_change_access', {
         p_actor: actor.id, p_admin_email: configuredAdminEmail(), p_kind: kind,
@@ -67,14 +80,14 @@ export function createPlatformRouter(client: () => SupabaseClient = jobCostClien
     }
     const { data: account, error: ae } = await db.auth.admin.getUserById(target);
     if (ae || !account.user?.email) throw new PlatformError(404, 'Sign-in account not found.');
-    if (target === actor.id || account.user.email.toLowerCase() === configuredAdminEmail())
-      throw new PlatformError(409, 'Use your own password recovery page. System administrator accounts are protected.');
     if (input.confirmation.toLowerCase() !== account.user.email.toLowerCase()) throw new PlatformError(400, 'Type the account email to confirm.');
     const { count, error: rateError } = await db.from('platform_admin_audit').select('id', { count: 'exact', head: true })
       .eq('target_id', target).eq('action', 'password_reset').gte('created_at', new Date(Date.now() - 300000).toISOString());
     checked(rateError);
     if ((count || 0) >= 3) throw new PlatformError(429, 'A password reset was recently requested. Wait five minutes before retrying.');
-    const base = new URL(process.env.VITE_PUBLIC_BASE_URL || '');
+    let base: URL;
+    try { base = new URL(process.env.VITE_PUBLIC_BASE_URL || ''); }
+    catch { throw new PlatformError(503, 'A secure public app address must be configured for password recovery.'); }
     if (base.protocol !== 'https:') throw new PlatformError(503, 'A secure public app address must be configured for password recovery.');
     const { data: event, error: logError } = await db.rpc('platform_record_event', {
       p_actor: actor.id, p_kind: 'account', p_target: target, p_action: 'password_reset', p_reason: input.reason, p_outcome: 'started',
@@ -82,12 +95,11 @@ export function createPlatformRouter(client: () => SupabaseClient = jobCostClien
     checked(logError);
     let outcome = 'unconfirmed';
     try {
-      const { error } = await db.auth.resetPasswordForEmail(account.user.email, { redirectTo: new URL('/reset-password', base).href });
-      if (error) {
-        outcome = error.status >= 400 && error.status < 500 ? 'failed' : 'unconfirmed';
-        throw new PlatformError(502, 'The password-reset email request failed or could not be confirmed. No password was set by this action.');
-      }
+      await recover(db, account.user.email, new URL('/reset-password', base).href, event);
       outcome = 'accepted';
+    } catch (error) {
+      outcome = error instanceof RecoveryDeliveryError ? error.outcome : 'unconfirmed';
+      throw error;
     } finally {
       const { error } = await db.rpc('platform_finish_event', { p_id: event, p_outcome: outcome });
       if (error) throw new PlatformError(503, 'The reset request outcome could not be recorded. Check the audit log before retrying.');

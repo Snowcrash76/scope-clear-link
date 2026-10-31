@@ -84,3 +84,17 @@ mtime_ms = 1793455806761
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/83cb7b9d-44bd-48c2-a456-ecbf2c01613a/2fdd5e41-0128-4f8c-9772-f61e45048094"
 storage_version_token = "1793455900782975"
 content_type = "text/html"
+
+[[outputs]]
+id = "Qff0Z-2mvZ2EEULknw2d7"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-10-31T14-33-15-023Z.html"
+type = "html"
+title = "Encrypted database backup"
+description = "Backup taken before the approved administrator deletion setup. Job, account and financial records were unchanged by installation."
+logical_id = "e6c78b71-6b4e-4fb6-a0d4-ad480f127c5d"
+content_hash = "sha256:533a488e6a9bec95208bfb3f2ce58b2dcaf55126c26736d54c2573a182642afa"
+size = 712380
+mtime_ms = 1793457249161
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/e6c78b71-6b4e-4fb6-a0d4-ad480f127c5d/b21573bb-d167-410b-91dd-8857ba0df0fb"
+storage_version_token = "1793458044614802"
+content_type = "text/html"

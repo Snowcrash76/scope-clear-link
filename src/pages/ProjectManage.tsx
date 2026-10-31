@@ -675,7 +675,7 @@ function ProjectManageContent() {
               project={project}
               documents={documents}
               overdueInvoiceCount={invoices.filter((invoice) => invoice.status === 'overdue').length}
-              quoteSubtotal={activeQuote?.subtotal ?? null}
+              quoteTotal={activeQuote?.total ?? null}
               quoteLoading={quotesLoading}
               quoteError={Boolean(quotesError)}
               quoteExists={Boolean(activeQuote)}

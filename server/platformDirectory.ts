@@ -28,10 +28,21 @@ export function composeDirectory(input: {
   users: any[]; profiles: any[]; employees: any[]; projects: any[];
   quotes: any[]; invoices: any[]; invitations: any[]; controls: any[]; ready: boolean;
 }): PlatformDirectory {
-  const { users, profiles, employees, projects, quotes, invoices, invitations, controls, ready } = input;
+  const { profiles, employees, projects, quotes, invoices, invitations, controls, ready } = input;
+  const users = [...input.users];
+  for (const c of controls.filter(c => c.kind === 'account' && c.deletion_state)) {
+    const existing = users.find(u => u.id === c.target_id);
+    if (existing) {
+      users[users.indexOf(existing)] = { ...existing, email: c.deletion_email || existing.email };
+    } else {
+      // An explicitly recorded deleted identity, not a fabricated login account.
+      users.push({ id: c.target_id, email: c.deletion_email || '', deleted_at: c.deleted_at, __deletedIdentity: true });
+    }
+  }
   const control = (kind: string, id: string): PlatformControl => {
     const found = controls.find(c => c.kind === kind && c.target_id === id);
-    return found ? { status: found.status, reason: found.reason, updated_at: found.updated_at } : { status: 'active', reason: '' };
+    return found ? { status: found.status, reason: found.reason, updated_at: found.updated_at,
+      deletedAt: found.deleted_at || null, deletionState: found.deletion_state || null } : { status: 'active', reason: '' };
   };
   const profile = new Map(profiles.map(p => [p.user_id, p]));
   const userMap = new Map(users.map(u => [u.id, u]));
@@ -68,7 +79,8 @@ export function composeDirectory(input: {
         phone: p?.phone || null, abn: p?.abn || null, address: p?.business_address || null, website: p?.website || null,
         createdAt: p?.created_at || u?.created_at || null, lastSignInAt: u?.last_sign_in_at || null,
         control: control('business', id), systemAdmin: !!u?.email && u.email.trim().toLowerCase() === configuredAdminEmail(),
-        loginExists: !!u, memberCount: employees.filter(e => e.owner_id === id && e.active && !e.archived_at).length,
+        loginExists: !!u && !u.deleted_at && !u.__deletedIdentity && !control('account', id).deletedAt,
+        memberCount: employees.filter(e => e.owner_id === id && e.active && !e.archived_at).length,
         projectCount: projects.filter(p => p.user_id === id).length,
         quoteCount: quotes.filter(q => projectMap.get(q.project_id)?.user_id === id).length,
         invoiceCount: invoices.filter(i => projectMap.get(i.project_id)?.user_id === id).length,
@@ -85,7 +97,7 @@ export async function loadDirectory(db: SupabaseClient) {
     rows(db, 'projects', 'id,name,user_id,status,created_at'),
     rows(db, 'quotes', 'id,project_id'), rows(db, 'invoices', 'id,project_id'),
     rows(db, 'employee_invitations', 'id,employee_id,created_at,expires_at,accepted_at'),
-    ready ? rows(db, 'platform_controls', 'kind,target_id,status,reason,updated_at') : [],
+    ready ? rows(db, 'platform_controls', '*') : [],
   ]);
   return { directory: composeDirectory({ users, profiles, employees, projects, quotes, invoices, invitations, controls, ready }), projects };
 }

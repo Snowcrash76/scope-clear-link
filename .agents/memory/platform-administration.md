@@ -20,3 +20,21 @@ Keep preview account-control mutations disabled until the published API also enf
 **Why:** Preview and published servers share the hosted database; restricting accounts from a new preview while an older published service-role API remains active would leave a bypass.
 
 **How to apply:** Verify the published release before enabling mutations, and obtain separate approval before applying hosted security migrations. Installing the migration must not restrict any accounts by itself.
+
+Deleting an account or business must preserve job, financial, and staff history.
+
+**Why:** The user selected “Keep history” when asked what deletion should do.
+
+**How to apply:** Remove the appropriate access and active-directory listing without cascading through historical work. Treat deleting a login separately from deleting a business; do not remove other businesses’ staff login identities.
+
+Protect the system administrator from suspension, archiving, and deletion, but allow recovery emails for that administrator.
+
+**Why:** An emailed recovery request does not change a password until its recipient chooses one; ordinary password recovery already permits this. Blocking it in the portal makes legitimate self-service look broken.
+
+**How to apply:** Do not reuse destructive-action self-protection to disable password recovery.
+
+Published account controls must not depend on an HTTP readiness request back to the same published server.
+
+**Why:** An autoscale self-request can queue or time out while its originating request occupies capacity, falsely disabling otherwise ready controls.
+
+**How to apply:** Use trusted deployment-runtime metadata in production; retain the published security-contract check from preview.

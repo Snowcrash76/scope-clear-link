@@ -22,7 +22,7 @@ export function ProjectOverview({
   project,
   documents,
   overdueInvoiceCount,
-  quoteSubtotal,
+  quoteTotal,
   quoteLoading,
   quoteError,
   quoteExists,
@@ -32,7 +32,7 @@ export function ProjectOverview({
   project: Project;
   documents: DocumentItem[];
   overdueInvoiceCount: number;
-  quoteSubtotal: number | null;
+  quoteTotal: number | null;
   quoteLoading: boolean;
   quoteError: boolean;
   quoteExists: boolean;
@@ -74,8 +74,8 @@ export function ProjectOverview({
     ? "Loading…"
     : quoteError
       ? "Unavailable"
-      : quoteExists && quoteSubtotal !== null
-        ? aud(quoteSubtotal)
+      : quoteExists && quoteTotal !== null
+        ? aud(quoteTotal)
         : "No quote";
   const costValue = profitabilityQuery.isLoading
     ? "Loading…"
@@ -91,8 +91,8 @@ export function ProjectOverview({
         <KpiCard
           label="Quote total"
           value={quoteValue}
-          description={quoteError ? "Quote could not be loaded" : quoteExists ? "Saved quote · ex GST" : "No saved quote"}
-          definition="The active saved quote subtotal before GST. Approved variations already included in the saved quote are not added a second time."
+          description={quoteError ? "Quote could not be loaded" : quoteExists ? "Saved quote · inc GST" : "No saved quote"}
+          definition="The active saved quote total including GST. Approved variations already included in the saved quote are not added a second time."
           onClick={() => onChangeTab("quote")}
           tone="primary"
         />
