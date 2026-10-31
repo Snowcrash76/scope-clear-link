@@ -61,22 +61,22 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[calc(100vw-2rem)] max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <DialogTitle className="text-xl font-bold">
+      <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl flex-col overflow-hidden p-4 sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:p-6">
+        <DialogHeader className="shrink-0">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 pr-8">
+            <DialogTitle className="max-h-[25dvh] min-w-0 overflow-y-auto break-all text-xl font-bold">
               Invoice {invoice.invoiceNumber}
             </DialogTitle>
-            <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Button className="shrink-0" variant="outline" size="sm" onClick={handleDownload}>
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain py-4">
           {/* Status and Type */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Badge variant={config.variant} className="gap-1">
               <StatusIcon className="w-3 h-3" />
               {config.label}
@@ -126,14 +126,14 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
             <h4 className="font-semibold mb-3">Line Items</h4>
             <div className="space-y-2">
               {invoice.lineItems.map(item => (
-                <div key={item.id} className="flex flex-col sm:flex-row sm:justify-between items-start gap-2 py-2 border-b last:border-b-0">
+                <div key={item.id} className="flex min-w-0 flex-col items-start gap-2 border-b py-2 last:border-b-0 sm:flex-row sm:justify-between">
                   <div className="min-w-0 flex-1">
-                    <RichTextContent html={item.description} className="font-medium" />
+                    <RichTextContent html={item.description} className="break-words font-medium [overflow-wrap:anywhere]" />
                     <p className="text-sm text-muted-foreground">
                       {item.quantity} × ${item.unitPrice.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
-                  <p className="font-medium whitespace-nowrap sm:pl-3">
+                  <p className="break-words font-medium sm:pl-3">
                     ${item.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -147,22 +147,22 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>${invoice.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+              <span className="text-right">${invoice.subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Tax ({invoice.taxRate}%)</span>
-              <span>${invoice.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+              <span className="text-right">${invoice.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between font-bold text-lg pt-2 border-t">
               <span>Total</span>
-              <span className="text-primary">
+              <span className="break-words text-right text-primary">
                 ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
               </span>
             </div>
             {invoice.amountPaid > 0 && invoice.amountPaid < invoice.total && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount Paid</span>
-                <span className="text-approved">
+                <span className="break-words text-right text-approved">
                   ${invoice.amountPaid.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -175,7 +175,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               <Separator />
               <div>
                 <h4 className="font-semibold mb-2">Payment Instructions</h4>
-                <RichTextContent html={invoice.notes} />
+                <RichTextContent html={invoice.notes} className="break-words [overflow-wrap:anywhere]" />
               </div>
             </>
           )}
@@ -186,7 +186,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               <Separator />
               <div>
                 <h4 className="font-semibold mb-2">Terms & Conditions</h4>
-                <RichTextContent html={invoice.terms} />
+                <RichTextContent html={invoice.terms} className="break-words [overflow-wrap:anywhere]" />
               </div>
             </>
           )}

@@ -383,25 +383,25 @@ export function InvoiceSection({
             const StatusIcon = config.icon;
             
             return (
-              <Card key={invoice.id} className="p-4">
+              <Card key={invoice.id} className="min-w-0 p-4">
                 {/* Prominent heading from first line item */}
                 {invoice.lineItems.length > 0 && (
                   <div className="mb-4 pb-3 border-b">
-                    <h3 className="text-lg font-semibold text-primary border-l-4 border-primary pl-3">
+                    <h3 className="break-words [overflow-wrap:anywhere] text-lg font-semibold text-primary border-l-4 border-primary pl-3">
                       {invoice.lineItems[0].description}
                     </h3>
                   </div>
                 )}
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                  <div className="flex items-start gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
                     <div className="p-2 rounded-lg bg-secondary">
                       <FileText className="w-5 h-5 text-muted-foreground" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         {isTradeView && editingInvRef === invoice.id ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-0 items-center gap-2">
                             <Input
                               value={invRefValue}
                               onChange={e => setInvRefValue(e.target.value)}
@@ -409,7 +409,7 @@ export function InvoiceSection({
                                 if (e.key === 'Enter') handleSaveInvRef();
                                 if (e.key === 'Escape') setEditingInvRef(null);
                               }}
-                              className="h-7 text-sm font-medium w-36"
+                              className="h-7 w-full min-w-0 max-w-36 text-sm font-medium"
                               autoFocus
                               data-testid={`input-invoice-reference-${invoice.id}`}
                             />
@@ -431,7 +431,7 @@ export function InvoiceSection({
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5 group/invref">
-                            <h4 className="font-medium">{invoice.invoiceNumber}</h4>
+                            <h4 className="break-all font-medium">{invoice.invoiceNumber}</h4>
                             {isTradeView && onUpdateInvoiceNumber && (
                               <button
                                 onClick={() => { setEditingInvRef(invoice.id); setInvRefValue(invoice.invoiceNumber); }}
@@ -452,7 +452,7 @@ export function InvoiceSection({
                           {invoice.type === 'deposit' ? 'Deposit' : invoice.type === 'staged' ? 'Progress' : 'Final'}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="mt-1 break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">
                         Created {format(invoice.createdAt, 'dd MMM yyyy')}
                         {invoice.dueDate && (
                           <> • Due {format(invoice.dueDate, 'dd MMM yyyy')}</>
@@ -461,8 +461,8 @@ export function InvoiceSection({
                     </div>
                   </div>
                   
-                  <div className="flex min-w-0 flex-wrap items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 sm:justify-end">
+                    <div className="min-w-0 text-left sm:text-right">
                       <p className="text-lg font-bold">
                         ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </p>
@@ -474,7 +474,7 @@ export function InvoiceSection({
                       )}
                     </div>
                     
-                    <div className="flex max-w-full flex-wrap gap-2">
+                    <div className="flex min-w-0 max-w-full flex-wrap gap-2">
                       {/* View and Download buttons for all views */}
                       <Button 
                         size="sm" 
@@ -569,17 +569,17 @@ export function InvoiceSection({
 
       {/* Create Invoice Modal */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[calc(100dvh-2rem)] overflow-y-auto">
+        <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-lg flex-col overflow-hidden p-4 sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:p-6">
           <DialogHeader>
             <DialogTitle>Create Invoice</DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-6 py-4">
+          <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain py-4">
             {/* Invoice Type */}
             <div className="space-y-2">
               <Label>Invoice Type</Label>
               <Select value={invoiceType} onValueChange={(v) => setInvoiceType(v as 'staged' | 'final' | 'deposit' | 'custom')}>
-                <SelectTrigger data-testid="select-invoice-type">
+                <SelectTrigger className="w-full min-w-0" data-testid="select-invoice-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -591,6 +591,7 @@ export function InvoiceSection({
               </Select>
               {invoiceType === 'custom' && (
                 <Input
+                  className="w-full min-w-0"
                   value={customTypeLabel}
                   onChange={e => setCustomTypeLabel(e.target.value)}
                   placeholder="e.g. Retention, Variation Invoice, Mobilisation..."
@@ -602,7 +603,7 @@ export function InvoiceSection({
             {/* Payment Amount */}
             <div className="space-y-3">
               <Label>Amount</Label>
-              <div className="flex items-center gap-4">
+              <div className="flex min-w-0 items-center gap-4">
                 <Input
                   type="range"
                   min="5"
@@ -614,14 +615,14 @@ export function InvoiceSection({
                     setPercentage(pct);
                     setInvoiceAmountInput((quoteTotal * pct / 100).toFixed(2));
                   }}
-                  className="flex-1"
+                  className="min-w-0 flex-1"
                   data-testid="slider-invoice-percentage"
                 />
                 <span className="text-sm text-muted-foreground w-12 text-right flex-shrink-0">
                   {percentage}%
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <span className="text-sm font-medium text-muted-foreground">$</span>
                 <Input
                   type="number"
@@ -639,7 +640,7 @@ export function InvoiceSection({
                   }}
                   placeholder="0.00"
                   data-testid="input-invoice-amount"
-                  className="flex-1"
+                  className="min-w-0 flex-1"
                 />
               </div>
             </div>
@@ -690,11 +691,11 @@ export function InvoiceSection({
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreating(false)}>
+          <DialogFooter className="shrink-0 flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button className="w-full sm:w-auto" variant="outline" onClick={() => setIsCreating(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreateInvoice} disabled={isSaving}>
+            <Button className="w-full sm:w-auto" onClick={handleCreateInvoice} disabled={isSaving}>
               {isSaving ? 'Creating...' : 'Create Invoice'}
             </Button>
           </DialogFooter>

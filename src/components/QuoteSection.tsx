@@ -528,14 +528,16 @@ export function QuoteSection({
                     <div key={item.id} className="p-3">
                       {editingItemId === item.id ? (
                         <div className="space-y-2">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                             <Input
+                              className="w-full min-w-0"
                               value={editItemTitle}
                               onChange={e => setEditItemTitle(e.target.value)}
                               placeholder="Item title"
                               data-testid={`input-edit-item-title-${item.id}`}
                             />
                             <Input
+                              className="w-full min-w-0"
                               type="number"
                               value={editItemCost}
                               onChange={e => setEditItemCost(e.target.value)}
@@ -544,6 +546,7 @@ export function QuoteSection({
                             />
                           </div>
                           <Textarea
+                            className="w-full min-w-0"
                             value={editItemDescription}
                             onChange={e => setEditItemDescription(e.target.value)}
                             placeholder="Description (optional)"
@@ -612,8 +615,9 @@ export function QuoteSection({
               {/* Add new item form */}
               {isAddingItem && (
                 <div className="border rounded-lg p-3 space-y-2 bg-muted/30">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
                     <Input
+                      className="w-full min-w-0"
                       value={newItemTitle}
                       onChange={e => setNewItemTitle(e.target.value)}
                       placeholder="Item title"
@@ -621,6 +625,7 @@ export function QuoteSection({
                       data-testid="input-new-item-title"
                     />
                     <Input
+                      className="w-full min-w-0"
                       type="number"
                       value={newItemCost}
                       onChange={e => setNewItemCost(e.target.value)}
@@ -629,6 +634,7 @@ export function QuoteSection({
                     />
                   </div>
                   <Textarea
+                    className="w-full min-w-0"
                     value={newItemDescription}
                     onChange={e => setNewItemDescription(e.target.value)}
                     placeholder="Description (optional)"
@@ -674,7 +680,7 @@ export function QuoteSection({
             <div className="space-y-3">
               <div>
                 <Label>Quote Number</Label>
-                <p className="text-sm font-medium text-muted-foreground mt-1 px-3 py-2 rounded-md bg-secondary/40 border border-border/50">{quote!.quoteNumber}</p>
+                <p className="break-words [overflow-wrap:anywhere] text-sm font-medium text-muted-foreground mt-1 px-3 py-2 rounded-md bg-secondary/40 border border-border/50">{quote!.quoteNumber}</p>
               </div>
               <div>
                 <Label htmlFor="quoteRef">Reference</Label>

@@ -42,7 +42,7 @@ export function JobSectionMenu({
   useEffect(() => {
     navRef.current
       ?.querySelector<HTMLButtonElement>('button[data-section-item][aria-current="page"]')
-      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+      ?.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
   }, [value]);
 
   const renderItem = (section: { value: string; label: string }) => {
@@ -54,6 +54,13 @@ export function JobSectionMenu({
         key={section.value}
         type="button"
         onClick={() => setSection(section.value)}
+        onFocus={(event) => {
+          event.currentTarget.scrollIntoView({
+            inline: "nearest",
+            block: "nearest",
+            behavior: "smooth",
+          });
+        }}
         aria-current={selected ? "page" : undefined}
         aria-label={count !== 0
           ? section.value === "changes"
@@ -103,7 +110,7 @@ export function JobSectionMenu({
           event.preventDefault();
           buttons[(current + direction + buttons.length) % buttons.length]?.focus();
         }}
-        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-transparent px-0"
+        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto overscroll-x-contain scroll-smooth scroll-px-3 border-b border-border bg-transparent px-0"
       >
         {groups.map(renderItem)}
       </nav>
