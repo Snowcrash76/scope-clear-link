@@ -38,13 +38,8 @@ interface ClientInfo {
 }
 
 function ClientInitial({ name }: { name: string }) {
-  const colors = [
-    'bg-amber-600', 'bg-stone-600', 'bg-zinc-600',
-    'bg-amber-800', 'bg-orange-600', 'bg-stone-500',
-  ];
-  const idx = name.charCodeAt(0) % colors.length;
   return (
-    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white font-heading font-bold text-sm', colors[idx])}>
+    <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-accent font-heading text-sm font-bold text-primary">
       {name.charAt(0).toUpperCase()}
     </div>
   );
@@ -159,6 +154,7 @@ export default function ClientsPage() {
     <AppShell>
       <PageLayout
         title="Clients"
+        eyebrow="PEOPLE"
         description={`${clients.length} client${clients.length !== 1 ? 's' : ''} from existing jobs.`}
         actions={<Button className="min-h-11" onClick={() => setShowAddClientHelp(true)} data-testid="button-add-client"><UserPlus className="mr-2 h-4 w-4" />Add client</Button>}
       >
@@ -180,8 +176,8 @@ export default function ClientsPage() {
           <p className="text-sm text-muted-foreground">{visibleClients.length} {visibleClients.length === 1 ? 'client' : 'clients'}</p>
         </div>
         <p className="mb-4 text-sm text-muted-foreground">Total quoted uses one current quote per job: the newest non-declined version, or the latest declined quote when no other version exists. Phone is not stored in the current client data.</p>
-        {quoteQuery.isError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950"><span>Quote totals could not be loaded; totals are unavailable.</span><Button type="button" variant="outline" className="min-h-11 shrink-0" onClick={() => quoteQuery.refetch()}>Retry totals</Button></div>}
-        <div className="min-w-0 overflow-hidden rounded-xl border border-[#D8C3AD] bg-white shadow-card">
+        {quoteQuery.isError && <div role="alert" className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-foreground"><span>Quote totals could not be loaded; totals are unavailable.</span><Button type="button" variant="outline" className="min-h-11 shrink-0" onClick={() => quoteQuery.refetch()}>Retry totals</Button></div>}
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           <div className="hidden border-b bg-muted/30 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground xl:grid xl:grid-cols-[minmax(120px,1.25fr)_minmax(190px,2fr)_minmax(80px,.8fr)_minmax(120px,1.3fr)_70px_minmax(120px,1.2fr)_88px] xl:gap-3">
             <span>Name</span><span>Email</span><span>Phone</span><span>Address</span><span>Jobs</span><span className="text-right">Total quoted (ex GST)</span><span />
           </div>

@@ -378,6 +378,7 @@ export function TeamHome({
     >
       <PageLayout
         title={title}
+        eyebrow={isSettings ? "ACCESS & PERMISSIONS" : isReviews ? "TIME REVIEW" : isAssignment ? "FIELD OPERATIONS" : "PEOPLE"}
         description={
           isSettings
             ? "Control operational information available to each role."

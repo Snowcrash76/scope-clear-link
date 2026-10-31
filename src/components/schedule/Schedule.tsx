@@ -121,6 +121,11 @@ export default function Schedule() {
       <div><div className="sc-eyebrow">FIELD OPERATIONS</div><h1 id="schedule-heading" tabIndex={-1}>Schedule</h1><p>One clear view of the work ahead.</p></div>
       <div className="sc-readonly-badge"><span />Read-only calendar</div>
     </header>
+    <section className="sc-kpi-strip" aria-label="Schedule overview">
+      <article><span>Appointments in this view</span><b>{query.isLoading ? "—" : query.error ? "Unavailable" : visibleEvents.length}</b><small>Scheduled items in the selected date range</small></article>
+      <article><span>Team members scheduled</span><b>{query.isLoading ? "—" : query.error ? "Unavailable" : new Set(visibleEvents.flatMap((event) => event.assignments.map((assignment) => assignment.employee_id))).size}</b><small>Distinct assigned team members in this view</small></article>
+      <article><span>Jobs without a booking in this view</span><b>{query.isLoading ? "—" : query.error ? "Unavailable" : jobsWithoutBookingInView.length}</b><small>View-local list only · other dates are not included</small></article>
+    </section>
     <section className="sc-toolbar" aria-label="Schedule controls">
       <div className="sc-date-controls">
         <button className="sc-today" onClick={() => setSelectedDate(parseISO(localDate(new Date(), data?.timezone ?? "Australia/Sydney")))}>Today</button>
