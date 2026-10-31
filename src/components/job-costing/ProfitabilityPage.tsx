@@ -20,6 +20,7 @@ import {
 import { StatusBadge } from "@/components/StatusBadge";
 import { jobDisplayStatus } from "@/lib/quoteDisplay";
 import type { Project } from "@/types/project";
+import { MARGIN_THRESHOLDS } from "../../../shared/jobCosting";
 import {
   Tooltip,
   TooltipContent,
@@ -138,6 +139,7 @@ export default function ProfitabilityPage() {
     <AppShell>
       <PageLayout
         title="Profitability"
+        eyebrow="FINANCIAL INTELLIGENCE"
         description="See what confirmed expenses leave behind across your jobs."
         className="[overflow-wrap:anywhere]"
         actions={
@@ -200,6 +202,26 @@ export default function ProfitabilityPage() {
           </Card>
         ) : (
           <>
+            <section className="mb-6 grid gap-3 sm:grid-cols-3" aria-label="Profitability overview">
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
+                <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Total job profit · ex GST</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{totals.profit === null ? "—" : aud(totals.profit)}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{totals.knownJobs} of {rows.length} jobs with known revenue · {basis} basis</p>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
+                <span className="absolute inset-x-0 top-0 h-[3px] bg-success" aria-hidden="true" />
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Gross margin · indicative</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{totals.margin === null ? "—" : `${totals.margin.toFixed(1)}%`}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Known-revenue jobs only; costs may be incomplete.</p>
+              </div>
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
+                <span className="absolute inset-x-0 top-0 h-[3px] bg-warning" aria-hidden="true" />
+                <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Below configured margin threshold</p>
+                <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{rows.filter(({ result }) => result.margin !== null && result.margin < MARGIN_THRESHOLDS.low).length}</p>
+                <p className="mt-1 text-sm text-muted-foreground">Known margins below {MARGIN_THRESHOLDS.low}% · review costs and quote basis.</p>
+              </div>
+            </section>
             <div className="hidden max-w-full overflow-x-auto rounded-xl border border-border bg-background shadow-card md:block">
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="bg-muted/60 text-xs text-muted-foreground">

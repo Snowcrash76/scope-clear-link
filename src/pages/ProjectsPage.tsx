@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { AppShell } from "@/components/AppShell";
+import { AppShell, NewJobButton } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
 import { LoadErrorState } from "@/components/LoadErrorState";
 import { useProjects } from "@/hooks/useProjects";
@@ -18,6 +18,7 @@ import {
   MoreVertical,
   CheckCircle2,
   RotateCcw,
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useJobProfitability, aud, profitability } from "@/hooks/useJobCosts";
@@ -31,6 +32,7 @@ import {
 import { JobCard } from "@/components/JobCard";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
+import { Input } from "@/components/ui/input";
 
 const TABS = [
   { key: "all", label: "All" },
@@ -105,6 +107,8 @@ export default function ProjectsPage() {
       latestQuoteByProject.set(quote.project_id, quote);
   }
   const [sort, setSort] = useState<SortOrder>("newest");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const filterParam = searchParams.get("status") ?? "all";
   const specialFilter = [
     "awaiting_response",
@@ -123,7 +127,7 @@ export default function ProjectsPage() {
     setSearchParams(next);
   };
 
-  const filtered = projects.filter((project) => {
+  const filteredByStatus = projects.filter((project) => {
     const quote = latestQuoteByProject.get(project.id);
     if (filterParam === "awaiting_response")
       return awaitingQuoteResponse(project, quote);
@@ -146,6 +150,11 @@ export default function ProjectsPage() {
       return !profitabilityById.has(project.id);
     return tab === "all" || jobDisplayStatus(project, quote) === tab;
   });
+  const filtered = filteredByStatus.filter((project) => {
+    const term = search.trim().toLocaleLowerCase();
+    return !term || [project.name, project.clientName, latestQuoteByProject.get(project.id)?.quote_number]
+      .some((value) => value?.toLocaleLowerCase().includes(term));
+  });
   const sortedFiltered = [...filtered].sort((a, b) => {
     if (sort === "name") return a.name.localeCompare(b.name);
     if (sort === "quote")
@@ -157,6 +166,9 @@ export default function ProjectsPage() {
     const createdB = b.createdAt.getTime();
     return sort === "newest" ? createdB - createdA : createdA - createdB;
   });
+  const pageCount = Math.max(1, Math.ceil(sortedFiltered.length / 10));
+  const currentPage = Math.min(page, pageCount);
+  const pageProjects = sortedFiltered.slice((currentPage - 1) * 10, currentPage * 10);
 
   const counts = {
     all: projects.length,
@@ -189,6 +201,15 @@ export default function ProjectsPage() {
     no_costs: "Jobs with no costs logged",
     missing_cost_data: "Jobs with unavailable cost data",
   };
+  const openQuoteValue = projects.reduce((total, project) => {
+    const quote = latestQuoteByProject.get(project.id);
+    return ["draft", "sent"].includes(quoteDisplayStatus(quote) ?? "")
+      ? total + (quote?.subtotal ?? 0)
+      : total;
+  }, 0);
+  const jobsAwaitingResponse = projects.filter((project) =>
+    awaitingQuoteResponse(project, latestQuoteByProject.get(project.id))
+  ).length;
 
   if (projectsError) {
     return (
@@ -219,7 +240,21 @@ export default function ProjectsPage() {
 
   return (
     <AppShell>
-      <PageLayout title="Jobs" description="Your jobs, quotes and next actions in one place.">
+        <PageLayout title="Jobs" eyebrow="FIELD OPERATIONS" description="Your jobs, quotes and next actions in one place." actions={<NewJobButton />}>
+        <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Jobs overview">
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
+            <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
+            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Open quote value · ex GST</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{aud(openQuoteValue)}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Latest draft and sent quote subtotals.</p>
+          </div>
+          <button type="button" onClick={() => selectFilter("awaiting_response")} className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 text-left shadow-card transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <span className="absolute inset-x-0 top-0 h-[3px] bg-warning" aria-hidden="true" />
+            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quotes awaiting response</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{jobsAwaitingResponse}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Open to review jobs awaiting a client decision.</p>
+          </button>
+        </section>
         {/* Tabs */}
         <div className="mb-5 -mx-4 flex items-center gap-1 overflow-x-auto border-b border-border px-4 [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0">
           {TABS.map((t) => (
@@ -271,6 +306,10 @@ export default function ProjectsPage() {
               Clear dashboard filter
             </button>
           )}
+          <label className="relative flex min-h-11 min-w-[min(100%,20rem)] flex-1 items-center sm:max-w-sm">
+            <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
+            <Input name="job-list-search" autoComplete="off" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search jobs, clients or references" aria-label="Search jobs, clients or references" className="pl-9" />
+          </label>
           <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
             <span>Sort:</span>
             <select
@@ -334,7 +373,7 @@ export default function ProjectsPage() {
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {sortedFiltered.map((project) => {
+               {pageProjects.map((project) => {
                 const pending = project.changeRequests.filter(
                   (c) => needsTradeResponse(c) || awaitingClientApproval(c),
                 ).length;
@@ -447,6 +486,16 @@ export default function ProjectsPage() {
             </div>
           )}
         </div>
+        {!loading && !projectsError && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>Showing {sortedFiltered.length === 0 ? 0 : (currentPage - 1) * 10 + 1}–{Math.min(currentPage * 10, sortedFiltered.length)} of {sortedFiltered.length} jobs</span>
+            <div className="flex items-center gap-2">
+              <button type="button" className="min-h-11 rounded-lg border border-border bg-card px-3 disabled:opacity-50" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Previous</button>
+              <span className="tabular-nums" aria-label={`Page ${currentPage} of ${pageCount}`}>Page {currentPage} of {pageCount}</span>
+              <button type="button" className="min-h-11 rounded-lg border border-border bg-card px-3 disabled:opacity-50" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>Next</button>
+            </div>
+          </div>
+        )}
       </PageLayout>
     </AppShell>
   );

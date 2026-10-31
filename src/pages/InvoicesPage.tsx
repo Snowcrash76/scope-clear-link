@@ -167,6 +167,7 @@ export default function InvoicesPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   // Status filter — empty set means "show all"
   const statusParam = searchParams.get("status");
@@ -212,6 +213,15 @@ export default function InvoicesPage() {
     }
     return true;
   });
+  const pageCount = Math.max(1, Math.ceil(filtered.length / 10));
+  const currentPage = Math.min(page, pageCount);
+  const pageInvoices = filtered.slice((currentPage - 1) * 10, currentPage * 10);
+  const outstanding = (invoices ?? [])
+    .filter((invoice) => invoice.status === "sent" || invoice.status === "overdue")
+    .reduce((sum, invoice) => sum + (invoice.total ?? 0), 0);
+  const overdueTotal = (invoices ?? [])
+    .filter((invoice) => invoice.status === "overdue")
+    .reduce((sum, invoice) => sum + (invoice.total ?? 0), 0);
 
   const clearDateFilter = () => {
     setDateFrom("");
@@ -237,7 +247,34 @@ export default function InvoicesPage() {
 
   return (
     <AppShell>
-      <PageLayout title="Invoices" description="All invoices across your jobs">
+      <PageLayout title="Invoices" eyebrow="BILLING & REVENUE OPERATIONS" description="Track issued invoices and recorded payment status across your jobs.">
+        {!isError && (
+          <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Invoice overview">
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
+              <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
+              <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Outstanding receivables · inc GST</p>
+              <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{isLoading ? "—" : formatCurrency(outstanding)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Recorded totals on sent and overdue invoices.</p>
+            </div>
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
+              <span className="absolute inset-x-0 top-0 h-[3px] bg-destructive" aria-hidden="true" />
+              <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Overdue · inc GST</p>
+              <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{isLoading ? "—" : formatCurrency(overdueTotal)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{(invoices ?? []).filter((invoice) => invoice.status === "overdue").length} invoices marked overdue.</p>
+            </div>
+          </section>
+        )}
+        <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border [-webkit-overflow-scrolling:touch]" role="group" aria-label="Invoice status tabs">
+          {(["all", "draft", "sent", "paid", "overdue"] as const).map((tab) => {
+            const count = tab === "all" ? (invoices ?? []).length : (invoices ?? []).filter((invoice) => invoice.status === tab).length;
+            const active = tab === "all" ? !isStatusFiltered : statusFilter.size === 1 && statusFilter.has(tab);
+            return <button key={tab} type="button" aria-pressed={active}
+              onClick={() => commitStatusFilter(tab === "all" ? new Set() : new Set([tab]))}
+              className={cn("min-h-11 shrink-0 border-b-2 px-3 text-sm font-medium capitalize transition-colors", active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
+              {tab === "sent" ? "Awaiting payment" : tab === "all" ? "All" : STATUS_LABELS[tab]} <span className="ml-1 tabular-nums text-muted-foreground">{count}</span>
+            </button>;
+          })}
+        </div>
         <div className="mb-5 flex w-full items-center gap-2 flex-wrap sm:justify-end">
           {/* Status filter */}
           <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
@@ -405,7 +442,7 @@ export default function InvoicesPage() {
           </p>
         )}
 
-        <div className="min-w-0 rounded-xl border border-border bg-card overflow-hidden shadow-card">
+        <div className="min-w-0 rounded-2xl border border-border bg-card overflow-hidden shadow-card">
           {/* Table header — desktop only */}
           <div className="hidden sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(90px,140px)_minmax(76px,100px)_minmax(84px,100px)_minmax(76px,100px)_16px] gap-3 lg:gap-4 px-4 py-2.5 border-b bg-muted/30">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -418,7 +455,7 @@ export default function InvoicesPage() {
               Status
             </span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-right">
-              Total
+              Total · inc GST
             </span>
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
               Due
@@ -466,7 +503,7 @@ export default function InvoicesPage() {
             </div>
           ) : (
             <div className="divide-y divide-border/50">
-              {filtered.map((inv) => (
+              {pageInvoices.map((inv) => (
                 <button
                   type="button"
                   key={inv.id}
@@ -497,7 +534,7 @@ export default function InvoicesPage() {
                           {inv.status}
                         </span>
                         <span className="text-xs font-semibold text-muted-foreground">
-                          {formatCurrency(inv.total)}
+                          {formatCurrency(inv.total)} inc GST
                         </span>
                         {inv.due_date && (
                           <span className="text-xs text-muted-foreground">
@@ -531,8 +568,8 @@ export default function InvoicesPage() {
                     >
                       {inv.status}
                     </span>
-                    <span className="text-sm font-semibold text-right">
-                      {formatCurrency(inv.total)}
+                      <span className="text-sm font-semibold text-right tabular-nums">
+                       {formatCurrency(inv.total)}<span className="mt-0.5 block text-xs font-normal text-muted-foreground">inc GST</span>
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {inv.due_date
@@ -546,6 +583,16 @@ export default function InvoicesPage() {
             </div>
           )}
         </div>
+        {!isLoading && !isError && (
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>Showing {filtered.length === 0 ? 0 : (currentPage - 1) * 10 + 1}–{Math.min(currentPage * 10, filtered.length)} of {filtered.length} invoices</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="min-h-11" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
+              <span aria-label={`Page ${currentPage} of ${pageCount}`} className="tabular-nums">Page {currentPage} of {pageCount}</span>
+              <Button variant="outline" className="min-h-11" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>Next</Button>
+            </div>
+          </div>
+        )}
       </PageLayout>
     </AppShell>
   );

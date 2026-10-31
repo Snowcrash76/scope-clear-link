@@ -4,11 +4,6 @@ import { format, formatDistanceToNow } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -37,7 +32,6 @@ import {
   ChevronRight,
   Briefcase,
   GitBranch,
-  HelpCircle,
   Download,
   MoreHorizontal,
   Clock3,
@@ -401,40 +395,6 @@ function ProjectListItem({
   );
 }
 
-function SupportWidget() {
-  return (
-    <div className="mt-6 flex justify-end">
-      <Popover>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            aria-label="Need help?"
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            data-testid="button-contact-support"
-          >
-            <HelpCircle
-              className="h-4 w-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            Help
-          </button>
-        </PopoverTrigger>
-        <PopoverContent
-          align="end"
-          side="top"
-          className="z-40 w-[min(20rem,calc(100vw-2rem))]"
-        >
-          <p className="font-semibold text-foreground">Workspace help</p>
-          <p className="mt-1 text-sm leading-5 text-muted-foreground">
-            A support contact is not configured here. Please contact your
-            workspace administrator.
-          </p>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
-}
-
 export default function TradeDashboard() {
   const navigate = useNavigate();
   const {
@@ -519,6 +479,7 @@ export default function TradeDashboard() {
       <AppShell>
         <PageLayout
           title="Dashboard Overview"
+          eyebrow="FIELD OPERATIONS"
           description="Your workspace overview."
         >
           <LoadErrorState
@@ -730,7 +691,7 @@ export default function TradeDashboard() {
                         <Plus className="h-5 w-5" aria-hidden="true" />
                       </span>
                       <div className="min-w-0">
-                        <p className="font-semibold text-foreground">Ready to draft your next work order?</p>
+                         <p className="font-semibold text-foreground">Ready to prepare your next quote?</p>
                         <p className="mt-0.5 text-sm text-muted-foreground">Start a quote for the next job and review it before sending.</p>
                       </div>
                     </div>
@@ -752,8 +713,6 @@ export default function TradeDashboard() {
           </div>
         </PageLayout>
 
-        {/* Discreet support widget — fixed bottom-right */}
-        <SupportWidget />
       </AppShell>
     </>
   );
