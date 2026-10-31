@@ -22,6 +22,10 @@ async function withClient(action: (request: (id: string, status: string, token?:
     change_requests: [{ id: changeId, project_id: pid, title: 'Extra', status: 'pending', cost_impact: 100 }],
   };
   const db: any = {
+    rpc: async (name: string) => {
+      assert.equal(name, 'platform_check_business');
+      return { data: true, error: null };
+    },
     auth: { getUser() { throw new Error('Client approvals must not require a signed-in user'); } },
     from(table: string) {
       let rows = tables[table] ?? [];

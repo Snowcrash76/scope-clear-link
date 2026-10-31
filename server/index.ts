@@ -1,6 +1,9 @@
 import express from 'express';
 import path from 'path';
 import { inviteErrorMessage } from '../shared/adminInvites';
+import { createPlatformRouter } from './platformRoutes';
+import { platformApiFence } from './platformAccess';
+import { jobCostClient } from './jobCostAccess';
 import { createJobCostRouter } from './jobCostRoutes';
 import { createEmployeeRouter } from './employeeRoutes';
 import { createClientAccessRouter, requireOwnerOrClient } from './clientAccess';
@@ -13,6 +16,8 @@ export const app = express();
 app.use('/api/receipts', express.json({ limit: '8mb' }));
 app.use('/api/job-costs', express.json({ limit: '1mb' }));
 app.use(express.json());
+app.use('/api', platformApiFence(jobCostClient));
+app.use('/api', createPlatformRouter());
 app.use('/api', createJobCostRouter());
 app.use('/api', createEmployeeRouter());
 app.use('/api', createClientAccessRouter());
@@ -217,7 +222,7 @@ async function requireAdmin(authHeader: string | undefined): Promise<void> {
   if (error || !user?.email) throw new Error('Unauthorized');
   // Accept ADMIN_EMAIL (server-only) with fallback to VITE_ADMIN_EMAIL (shared)
   const adminEmail = process.env.ADMIN_EMAIL || process.env.VITE_ADMIN_EMAIL;
-  if (!adminEmail || user.email !== adminEmail) throw new Error('Forbidden');
+  if (!adminEmail || user.email.trim().toLowerCase() !== adminEmail.trim().toLowerCase()) throw new Error('Forbidden');
 }
 
 // GET /api/admin/stats — platform-wide aggregate counts

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { assertPlatformBusinessAccess } from './platformAccess';
 import { publicWebOrigin } from '../shared/publicUrls';
 import { sendClientPageLink } from './clientPageEmail';
 import { deliverApprovedInvoice, sendInvoiceEmail } from './invoiceDelivery';
@@ -100,6 +101,7 @@ export async function handleChangeNotification(
   }
   const { data: project, error: projectError } = await projectQuery.single();
   if (projectError || !project) throw new Error('Project not found or access denied');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
 
   // For unauthenticated (client) calls, verify the change request belongs to this project.
   // This is the security gate — prevents spoofed notifications for unrelated projects.
@@ -216,6 +218,7 @@ export async function handleSendQuoteToClient(
     .eq('user_id', authenticatedUserId)
     .single();
   if (projectError || !project) throw new Error('Project not found or access denied');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
 
   if (!project.client_email) throw new Error('Client email not set on project');
 
@@ -306,6 +309,7 @@ export async function handleSendInvoiceToClient(
     .eq('user_id', authenticatedUserId)
     .single();
   if (projectError || !project) throw new Error('Project not found or access denied');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
   if (!project.client_email) throw new Error('Client email not set on project');
 
   const { data: invoice, error: invoiceError } = await supabase
@@ -405,6 +409,7 @@ export async function handleQuoteNotification(body: {
   const { data: project, error: projectError } = await supabase
     .from('projects').select('*').eq('id', quote.project_id).single();
   if (projectError || !project) throw new Error('Project not found');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
 
   const { data: profile, error: profileError } = await supabase
     .from('profiles').select('*').eq('user_id', project.user_id).single();
@@ -501,6 +506,7 @@ export async function handleSendScopeChangeNotification(
     .eq('user_id', authenticatedUserId)
     .single();
   if (projectError || !project) throw new Error('Project not found or access denied');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
 
   if (!project.client_email) throw new Error('No client email on project');
 
@@ -565,10 +571,11 @@ export async function handleGetSignedUploadUrl(body: {
 
   const { data: project, error: projErr } = await admin
     .from('projects')
-    .select('id')
+    .select('id,user_id')
     .eq('id', projectId)
     .single();
   if (projErr || !project) throw new Error('Project not found');
+  await assertPlatformBusinessAccess(admin, project.user_id);
 
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
   const storagePath = `${projectId}/${Date.now()}-${safeName}`;
@@ -623,6 +630,7 @@ export async function handleDocumentUploadNotification(
     .eq('user_id', authenticatedUserId)
     .single();
   if (projectError || !project) throw new Error('Project not found or access denied');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
 
   if (!project.client_email) throw new Error('No client email on project');
 
@@ -684,6 +692,7 @@ export async function handleClientDocumentUploadNotification(
     .eq('id', projectId)
     .single();
   if (projectError || !project) throw new Error('Project not found');
+  await assertPlatformBusinessAccess(supabase, project.user_id);
 
   const { data: profile } = await supabase
     .from('profiles')

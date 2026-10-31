@@ -8,3 +8,15 @@ The user needs a system administrator portal with an overview and control of all
 **Why:** The user clarified: “if other businesses start using my app i need an over view and controll of all the businesses.”
 
 **How to apply:** Scope platform-administration work across all businesses and their account relationships, while keeping normal business owners and employee admins restricted to their own business. Do not present tenant-level employee controls as system-wide administration.
+
+Platform access restrictions must cover existing JWTs, direct table/storage requests, public client capabilities, and privileged financial RPCs—not only navigation or Express endpoints.
+
+**Why:** Supabase SECURITY DEFINER RPCs bypass table RLS, and signed file URLs remain usable until their existing expiry. Later replacement of a financial RPC must retain its access check.
+
+**How to apply:** Add restrictive access policies to future tenant tables, keep the guard on authenticated security-definer entrypoints, and explicitly state the signed-link expiry limitation. Qualify outer storage-object columns in nested policy queries to avoid accidentally resolving a project's identically named column.
+
+Keep preview account-control mutations disabled until the published API also enforces platform restrictions.
+
+**Why:** Preview and published servers share the hosted database; restricting accounts from a new preview while an older published service-role API remains active would leave a bypass.
+
+**How to apply:** Verify the published release before enabling mutations, and obtain separate approval before applying hosted security migrations. Installing the migration must not restrict any accounts by itself.

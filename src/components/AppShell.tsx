@@ -55,6 +55,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { PasswordInput } from "@/components/PasswordInput";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useSystemAdmin } from "@/hooks/useSystemAdmin";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
@@ -62,7 +63,6 @@ import type { Database } from "@/integrations/supabase/types";
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 const NewJobActionContext = createContext<(() => void) | null>(null);
 
 export function NewJobButton({
@@ -122,7 +122,6 @@ function getInitials(name: string) {
 }
 
 interface SidebarInnerProps {
-  authEmail?: string;
   onNewJob: () => void;
   onOpenSettings: () => void;
   onSignOut: () => void;
@@ -134,7 +133,6 @@ interface SidebarInnerProps {
 }
 
 function SidebarInner({
-  authEmail,
   onNewJob,
   onOpenSettings,
   onSignOut,
@@ -144,6 +142,7 @@ function SidebarInner({
   contactName,
   email,
 }: SidebarInnerProps) {
+  const systemAdmin = useSystemAdmin();
   const act = (fn: () => void) => {
     onClose?.();
     fn();
@@ -284,10 +283,10 @@ function SidebarInner({
             ))}
           </div>
         ))}
-        {ADMIN_EMAIL && authEmail === ADMIN_EMAIL && (
+        {systemAdmin.data?.admin && (
           <div>
             <p className="px-3 pb-1 text-xs font-semibold tracking-[.1em] text-muted-foreground">
-              ADMIN
+              SYSTEM
             </p>
             <Link
               to="/admin"
@@ -301,7 +300,7 @@ function SidebarInner({
               data-testid="nav-admin"
             >
               <ShieldCheck className="w-4 h-4 flex-shrink-0" />
-              Admin
+              System Admin
             </Link>
           </div>
         )}
@@ -661,7 +660,6 @@ export function AppShell({ children, headerActions }: AppShellProps) {
   const openCreateJob = () => setIsCreateModalOpen(true);
 
   const sidebarProps: SidebarInnerProps = {
-    authEmail: user?.email,
     onNewJob: openCreateJob,
     onOpenSettings: openSettings,
     onSignOut: handleSignOut,

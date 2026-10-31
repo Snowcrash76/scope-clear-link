@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { CostApiError, jobCostClient } from './jobCostAccess';
 import { portalActor, portalDbCheck, portalError, portalHandler } from './employeeAccess';
 import { refreshActiveQuoteTotals } from '../shared/quoteTotalsPersistence.js';
+import { assertPlatformBusinessAccess } from './platformAccess';
 
 type Scope = { project: any; quoteId?: string; projectToken?: string; quoteToken?: string };
 const uuid = z.string().uuid();
@@ -13,13 +14,19 @@ export async function clientScope(req: Request, db: any): Promise<Scope> {
   if (projectToken && uuid.safeParse(projectToken).success) {
     const { data, error } = await db.from('projects').select('id,user_id,client_access_token').eq('client_access_token', projectToken).maybeSingle();
     portalDbCheck(error);
-    if (data) return { project: data, projectToken };
+    if (data) {
+      await assertPlatformBusinessAccess(db, data.user_id);
+      return { project: data, projectToken };
+    }
   }
   if (quoteToken && uuid.safeParse(quoteToken).success) {
     const { data: quote, error } = await db.from('quotes').select('id,project_id').eq('quote_token', quoteToken).maybeSingle(); portalDbCheck(error);
     if (quote) {
       const { data: project, error: pe } = await db.from('projects').select('id,user_id').eq('id', quote.project_id).single(); portalDbCheck(pe);
-      if (project) return { project, quoteId: quote.id, quoteToken };
+      if (project) {
+        await assertPlatformBusinessAccess(db, project.user_id);
+        return { project, quoteId: quote.id, quoteToken };
+      }
     }
   }
   throw new CostApiError(403, 'This client link is invalid or has been replaced. Ask your trade for a new secure link.');

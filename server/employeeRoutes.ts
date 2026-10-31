@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { assertPlatformAccess, assertPlatformBusinessAccess } from './platformAccess';
 import { z } from 'zod';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -317,6 +318,7 @@ export function createEmployeeRouter() {
         email: invite.employee.email, password: body.password, authorization: req.headers.authorization,
       });
       createdId = account.created ? account.userId : null;
+      await assertPlatformAccess(db, account.userId);
       await assertInvitationAccountEligible(db, account.userId, invite.employee.owner_id);
       const { data, error } = await db.rpc('portal_accept_invitation', { p_hash: hash(body.token), p_user: account.userId });
       definitelyRejected = !!error && ['42501', 'P0001', '23505', '23514', '23503', '22P02'].includes(error.code ?? '');
@@ -350,6 +352,7 @@ async function validInvitation(db: any, token: string) {
   const { data: employee, error: ee } = await db.from('employees').select('id,name,email,active,owner_id').eq('id', invite.employee_id).single();
   portalDbCheck(ee);
   if (!employee?.active) throw new CostApiError(403, 'This invitation is no longer active.');
+  await assertPlatformBusinessAccess(db, employee.owner_id);
   return { ...invite, employee };
 }
 function addDays(date: string, days: number) { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); }
