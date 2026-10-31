@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { isVariationItem } from '@/lib/utils';
+import { calculateStoredQuoteTotals } from '../../shared/quoteTotals.js';
 
 export interface QuoteLineItem {
   id: string;
@@ -71,39 +72,21 @@ export function useQuoteLineItems(quoteId: string | undefined) {
 
       const [lineItemsRes, scopeItemsRes, changesRes] = await Promise.all([
         supabase.from('quote_line_items').select('cost, title, is_variation').eq('quote_id', quoteId),
-        supabase.from('scope_items').select('cost, title').eq('project_id', projectId).eq('category', 'included'),
-        supabase.from('change_requests').select('cost_impact').eq('project_id', projectId).eq('status', 'approved'),
+        supabase.from('scope_items').select('cost, title, category').eq('project_id', projectId).eq('category', 'included'),
+        supabase.from('change_requests').select('cost_impact, status').eq('project_id', projectId).eq('status', 'approved'),
       ]);
-
-      const approvedChangeCosts = new Set(
-        (changesRes.data || []).map(cr => Number(cr.cost_impact) || 0)
+      const readError = lineItemsRes.error || scopeItemsRes.error || changesRes.error;
+      if (readError) throw readError;
+      const totals = calculateStoredQuoteTotals(
+        scopeItemsRes.data, lineItemsRes.data, changesRes.data, taxRate
       );
-      const changesImpact = (changesRes.data || []).reduce(
-        (sum, cr) => sum + (Number(cr.cost_impact) || 0), 0
-      );
-      const scopeSubtotal = (scopeItemsRes.data || [])
-        .filter(item => !isVariationItem(item.title ?? '') && !approvedChangeCosts.has(Number(item.cost) || 0))
-        .reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
-      const customItemsTotal = (lineItemsRes.data || [])
-        .filter(item => {
-          const flagged = (item as { is_variation?: boolean }).is_variation;
-          const isVar = flagged !== undefined ? flagged : isVariationItem(item.title ?? '');
-          return !isVar && !approvedChangeCosts.has(Number(item.cost) || 0);
-        })
-        .reduce((sum, item) => sum + (Number(item.cost) || 0), 0);
-
-      const subtotal = scopeSubtotal + changesImpact + customItemsTotal;
-      const taxAmount = subtotal * (taxRate / 100);
-      const total = subtotal + taxAmount;
 
       const needsRevision = currentStatus === 'sent' || currentStatus === 'approved';
 
       const { error: updateError } = await supabase
         .from('quotes')
         .update({
-          subtotal,
-          tax_amount: taxAmount,
-          total,
+          ...totals,
           ...(needsRevision ? { status: 'revised' } : {}),
         })
         .eq('id', quoteId);

@@ -5,3 +5,4 @@
 - [Phone layout verification](phone-layout-verification.md) — verify actual signed-in components and attachment/review states, not just public pages or empty forms.
 - [Employee portal boundaries](employee-portal-boundaries.md) — gate each phase on approval; reuse existing job models and enforce employee access server-side.
 - [Supabase pooler read-only checks](supabase-pooler-read-only.md) — verify explicit read-only transactions; the session pooler may ignore PGOPTIONS.
+- [Quote history boundaries](quote-history-boundaries.md) — current scope can repair active quote totals, but must not rewrite historical offers or accepted prices.

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { CostApiError, jobCostClient } from './jobCostAccess';
 import { portalActor, portalDbCheck, portalError, portalHandler } from './employeeAccess';
+import { refreshActiveQuoteTotals } from '../shared/quoteTotalsPersistence.js';
 
 type Scope = { project: any; quoteId?: string; projectToken?: string; quoteToken?: string };
 const uuid = z.string().uuid();
@@ -90,7 +91,7 @@ function cleanClientRows(table: string, data: any[], scope: Scope) {
     return copy;
   });
 }
-export function createClientAccessRouter() {
+export function createClientAccessRouter(createDb = jobCostClient) {
   const router = Router();
   router.post('/client/images/upload-url', async(req,res)=>{
     try {
@@ -130,7 +131,7 @@ export function createClientAccessRouter() {
     try {
       const table = String(req.params.table);
       if (!clientReadableTables.includes(table) || !['GET','HEAD','PATCH','POST'].includes(req.method)) throw new CostApiError(403, 'Client data access denied.');
-      const db = jobCostClient(), scope = await clientScope(req, db);
+      const db = createDb(), scope = await clientScope(req, db);
       const search = new URL(req.originalUrl, 'https://internal.invalid').searchParams;
       const select = validateClientSelect(search.get('select'));
       let query: any;
@@ -182,6 +183,12 @@ export function createClientAccessRouter() {
       if (['GET','HEAD'].includes(req.method)) query = query.range(offset,offset+limit-1);
       const { data, error } = await query; portalDbCheck(error);
       if (req.method === 'PATCH' && (!data || !data.length)) throw new CostApiError(409, 'This record has already changed. Refresh the page.');
+      if (req.method === 'PATCH' && table === 'change_requests') {
+        // clientScope and constrain have already authorized this exact project.
+        // Client approvals have no signed-in Supabase user, so persist totals here
+        // instead of relying on the trade-only browser recalculation.
+        await refreshActiveQuoteTotals(db, scope.project.id);
+      }
       const rows = cleanClientRows(table, data ?? [], scope);
       res.set({ 'Cache-Control':'private, no-store', 'Referrer-Policy':'no-referrer' });
       if (req.get('Accept')?.includes('application/vnd.pgrst.object+json')) {
