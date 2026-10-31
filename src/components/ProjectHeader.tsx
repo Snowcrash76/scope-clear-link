@@ -20,20 +20,20 @@ export function ProjectHeader({ project, isClientView = true }: ProjectHeaderPro
   const status = statusConfig[project.status];
 
   return (
-    <div className="bg-card border-b">
+    <div className="bg-card text-card-foreground border-b border-border">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-              <Building2 className="w-4 h-4" />
-              <span className="min-w-0 break-words [overflow-wrap:anywhere] font-medium">{project.tradeBusinessName}</span>
+            <div className="flex items-start gap-2 text-sm text-muted-foreground mb-2">
+              <Building2 className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="min-w-0 font-medium break-words [overflow-wrap:anywhere]">{project.tradeBusinessName}</span>
             </div>
-            <h1 className="break-words [overflow-wrap:anywhere] font-heading text-2xl sm:text-3xl font-bold text-foreground mb-3">
+            <h1 className="font-heading text-2xl sm:text-3xl font-bold text-foreground mb-3 break-words [overflow-wrap:anywhere]">
               {project.name}
             </h1>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <User className="w-4 h-4" />
+              <div className="flex min-w-0 items-start gap-1.5">
+                <User className="w-4 h-4 shrink-0 mt-0.5" />
                 <span className="break-words [overflow-wrap:anywhere]">{isClientView ? project.tradeName : project.clientName}</span>
               </div>
               <div className="flex items-center gap-1.5">

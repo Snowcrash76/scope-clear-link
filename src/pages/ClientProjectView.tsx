@@ -1124,10 +1124,12 @@ export default function ClientProjectView() {
       )}
 
       {/* Footer */}
-      <footer className="border-t mt-12">
-        <div className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center text-sm text-muted-foreground">
-          <p className="break-words [overflow-wrap:anywhere]">This job page is provided by {project.tradeBusinessName}</p>
-          <p className="mt-1 break-words [overflow-wrap:anywhere]">
+      <footer className="mt-12 border-t border-border bg-card">
+        <div className="w-full min-w-0 max-w-4xl mx-auto px-4 sm:px-6 py-6 text-center">
+          <p className="text-sm font-medium text-card-foreground break-words [overflow-wrap:anywhere]">
+            This job page is provided by {project.tradeBusinessName}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground break-words [overflow-wrap:anywhere]">
             Questions? {project.tradePhone
               ? <a className="font-medium text-foreground underline underline-offset-4" href={`tel:${project.tradePhone}`}>Call {project.tradeName || project.tradeBusinessName}</a>
               : 'Reply to the original project email to contact your trade.'}
