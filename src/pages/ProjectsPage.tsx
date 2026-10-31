@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell, NewJobButton } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
 import { LoadErrorState } from "@/components/LoadErrorState";
 import { useProjects } from "@/hooks/useProjects";
+import type { Project } from "@/types/project";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
@@ -19,6 +20,8 @@ import {
   CheckCircle2,
   RotateCcw,
   Search,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useJobProfitability, aud, profitability } from "@/hooks/useJobCosts";
@@ -33,14 +36,26 @@ import { JobCard } from "@/components/JobCard";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
 import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { filterJobArchive, isArchivedJob } from "@/lib/jobLifecycle";
 
 const TABS = [
-  { key: "all", label: "All" },
+  { key: "all", label: "Active jobs" },
   { key: "lead", label: "Lead" },
   { key: "quoted", label: "Quoted" },
   { key: "approved", label: "Approved" },
   { key: "in_progress", label: "In progress" },
-  { key: "completed", label: "Completed" },
+  { key: "completed", label: "Archive" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["key"];
@@ -90,7 +105,12 @@ export default function ProjectsPage() {
     error: projectsError,
     refetch: refetchProjects,
     updateProjectStatus,
+    deleteProject,
   } = useProjects();
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteLock = useRef(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const profitabilityQuery = useJobProfitability();
   const profitabilityById = new Map(
@@ -119,6 +139,9 @@ export default function ProjectsPage() {
   const tab: Tab = TABS.some((item) => item.key === filterParam)
     ? (filterParam as Tab)
     : "all";
+  const activeProjects = filterJobArchive(projects, false);
+  const archivedProjects = filterJobArchive(projects, true);
+  const archiveView = !specialFilter && tab === "completed";
 
   const selectFilter = (filter: string) => {
     const next = new URLSearchParams(searchParams);
@@ -127,8 +150,9 @@ export default function ProjectsPage() {
     setSearchParams(next);
   };
 
-  const filteredByStatus = projects.filter((project) => {
+  const filteredByStatus = (archiveView ? archivedProjects : activeProjects).filter((project) => {
     const quote = latestQuoteByProject.get(project.id);
+    if (archiveView) return isArchivedJob(project);
     if (filterParam === "awaiting_response")
       return awaitingQuoteResponse(project, quote);
     if (filterParam === "pending_approval")
@@ -171,24 +195,21 @@ export default function ProjectsPage() {
   const pageProjects = sortedFiltered.slice((currentPage - 1) * 10, currentPage * 10);
 
   const counts = {
-    all: projects.length,
-    lead: projects.filter(
+    all: activeProjects.length,
+    lead: activeProjects.filter(
       (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "lead",
     ).length,
-    quoted: projects.filter(
+    quoted: activeProjects.filter(
       (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "quoted",
     ).length,
-    approved: projects.filter(
+    approved: activeProjects.filter(
       (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "approved",
     ).length,
-    in_progress: projects.filter(
+    in_progress: activeProjects.filter(
       (p) =>
         jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "in_progress",
     ).length,
-    completed: projects.filter(
-      (p) =>
-        jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "completed",
-    ).length,
+    completed: archivedProjects.length,
   };
   const pendingVariationTotal = filtered.reduce(
     (total, project) =>
@@ -201,15 +222,46 @@ export default function ProjectsPage() {
     no_costs: "Jobs with no costs logged",
     missing_cost_data: "Jobs with unavailable cost data",
   };
-  const openQuoteValue = projects.reduce((total, project) => {
+  const openQuoteValue = activeProjects.reduce((total, project) => {
     const quote = latestQuoteByProject.get(project.id);
     return ["draft", "sent"].includes(quoteDisplayStatus(quote) ?? "")
       ? total + (quote?.subtotal ?? 0)
       : total;
   }, 0);
-  const jobsAwaitingResponse = projects.filter((project) =>
+  const jobsAwaitingResponse = activeProjects.filter((project) =>
     awaitingQuoteResponse(project, latestQuoteByProject.get(project.id))
   ).length;
+
+  const changeArchiveStatus = async (project: Project, status: "completed" | "in_progress") => {
+    const succeeded = await updateProjectStatus(project.id, status);
+    if (!succeeded) return;
+    toast.success(
+      status === "completed"
+        ? `${project.name} moved to the archive.`
+        : `${project.name} returned to active jobs.`,
+    );
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleteLock.current) return;
+    deleteLock.current = true;
+    setDeletePending(true);
+    setDeleteError(null);
+    try {
+      const succeeded = await deleteProject(deleteTarget.id);
+      if (!succeeded) {
+        setDeleteError("The job could not be deleted. It may contain protected issued invoices or staff history. Archive it instead to keep those records.");
+        return;
+      }
+      toast.success(`${deleteTarget.name} deleted.`);
+      setDeleteTarget(null);
+    } catch {
+      setDeleteError("The job could not be deleted. Protected issued invoices or staff history may need to be retained. Archive it instead.");
+    } finally {
+      deleteLock.current = false;
+      setDeletePending(false);
+    }
+  };
 
   if (projectsError) {
     return (
@@ -367,8 +419,21 @@ export default function ProjectsPage() {
           ) : sortedFiltered.length === 0 ? (
             <div className="text-center py-12 px-4">
               <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                No jobs in this view yet.
+              <p className="text-sm font-medium text-foreground">
+                {search.trim()
+                  ? "No jobs match your search."
+                  : archiveView
+                    ? "No archived jobs yet."
+                    : specialFilter
+                      ? "No jobs match this dashboard filter."
+                      : "No active jobs yet."}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {archiveView
+                  ? "Jobs marked completed appear here. Reopen one any time to return it to active jobs."
+                  : !specialFilter && !search.trim()
+                    ? "New jobs and quotes will appear here as your work comes in."
+                    : "Try changing your search or selecting another view."}
               </p>
             </div>
           ) : (
@@ -452,9 +517,7 @@ export default function ProjectsPage() {
                         {project.status !== "completed" ? (
                           <DropdownMenuItem
                             className="gap-2"
-                            onSelect={() =>
-                              updateProjectStatus(project.id, "completed")
-                            }
+                            onSelect={() => void changeArchiveStatus(project, "completed")}
                             data-testid={`menu-mark-completed-${project.id}`}
                           >
                             <CheckCircle2 className="w-4 h-4 text-approved" />
@@ -463,15 +526,25 @@ export default function ProjectsPage() {
                         ) : (
                           <DropdownMenuItem
                             className="gap-2"
-                            onSelect={() =>
-                              updateProjectStatus(project.id, "in_progress")
-                            }
+                            onSelect={() => void changeArchiveStatus(project, "in_progress")}
                             data-testid={`menu-mark-in-progress-${project.id}`}
                           >
                             <RotateCcw className="w-4 h-4" />
                             Mark as In Progress
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="gap-2 text-destructive focus:text-destructive"
+                          onSelect={() => {
+                            setDeleteError(null);
+                            setDeleteTarget(project);
+                          }}
+                          data-testid={`menu-delete-job-${project.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Delete job
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <ClientPageActions
                           layout="menu"
@@ -497,6 +570,52 @@ export default function ProjectsPage() {
           </div>
         )}
       </PageLayout>
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open && !deleteLock.current) {
+            setDeleteTarget(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-destructive/10 text-destructive sm:mx-0">
+              <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <AlertDialogTitle>Delete “{deleteTarget?.name}”?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes the job and its related deletable records. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm text-foreground">
+            <p className="font-semibold">Issued invoices and staff history are protected.</p>
+            <p className="mt-1 text-muted-foreground">
+              If this job has either, deletion may be blocked to preserve that history. Archive the job instead to remove it from active jobs without losing its records.
+            </p>
+          </div>
+          {deleteError && (
+            <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              {deleteError}
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                void confirmDelete();
+              }}
+              disabled={deletePending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="confirm-delete-job"
+            >
+              {deletePending ? "Deleting job…" : "Delete job permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

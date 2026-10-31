@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { deleteJobRecord } from '@/lib/jobLifecycle';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -186,14 +187,19 @@ export function useProjects() {
 
   const updateProjectStatus = async (projectId: string, newStatus: 'draft' | 'sent' | 'in_progress' | 'completed') => {
     try {
-      const { error } = await supabase
+      if (!user?.id) throw new Error('Not signed in');
+      const { data, error } = await supabase
         .from('projects')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', projectId);
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data?.length) throw new Error('Job not found or access denied');
       await fetchProjects();
       queryClient.invalidateQueries({ queryKey: ['/activity-feed', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['job-profitability', user.id] });
       return true;
     } catch (error) {
       console.error('Error updating project status:', error);
@@ -204,48 +210,16 @@ export function useProjects() {
 
   const deleteProject = async (projectId: string) => {
     try {
-      // First get invoice IDs for this project to delete line items
-      const { data: invoices } = await supabase
-        .from('invoices')
-        .select('id')
-        .eq('project_id', projectId);
-
-      const invoiceIds = invoices?.map(i => i.id) || [];
-
-      // Delete related records in correct order (respecting foreign keys)
-      if (invoiceIds.length > 0) {
-        await supabase.from('invoice_line_items').delete().in('invoice_id', invoiceIds);
-      }
-      
-      await Promise.all([
-        supabase.from('invoices').delete().eq('project_id', projectId),
-        supabase.from('quotes').delete().eq('project_id', projectId),
-        supabase.from('scope_items').delete().eq('project_id', projectId),
-        supabase.from('change_requests').delete().eq('project_id', projectId),
-        supabase.from('project_documents').delete().eq('project_id', projectId),
-        supabase.from('project_stages').delete().eq('project_id', projectId),
-      ]);
-
-      // Clear the active_quote_id reference before deleting project
-      await supabase
-        .from('projects')
-        .update({ active_quote_id: null })
-        .eq('id', projectId);
-
-      // Delete the project
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId);
-
-      if (error) throw error;
-      
+      await deleteJobRecord(supabase, user?.id ?? '', projectId);
       await fetchProjects();
       queryClient.invalidateQueries({ queryKey: ['/activity-feed', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['job-profitability', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['quote-summaries', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['/invoices/all'] });
       return true;
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast.error('Failed to delete job');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete job');
       return false;
     }
   };
