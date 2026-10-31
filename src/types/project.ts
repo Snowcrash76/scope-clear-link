@@ -89,7 +89,7 @@ export interface Invoice {
   stageId?: string;
   invoiceNumber: string;
   type: 'staged' | 'final' | 'deposit';
-  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+  status: 'draft' | 'approved' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   subtotal: number;
   taxRate: number;
   taxAmount: number;
@@ -97,6 +97,10 @@ export interface Invoice {
   amountPaid: number;
   dueDate?: Date;
   paidAt?: Date;
+  approvedAt?: Date;
+  approvedBy?: string;
+  revision?: number;
+  deliveryPending?: boolean;
   notes?: string;
   terms?: string;
   lineItems: InvoiceLineItem[];

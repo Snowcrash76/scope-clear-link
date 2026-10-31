@@ -912,9 +912,9 @@ export default function ClientProjectView() {
               <Card className="p-8 flex justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
               </Card>
-            ) : invoices.filter(inv => inv.status !== 'draft').length > 0 ? (
+            ) : invoices.filter(inv => !['draft','approved'].includes(inv.status)).length > 0 ? (
               <div className="space-y-4">
-                {invoices.filter(inv => inv.status !== 'draft').map(invoice => {
+                {invoices.filter(inv => !['draft','approved'].includes(inv.status)).map(invoice => {
                   const firstLineItem = invoice.lineItems?.[0];
                   return (
                     <Card key={invoice.id} className="p-4 sm:p-6">

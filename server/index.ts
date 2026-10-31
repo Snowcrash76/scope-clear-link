@@ -5,6 +5,7 @@ import { createJobCostRouter } from './jobCostRoutes';
 import { createEmployeeRouter } from './employeeRoutes';
 import { createClientAccessRouter, requireOwnerOrClient } from './clientAccess';
 import { handleChangeNotification, handleQuoteNotification, handleSendQuoteToClient, handleSendInvoiceToClient, handleGetSignedUploadUrl, handleRecordClientDocument, handleSendScopeChangeNotification, handleDocumentUploadNotification, handleClientDocumentUploadNotification, validateSupabaseJwt, handleSendClientPageLink } from './emailHandlers';
+import { InvoiceDeliveryError } from './invoiceDelivery';
 import { ClientPageEmailError } from './clientPageEmail';
 
 export const app = express();
@@ -83,8 +84,9 @@ app.post('/api/send-invoice-to-client', async (req, res) => {
     res.json({ success: true, result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const status = message === 'Unauthorized' ? 401
+    const status = err instanceof InvoiceDeliveryError ? err.status : message === 'Unauthorized' ? 401
       : message === 'Client email not set on project' ? 400
+      : message === 'Project not found or access denied' ? 403
       : 500;
     console.error('[email] send-invoice-to-client:', message);
     res.status(status).json({ error: message });

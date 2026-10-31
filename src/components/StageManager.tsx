@@ -267,7 +267,8 @@ export function StageManager({
                       const stageInvoice = getStageInvoice(stage.id);
                       if (stageInvoice) {
                         const statusLabels: Record<Invoice['status'], string> = {
-                          draft: 'Draft invoice',
+                          draft: 'Pending approval',
+                          approved: 'Invoice approved',
                           sent: 'Sent',
                           paid: 'Paid',
                           overdue: 'Overdue',

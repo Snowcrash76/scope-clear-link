@@ -91,6 +91,9 @@ try {
     assert.equal(calls[0].p_due_date, '2026-11-10');
     const invoiceView = page.getByRole('dialog', { name: 'Invoice INV-stage-one' });
     await invoiceView.waitFor();
+    await invoiceView.getByRole('button', { name: 'Edit invoice', exact: true }).waitFor();
+    await invoiceView.getByRole('button', { name: 'Approve invoice', exact: true }).waitFor();
+    assert.equal(await invoiceView.getByRole('button', { name: 'Send to client', exact: true }).count(), 0);
     await invoiceView.getByRole('button', { name: 'Close', exact: true }).click();
     await page.getByRole('navigation', { name: 'Job sections' }).getByRole('button', { name: 'Stages', exact: true }).click();
     const viewStage = stages.getByRole('button', { name: 'View invoice' });

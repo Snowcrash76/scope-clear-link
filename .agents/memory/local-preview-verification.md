@@ -14,3 +14,9 @@ An open dialog hides background job sections from accessible role locators.
 **Why:** Successful invoice navigation can immediately open its invoice viewer. Waiting for the background job section then incorrectly reports failed navigation while the correct invoice is already visible.
 
 **How to apply:** Verify the new dialog first and close it before asserting background navigation. Keep the application's focus and accessibility handling intact.
+
+Integration-test dependencies must share one authoritative fixture state.
+
+**Why:** Independently mocked authentication and data modules can instantiate separate stores, producing apparent application regressions when the test mutates a different store from the rendered component.
+
+**How to apply:** Keep state ownership coherent across mocked dependencies and rule out disagreement between fixture stores before changing application logic.

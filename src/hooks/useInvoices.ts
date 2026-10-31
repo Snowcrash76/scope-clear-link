@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Invoice, InvoiceLineItem, ProjectStage, Quote } from '@/types/project';
 import { getStageBilling } from '@/lib/stageBilling';
+import { calculateEditableInvoice, invoiceDisplayStatus, type InvoiceEditInput } from '@/lib/invoiceWorkflow';
 
 type DbInvoice = {
   id: string;
@@ -24,6 +25,10 @@ type DbInvoice = {
   terms: string | null;
   created_at: string;
   updated_at: string;
+  approved_at?: string | null;
+  approved_by?: string | null;
+  revision?: number;
+  delivery_token?: string | null;
 };
 
 type DbInvoiceLineItem = {
@@ -41,6 +46,7 @@ type DbInvoiceLineItem = {
 export function useInvoices(projectId: string | undefined) {
   const queryClient = useQueryClient();
   const stageInFlight = useRef(new Set<string>());
+  const workflowInFlight = useRef(new Set<string>());
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown | null>(null);
@@ -85,7 +91,7 @@ export function useInvoices(projectId: string | undefined) {
         stageId: inv.stage_id || undefined,
         invoiceNumber: inv.invoice_number,
         type: inv.type,
-        status: inv.status,
+        status: invoiceDisplayStatus(inv.status, inv.approved_at) as Invoice['status'],
         subtotal: inv.subtotal || 0,
         taxRate: inv.tax_rate || 0,
         taxAmount: inv.tax_amount || 0,
@@ -93,6 +99,10 @@ export function useInvoices(projectId: string | undefined) {
         amountPaid: inv.amount_paid || 0,
         dueDate: inv.due_date ? new Date(inv.due_date) : undefined,
         paidAt: inv.paid_at ? new Date(inv.paid_at) : undefined,
+        approvedAt: inv.approved_at ? new Date(inv.approved_at) : undefined,
+        approvedBy: inv.approved_by || undefined,
+        revision: inv.revision ?? 0,
+        deliveryPending: !!inv.delivery_token,
         notes: inv.notes || undefined,
         terms: inv.terms || undefined,
         lineItems: lineItemsData
@@ -113,6 +123,7 @@ export function useInvoices(projectId: string | undefined) {
       }));
 
       setInvoices(mappedInvoices);
+      queryClient.invalidateQueries({ queryKey: ['/invoices/all'] });
     } catch (error) {
       console.error('Error fetching invoices:', error);
       setError(error);
@@ -120,7 +131,7 @@ export function useInvoices(projectId: string | undefined) {
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, queryClient]);
 
   useEffect(() => {
     fetchInvoices();
@@ -268,7 +279,7 @@ export function useInvoices(projectId: string | undefined) {
       }
       if (typeof data !== 'string' || !data) throw new Error('Stage invoice was not confirmed. Refresh before retrying.');
       await fetchInvoices(false);
-      toast.success('Stage invoice saved as draft');
+      toast.success('Stage invoice saved · pending approval');
       return data;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to save the stage invoice.');
@@ -278,8 +289,63 @@ export function useInvoices(projectId: string | undefined) {
     }
   };
 
+  const saveInvoice = async (invoice: Invoice, values: InvoiceEditInput): Promise<boolean> => {
+    if (!projectId || workflowInFlight.current.has(invoice.id)) return false;
+    workflowInFlight.current.add(invoice.id);
+    try {
+      if (!['draft', 'approved'].includes(invoice.status) || invoice.deliveryPending) {
+        throw new Error('Only unsent invoices can be edited. Confirm any pending delivery first.');
+      }
+      calculateEditableInvoice(values);
+      const { data, error } = await supabase.rpc('save_invoice_for_approval', {
+        p_project_id: projectId, p_invoice_id: invoice.id, p_expected_revision: invoice.revision ?? 0,
+        p_invoice_number: values.invoiceNumber.trim(), p_due_date: values.dueDate || null,
+        p_notes: values.notes, p_terms: values.terms, p_tax_rate: values.taxRate,
+        p_line_items: values.lineItems.map(item => ({
+          description: item.description, quantity: item.quantity, unit_price: item.unitPrice,
+          scope_item_id: item.scopeItemId ?? null, change_request_id: item.changeRequestId ?? null,
+        })),
+      });
+      if (error) throw new Error(['PGRST202', '42883'].includes(error.code)
+        ? 'Invoice approval needs database setup. Apply its Supabase migration, then retry.'
+        : error.message);
+      if (typeof data !== 'string') throw new Error('The invoice save was not confirmed. Refresh before retrying.');
+      await fetchInvoices(false);
+      toast.success('Invoice saved · pending approval');
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to save this invoice.');
+      return false;
+    } finally {
+      workflowInFlight.current.delete(invoice.id);
+    }
+  };
+
+  const approveInvoice = async (invoice: Invoice): Promise<boolean> => {
+    if (!projectId || workflowInFlight.current.has(invoice.id)) return false;
+    workflowInFlight.current.add(invoice.id);
+    try {
+      const { data, error } = await supabase.rpc('approve_invoice', {
+        p_project_id: projectId, p_invoice_id: invoice.id, p_expected_revision: invoice.revision ?? 0,
+      });
+      if (error) throw new Error(['PGRST202', '42883'].includes(error.code)
+        ? 'Invoice approval needs database setup. Apply its Supabase migration, then retry.'
+        : error.message);
+      if (typeof data !== 'string') throw new Error('Approval was not confirmed. Refresh before retrying.');
+      await fetchInvoices(false);
+      toast.success('Invoice approved', { description: 'No email has been sent. Choose Send to client when ready.' });
+      return true;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to approve this invoice.');
+      return false;
+    } finally {
+      workflowInFlight.current.delete(invoice.id);
+    }
+  };
+
   const updateInvoiceStatus = async (invoiceId: string, status: Invoice['status'], silent = false) => {
     try {
+      if (!['paid', 'cancelled'].includes(status)) throw new Error('Use Approve invoice or Send to client to progress an invoice.');
       const updateData: Record<string, unknown> = { status };
       
       if (status === 'paid') {
@@ -308,16 +374,13 @@ export function useInvoices(projectId: string | undefined) {
   };
 
   const sendInvoice = async (invoiceId: string) => {
-    const ok = await updateInvoiceStatus(invoiceId, 'sent', true); // silent — toast handled below
-    if (!ok || !projectId) {
-      if (!ok) toast.error('Failed to send invoice');
-      return ok;
-    }
-
-    // Send email to client
+    if (!projectId || workflowInFlight.current.has(invoiceId)) return false;
+    workflowInFlight.current.add(invoiceId);
     try {
+      const invoice = invoices.find(candidate => candidate.id === invoiceId);
+      if (!invoice || invoice.status !== 'approved') throw new Error('Approve this invoice before sending it.');
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return ok;
+      if (!session?.access_token) throw new Error('Please sign in again before sending.');
 
       const res = await fetch('/api/send-invoice-to-client', {
         method: 'POST',
@@ -325,33 +388,23 @@ export function useInvoices(projectId: string | undefined) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ projectId, invoiceId }),
+        body: JSON.stringify({ projectId, invoiceId, expectedRevision: invoice.revision ?? 0 }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || 'Email failed');
       const clientName = json.result?.clientName;
-      toast.success(`Invoice sent to ${clientName || 'client'}`, {
-        description: 'Your client has been emailed the invoice.',
+      toast.success(json.result?.alreadySent ? 'This invoice was already sent' : `Invoice sent to ${clientName || 'client'}`, {
+        description: json.result?.alreadySent ? 'No duplicate email was sent.' : 'Your client has been emailed the invoice.',
       });
+      return true;
     } catch (emailErr) {
       const msg = emailErr instanceof Error ? emailErr.message : String(emailErr);
-      console.error('Invoice email error:', msg);
-      if (msg.includes('Client email not set')) {
-        toast.warning('Invoice marked as sent', {
-          description: 'No client email on file — add a client email in the project details to deliver invoices by email.',
-        });
-      } else if (msg.includes('verify a domain') || msg.includes('testing emails') || msg.includes('403')) {
-        toast.warning('Invoice marked as sent', {
-          description: 'Email delivery requires a verified sender domain in Resend — invoices are saved but emails are paused until this is configured.',
-        });
-      } else {
-        toast.warning('Invoice marked as sent', {
-          description: `Email could not be delivered: ${msg}`,
-        });
-      }
+      toast.error('Invoice delivery was not confirmed', { description: msg });
+      return false;
+    } finally {
+      await fetchInvoices(false);
+      workflowInFlight.current.delete(invoiceId);
     }
-
-    return ok;
   };
 
   const markAsPaid = async (invoiceId: string) => {
@@ -363,41 +416,40 @@ export function useInvoices(projectId: string | undefined) {
   };
 
   const updateInvoiceNumber = async (invoiceId: string, invoiceNumber: string) => {
-    try {
-      const { error } = await supabase
-        .from('invoices')
-        .update({ invoice_number: invoiceNumber })
-        .eq('id', invoiceId);
-
-      if (error) throw error;
-
-      await fetchInvoices();
-      queryClient.invalidateQueries({ queryKey: ['/invoices/all'] });
-      toast.success('Invoice reference updated');
-      return true;
-    } catch (error) {
-      console.error('Error updating invoice number:', error);
-      toast.error('Failed to update invoice reference');
-      return false;
-    }
+    const invoice = invoices.find(candidate => candidate.id === invoiceId);
+    if (!invoice) return false;
+    return saveInvoice(invoice, {
+      invoiceNumber, dueDate: invoice.dueDate?.toISOString().slice(0, 10),
+      notes: invoice.notes ?? '', terms: invoice.terms ?? '', taxRate: invoice.taxRate,
+      lineItems: invoice.lineItems,
+    });
   };
 
   const deleteInvoice = async (invoiceId: string) => {
     try {
+      const invoice = invoices.find(candidate => candidate.id === invoiceId);
+      if (!invoice) throw new Error('Refresh the invoice list before deleting.');
+      if (!['draft', 'approved'].includes(invoice.status)) {
+        throw new Error('Issued and cancelled invoices are retained for financial history and cannot be deleted.');
+      }
+      if (invoice.deliveryPending) throw new Error('Confirm the pending delivery before deleting.');
       // Line items will be cascade deleted
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('invoices')
         .delete()
-        .eq('id', invoiceId);
+        .eq('id', invoiceId)
+        .select('id')
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) throw new Error('Deletion was not confirmed. Refresh the invoice list before retrying.');
 
       await fetchInvoices();
       toast.success('Invoice deleted');
       return true;
     } catch (error) {
       console.error('Error deleting invoice:', error);
-      toast.error('Failed to delete invoice');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete invoice');
       return false;
     }
   };
@@ -414,6 +466,8 @@ export function useInvoices(projectId: string | undefined) {
     refetch: fetchInvoices,
     createInvoice,
     createStageInvoice,
+    saveInvoice,
+    approveInvoice,
     updateInvoiceStatus,
     updateInvoiceNumber,
     sendInvoice,

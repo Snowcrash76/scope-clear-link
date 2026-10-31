@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { Invoice } from '@/types/project';
 import { format } from 'date-fns';
+import { invoiceStatusLabel } from '@/lib/invoiceWorkflow';
 
 function stripHtml(html: string): string {
   if (!html) return '';
@@ -211,6 +212,11 @@ export function generateInvoicePDF(
   col2Y += 8;
 
   doc.setFontSize(8);
+  doc.setTextColor(...mutedColor);
+  doc.text(invoiceStatusLabel(invoice.status), col2X, col2Y);
+  col2Y += 6;
+
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(...mutedColor);
   doc.text('Reference', col2X, col2Y);
@@ -275,7 +281,7 @@ export function generateInvoicePDF(
       stripHtml(item.description),
       item.quantity.toFixed(2),
       item.unitPrice.toLocaleString('en-AU', { minimumFractionDigits: 2 }),
-      '10%',
+      `${invoice.taxRate}%`,
       item.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })
     ]);
 
@@ -333,7 +339,7 @@ export function generateInvoicePDF(
 
   yPos += 7;
   doc.setTextColor(...mutedColor);
-  doc.text('TOTAL GST 10%', totalsX, yPos, { align: 'right' });
+  doc.text(`TOTAL GST ${invoice.taxRate}%`, totalsX, yPos, { align: 'right' });
   doc.setTextColor(...textColor);
   doc.text(`$${invoice.taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}`, totalsValueX, yPos, { align: 'right' });
 

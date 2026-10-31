@@ -13,21 +13,18 @@ import {
   CheckCircle2,
   XCircle,
   DollarSign,
-  Calendar,
   Trash2,
   Eye,
   Clock,
   CreditCard,
   Download,
   Pencil,
-  Check,
-  X,
 } from 'lucide-react';
 import { exportInvoiceToXeroCSV, downloadCSV } from '@/lib/xeroExport';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { toast } from 'sonner';
-import { cn, isVariationItem } from '@/lib/utils';
+import { isVariationItem } from '@/lib/utils';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -44,6 +41,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { StageInvoiceForm } from '@/components/StageInvoiceDialog';
+import { InvoiceEditDialog } from '@/components/InvoiceEditDialog';
+import type { InvoiceEditInput } from '@/lib/invoiceWorkflow';
+import { invoiceStatusLabel } from '@/lib/invoiceWorkflow';
 
 interface InvoiceSectionProps {
   invoices: Invoice[];
@@ -84,6 +84,8 @@ interface InvoiceSectionProps {
     }>;
   }) => Promise<string | null>;
   onUpdateInvoiceNumber?: (invoiceId: string, num: string) => Promise<boolean>;
+  onEditInvoice?: (invoice: Invoice, values: InvoiceEditInput) => Promise<boolean>;
+  onApproveInvoice?: (invoice: Invoice) => Promise<boolean>;
   onSendInvoice: (invoiceId: string) => Promise<boolean>;
   onMarkAsPaid: (invoiceId: string) => Promise<boolean>;
   onCancelInvoice: (invoiceId: string) => Promise<boolean>;
@@ -111,7 +113,8 @@ export function InvoiceSection({
   logoUrl,
   defaultTerms,
   defaultPaymentInstructions,
-  onUpdateInvoiceNumber,
+  onEditInvoice,
+  onApproveInvoice,
   onCreateInvoice,
   onCreateStageInvoice,
   viewInvoiceId,
@@ -124,6 +127,9 @@ export function InvoiceSection({
 }: InvoiceSectionProps) {
   const [isCreating, setIsCreating] = useState(false);
   const [viewingInvoice, setViewingInvoice] = useState<Invoice | null>(null);
+  const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [invoiceActionBusy, setInvoiceActionBusy] = useState<string | null>(null);
+  const [invoiceActionError, setInvoiceActionError] = useState<Record<string, string>>({});
   useEffect(() => {
     if (!viewInvoiceId) return;
     const invoice = invoices.find(candidate => candidate.id === viewInvoiceId);
@@ -132,19 +138,6 @@ export function InvoiceSection({
       onViewedInvoice?.();
     }
   }, [viewInvoiceId, invoices, onViewedInvoice]);
-
-  // Inline invoice reference editing
-  const [editingInvRef, setEditingInvRef] = useState<string | null>(null);
-  const [invRefValue, setInvRefValue] = useState('');
-  const [isSavingInvRef, setIsSavingInvRef] = useState(false);
-
-  const handleSaveInvRef = async () => {
-    if (!editingInvRef || !invRefValue.trim() || !onUpdateInvoiceNumber) return;
-    setIsSavingInvRef(true);
-    const success = await onUpdateInvoiceNumber(editingInvRef, invRefValue.trim());
-    setIsSavingInvRef(false);
-    if (success) setEditingInvRef(null);
-  };
 
   const [invoiceType, setInvoiceType] = useState<'staged' | 'final' | 'deposit' | 'custom' | 'stage'>('staged');
   const [customTypeLabel, setCustomTypeLabel] = useState('');
@@ -196,11 +189,31 @@ export function InvoiceSection({
   const remainingAmount = quoteTotal - totalInvoiced;
 
   const statusConfig = {
-    draft: { label: 'Draft', variant: 'secondary' as const, icon: FileText },
+    draft: { label: invoiceStatusLabel('draft'), variant: 'secondary' as const, icon: FileText },
+    approved: { label: invoiceStatusLabel('approved'), variant: 'pending' as const, icon: CheckCircle2 },
     sent: { label: 'Sent', variant: 'pending' as const, icon: Send },
     paid: { label: 'Paid', variant: 'success' as const, icon: CheckCircle2 },
     overdue: { label: 'Overdue', variant: 'destructive' as const, icon: Clock },
     cancelled: { label: 'Cancelled', variant: 'outline' as const, icon: XCircle },
+  };
+
+  const runInvoiceAction = async (invoice: Invoice, action: () => Promise<boolean>, failedMessage: string): Promise<boolean> => {
+    if (invoiceActionBusy) return false;
+    setInvoiceActionBusy(invoice.id);
+    setInvoiceActionError(current => ({ ...current, [invoice.id]: '' }));
+    try {
+      const success = await action();
+      if (!success) setInvoiceActionError(current => ({ ...current, [invoice.id]: failedMessage }));
+      return success;
+    } catch (error) {
+      setInvoiceActionError(current => ({
+        ...current,
+        [invoice.id]: error instanceof Error ? error.message : failedMessage,
+      }));
+      return false;
+    } finally {
+      setInvoiceActionBusy(null);
+    }
   };
 
   const projectInfo = {
@@ -428,50 +441,7 @@ export function InvoiceSection({
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {isTradeView && editingInvRef === invoice.id ? (
-                          <div className="flex min-w-0 items-center gap-2">
-                            <Input
-                              value={invRefValue}
-                              onChange={e => setInvRefValue(e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter') handleSaveInvRef();
-                                if (e.key === 'Escape') setEditingInvRef(null);
-                              }}
-                              className="h-7 w-full min-w-0 max-w-36 text-sm font-medium"
-                              autoFocus
-                              data-testid={`input-invoice-reference-${invoice.id}`}
-                            />
-                            <button
-                              onClick={handleSaveInvRef}
-                              disabled={isSavingInvRef || !invRefValue.trim()}
-                              className="p-1 rounded hover:bg-muted transition-colors text-primary"
-                              data-testid={`button-save-invoice-reference-${invoice.id}`}
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              onClick={() => setEditingInvRef(null)}
-                              className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground"
-                              data-testid={`button-cancel-invoice-reference-${invoice.id}`}
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1.5 group/invref">
-                            <h4 className="break-all font-medium">{invoice.invoiceNumber}</h4>
-                            {isTradeView && onUpdateInvoiceNumber && (
-                              <button
-                                onClick={() => { setEditingInvRef(invoice.id); setInvRefValue(invoice.invoiceNumber); }}
-                                className="p-1 rounded opacity-0 group-hover/invref:opacity-100 hover:bg-muted transition-all text-muted-foreground"
-                                title="Edit reference"
-                                data-testid={`button-edit-invoice-reference-${invoice.id}`}
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
-                        )}
+                        <h4 className="break-all font-medium">{invoice.invoiceNumber}</h4>
                         <Badge variant={config.variant} className="gap-1">
                           <StatusIcon className="w-3 h-3" />
                           {config.label}
@@ -527,26 +497,49 @@ export function InvoiceSection({
                         <>
                           {invoice.status === 'draft' && (
                             <>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => onSendInvoice(invoice.id)}
-                              >
-                                <Send className="w-4 h-4" />
-                              </Button>
+                              {onEditInvoice && (
+                                <Button size="sm" variant="outline" disabled={!!invoice.deliveryPending || !!invoiceActionBusy} onClick={() => setEditingInvoice(invoice)}>
+                                  <Pencil className="mr-1.5 h-4 w-4" /> Edit invoice
+                                </Button>
+                              )}
+                              {onApproveInvoice && (
+                                <Button size="sm" disabled={!!invoice.deliveryPending || !!invoiceActionBusy} onClick={() => runInvoiceAction(invoice, () => onApproveInvoice(invoice), 'Approval could not be completed. Please retry.')}>
+                                  <CheckCircle2 className="mr-1.5 h-4 w-4" /> {invoiceActionBusy === invoice.id ? 'Approving…' : 'Approve invoice'}
+                                </Button>
+                              )}
                               <Button 
                                 size="sm" 
                                 variant="ghost"
-                                onClick={() => onDeleteInvoice(invoice.id)}
+                                disabled={!!invoice.deliveryPending || !!invoiceActionBusy}
+                                onClick={() => runInvoiceAction(invoice, () => onDeleteInvoice(invoice.id), 'The invoice could not be deleted. Please retry.')}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </>
                           )}
+                          {invoice.status === 'approved' && (
+                            <>
+                              {onEditInvoice && (
+                                <Button size="sm" variant="outline" disabled={!!invoice.deliveryPending || !!invoiceActionBusy} onClick={() => setEditingInvoice(invoice)}>
+                                  <Pencil className="mr-1.5 h-4 w-4" /> Edit invoice
+                                </Button>
+                              )}
+                              <Button size="sm" disabled={!!invoiceActionBusy} onClick={() => runInvoiceAction(invoice, () => onSendInvoice(invoice.id), 'Delivery was not confirmed. Retry delivery to check its status.')}>
+                                <Send className="mr-1.5 h-4 w-4" /> {invoiceActionBusy === invoice.id ? 'Sending…' : invoice.deliveryPending ? 'Retry delivery' : 'Send to client'}
+                              </Button>
+                            </>
+                          )}
+                          {invoice.deliveryPending && (
+                            <span role="status" className="w-full text-sm text-muted-foreground sm:w-auto">Delivery needs confirmation. Edits are paused; retry delivery to check without sending a duplicate.</span>
+                          )}
+                          {invoiceActionError[invoice.id] && (
+                            <p role="alert" className="w-full text-sm text-destructive">{invoiceActionError[invoice.id]}</p>
+                          )}
                           {invoice.status === 'sent' && (
                             <Button 
                               size="sm"
-                              onClick={() => onMarkAsPaid(invoice.id)}
+                              disabled={!!invoiceActionBusy}
+                              onClick={() => runInvoiceAction(invoice, () => onMarkAsPaid(invoice.id), 'The invoice could not be marked as paid. Please retry.')}
                             >
                               <CreditCard className="w-4 h-4 mr-1" />
                               Mark Paid
@@ -556,21 +549,10 @@ export function InvoiceSection({
                             <Button 
                               size="sm" 
                               variant="ghost"
-                              onClick={() => onCancelInvoice(invoice.id)}
+                              disabled={!!invoiceActionBusy}
+                              onClick={() => runInvoiceAction(invoice, () => onCancelInvoice(invoice.id), 'The invoice could not be cancelled. Please retry.')}
                             >
                               <XCircle className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {invoice.status === 'cancelled' && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => onDeleteInvoice(invoice.id)}
-                              title="Delete invoice"
-                              data-testid={`button-delete-invoice-${invoice.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
                             </Button>
                           )}
                           {(invoice.status === 'sent' || invoice.status === 'paid' || invoice.status === 'overdue') && (
@@ -759,8 +741,21 @@ export function InvoiceSection({
       <InvoiceViewModal
         isOpen={!!viewingInvoice}
         onClose={() => setViewingInvoice(null)}
-        invoice={viewingInvoice}
+        invoice={viewingInvoice ? invoices.find(candidate => candidate.id === viewingInvoice.id) ?? viewingInvoice : null}
         project={projectInfo}
+        isTradeView={isTradeView}
+        onEditInvoice={onEditInvoice ? invoice => setEditingInvoice(invoice) : undefined}
+        onApproveInvoice={onApproveInvoice}
+        onSendInvoice={invoiceId => onSendInvoice(invoiceId)}
+      />
+      <InvoiceEditDialog
+        open={!!editingInvoice}
+        invoice={editingInvoice}
+        onOpenChange={open => { if (!open) setEditingInvoice(null); }}
+        onSave={async (invoice, values) => {
+          if (!onEditInvoice || invoice.deliveryPending) return false;
+          return runInvoiceAction(invoice, () => onEditInvoice(invoice, values), 'The invoice could not be saved. Your changes are still here—please retry.');
+        }}
       />
     </div>
   );

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { publicWebOrigin } from '../shared/publicUrls';
 import { sendClientPageLink } from './clientPageEmail';
+import { deliverApprovedInvoice, sendInvoiceEmail } from './invoiceDelivery';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://aswmcyldowvpugmfmykf.supabase.co';
 
@@ -290,7 +291,7 @@ export async function handleSendQuoteToClient(
 }
 
 export async function handleSendInvoiceToClient(
-  body: { projectId: string; invoiceId: string },
+  body: { projectId: string; invoiceId: string; expectedRevision?: number },
   authenticatedUserId: string
 ) {
   const supabase = getSupabaseAdmin();
@@ -367,8 +368,17 @@ export async function handleSendInvoiceToClient(
   </div>
 </body></html>`;
 
-  await sendViaResend(project.client_email, subject, html);
-  return { clientName: project.client_name };
+  const key = getResendKey();
+  const delivery = await deliverApprovedInvoice({
+    db: supabase, projectId, invoiceId, userId: authenticatedUserId,
+    expectedRevision: body.expectedRevision ?? -1,
+    payload: {
+      from: process.env.RESEND_FROM_EMAIL || 'ScopeStream <onboarding@resend.dev>',
+      to: [project.client_email], subject, html,
+    },
+    send: (payload, token) => sendInvoiceEmail(payload, token, key),
+  });
+  return { clientName: project.client_name, ...delivery };
 }
 
 export async function handleQuoteNotification(body: {

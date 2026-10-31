@@ -7,4 +7,4 @@
 - [Supabase pooler read-only checks](supabase-pooler-read-only.md) — verify explicit read-only transactions; the session pooler may ignore PGOPTIONS.
 - [Quote history boundaries](quote-history-boundaries.md) — current scope can repair active quote totals, but must not rewrite historical offers or accepted prices.
 - [Local preview verification](local-preview-verification.md) — distinguish stale dev servers and fixture reloads from application regressions.
-- [Invoice approval](invoice-approval.md) — the trade approves invoices before sending; this is not client approval.
+- [Invoice approval](invoice-approval.md) — trade approval before sending; edits invalidate it and uncertain email retries must retain the same delivery attempt.

@@ -156,6 +156,8 @@ function ProjectManageContent() {
     refetch: refetchInvoices,
     createInvoice,
     createStageInvoice,
+    saveInvoice,
+    approveInvoice,
     updateInvoiceNumber,
     sendInvoice,
     markAsPaid,
@@ -204,6 +206,13 @@ function ProjectManageContent() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [stageInvoiceTarget, setStageInvoiceTarget] = useState<ProjectStage | null>(null);
   const [requestedInvoiceId, setRequestedInvoiceId] = useState<string | null>(null);
+  useEffect(() => {
+    const invoiceId = searchParams.get('invoice');
+    if (invoiceId) {
+      setActiveTab('invoices');
+      setRequestedInvoiceId(invoiceId);
+    }
+  }, [searchParams]);
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
@@ -582,6 +591,8 @@ function ProjectManageContent() {
           ? 'Invoice sent'
           : invoice.status === 'overdue'
             ? 'Invoice overdue'
+            : invoice.status === 'approved'
+              ? 'Invoice approved · ready to send'
             : invoice.status === 'cancelled'
               ? 'Invoice cancelled'
               : 'Invoice created',
@@ -817,6 +828,8 @@ function ProjectManageContent() {
               quote={activeQuote}
               stages={project.stages}
               onCreateStageInvoice={handleCreateStageInvoice}
+              onEditInvoice={saveInvoice}
+              onApproveInvoice={approveInvoice}
               viewInvoiceId={requestedInvoiceId}
               onViewedInvoice={() => setRequestedInvoiceId(null)}
               scopeItems={project.scopeItems}

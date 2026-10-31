@@ -259,6 +259,10 @@ export type Database = {
       }
       invoices: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
+          revision: number
+          delivery_token: string | null
           amount_paid: number | null
           created_at: string
           due_date: string | null
@@ -279,6 +283,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          revision?: number
+          delivery_token?: string | null
           amount_paid?: number | null
           created_at?: string
           due_date?: string | null
@@ -299,6 +307,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          revision?: number
+          delivery_token?: string | null
           amount_paid?: number | null
           created_at?: string
           due_date?: string | null
@@ -707,6 +719,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      save_invoice_for_approval: {
+        Args: {
+          p_project_id: string
+          p_invoice_id: string
+          p_expected_revision: number
+          p_invoice_number: string
+          p_due_date: string | null
+          p_notes: string
+          p_terms: string
+          p_tax_rate: number
+          p_line_items: Json
+        }
+        Returns: string
+      }
+      approve_invoice: {
+        Args: { p_project_id: string; p_invoice_id: string; p_expected_revision: number }
+        Returns: string
+      }
       create_stage_invoice: {
         Args: {
           p_project_id: string

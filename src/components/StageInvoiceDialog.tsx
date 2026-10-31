@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Invoice, ProjectStage, Quote } from '@/types/project';
 import { getStageBilling, activeStageInvoice } from '@/lib/stageBilling';
+import { invoiceStatusLabel } from '@/lib/invoiceWorkflow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -172,7 +173,7 @@ export function StageInvoiceForm({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-3">
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-            This stage already has an invoice ({activeInvoice.invoiceNumber} · {activeInvoice.status}).
+            This stage already has an invoice ({activeInvoice.invoiceNumber} · {invoiceStatusLabel(activeInvoice.status)}).
           </p>
           <Button type="button" size="sm" variant="outline" onClick={() => onViewInvoice(activeInvoice)}>
             <FileText className="mr-2 h-4 w-4" aria-hidden="true" />

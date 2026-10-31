@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,9 +11,10 @@ import { Separator } from '@/components/ui/separator';
 import { Invoice } from '@/types/project';
 import { RichTextContent } from '@/components/RichTextEditor';
 import { format } from 'date-fns';
-import { Download, FileText, CheckCircle2, Clock, XCircle, Send } from 'lucide-react';
+import { Download, FileText, CheckCircle2, Clock, XCircle, Send, Pencil } from 'lucide-react';
 import { downloadInvoicePDF } from '@/lib/invoicePdf';
 import { toast } from 'sonner';
+import { invoiceStatusLabel } from '@/lib/invoiceWorkflow';
 
 interface ProjectInfo {
   name: string;
@@ -33,13 +35,29 @@ interface InvoiceViewModalProps {
   onClose: () => void;
   invoice: Invoice | null;
   project: ProjectInfo;
+  isTradeView?: boolean;
+  onEditInvoice?: (invoice: Invoice) => void;
+  onApproveInvoice?: (invoice: Invoice) => Promise<boolean>;
+  onSendInvoice?: (invoiceId: string) => Promise<boolean>;
 }
 
-export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceViewModalProps) {
+export function InvoiceViewModal({
+  isOpen,
+  onClose,
+  invoice,
+  project,
+  isTradeView = false,
+  onEditInvoice,
+  onApproveInvoice,
+  onSendInvoice,
+}: InvoiceViewModalProps) {
+  const [busyAction, setBusyAction] = useState<'approve' | 'send' | null>(null);
+  const [actionError, setActionError] = useState('');
   if (!invoice) return null;
 
   const statusConfig = {
-    draft: { label: 'Draft', variant: 'secondary' as const, icon: FileText },
+    draft: { label: invoiceStatusLabel('draft'), variant: 'secondary' as const, icon: FileText },
+    approved: { label: invoiceStatusLabel('approved'), variant: 'pending' as const, icon: CheckCircle2 },
     sent: { label: 'Sent', variant: 'pending' as const, icon: Send },
     paid: { label: 'Paid', variant: 'success' as const, icon: CheckCircle2 },
     overdue: { label: 'Overdue', variant: 'destructive' as const, icon: Clock },
@@ -59,6 +77,26 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
     }
   };
 
+  const runAction = async (action: 'approve' | 'send') => {
+    if (busyAction || (action === 'approve' && invoice.deliveryPending)) return;
+    const callback = action === 'approve'
+      ? (onApproveInvoice ? () => onApproveInvoice(invoice) : undefined)
+      : (onSendInvoice ? () => onSendInvoice(invoice.id) : undefined);
+    if (!callback) return;
+    setBusyAction(action);
+    setActionError('');
+    try {
+      const success = await callback();
+      if (!success) setActionError(action === 'approve'
+        ? 'Approval could not be completed. Please retry.'
+        : 'The invoice could not be sent. Please retry.');
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'This action could not be completed. Please retry.');
+    } finally {
+      setBusyAction(null);
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="flex max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-2xl flex-col overflow-hidden p-4 sm:max-h-[calc(100dvh-2rem)] sm:w-[calc(100vw-2rem)] sm:p-6">
@@ -67,14 +105,37 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
             <DialogTitle className="max-h-[25dvh] min-w-0 overflow-y-auto break-all text-xl font-bold">
               Invoice {invoice.invoiceNumber}
             </DialogTitle>
-            <Button className="shrink-0" variant="outline" size="sm" onClick={handleDownload}>
-              <Download className="w-4 h-4 mr-2" />
-              Download PDF
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button className="shrink-0" variant="outline" size="sm" onClick={handleDownload}>
+                <Download className="w-4 h-4 mr-2" />
+                Download PDF
+              </Button>
+              {isTradeView && (invoice.status === 'draft' || invoice.status === 'approved') && onEditInvoice && (
+                <Button type="button" className="shrink-0" variant="outline" size="sm" onClick={() => onEditInvoice(invoice)} disabled={!!invoice.deliveryPending || !!busyAction}>
+                  <Pencil className="mr-2 h-4 w-4" /> Edit invoice
+                </Button>
+              )}
+              {isTradeView && invoice.status === 'draft' && onApproveInvoice && (
+                <Button type="button" className="shrink-0" size="sm" onClick={() => runAction('approve')} disabled={!!invoice.deliveryPending || !!busyAction}>
+                  <CheckCircle2 className="mr-2 h-4 w-4" /> {busyAction === 'approve' ? 'Approving…' : 'Approve invoice'}
+                </Button>
+              )}
+              {isTradeView && invoice.status === 'approved' && onSendInvoice && (
+                <Button type="button" className="shrink-0" size="sm" onClick={() => runAction('send')} disabled={!!busyAction}>
+                  <Send className="mr-2 h-4 w-4" /> {busyAction === 'send' ? 'Sending…' : invoice.deliveryPending ? 'Retry delivery' : 'Send to client'}
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
         <div className="min-h-0 min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain py-4">
+          {invoice.deliveryPending && isTradeView && (
+            <p role="status" className="rounded-md border border-primary/20 bg-primary/[0.04] p-3 text-sm text-muted-foreground">
+              Delivery needs confirmation. Editing is paused; retry delivery to check without sending a duplicate.
+            </p>
+          )}
+          {actionError && <p role="alert" className="rounded-md border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive">{actionError}</p>}
           {/* Status and Type */}
           <div className="flex flex-wrap items-center gap-3">
             <Badge variant={config.variant} className="gap-1">
@@ -102,7 +163,7 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">Issued Date</p>
+              <p className="text-sm text-muted-foreground">Created Date</p>
               <p className="font-medium">{format(invoice.createdAt, 'dd MMM yyyy')}</p>
             </div>
             {invoice.dueDate && (
@@ -115,6 +176,14 @@ export function InvoiceViewModal({ isOpen, onClose, invoice, project }: InvoiceV
               <div>
                 <p className="text-sm text-muted-foreground">Paid Date</p>
                 <p className="font-medium text-approved">{format(invoice.paidAt, 'dd MMM yyyy')}</p>
+              </div>
+            )}
+            {invoice.approvedAt && (
+              <div>
+                <p className="text-sm text-muted-foreground">Approved</p>
+                <p className="font-medium">
+                  {format(invoice.approvedAt, 'dd MMM yyyy')}
+                </p>
               </div>
             )}
           </div>

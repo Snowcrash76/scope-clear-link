@@ -26,6 +26,7 @@ import {
   ListFilter,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { invoiceDisplayStatus } from "@/lib/invoiceWorkflow";
 import {
   format,
   isWithinInterval,
@@ -34,10 +35,11 @@ import {
   endOfDay,
 } from "date-fns";
 
-type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "cancelled";
+type InvoiceStatus = "draft" | "approved" | "sent" | "paid" | "overdue" | "cancelled";
 
 const ALL_STATUSES: InvoiceStatus[] = [
   "draft",
+  "approved",
   "sent",
   "paid",
   "overdue",
@@ -46,6 +48,7 @@ const ALL_STATUSES: InvoiceStatus[] = [
 
 const STATUS_VARIANTS: Record<InvoiceStatus, string> = {
   draft: "bg-muted text-muted-foreground",
+  approved: "bg-success/10 text-success",
   sent: "bg-warning/10 text-warning",
   paid: "bg-success/10 text-success",
   overdue: "bg-destructive/10 text-destructive",
@@ -53,7 +56,8 @@ const STATUS_VARIANTS: Record<InvoiceStatus, string> = {
 };
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
-  draft: "Draft",
+  draft: "Pending approval",
+  approved: "Approved",
   sent: "Sent",
   paid: "Paid",
   overdue: "Overdue",
@@ -91,7 +95,7 @@ function useAllInvoices() {
       const { data: invoices, error: ie } = await supabase
         .from("invoices")
         .select(
-          "id, invoice_number, status, total, due_date, created_at, project_id",
+          "id, invoice_number, status, approved_at, total, due_date, created_at, project_id",
         )
         .in("project_id", ids)
         .order("created_at", { ascending: false });
@@ -99,7 +103,7 @@ function useAllInvoices() {
 
       return (invoices ?? []).map((inv) => ({
         ...inv,
-        status: inv.status as InvoiceStatus,
+        status: invoiceDisplayStatus(inv.status, inv.approved_at) as InvoiceStatus,
         projectName: projectMap.get(inv.project_id)?.name ?? "",
         clientName: projectMap.get(inv.project_id)?.client_name ?? "",
       }));
@@ -267,7 +271,7 @@ export default function InvoicesPage() {
           </section>
         )}
         <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border [-webkit-overflow-scrolling:touch]" role="group" aria-label="Invoice status tabs">
-          {(["all", "draft", "sent", "paid", "overdue"] as const).map((tab) => {
+          {(["all", "draft", "approved", "sent", "paid", "overdue"] as const).map((tab) => {
             const count = tab === "all" ? (invoices ?? []).length : (invoices ?? []).filter((invoice) => invoice.status === tab).length;
             const active = tab === "all" ? !isStatusFiltered : statusFilter.size === 1 && statusFilter.has(tab);
             return <button key={tab} type="button" aria-pressed={active}
@@ -510,7 +514,7 @@ export default function InvoicesPage() {
                   type="button"
                   key={inv.id}
                   onClick={() =>
-                    navigate(`/manage/${inv.project_id}?tab=invoices`)
+                    navigate(`/manage/${inv.project_id}?tab=invoices&invoice=${encodeURIComponent(inv.id)}`)
                   }
                   aria-label={`Open invoice ${inv.invoice_number} for ${inv.projectName}`}
                   className="block w-full cursor-pointer text-left transition-colors hover:bg-muted/40 group"

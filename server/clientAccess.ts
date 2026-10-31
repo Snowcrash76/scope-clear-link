@@ -67,12 +67,14 @@ async function constrain(query: any, table: string, scope: Scope, db: any) {
   if (scope.quoteId && ['invoices','invoice_line_items','project_documents','project_stages'].includes(table)) throw new CostApiError(403, 'Use the secure project link to access this section.');
   if (projectTables.includes(table)) {
     query = query.eq('project_id', pid);
+    if (table === 'invoices') query = query.neq('status', 'draft');
     if (table === 'project_documents') query = query.neq('purpose','employee_photo');
     if (table === 'quotes' && scope.quoteId) query = query.eq('id',scope.quoteId);
     return { query };
   }
   const parent = table === 'invoice_line_items' ? 'invoices' : 'quotes';
   let parentQuery = db.from(parent).select('id').eq('project_id', pid);
+  if (parent === 'invoices') parentQuery = parentQuery.neq('status', 'draft');
   if (scope.quoteId) parentQuery = parentQuery.eq('id',scope.quoteId);
   const { data, error } = await parentQuery; portalDbCheck(error);
   return { query: query.in(parent === 'invoices' ? 'invoice_id' : 'quote_id', data?.length ? data.map((r: any) => r.id) : ['00000000-0000-0000-0000-000000000000']) };
