@@ -858,7 +858,7 @@ export default function ClientQuote() {
       </main>
 
       {isActionable && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] shadow-[0_-8px_24px_rgba(50,40,25,0.08)] backdrop-blur sm:hidden">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 px-3 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] shadow-[0_-8px_24px_rgba(28,67,113,0.10)] backdrop-blur sm:hidden">
           <div className="mx-auto flex max-w-3xl gap-2">
             <Button variant="outline" className="min-h-11 flex-1" onClick={() => setActionModal({ open: true, action: 'decline' })}>
               Decline

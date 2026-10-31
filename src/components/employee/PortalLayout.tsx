@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Bell, LogOut, Menu, X } from "lucide-react";
+import { ArrowLeft, Bell, CalendarDays, FileClock, Home, LogOut, Menu, X } from "lucide-react";
 import { usePortalSession } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -40,6 +40,13 @@ export function PortalLayout({
         ["/employee/timesheets", "Timesheets"],
         ["/employee/notifications", "Updates"],
       ];
+  const mobileItems = [
+    { to: "/employee", label: "Today", icon: Home },
+    { to: "/employee/week", label: "Week", icon: CalendarDays },
+    { to: "/schedule", label: "Schedule", icon: CalendarDays },
+    { to: "/employee/timesheets", label: "Timesheets", icon: FileClock },
+    { to: "/employee/notifications", label: "Updates", icon: Bell },
+  ];
   if (embedded) return <div className="portal-shell">{children}</div>;
   return (
     <div className={shell}>
@@ -68,7 +75,8 @@ export function PortalLayout({
               <Link
                 key={to}
                 to={to}
-                className={`min-h-11 rounded-xl px-3.5 py-3 text-sm font-medium ${active(to) ? "bg-muted text-muted-foreground" : "text-muted-foreground hover:bg-muted"}`}
+                className={`min-h-11 rounded-xl px-3.5 py-3 text-sm font-medium ${active(to) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted"}`}
+                aria-current={active(to) ? "page" : undefined}
               >
                 {label}
               </Link>
@@ -130,10 +138,21 @@ export function PortalLayout({
                 {label}
               </Link>
             ))}
+            <button
+              type="button"
+              className={`${outline} col-span-2 justify-start`}
+              onClick={async () => {
+                await signOut();
+                navigate("/employee/login");
+              }}
+            >
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
           </nav>
         )}
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-9">
+      <main className="mx-auto w-full max-w-6xl px-4 py-6 pb-28 sm:px-6 sm:py-9 sm:pb-9">
         {!management && employee && (
           <div className="mb-6 flex items-center justify-between">
             <div>
@@ -147,6 +166,27 @@ export function PortalLayout({
         )}
         {children}
       </main>
+      {!management && employee && (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[env(safe-area-inset-bottom)] pt-1 shadow-[0_-8px_24px_rgba(28,67,113,.08)] backdrop-blur md:hidden"
+          aria-label="Field portal"
+        >
+          {mobileItems.map(({ to, label, icon: Icon }) => {
+            const selected = active(to);
+            return (
+              <Link
+                key={to}
+                to={to}
+                aria-current={selected ? "page" : undefined}
+                className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg px-0.5 py-2 text-center text-xs font-semibold ${selected ? "text-primary" : "text-muted-foreground"}`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                <span>{label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      )}
     </div>
   );
 }

@@ -7,12 +7,12 @@ import { localDate } from "../../../shared/employeePortal";
 export const shell = "portal-shell";
 
 export const card =
-  "rounded-2xl border border-border bg-background shadow-[0_3px_14px_rgba(33,54,43,.045)]";
+  "rounded-2xl border border-border bg-card shadow-card";
 
 export const btn =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
 
-export const primary = `${btn} bg-success text-success-foreground hover:bg-success/90`;
+export const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`;
 
 export const outline = `${btn} border border-input bg-background text-foreground hover:bg-accent/20`;
 

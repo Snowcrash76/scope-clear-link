@@ -4,7 +4,7 @@ import type {
 } from "../../../shared/employeePortal";
 
 export const card =
-  "rounded-2xl border border-border bg-background shadow-[0_3px_14px_rgba(33,54,43,.045)]";
+  "rounded-2xl border border-border bg-card shadow-card";
 
 export const btn =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
