@@ -24,11 +24,13 @@ export function ClientDetailsCard({
   onSave,
   open: controlledOpen,
   onOpenChange,
+  compact = false,
 }: {
   project: Project;
   onSave: (values: ClientEditValues, applyToAll: boolean) => Promise<boolean>;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  compact?: boolean;
 }) {
   const [localOpen, setLocalOpen] = useState(false);
   const open = controlledOpen ?? localOpen;
@@ -85,7 +87,35 @@ export function ClientDetailsCard({
     : undefined;
   return (
     <>
-      <section className="rounded-xl border border-border bg-card p-4 shadow-soft" aria-labelledby="job-client-title">
+      <section
+        className={compact ? "min-w-0" : "rounded-xl border border-border bg-card p-4 shadow-soft"}
+        aria-labelledby={compact ? undefined : "job-client-title"}
+        aria-label={compact ? "Client details" : undefined}
+      >
+        {compact ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+            <span className="max-w-full truncate font-medium text-foreground">{project.clientName || "Client details missing"}</span>
+            {project.clientEmail ? (
+              <a className="flex min-w-0 items-center gap-1.5 truncate hover:text-foreground hover:underline" href={`mailto:${project.clientEmail}`}>
+                <Mail className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{project.clientEmail}</span>
+              </a>
+            ) : <span className="text-muted-foreground">No email saved</span>}
+            {project.clientPhone && (
+              <a className="flex min-w-0 items-center gap-1.5 hover:text-foreground hover:underline" href={`tel:${project.clientPhone.replace(/[^\d+]/g, "")}`}>
+                <Phone className="h-3.5 w-3.5 shrink-0" /><span>{project.clientPhone}</span>
+              </a>
+            )}
+            {project.clientAddress ? (
+              <a className="flex min-w-0 items-center gap-1.5 truncate hover:text-foreground hover:underline" href={addressSearch} target="_blank" rel="noreferrer">
+                <MapPin className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{project.clientAddress}</span>
+              </a>
+            ) : <span className="text-muted-foreground">No address saved</span>}
+            <Button type="button" variant="link" className="h-8 min-h-8 shrink-0 px-1 text-sm font-medium text-muted-foreground" onClick={() => setOpen(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />Edit client
+            </Button>
+          </div>
+        ) : (
+          <>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 id="job-client-title" className="text-sm font-bold uppercase tracking-wide text-muted-foreground">Client</h2>
@@ -112,6 +142,8 @@ export function ClientDetailsCard({
             </a>
           ) : <p className="flex min-h-11 items-center gap-2 px-2 text-muted-foreground"><MapPin className="h-4 w-4" />No address saved</p>}
         </div>
+          </>
+        )}
       </section>
       <Dialog open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <DialogContent className="w-[calc(100vw-1rem)] max-w-lg">

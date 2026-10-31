@@ -231,23 +231,11 @@ function ProjectManageContent() {
   const [defaultTerms, setDefaultTerms] = useState<string>('');
   const [defaultQuoteTerms, setDefaultQuoteTerms] = useState<string>('');
   const [defaultPaymentInstructions, setDefaultPaymentInstructions] = useState<string>('');
-  // Dismissed notification state — persisted per project in localStorage
+  // Dismissed attention notice state — persisted per project in localStorage
   const [dismissedActionCount, setDismissedActionCount] = useState<number>(() => {
     if (!id) return -1;
     const v = localStorage.getItem(`notif-action-required-${id}`);
     return v !== null ? parseInt(v, 10) : -1;
-  });
-  const [dismissedVariationIds, setDismissedVariationIds] = useState<Set<string>>(() => {
-    if (!id) return new Set();
-    const v = localStorage.getItem(`notif-variation-update-${id}`);
-    if (!v) return new Set();
-    try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
-  });
-  const [dismissedDocIds, setDismissedDocIds] = useState<Set<string>>(() => {
-    if (!id) return new Set();
-    const v = localStorage.getItem(`notif-new-docs-${id}`);
-    if (!v) return new Set();
-    try { return new Set(JSON.parse(v) as string[]); } catch { return new Set(); }
   });
 
   useEffect(() => {
@@ -263,18 +251,6 @@ function ProjectManageContent() {
     if (!id) return;
     const actionVal = localStorage.getItem(`notif-action-required-${id}`);
     setDismissedActionCount(actionVal !== null ? parseInt(actionVal, 10) : -1);
-    const varVal = localStorage.getItem(`notif-variation-update-${id}`);
-    if (varVal) {
-      try { setDismissedVariationIds(new Set(JSON.parse(varVal) as string[])); } catch { setDismissedVariationIds(new Set()); }
-    } else {
-      setDismissedVariationIds(new Set());
-    }
-    const docVal = localStorage.getItem(`notif-new-docs-${id}`);
-    if (docVal) {
-      try { setDismissedDocIds(new Set(JSON.parse(docVal) as string[])); } catch { setDismissedDocIds(new Set()); }
-    } else {
-      setDismissedDocIds(new Set());
-    }
   }, [id]);
 
   const [tradeProfileInfo, setTradeProfileInfo] = useState<{
@@ -596,11 +572,6 @@ function ProjectManageContent() {
 
   // Derived visibility — reappears automatically when new items arrive
   const showActionRequired = pendingClientRequests.length > 0 && pendingClientRequests.length > dismissedActionCount;
-  const showVariationUpdate = recentlyResolvedChanges.length > 0 && recentlyResolvedChanges.some(cr => !dismissedVariationIds.has(cr.id));
-  const recentlyUploadedDocs = documents.filter(
-    doc => (Date.now() - new Date(doc.created_at).getTime()) < RECENTLY_RESOLVED_MS
-  );
-  const showDocNotification = recentlyUploadedDocs.length > 0 && recentlyUploadedDocs.some(doc => !dismissedDocIds.has(doc.id));
   const activityEvents = [
     { id: 'job-created', timestamp: project.createdAt, label: 'Job created', detail: project.name, kind: 'job' as const },
     ...(activeQuote ? [
@@ -657,17 +628,6 @@ function ProjectManageContent() {
     localStorage.setItem(`notif-action-required-${id}`, String(count));
     setDismissedActionCount(count);
   };
-  const dismissVariationUpdate = () => {
-    const ids = recentlyResolvedChanges.map(cr => cr.id);
-    localStorage.setItem(`notif-variation-update-${id}`, JSON.stringify(ids));
-    setDismissedVariationIds(new Set(ids));
-  };
-  const dismissDocNotification = () => {
-    const ids = recentlyUploadedDocs.map(doc => doc.id);
-    localStorage.setItem(`notif-new-docs-${id}`, JSON.stringify(ids));
-    setDismissedDocIds(new Set(ids));
-  };
-
   return (
     <AppShell>
       <ProjectManageHeader
@@ -676,7 +636,7 @@ function ProjectManageContent() {
         onTabChange={setActiveTab}
         pendingVariationCount={pendingClientRequests.length + project.changeRequests.filter(awaitingClientApproval).length}
         isDuplicating={isDuplicating}
-        onBack={() => navigate('/dashboard')}
+        onBack={() => navigate('/projects')}
         onAddVariation={() => setIsSendingChangeRequest(true)}
         onDuplicateProject={handleDuplicateProject}
         onSaveClient={handleSaveClientDetails}
@@ -687,39 +647,34 @@ function ProjectManageContent() {
         onUpdateProjectStatus={updateProjectStatus}
       />
 
-      <PageLayout headerless className="!py-6">
-        <ProjectManageNotifications
-          showActionRequired={showActionRequired}
-          showVariationUpdate={showVariationUpdate}
-          showDocNotification={showDocNotification}
-          pendingClientRequestCount={pendingClientRequests.length}
-          recentlyResolvedChanges={recentlyResolvedChanges}
-          newDocumentCount={recentlyUploadedDocs.filter(doc => !dismissedDocIds.has(doc.id)).length}
-          onDismissActionRequired={dismissActionRequired}
-          onDismissVariationUpdate={dismissVariationUpdate}
-          onDismissDocNotification={dismissDocNotification}
-        />
-
+      <PageLayout headerless className="!pt-0 !pb-6">
         <div className="grid min-w-0 grid-cols-1 gap-5">
           <JobSectionMenu
             value={activeTab}
             onValueChange={setActiveTab}
-            invoiceCount={invoices.filter((invoice) => invoice.status === 'sent' || invoice.status === 'overdue').length}
+            invoiceCount={invoices.filter((invoice) => invoice.status === 'overdue').length}
             pendingVariationCount={pendingClientRequests.length + project.changeRequests.filter(awaitingClientApproval).length}
             needsTradeResponseCount={pendingClientRequests.length}
-            documentCount={documents.length}
-            stageCount={project.stages.length}
-            stageBadge={project.stages.length ? `${project.stages.filter((stage) => stage.status === 'completed').length}/${project.stages.length}` : undefined}
+          />
+          <ProjectManageNotifications
+            showActionRequired={showActionRequired}
+            pendingClientRequestCount={pendingClientRequests.length}
+            overdueInvoiceCount={invoices.filter((invoice) => invoice.status === 'overdue').length}
+            onDismissActionRequired={dismissActionRequired}
+            activeTab={activeTab}
+            onNavigate={setActiveTab}
           />
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full min-w-0">
           <TabsContent value="overview" className="mt-0" role="region" aria-label="Overview">
             <ProjectOverview
               project={project}
               documents={documents}
-              unpaidInvoiceCount={invoices.filter((invoice) => invoice.status === 'sent' || invoice.status === 'overdue').length}
-              originalQuoteTotal={activeQuote?.subtotal ?? 0}
-              approvedVariationTotal={project.changeRequests.filter((item) => item.status === 'approved').reduce((total, item) => total + item.costImpact, 0)}
-              onSaveClient={handleSaveClientDetails}
+              overdueInvoiceCount={invoices.filter((invoice) => invoice.status === 'overdue').length}
+              quoteSubtotal={activeQuote?.subtotal ?? null}
+              quoteLoading={quotesLoading}
+              quoteError={Boolean(quotesError)}
+              quoteExists={Boolean(activeQuote)}
+              quoteWaitingOnClient={activeQuote?.status === 'sent'}
               onChangeTab={setActiveTab}
             />
           </TabsContent>

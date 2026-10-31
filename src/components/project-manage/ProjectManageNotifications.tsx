@@ -1,115 +1,40 @@
-import { Card } from '@/components/ui/card';
-import type { ChangeRequest } from '@/types/project';
-import { AlertCircle, CheckCircle2, FolderOpen, X } from 'lucide-react';
+import { AlertCircle, ArrowRight, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 type ProjectManageNotificationsProps = {
   showActionRequired: boolean;
-  showVariationUpdate: boolean;
-  showDocNotification: boolean;
   pendingClientRequestCount: number;
-  recentlyResolvedChanges: ChangeRequest[];
-  newDocumentCount: number;
+  overdueInvoiceCount: number;
   onDismissActionRequired: () => void;
-  onDismissVariationUpdate: () => void;
-  onDismissDocNotification: () => void;
+  activeTab: string;
+  onNavigate: (tab: string) => void;
 };
 
 export function ProjectManageNotifications({
   showActionRequired,
-  showVariationUpdate,
-  showDocNotification,
   pendingClientRequestCount,
-  recentlyResolvedChanges,
-  newDocumentCount,
+  overdueInvoiceCount,
   onDismissActionRequired,
-  onDismissVariationUpdate,
-  onDismissDocNotification,
+  activeTab,
+  onNavigate,
 }: ProjectManageNotificationsProps) {
-  if (!showActionRequired && !showVariationUpdate && !showDocNotification) return null;
+  // Overview already presents this action in its single next-action card.
+  const hasVariationAction = showActionRequired && activeTab !== 'overview' && activeTab !== 'changes';
+  const hasOverdueInvoice = overdueInvoiceCount > 0 && activeTab !== 'overview' && activeTab !== 'invoices';
+  if (!hasVariationAction && !hasOverdueInvoice) return null;
 
   return (
-    <div className="mb-6 space-y-3">
-      {showActionRequired && (
-        <Card className="border-pending/30 bg-pending/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 rounded-full bg-pending/20 p-2">
-              <AlertCircle className="h-5 w-5 text-pending-foreground" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-heading font-semibold text-pending-foreground">Action Required</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Your client has submitted {pendingClientRequestCount} variation{pendingClientRequestCount > 1 ? 's' : ''} that {pendingClientRequestCount > 1 ? 'need' : 'needs'} your response — see the Variations tab.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onDismissActionRequired}
-              data-testid="button-dismiss-action-required"
-              className="flex-shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Dismiss notification"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </Card>
-      )}
-      {showDocNotification && (
-        <Card className="border-primary/20 bg-primary/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 rounded-full bg-primary/10 p-2">
-              <FolderOpen className="h-5 w-5 text-primary" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-heading font-semibold text-primary">New Documents</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {newDocumentCount === 1
-                  ? '1 document was uploaded recently — see the Documents tab.'
-                  : `${newDocumentCount} documents were uploaded recently — see the Documents tab.`}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onDismissDocNotification}
-              data-testid="button-dismiss-doc-notification"
-              className="flex-shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Dismiss notification"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </Card>
-      )}
-      {showVariationUpdate && (
-        <Card className="border-approved/20 bg-approved/5 p-4">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 rounded-full bg-approved/10 p-2">
-              <CheckCircle2 className="h-5 w-5 text-approved" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="font-heading font-semibold text-approved">Variations Update</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {(() => {
-                  const approvedCount = recentlyResolvedChanges.filter(change => change.status === 'approved').length;
-                  const declinedCount = recentlyResolvedChanges.filter(change => change.status === 'declined').length;
-                  const parts: string[] = [];
-                  if (approvedCount > 0) parts.push(`${approvedCount} variation${approvedCount > 1 ? 's' : ''} approved`);
-                  if (declinedCount > 0) parts.push(`${declinedCount} variation${declinedCount > 1 ? 's' : ''} declined`);
-                  return `${parts.join(' and ')} by your client recently — see the Variations tab for details.`;
-                })()}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onDismissVariationUpdate}
-              data-testid="button-dismiss-variation-update"
-              className="flex-shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              aria-label="Dismiss notification"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        </Card>
-      )}
-    </div>
+    <aside className="mb-3 flex min-h-11 items-center gap-3 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2" role="status" aria-label="Job needs attention">
+      <AlertCircle className="h-4 w-4 shrink-0 text-warning-foreground" aria-hidden="true" />
+      <p className="min-w-0 flex-1 truncate text-sm text-foreground">
+        {hasVariationAction
+          ? `${pendingClientRequestCount} client variation${pendingClientRequestCount === 1 ? '' : 's'} need${pendingClientRequestCount === 1 ? 's' : ''} your response.`
+          : `${overdueInvoiceCount} invoice${overdueInvoiceCount === 1 ? '' : 's'} overdue.`}
+      </p>
+      <Button type="button" variant="link" className="h-9 min-h-9 shrink-0 gap-1 px-1 text-sm" onClick={() => onNavigate(hasVariationAction ? 'changes' : 'invoices')}>
+        {hasVariationAction ? 'Review' : 'View invoice'} <ArrowRight className="h-3.5 w-3.5" />
+      </Button>
+      {hasVariationAction && <Button type="button" variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-muted-foreground" onClick={onDismissActionRequired} aria-label="Dismiss attention notice" data-testid="button-dismiss-action-required"><X className="h-4 w-4" /></Button>}
+    </aside>
   );
 }

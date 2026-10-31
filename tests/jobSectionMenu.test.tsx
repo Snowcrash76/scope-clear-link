@@ -22,10 +22,11 @@ test('job-section navigation exposes the current section and the complete sectio
   }
 });
 
-test('job page uses a grouped section selector and keeps each named content region', () => {
+test('job page keeps a horizontal section selector and each named content region', () => {
   const source = readFileSync('src/pages/ProjectManage.tsx', 'utf8');
   const header = readFileSync('src/components/project-manage/ProjectManageHeader.tsx', 'utf8');
-  assert.match(source, /<ProjectManageHeader[\s\S]*?onTabChange=\{setActiveTab\}/);
+  assert.match(source, /<JobSectionMenu[\s\S]*?onValueChange=\{setActiveTab\}/);
+  assert.match(source, /onBack=\{\(\) => navigate\('\/projects'\)\}/);
   assert.doesNotMatch(source, /<TabsList|<TabsTrigger/);
   for (const [value, label] of [
     ['overview', 'Overview'], ['quote', 'Quote'], ['invoices', 'Invoices'], ['costs', 'Costs'],
@@ -36,7 +37,7 @@ test('job page uses a grouped section selector and keeps each named content regi
   assert.match(source, /<JobSectionMenu/);
   assert.match(source, /invoiceCount=\{invoices\.filter/);
   assert.match(source, /pendingVariationCount=\{pendingClientRequests\.length/);
-  assert.match(source, /documentCount=\{documents\.length\}/);
+  assert.doesNotMatch(source, /documentCount=\{documents\.length\}/);
   assert.doesNotMatch(source, /headerActions=/);
   assert.match(header, /<JobHeader>/);
   assert.equal((header.match(/<JobSectionMenu/g) || []).length, 0);

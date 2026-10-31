@@ -22,13 +22,14 @@ const profit={jobId:pid,jobName:'Synthetic North Fitzroy job',clientName:'Synthe
  quoteStatus:'sent',quoteIsEstimate:true,invoicedExGst:1000,approvedVariationsExGst:0,confirmedCostsExGst:689.96,
  confirmedCostsIncGst:758.97,draftCostsExGst:0,draftCostsIncGst:0,
  costsByCategory:{Materials:689.96,Labour:0,Other:0,Subcontractor:0,'Plant/Equipment':0}};
-const routes=['/dashboard','/projects','/quotes','/invoices','/clients','/profitability','/team','/team/assignments','/team/timesheets','/team/permissions',`/manage/${pid}`,
+const routes=process.env.REDESIGN_ROUTES?.split(',') ?? ['/dashboard','/projects','/quotes','/invoices','/clients','/profitability','/team','/team/assignments','/team/timesheets','/team/permissions',`/manage/${pid}`,
  ...['costs','timesheets','invoices','changes','activity','documents','stages'].map(tab=>`/manage/${pid}?tab=${tab}`)];
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE_PATH});
 const layoutFailures=[];
 try{
  for(const width of (process.env.REDESIGN_WIDTHS || '375,1280').split(',').map(Number))for(const routePath of routes.filter(path=>!process.env.REDESIGN_ROUTE||path===process.env.REDESIGN_ROUTE)){
   const page=await browser.newPage({viewport:{width,height:900}}),errors=[];
+  if(process.env.JOB_FOLLOWUP_QUIET)await page.addInitScript(()=>{window.__quietJobFixture=true;});
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
    const path=new URL(route.request().url()).pathname;
@@ -51,6 +52,82 @@ try{
   const fits=await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth);
   if(!fits)layoutFailures.push(`${routePath} overflows ${width}px`);
   assert.doesNotMatch(await page.locator('body').innerText(),/NaN|Infinity|Something went wrong/);
+  if((process.env.JOB_FOLLOWUP_CHECKS||!process.env.BASELINE_REF)&&routePath.startsWith('/manage/')){
+   const header=page.getByTestId('job-header');
+   await header.waitFor();
+   assert.equal(await page.getByRole('button',{name:'Actions',exact:true}).count(),0);
+   assert.equal(await page.getByText('Variations Update',{exact:true}).count(),0);
+   assert.equal(await page.getByText('No urgent job actions',{exact:true}).count(),0);
+   assert.equal(await page.getByText('Synthetic client',{exact:true}).count(),1,'client name rendered once');
+   assert.equal(await header.getByRole('link',{name:'client@example.invalid',exact:true}).count(),1);
+   assert.match(await header.getByRole('link',{name:'client@example.invalid',exact:true}).getAttribute('href'),/^mailto:/);
+   const actions=[
+    header.getByRole('button',{name:'View client page',exact:true}),
+    header.getByRole('button',{name:'Copy link',exact:true}),
+    header.getByRole('button',{name:'Send to client',exact:true}),
+   ];
+   const boxes=[];
+   for(const action of actions){assert.ok(await action.isVisible());boxes.push(await action.boundingBox());}
+   assert.ok(boxes.every(box=>Math.abs(box.y-boxes[0].y)<3),'client actions share one row');
+   assert.ok(boxes[0].x<boxes[1].x&&boxes[1].x<boxes[2].x);
+   const headerBox=await header.boundingBox();
+   if(width>=1280)assert.ok(boxes[0].x>headerBox.x+headerBox.width*.35,'desktop actions right aligned');
+   if(width===375)assert.ok(boxes[2].x+boxes[2].width-boxes[0].x>headerBox.width-72,'three phone actions fill their row');
+   const nav=page.getByRole('navigation',{name:'Job sections'});
+   assert.equal(await nav.locator('svg').count(),0,'text-only tabs');
+   assert.ok(await nav.evaluate(el=>{
+    for(let parent=el;parent&&parent!==document.body;parent=parent.parentElement){
+     if(['sticky','fixed'].includes(getComputedStyle(parent).position))return false;
+    }return true;
+   }),'tab bar and its ancestors stay in normal document flow');
+   for(const tab of await nav.locator('button[data-section-item]').all()){
+    const box=await tab.boundingBox();assert.ok(box.height>=44,'44px tab target');
+   }
+   if(process.env.JOB_FOLLOWUP_ALL_TABS){
+    for(const [section,label] of [['overview','Overview'],['quote','Quote'],['changes','Variations'],['stages','Stages'],['costs','Costs'],['invoices','Invoices'],['staff','Assigned staff'],['documents','Documents'],['activity','Activity']]){
+     await page.getByTestId(`job-section-${section}`).click();
+     await page.getByRole('region',{name:label,exact:true}).waitFor();
+     for(const action of actions)assert.ok(await action.isVisible(),`header action remains on ${label}`);
+    }
+    await page.getByTestId('job-section-overview').click();
+    await page.getByRole('region',{name:'Overview',exact:true}).waitFor();
+   }
+   if(process.env.JOB_FOLLOWUP_QUIET)assert.equal(await page.getByText('Next action',{exact:true}).count(),0);
+   const sidebar=page.locator('aside:visible').first();
+   if(width>=1280){
+    assert.ok(await sidebar.isVisible());
+    const clipping=await sidebar.evaluate(el=>{
+     const left=el.getBoundingClientRect().left;
+     const walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),failures=[];
+     while(walker.nextNode()){
+      const node=walker.currentNode;if(!node.textContent.trim())continue;
+      const range=document.createRange();range.selectNodeContents(node);
+      const rect=range.getBoundingClientRect();
+      if(rect.width&&rect.height&&(rect.left<left+4||rect.left<0))failures.push(node.textContent.trim());
+     }return failures;
+    });
+    assert.deepEqual(clipping,[],'sidebar labels retain visible left padding');
+   }else if(width===375){
+    await page.getByRole('button',{name:'Open navigation',exact:true}).click();
+    const drawer=page.getByRole('dialog',{name:'Navigation',exact:true});
+    await drawer.waitFor();
+    await page.waitForFunction(()=>{
+     const drawer=document.querySelector('[role="dialog"]');
+     return drawer&&drawer.getBoundingClientRect().left>=0;
+    });
+    const labels=await drawer.evaluate(el=>{
+     const range=document.createRange(),walker=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),bad=[];
+     while(walker.nextNode()){
+      if(!walker.currentNode.textContent.trim()||walker.currentNode.parentElement?.closest('.sr-only'))continue;
+      range.selectNodeContents(walker.currentNode);const box=range.getBoundingClientRect();
+      if(box.width>2&&box.height>2&&box.left<4)bad.push(walker.currentNode.textContent.trim());
+     }return bad;
+    });
+    assert.deepEqual(labels,[],'phone drawer text retains visible left padding');
+    await page.keyboard.press('Escape');
+    await drawer.waitFor({state:'hidden'});
+   }
+  }
   if(process.env.REDESIGN_CAPTURE){
    const name=routePath.replace(pid,'job').replace(/[^a-z0-9]+/gi,'-');
    await mkdir(`generated-artifacts/${process.env.REDESIGN_CAPTURE}`,{recursive:true});

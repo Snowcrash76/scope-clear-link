@@ -1,15 +1,4 @@
 import { useEffect, useRef } from "react";
-import {
-  Activity,
-  BriefcaseBusiness,
-  CalendarDays,
-  ClipboardList,
-  Coins,
-  FileText,
-  Users,
-  Wallet,
-  type LucideIcon,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface JobSectionMenuProps {
@@ -24,36 +13,15 @@ export interface JobSectionMenuProps {
 }
 
 const groups = [
-  {
-    label: "",
-    items: [{ value: "overview", label: "Overview", icon: BriefcaseBusiness }],
-  },
-  {
-    label: "Scope",
-    items: [
-      { value: "quote", label: "Quote", icon: ClipboardList },
-      { value: "changes", label: "Variations", icon: Activity },
-      { value: "stages", label: "Stages", icon: CalendarDays },
-    ],
-  },
-  {
-    label: "Money",
-    items: [
-      { value: "costs", label: "Costs", icon: Coins },
-      { value: "invoices", label: "Invoices", icon: Wallet },
-    ],
-  },
-  {
-    label: "People & files",
-    items: [
-      { value: "staff", label: "Team", icon: Users },
-      { value: "documents", label: "Documents", icon: FileText },
-    ],
-  },
-  {
-    label: "",
-    items: [{ value: "activity", label: "Activity", icon: Activity }],
-  },
+  { value: "overview", label: "Overview" },
+  { value: "quote", label: "Quote" },
+  { value: "changes", label: "Variations" },
+  { value: "stages", label: "Stages" },
+  { value: "costs", label: "Costs" },
+  { value: "invoices", label: "Invoices" },
+  { value: "staff", label: "Team" },
+  { value: "documents", label: "Documents" },
+  { value: "activity", label: "Activity" },
 ] as const;
 
 export function JobSectionMenu({
@@ -62,21 +30,11 @@ export function JobSectionMenu({
   invoiceCount = 0,
   pendingVariationCount = 0,
   needsTradeResponseCount = 0,
-  documentCount = 0,
-  stageCount = 0,
-  stageBadge,
 }: JobSectionMenuProps) {
   const navRef = useRef<HTMLElement>(null);
-  const countFor = (section: string) =>
-    section === "invoices"
-      ? invoiceCount
-      : section === "changes"
-        ? pendingVariationCount
-        : section === "documents"
-          ? documentCount
-          : 0;
-  const badgeText = (section: string) =>
-    section === "stages" && stageCount > 0 ? stageBadge ?? `${stageCount}` : countFor(section);
+  const countFor = (section: string) => section === "invoices"
+    ? invoiceCount
+    : section === "changes" ? pendingVariationCount : 0;
   const setSection = (next: string) => {
     onValueChange(next);
   };
@@ -87,11 +45,10 @@ export function JobSectionMenu({
       ?.scrollIntoView({ inline: "nearest", block: "nearest" });
   }, [value]);
 
-  const renderItem = (section: { value: string; label: string; icon: LucideIcon }) => {
+  const renderItem = (section: { value: string; label: string }) => {
     const selected = section.value === value ||
       (section.value === "staff" && value === "employee-updates");
-    const Icon = section.icon;
-    const count = badgeText(section.value);
+    const count = countFor(section.value);
     return (
       <button
         key={section.value}
@@ -106,27 +63,20 @@ export function JobSectionMenu({
               : `${section.label}, ${count} items`
           : section.label}
         className={cn(
-          "flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
-          "justify-start px-3",
+          "relative flex h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
           selected
-            ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary/20"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+            ? "border-primary text-primary"
+            : "border-transparent text-muted-foreground hover:text-foreground",
         )}
         data-testid={`job-section-${section.value}`}
         data-section-item
       >
-        <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
         <span className="whitespace-nowrap">{section.label}</span>
         {count !== 0 && (
           <span
             aria-hidden="true"
             className={cn(
-              "ml-auto min-w-6 rounded-full px-1.5 py-0.5 text-center text-xs tabular-nums",
-              section.value === "changes"
-                ? needsTradeResponseCount > 0
-                  ? "bg-warning text-warning-foreground"
-                  : "bg-warning/15 text-warning"
-                : "bg-muted text-muted-foreground",
+              "min-w-5 rounded-full bg-warning/15 px-1.5 py-0.5 text-center text-xs tabular-nums text-warning-foreground",
             )}
           >
             {count}
@@ -153,30 +103,10 @@ export function JobSectionMenu({
           event.preventDefault();
           buttons[(current + direction + buttons.length) % buttons.length]?.focus();
         }}
-        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-card px-1 py-2"
+        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-transparent px-0"
       >
-        {groups.map((group, index) => (
-          <div key={`${group.label}-${index}`} className="contents">
-            {group.label && (
-              <h2 className="hidden px-3 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
-                {group.label}
-              </h2>
-            )}
-            <div className="flex shrink-0 gap-1">
-              {group.items.map((item) => {
-                const element = renderItem(item);
-                return (
-                  <div key={item.value} className="contents">
-                    {element}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+        {groups.map(renderItem)}
       </nav>
-      <div className="pointer-events-none absolute inset-y-2 left-0 w-4 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-2 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
     </div>
   );
 }

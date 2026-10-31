@@ -20,6 +20,11 @@ const tables:Record<string,any[]>={
  change_requests:[{id:'variation-one',project_id:pid,type:'addition',title:'Additional trim',description:'Requested additional work',
   status:'pending',cost_impact:120,created_at:created}],activity_logs:[],user_roles:[{user_id:uid,role:'admin'}],
 };
+if ((window as any).__quietJobFixture) {
+ tables.change_requests = [];
+ tables.invoices = [];
+ quote.status = 'accepted';
+}
 function query(table:string){
  let rows=[...(tables[table]||[])],single=false,mutation:{action:string;value?:any}|null=null;
  const chain:any={

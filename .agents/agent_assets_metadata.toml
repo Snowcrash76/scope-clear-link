@@ -56,3 +56,17 @@ mtime_ms = 1793431728670
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/6856dec5-ec74-4cdb-97a6-7b4b2268797b/396884f4-f0d4-4388-a7cf-e9011e3c829f"
 storage_version_token = "1793431847481807"
 content_type = "text/html"
+
+[[outputs]]
+id = "zNzqQirRZeoTzr8UM8Zz1"
+uri = "file://generated-artifacts/job-page-followup-comparison.html"
+type = "html"
+title = "Job page — before and after"
+description = "Nine comparisons: Overview, Quote and Variations at 1440, 1280 and 375px, rendered with isolated synthetic data."
+logical_id = "fba382d4-dfd3-4245-91e7-a1c0111188e4"
+content_hash = "sha256:5c1282d4731240d2552cfa58877dd378e96a74cfd16addaf51a039e5594e8417"
+size = 3345835
+mtime_ms = 1793437000137
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/fba382d4-dfd3-4245-91e7-a1c0111188e4/b32a9d22-ce45-4ac2-8de2-f9c6ada8bf85"
+storage_version_token = "1793437125027498"
+content_type = "text/html"

@@ -20,3 +20,9 @@ Keep business Schedule in the normal app layout, put job section navigation abov
 **Why:** The user explicitly requested consistent navigation across these pages.
 
 **How to apply:** Preserve these placements in future navigation redesigns without changing employee access boundaries.
+
+Keep one compact, full-width job header with client details only once and supported overflow actions behind an icon, not a separate “Actions” row. Job tabs are plain text with an active blue underline, in normal flow rather than sticky. Show a next-action card only for a real linked action.
+
+**Why:** The user explicitly requested these refinements after finding repeated client details, redundant variation banners and an idle next-action card confusing.
+
+**How to apply:** Preserve this job-page structure in later design work. Do not restore resolved variation-update banners or invent unsupported archive, delete or client-link rotation actions.

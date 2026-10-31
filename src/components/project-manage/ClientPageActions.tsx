@@ -123,24 +123,24 @@ export function ClientPageActions({
           <DropdownMenuItem onSelect={(event) => { event.preventDefault(); setTo(project.clientEmail ?? ""); setError(""); setSendOpen(true); }}><Mail className="mr-2 h-4 w-4" />Send client page</DropdownMenuItem>
         </>
       ) : (
-        <div className="flex min-w-0 flex-wrap items-center gap-2" aria-label="Client page actions">
-          <Button type="button" variant="outline" className="min-h-11 gap-2" onClick={() => void preview()}>
+        <div className="grid w-full min-w-0 grid-cols-3 gap-1.5 md:flex md:w-auto md:items-center md:gap-2" aria-label="Client page actions">
+          <Button type="button" variant="outline" className="h-auto min-h-11 min-w-0 gap-1 whitespace-normal px-2 text-xs sm:text-sm md:whitespace-nowrap md:px-3 [&>svg]:hidden md:[&>svg]:block" onClick={() => void preview()}>
             <ExternalLink className="h-4 w-4" /> <span>View client page</span>
           </Button>
-          <Button type="button" variant="outline" className="min-h-11 gap-2" onClick={() => void copyLink()}>
+          <Button type="button" variant="outline" className="h-auto min-h-11 min-w-0 gap-1 whitespace-normal px-2 text-xs sm:text-sm md:whitespace-nowrap md:px-3 [&>svg]:hidden md:[&>svg]:block" onClick={() => void copyLink()}>
             <Copy className="h-4 w-4" /> <span>Copy link</span>
           </Button>
           <Button
             type="button"
             variant="accent"
-            className="min-h-11 gap-2"
+            className="h-auto min-h-11 min-w-0 gap-1 whitespace-normal px-2 text-xs sm:text-sm md:whitespace-nowrap md:px-3 [&>svg]:hidden md:[&>svg]:block"
             onClick={() => {
               setTo(project.clientEmail ?? "");
               setError("");
               setSendOpen(true);
             }}
           >
-            <Mail className="h-4 w-4" /> <span>Send to client</span>
+            <Mail className="h-4 w-4 shrink-0" /> <span>Send to client</span>
           </Button>
         </div>
       )}

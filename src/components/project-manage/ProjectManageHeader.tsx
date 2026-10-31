@@ -35,8 +35,6 @@ type ProjectManageHeaderProps = {
 export function ProjectManageHeader({
   project,
   activeQuote,
-  onTabChange,
-  pendingVariationCount,
   isDuplicating,
   onBack,
   onAddVariation,
@@ -50,89 +48,57 @@ export function ProjectManageHeader({
 }: ProjectManageHeaderProps) {
   return (
     <JobHeader>
-      <div className="min-w-0">
-        <div className="flex min-w-0 items-start gap-2 sm:gap-3">
-          <Button variant="ghost" size="icon" className="mt-0.5 h-11 w-11 flex-shrink-0" aria-label="Back to dashboard" onClick={onBack}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="min-w-0 flex-1">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-[.08em] text-primary">JOB WORKSPACE</p>
-            <div className="flex min-w-0 items-start gap-2 sm:gap-3">
-              <h1 className="min-w-0 break-words font-heading text-xl font-bold sm:text-2xl">{project.name}</h1>
-              <StatusBadge className="mt-0.5 shrink-0" status={jobDisplayStatus(project, activeQuote ? {
-                status: activeQuote.status,
-                valid_until: activeQuote.validUntil?.toISOString() ?? null,
-              } : null)} />
-            </div>
+      <section className="relative min-w-0 rounded-xl border border-border bg-card px-4 py-3 shadow-soft sm:px-5" aria-label="Job header">
+        <div className="grid min-w-0 gap-y-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-4">
+          <div className="order-1 flex min-w-0 items-center gap-2.5 pr-10 md:pr-0">
+            <Button type="button" variant="link" className="h-8 min-h-8 shrink-0 gap-1 px-0 text-xs font-medium text-muted-foreground" aria-label="Back to Jobs" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4" /> Jobs
+            </Button>
+            <h1 className="min-w-0 break-words font-heading text-xl font-bold leading-tight sm:text-2xl">{project.name}</h1>
+            <StatusBadge className="shrink-0" status={jobDisplayStatus(project, activeQuote ? {
+              status: activeQuote.status,
+              valid_until: activeQuote.validUntil?.toISOString() ?? null,
+            } : null)} />
           </div>
-        </div>
-
-        <div className="mt-3 flex w-full min-w-0 items-center">
-          <div className="flex min-w-0 shrink-0 items-center gap-0 sm:gap-1">
+          <div className="order-3 flex min-w-0 items-center gap-1.5 md:order-2">
+            <ClientPageActions project={project} onAddEmail={onAddClientEmail} onSendSuccess={onClientPageSent} layout="inline" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-11 shrink-0 gap-2 border-border bg-card px-3 text-sm text-foreground" aria-label="Actions" data-testid="button-project-actions-menu">
-                  <MoreVertical className="w-4 h-4" />
-                  <span>Actions</span>
+                <Button type="button" variant="ghost" size="icon" className="absolute right-2 top-2 h-11 w-11 shrink-0 text-muted-foreground md:static" aria-label="More job actions" data-testid="button-project-actions-menu">
+                  <MoreVertical className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-72">
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>Job actions</DropdownMenuLabel>
                 <DropdownMenuItem onClick={onAddVariation} className="min-h-11 gap-2" data-testid="menu-item-add-variation">
-                  <CheckCircle2 className="h-4 w-4" />
-                  Add variation
+                  <CheckCircle2 className="h-4 w-4" />Add variation
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => void onDuplicateProject()}
-                  disabled={isDuplicating}
-                  className="min-h-11 gap-2"
-                  data-testid="menu-item-duplicate-project"
-                >
-                  {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="w-4 h-4" />}
+                <DropdownMenuItem onClick={() => void onDuplicateProject()} disabled={isDuplicating} className="min-h-11 gap-2" data-testid="menu-item-duplicate-project">
+                  {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
                   {isDuplicating ? 'Creating copy…' : 'Duplicate job'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel className="px-2 py-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Job status</DropdownMenuLabel>
                 {project.status !== 'completed' ? (
                   <DropdownMenuItem onClick={() => void onUpdateProjectStatus('completed')} className="min-h-11 gap-2" data-testid="menu-item-mark-completed">
-                    <CheckCircle2 className="w-4 h-4 text-approved" />
-                    Mark as Completed
+                    <CheckCircle2 className="h-4 w-4 text-approved" />Mark as Completed
                   </DropdownMenuItem>
                 ) : (
                   <DropdownMenuItem onClick={() => void onUpdateProjectStatus('in_progress')} className="min-h-11 gap-2" data-testid="menu-item-mark-in-progress">
-                    <RotateCcw className="w-4 h-4" />
-                    Mark as In Progress
+                    <RotateCcw className="h-4 w-4" />Mark as In Progress
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  disabled
-                  title="Job archiving is not available because the current project schema has no archive state."
-                  className="min-h-14 cursor-not-allowed items-start gap-2 opacity-100"
-                  data-testid="menu-item-archive-unavailable"
-                >
-                  <FolderOpen className="mt-0.5 h-4 w-4 text-zinc-500" />
-                  <span className="min-w-0">
-                    <span className="block font-medium text-zinc-700">Archive unavailable</span>
-                  <span className="mt-0.5 block whitespace-normal text-sm leading-5 text-muted-foreground">Jobs have no archive state in the current schema.</span>
-                  </span>
+                <DropdownMenuItem disabled title="Job archiving is not available because the current project schema has no archive state." className="min-h-11 gap-2 opacity-70" data-testid="menu-item-archive-unavailable">
+                  <FolderOpen className="h-4 w-4" />Archive unavailable
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
+          <div className="order-2 min-w-0 border-t border-border/70 pt-1.5 md:order-3 md:col-span-2">
+            <ClientDetailsCard project={project} onSave={onSaveClient} open={clientEditOpen} onOpenChange={onClientEditOpenChange} compact />
+          </div>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {pendingVariationCount > 0 && (
-            <Button type="button" variant="outline" className="min-h-11 gap-2 border-warning/40 text-warning" onClick={() => onTabChange("changes")}>
-              {pendingVariationCount} variation{pendingVariationCount === 1 ? "" : "s"} need action
-            </Button>
-          )}
-          <ClientPageActions project={project} onAddEmail={onAddClientEmail} onSendSuccess={onClientPageSent} />
-        </div>
-        <div className="mt-3 max-w-3xl">
-          <ClientDetailsCard project={project} onSave={onSaveClient} open={clientEditOpen} onOpenChange={onClientEditOpenChange} />
-        </div>
-      </div>
+      </section>
     </JobHeader>
   );
 }

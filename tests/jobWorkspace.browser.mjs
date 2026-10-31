@@ -147,7 +147,7 @@ try {
     const popup = await popupPromise;
     await popup.waitForURL(url => url.pathname === `/project/${pid}` && url.searchParams.get('access') === capability);
     await popup.close();
-    await page.getByRole('button', { name: 'Edit', exact: true }).first().click();
+    await page.getByRole('button', { name: 'Edit client', exact: true }).first().click();
     const editDialog = page.getByRole('dialog', { name: 'Edit client details', exact: true });
     await editDialog.getByLabel('Client name', { exact: true }).fill('');
     await editDialog.getByRole('button', { name: /Save/ }).click();
