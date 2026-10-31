@@ -6,6 +6,7 @@ import { localDate } from "../../../shared/employeePortal";
 import { usePortal, usePortalSession } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
 import { PortalLayout } from "@/components/employee/PortalLayout";
+import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -177,5 +178,7 @@ export default function Schedule() {
     </>}
       {selectedEvent && data && <DetailDialog event={selectedEvent} data={data} events={visibleEvents} onClose={() => setSelectedEvent(null)} triggerRef={bookingTriggerRef} />}
   </main>;
-  return session.data.employee ? <PortalLayout>{calendar}</PortalLayout> : calendar;
+  return session.data.employee
+    ? <PortalLayout>{calendar}</PortalLayout>
+    : <AppShell>{calendar}</AppShell>;
 }

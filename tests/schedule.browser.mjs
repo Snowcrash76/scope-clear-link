@@ -56,6 +56,15 @@ try {
       assert.equal(requests.at(-1)[0], new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney' }).format(new Date()), 'initial day is Sydney-local even in a US browser');
     }
     else assert.notEqual(requests.at(-1)[0], requests.at(-1)[1], 'desktop defaults to Week');
+    if (!staff) {
+      if (width >= 1024) {
+        await page.getByTestId('nav-schedule').waitFor();
+        assert.equal(await page.getByTestId('nav-dashboard').count(), 1, 'Business Schedule uses the normal app navigation');
+      } else {
+        await page.getByRole('button', { name: 'Open navigation', exact: true }).waitFor();
+      }
+      assert.equal(await page.getByTestId('nav-variations').count(), 0, 'Global Variations navigation is removed');
+    }
     await booking.click();
     await page.getByRole('dialog').waitFor();
     assert.ok(await page.getByRole('link', { name: '1 Main St' }).count());

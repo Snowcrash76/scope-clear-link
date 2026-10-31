@@ -701,7 +701,7 @@ function ProjectManageContent() {
           onDismissDocNotification={dismissDocNotification}
         />
 
-        <div className="grid min-w-0 grid-cols-1 gap-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-start">
+        <div className="grid min-w-0 grid-cols-1 gap-5">
           <JobSectionMenu
             value={activeTab}
             onValueChange={setActiveTab}

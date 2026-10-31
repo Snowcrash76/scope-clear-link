@@ -46,7 +46,6 @@ import {
   Search,
   ContactRound,
   UsersRound,
-  GitBranch,
   CalendarDays,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -183,13 +182,6 @@ function SidebarInner({
           label: "Quotes",
           active: currentPath.startsWith("/quotes"),
           testId: "nav-quotes",
-        },
-        {
-          to: "/variations",
-          icon: GitBranch,
-          label: "Variations",
-          active: currentPath.startsWith("/variations"),
-          testId: "nav-variations",
         },
         {
           to: "/invoices",

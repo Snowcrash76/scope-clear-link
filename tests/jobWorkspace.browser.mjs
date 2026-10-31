@@ -116,9 +116,13 @@ try {
     const nav = page.getByRole('navigation', { name: 'Job sections', exact: true });
     const labels = await nav.locator('button[data-section-item]').allTextContents();
     assert.equal(labels.length, 9, 'All nine job sections are exposed; timesheets are reviewed under Team');
+    const tops = await nav.locator('button[data-section-item]').evaluateAll(buttons => buttons.map(button => Math.round(button.getBoundingClientRect().top)));
+    assert.equal(new Set(tops).size, 1, 'Job navigation stays in a top row at every screen width');
+    const overviewBox = await page.getByRole('region', { name: 'Overview', exact: true }).boundingBox();
+    const navBox = await nav.boundingBox();
+    assert.ok(navBox.y + navBox.height <= overviewBox.y + 2, 'Job navigation sits above content, not beside it');
+    assert.equal(await page.getByTestId('nav-variations').count(), 0, 'Variations is not in the global menu');
     if (width < 1024) {
-      const tops = await nav.locator('button[data-section-item]').evaluateAll(buttons => buttons.map(button => Math.round(button.getBoundingClientRect().top)));
-      assert.equal(new Set(tops).size, 1, 'Small-screen navigation stays on one row');
       await page.getByRole('button', { name: 'All sections', exact: true }).click();
       const sheet = page.getByRole('dialog', { name: 'All job sections' });
       await sheet.waitFor();
@@ -132,13 +136,6 @@ try {
         const rect = button.getBoundingClientRect(), parent = button.closest('nav').getBoundingClientRect();
         return rect.left >= parent.left - 2 && rect.right <= parent.right + 2;
       }, undefined, { timeout: 3000 });
-    } else {
-      assert.equal(await nav.evaluate(element => element.getBoundingClientRect().width <= 225), true);
-      const before = (await nav.boundingBox()).y;
-      await page.evaluate(() => scrollTo(0, 320));
-      await page.waitForTimeout(120);
-      assert.equal((await nav.boundingBox()).y >= 0, true, 'Desktop navigation remains visible when scrolling');
-      assert.equal(before >= 0, true);
     }
     for (const [alias, selected] of [['scope', 'changes'], ['variations', 'changes'], ['changes', 'changes'], ['staff', 'staff'], ['employee-updates', 'staff']]) {
       await open(`/manage/${pid}?tab=${alias}`);

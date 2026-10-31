@@ -70,9 +70,6 @@ export function JobSectionMenu({
   stageBadge,
 }: JobSectionMenuProps) {
   const [allOpen, setAllOpen] = useState(false);
-  const [isNarrow, setIsNarrow] = useState(
-    () => typeof window !== "undefined" && window.innerWidth < 1024,
-  );
   const navRef = useRef<HTMLElement>(null);
   const countFor = (section: string) =>
     section === "invoices"
@@ -90,18 +87,10 @@ export function JobSectionMenu({
   };
 
   useEffect(() => {
-    const sync = () => setIsNarrow(window.innerWidth < 1024);
-    window.addEventListener("resize", sync);
-    return () => window.removeEventListener("resize", sync);
-  }, []);
-
-  useEffect(() => {
-    if (isNarrow) {
-      navRef.current
-        ?.querySelector<HTMLButtonElement>('button[data-section-item][aria-current="page"]')
-        ?.scrollIntoView({ inline: "nearest", block: "nearest" });
-    }
-  }, [isNarrow, value, allOpen]);
+    navRef.current
+      ?.querySelector<HTMLButtonElement>('button[data-section-item][aria-current="page"]')
+      ?.scrollIntoView({ inline: "nearest", block: "nearest" });
+  }, [value, allOpen]);
 
   const renderItem = (section: { value: string; label: string; icon: LucideIcon }) => {
     const selected = section.value === value ||
@@ -123,7 +112,7 @@ export function JobSectionMenu({
           : section.label}
         className={cn(
           "flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
-          "lg:w-full lg:justify-start lg:px-3",
+          "justify-start px-3",
           selected
             ? "bg-primary/15 text-foreground ring-1 ring-inset ring-primary/45"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -153,7 +142,7 @@ export function JobSectionMenu({
   };
 
   return (
-    <div className="relative min-w-0 lg:sticky lg:top-4 lg:self-start">
+    <div className="relative min-w-0">
       <nav
         ref={navRef}
         aria-label="Job sections"
@@ -169,16 +158,16 @@ export function JobSectionMenu({
           event.preventDefault();
           buttons[(current + direction + buttons.length) % buttons.length]?.focus();
         }}
-        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-2 lg:max-h-[calc(100dvh-2rem)] lg:flex-col lg:gap-4 lg:overflow-y-auto lg:overflow-x-hidden lg:border-0 lg:bg-transparent lg:px-0 lg:py-0"
+        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-2"
       >
         {groups.map((group, index) => (
-          <div key={`${group.label}-${index}`} className="contents lg:block">
+          <div key={`${group.label}-${index}`} className="contents">
             {group.label && (
-              <h2 className="hidden px-3 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground lg:mb-1 lg:block">
+              <h2 className="hidden px-3 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
                 {group.label}
               </h2>
             )}
-            <div className="flex shrink-0 gap-1 lg:flex-col">
+            <div className="flex shrink-0 gap-1">
               {group.items.map((item) => {
                 const element = renderItem(item);
                 return (
@@ -191,12 +180,12 @@ export function JobSectionMenu({
           </div>
         ))}
       </nav>
-      <div className="pointer-events-none absolute inset-y-2 left-0 w-4 bg-gradient-to-r from-background to-transparent lg:hidden" />
-      <div className="pointer-events-none absolute inset-y-2 right-0 w-8 bg-gradient-to-l from-background to-transparent lg:hidden" />
+      <div className="pointer-events-none absolute inset-y-2 left-0 w-4 bg-gradient-to-r from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-2 right-0 w-8 bg-gradient-to-l from-background to-transparent" />
       <Button
         type="button"
         variant="outline"
-        className="mt-2 min-h-11 w-full gap-2 lg:hidden"
+        className="mt-2 min-h-11 w-full gap-2"
         onClick={() => setAllOpen(true)}
       >
         <LayoutGrid className="h-4 w-4" />
