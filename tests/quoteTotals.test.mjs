@@ -44,7 +44,7 @@ test('legacy variation titles use the same fallback as the live view', () => {
   assert.equal(calculateStoredQuoteTotals([], [{ title: 'Variation: manual', cost: 50, is_variation: false }], [], 0).total, 50);
 });
 
-function fakeClient({ failRead, failWrite, conflict = false } = {}) {
+function fakeClient({ failRead, failWrite, conflict = false, legacyLines = false } = {}) {
   const quote = { id: 'q1', project_id: 'p1', subtotal: 1600, tax_amount: 160,
     total: 1760, tax_rate: 10, updated_at: 'version1', status: 'approved', client_comment: 'Keep this',
     quote_token: 'unchanged', approved_at: 'unchanged' };
@@ -57,6 +57,9 @@ function fakeClient({ failRead, failWrite, conflict = false } = {}) {
       { ...quote, id: 'q-old', created_at: '2025-01-01', approved_at: '2025-01-02' }],
   };
   const updates = [];
+  if (legacyLines) {
+    for (const row of tables.quote_line_items) delete row.is_variation;
+  }
   const client = {
     from(table) {
       let rows = tables[table];
@@ -65,7 +68,12 @@ function fakeClient({ failRead, failWrite, conflict = false } = {}) {
       let from = 0;
       let to = Infinity;
       const query = {
-        select() { return query; },
+        select(fields) {
+          if (legacyLines && table === 'quote_line_items') {
+            assert.equal(fields, '*', 'Legacy databases must not explicitly select the absent is_variation column');
+          }
+          return query;
+        },
         single() { single = true; return query; },
         order() { return query; },
         range(start, end) { from = start; to = end; return query; },
@@ -110,6 +118,12 @@ test('repair fails explicitly on partial reads, failed writes or concurrent edit
   }
   await assert.rejects(repairQuoteTotals(fakeClient({ failWrite: true }).client), /Database failure/);
   await assert.rejects(repairQuoteTotals(fakeClient({ conflict: true }).client), /changed during totals repair/);
+});
+
+test('repair supports legacy line-item schemas without an is_variation column', async () => {
+  const { client, updates } = fakeClient({ legacyLines: true });
+  assert.deepEqual(await repairQuoteTotals(client), { projects: 1, updated: 1 });
+  assert.deepEqual(updates, [{ subtotal: 1400, tax_amount: 140, total: 1540 }]);
 });
 
 test('repair reads every page, not just Supabase first-page results', async () => {

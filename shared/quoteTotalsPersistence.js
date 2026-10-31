@@ -29,7 +29,9 @@ export async function refreshActiveQuoteTotals(client, projectId) {
     readAll(() => client.from('scope_items')
       .select('id, title, category, cost').eq('project_id', projectId)),
     readAll(() => client.from('quote_line_items')
-      .select('id, title, cost, is_variation').eq('quote_id', quote.id)),
+      // Older databases omit is_variation. Read the available row shape so
+      // the existing title-based calculation fallback still applies there.
+      .select('*').eq('quote_id', quote.id)),
     readAll(() => client.from('change_requests')
       .select('id, status, cost_impact').eq('project_id', projectId).eq('status', 'approved')),
   ]);

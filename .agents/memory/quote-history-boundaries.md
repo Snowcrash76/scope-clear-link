@@ -14,3 +14,12 @@ its price would misrepresent what the client accepted.
 **How to apply:** Scope maintenance backfills and client variation recalculation
 to the project's explicit active quote. Test with multiple quotes whose approval
 dates differ; preserve older quote totals and decisions.
+
+Do not assume the hosted Supabase schema includes every local migration.
+
+**Why:** The hosted line-item schema lacked optional variation metadata even
+though the repository contained its migration, which blocked merge setup.
+
+**How to apply:** Preserve the existing title-based legacy handling when metadata
+is absent. Verify schema compatibility before adding maintenance to merge setup;
+do not apply unrelated migrations just to make a repair run.
