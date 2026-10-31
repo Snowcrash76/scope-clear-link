@@ -12,7 +12,7 @@ export function AppHeader({ actions, onOpenNavigation }: AppHeaderProps) {
   return (
     <header
       data-testid="app-header"
-      className={`relative z-30 flex h-16 w-full shrink-0 items-center gap-3 border-b border-border bg-card px-3 shadow-sm sm:px-4 ${
+      className={`relative z-30 flex h-16 w-full shrink-0 items-center gap-3 border-b border-border bg-card px-3 shadow-soft sm:px-5 ${
         hasActions
           ? 'sticky top-0'
           : 'sticky top-0 lg:static lg:hidden'
@@ -39,7 +39,7 @@ export function AppHeader({ actions, onOpenNavigation }: AppHeaderProps) {
       </span>
 
       {hasActions && (
-        <div className="ml-auto flex min-w-0 shrink-0 items-center justify-end">
+        <div className="ml-auto flex min-w-0 shrink items-center justify-end gap-1">
           {actions}
         </div>
       )}

@@ -47,8 +47,10 @@ import {
   ContactRound,
   UsersRound,
   CalendarDays,
+  HelpCircle,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PasswordInput } from "@/components/PasswordInput";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -230,9 +232,10 @@ function SidebarInner({
   return (
     <div className="flex flex-col h-full bg-background text-foreground border-r border-border">
       {/* Brand */}
-      <div className="px-5 pt-6 pb-4 border-b border-border">
-        <div className="flex items-center gap-2.5">
-          <span className="font-heading font-black text-xl tracking-tighter text-foreground">
+      <div className="border-b border-border px-5 pb-4 pt-5">
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-sm font-bold text-primary-foreground shadow-soft" aria-hidden="true">S</span>
+          <span className="font-heading text-lg font-bold tracking-tight text-foreground">
             ScopeClear
           </span>
         </div>
@@ -262,7 +265,7 @@ function SidebarInner({
       >
         {navGroups.map((group) => (
           <div key={group.label}>
-            <p className="px-3 pb-1 text-sm font-semibold tracking-[.12em] text-muted-foreground">
+            <p className="px-3 pb-1 text-xs font-semibold tracking-[.1em] text-muted-foreground">
               {group.label}
             </p>
             {group.items.map(({ to, icon: Icon, label, active, testId }) => (
@@ -273,7 +276,7 @@ function SidebarInner({
                 className={cn(
                   "mx-1 flex min-h-11 items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors",
                   active
-                    ? "bg-accent text-accent-foreground ring-1 ring-inset ring-ring"
+                    ? "bg-accent text-accent-foreground before:absolute before:left-0 before:h-5 before:w-[3px] before:rounded-r-full before:bg-primary relative"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
@@ -287,7 +290,7 @@ function SidebarInner({
         ))}
         {ADMIN_EMAIL && authEmail === ADMIN_EMAIL && (
           <div>
-            <p className="px-3 pb-1 text-sm font-semibold tracking-[.12em] text-muted-foreground">
+            <p className="px-3 pb-1 text-xs font-semibold tracking-[.1em] text-muted-foreground">
               ADMIN
             </p>
             <Link
@@ -312,7 +315,7 @@ function SidebarInner({
       <div className="border-t border-border pt-3 pb-5 space-y-0.5">
         <button
           onClick={() => act(onOpenSettings)}
-          className="w-full min-h-11 flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="w-full min-h-11 flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           data-testid="button-sidebar-settings"
         >
           <Settings className="w-4 h-4 flex-shrink-0" />
@@ -717,6 +720,19 @@ export function AppShell({ children, headerActions }: AppShellProps) {
                   </kbd>
                 </Button>
                 {headerActions}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label="Workspace help" className="h-11 w-11 shrink-0">
+                      <HelpCircle className="h-5 w-5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-72">
+                    <p className="font-semibold text-foreground">Workspace help</p>
+                    <p className="mt-1 text-sm leading-5 text-muted-foreground">
+                      A support contact is not configured here. Please contact your workspace administrator.
+                    </p>
+                  </PopoverContent>
+                </Popover>
               </div>
             }
             onOpenNavigation={() => setMobileOpen(true)}

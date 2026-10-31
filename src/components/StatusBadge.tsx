@@ -55,8 +55,8 @@ const STATUS_CONFIG = {
   },
   quoted: {
     label: "Quoted",
-    className: "bg-[hsl(var(--info-soft))] text-info border-info/20",
-    dot: "bg-info",
+    className: "bg-[hsl(var(--purple-soft))] text-[hsl(var(--purple))] border-[hsl(var(--purple)/.18)]",
+    dot: "bg-[hsl(var(--purple))]",
   },
   in_progress: {
     label: "In Progress",

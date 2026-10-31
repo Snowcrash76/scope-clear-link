@@ -58,9 +58,9 @@
     --sidebar-ring: var(--ring);
     --font-heading: "Inter", sans-serif;
     --font-body: "Inter", sans-serif;
-    --shadow-soft: 0 1px 2px rgba(15,23,42,.05), 0 4px 12px rgba(15,23,42,.04);
-    --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 4px 12px rgba(15,23,42,.04);
-    --shadow-elevated: 0 8px 24px rgba(15,23,42,.10);
+    --shadow-soft: 0 1px 2px rgba(15,23,42,.04), 0 5px 18px rgba(35,65,110,.045);
+    --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 5px 18px rgba(35,65,110,.045);
+    --shadow-elevated: 0 12px 30px rgba(25,52,92,.13);
   }
 }
 
@@ -81,8 +81,8 @@
 }
 .portal-grid {
   background-image:
-    linear-gradient(to right, rgba(42, 72, 58, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(42, 72, 58, 0.045) 1px, transparent 1px);
+    linear-gradient(to right, rgba(37, 99, 235, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(37, 99, 235, 0.045) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 .portal-enter {
@@ -115,6 +115,14 @@
   color: hsl(var(--foreground));
   font-size: 15px;
   line-height: 22px;
+}
+.main-app :where(button, a, input, select, textarea) {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+.main-app :where(.bg-card) {
+  background-color: hsl(var(--card));
 }
 .main-app [class~="text-sm"],
 .team-page [class~="text-sm"] {
@@ -222,6 +230,15 @@ body:has(.main-app)
   h5,
   h6 {
     font-family: var(--font-heading);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 
