@@ -34,6 +34,8 @@ not the former ScopeClear name or SC/S letter placeholders.
 of the logo and brand name, allowing colour adjustments.
 
 **How to apply:** Preserve the supplied shapes. Use navy/blue artwork on light
-surfaces and white/periwinkle artwork on dark panels, keeping the app's white
-surfaces and existing blue accents. Product branding is separate from a trade's
-own business name and uploaded business logo.
+surfaces and white/blue artwork on dark panels. The logo accent must match the
+buttons' primary blue (#2563eb), including on the sign-in panel; the user
+explicitly rejected the lighter logo blue. Keep the app's white surfaces.
+Product branding is separate from a trade's own business name and uploaded
+business logo.

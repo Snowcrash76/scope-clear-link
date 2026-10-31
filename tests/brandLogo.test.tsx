@@ -17,6 +17,8 @@ for (const variant of ['horizontal', 'stacked', 'mark'] as const) {
       const svg = readFileSync(`public/brand/scopestream-${variant}-${mode}.svg`, 'utf8');
       assert.match(svg, /<svg[^>]+viewBox=/);
       assert.match(svg, /<path/);
+      assert.match(svg, /fill: #2563eb;/);
+      assert.doesNotMatch(svg, /#abb7ff/i);
       assert.doesNotMatch(svg, /<script|foreignObject|onload=|href=/i);
     }
   });
