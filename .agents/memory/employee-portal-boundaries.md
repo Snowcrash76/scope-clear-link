@@ -39,6 +39,12 @@ Treat creating an invited account separately from accepting an invitation with a
 
 **How to apply:** Create only the invited email's account; never reset an existing account through an invitation. Existing-account acceptance must still authenticate the invited email.
 
+Preserve existing business accounts when employee invitations conflict with them; use a separate employee email rather than silently removing their jobs or changing their ownership.
+
+**Why:** An invitation audit found that apparent new-account failures included existing business-owner accounts. Automatically converting those identities would jeopardise their existing business access, not repair a password.
+
+**How to apply:** Explain the conflict clearly and get the owner's choice of employee email. Never delete accounts, jobs or team history to make an invitation pass. If invitation acceptance has an uncertain network outcome, do not delete a newly created account that may already have been successfully linked.
+
 The existing hourly cost rates are the employees' actual pay rates. Admins and each employee themselves may see timesheet pay estimates; employees must not see coworkers' pay.
 
 **Why:** The user explicitly confirmed “Yes, use the current rates” and “Admins and each employee themselves.”

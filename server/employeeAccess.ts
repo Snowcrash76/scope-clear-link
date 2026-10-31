@@ -140,7 +140,10 @@ export const portalHandler = (handler: Handler) => async (req: Request, res: Res
 export function portalError(res: Response, error: unknown) {
   res.setHeader('Cache-Control', 'no-store');
   if (error instanceof ZodError) return res.status(400).json({ error: error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('. ') });
-  if (error instanceof CostApiError) return res.status(error.status).json({ error: error.message });
+  if (error instanceof CostApiError) return res.status(error.status).json({
+    error: error.message, ...(error.code ? { code: error.code } : {}),
+    ...(error.details ? { details: error.details } : {}),
+  });
   console.error('[employee-portal] request failed', error instanceof Error ? error.name : 'Unknown error');
   return res.status(500).json({ error: 'Unable to process this request. Please retry.' });
 }

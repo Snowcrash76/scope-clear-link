@@ -61,6 +61,7 @@ export interface EmployeeJobDetail {
   variations: { id: string; title: string; description: string | null; status: string }[];
 }
 export interface TeamBootstrap {
+  invitations?: { employee_id: string; created_at: string; expires_at: string; accepted_at: string | null }[];
   employees: (PortalEmployee & { hourly_rate: number | null })[];
   jobs: PortalJob[]; appointments: { id: string; project_id: string | null; title: string; date: string; start_time: string; end_time: string }[];
   assignments: PortalAssignment[]; entries: PortalTimeEntry[]; submissions: PortalSubmission[];

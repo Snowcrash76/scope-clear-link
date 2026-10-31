@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import { usePortal, portalRequest } from "@/hooks/useEmployeePortal";
+import { usePortal, portalRequest, PortalRequestError } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 
@@ -16,9 +16,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 export function EmployeeAccept() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
+  const [acceptedEmail, setAcceptedEmail] = useState<string | null>(null);
   const q = usePortal<{ name: string; email: string; expires_at: string }>(
     `/employee/invitations/${encodeURIComponent(token)}`,
-    !!token,
+    !!token && !acceptedEmail,
   );
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -28,20 +29,37 @@ export function EmployeeAccept() {
   const nav = useNavigate();
   async function accept(e: React.FormEvent) {
     e.preventDefault();
-    if (password.length < 12) {
+    if (busy) return;
+    const email = q.data?.email;
+    if (!email) { setError("Reload the invitation before continuing."); return; }
+    if (!existing && password.length < 12) {
       setError("Use at least 12 characters for your password.");
       return;
     }
     setBusy(true);
     setError("");
     try {
-      await portalRequest("/employee/invitations/accept", { token, password });
-      const login = await signIn(q.data!.email, password);
-      if (login.error) throw login.error;
+      if (existing) {
+        const login = await signIn(email, password);
+        if (login.error) throw login.error;
+        await portalRequest("/employee/invitations/accept", { token });
+        setAcceptedEmail(email);
+      } else {
+        await portalRequest("/employee/invitations/accept", { token, password });
+        // Acceptance has committed. A subsequent sign-in failure must not offer
+        // to create the account again using a now-consumed invitation.
+        setAcceptedEmail(email);
+        const login = await signIn(email, password);
+        if (login.error) throw new Error(`Your invitation was accepted, but automatic sign-in failed. Use Sign in to employee portal below, or reset your password.`);
+      }
+      setPassword("");
       nav("/employee", { replace: true });
     } catch (err) {
       const msg = getError(err);
-      if (/already|registered|exists|conflict/i.test(msg)) setExisting(true);
+      if (err instanceof PortalRequestError && err.code === "ACCOUNT_EXISTS") {
+        setExisting(true);
+        setPassword("");
+      }
       setError(msg);
     } finally {
       setBusy(false);
@@ -58,7 +76,15 @@ export function EmployeeAccept() {
         <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
           Team invitation
         </p>
-        {!token ? (
+        {acceptedEmail ? (
+          <section className="mt-5 space-y-4">
+            <h1 className="text-2xl font-bold">Invitation accepted</h1>
+            <p>Your employee access is connected to <strong className="break-words">{acceptedEmail}</strong>.</p>
+            {error && <p role="alert" className="rounded-xl bg-muted p-3 text-sm">{error}</p>}
+            <Link className={`${primary} flex min-h-11 items-center justify-center`} to={`/employee/login?email=${encodeURIComponent(acceptedEmail)}`}>Sign in to employee portal</Link>
+            <Link className="inline-flex min-h-11 items-center text-sm underline" to={`/forgot-password?email=${encodeURIComponent(acceptedEmail)}`}>Reset password</Link>
+          </section>
+        ) : !token ? (
           <div className="mt-5">
             <h1 className="text-2xl font-bold">Invitation link missing</h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -68,12 +94,14 @@ export function EmployeeAccept() {
         ) : q.isLoading ? (
           <LoadState retry={() => q.refetch()} />
         ) : q.error ? (
-          <LoadState error={q.error} retry={() => q.refetch()} />
+          <div><LoadState error={q.error} retry={() => q.refetch()} />
+            <Link className="mt-3 inline-flex min-h-11 items-center text-sm underline" to="/employee/login">Already accepted an invitation? Sign in</Link>
+          </div>
         ) : (
           q.data && (
             <>
               <h1 className="mt-2 text-2xl font-bold">
-                Join {q.data.name ? `${q.data.name}’s team` : "your team"}
+                Set up your employee access
               </h1>
               <p className="mt-2 text-sm text-muted-foreground">
                 Invitation for <b>{q.data.email}</b>. Expires{" "}
@@ -82,27 +110,7 @@ export function EmployeeAccept() {
               {existing ? (
                 <form
                   className="mt-6 space-y-3"
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    setBusy(true);
-                    setError("");
-                    const r = await signIn(q.data!.email, password);
-                    if (r.error) {
-                      setError(r.error.message);
-                      setBusy(false);
-                      return;
-                    }
-                    try {
-                      await portalRequest("/employee/invitations/accept", {
-                        token,
-                      });
-                      nav("/employee", { replace: true });
-                    } catch (err) {
-                      setError(getError(err));
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
+                  onSubmit={accept}
                 >
                   <Label htmlFor="existing-pass">
                     Existing account password
@@ -111,6 +119,7 @@ export function EmployeeAccept() {
                     id="existing-pass"
                     className={field}
                     type="password"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
@@ -140,6 +149,13 @@ export function EmployeeAccept() {
                   </Button>
                 </form>
               )}
+              <button type="button" disabled={busy} className="mt-3 min-h-11 text-sm font-semibold underline" onClick={() => {
+                setExisting(value => !value); setPassword(""); setError("");
+              }}>{existing ? "Create a new account" : "I already have an account"}</button>
+              {existing && <div className="mt-2 text-sm">
+                <Link className="inline-flex min-h-11 items-center underline" to={`/forgot-password?email=${encodeURIComponent(q.data.email)}`}>Forgot your password?</Link>
+                <p className="text-muted-foreground">After resetting your password, reopen the most recent invitation email and choose “I already have an account”.</p>
+              </div>}
               {error && (
                 <p
                   role="alert"
@@ -148,6 +164,7 @@ export function EmployeeAccept() {
                   {error}
                 </p>
               )}
+              <Link className="mt-3 inline-flex min-h-11 items-center text-sm underline" to={`/employee/login?email=${encodeURIComponent(q.data.email)}`}>Already finished setup? Sign in</Link>
             </>
           )
         )}

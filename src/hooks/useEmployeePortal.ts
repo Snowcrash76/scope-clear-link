@@ -5,6 +5,9 @@ import type { PortalSession } from '../../shared/employeePortal';
 import { assistanceMemberFromPath } from '@/lib/employeeAssistance';
 import { useEmployeeAssistance } from './useEmployeeAssistance';
 
+export class PortalRequestError extends Error {
+  constructor(message: string, public status: number, public code?: string, public details?: Record<string, unknown>) { super(message); }
+}
 export async function portalRequest<T = unknown>(
   path: string, body?: unknown, method = 'POST',
   options: { assistanceId?: string | null; expectedUserId?: string; signal?: AbortSignal } = {},
@@ -27,7 +30,7 @@ export async function portalRequest<T = unknown>(
     ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
   });
   const data = await response.json().catch(() => ({ error: 'Unable to contact the portal. Please retry.' }));
-  if (!response.ok) throw new Error(data.error || 'Unable to complete this request');
+  if (!response.ok) throw new PortalRequestError(data.error || 'Unable to complete this request', response.status, data.code, data.details);
   return data as T;
 }
 export function usePortal<T>(path: string, enabled = true) {

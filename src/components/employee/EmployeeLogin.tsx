@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -8,30 +8,32 @@ import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
 
-import { shell, card, primary, field } from "./portalShared";
-import { NavigateEmployee } from "./NavigateEmployee";
+import { shell, card, primary, field, getError } from "./portalShared";
 import { BrandLogo } from "@/components/BrandLogo";
 
 export function EmployeeLogin() {
   const { signIn, user } = useAuth();
   const nav = useNavigate();
-  const [email, setEmail] = useState("");
+  const [params] = useSearchParams();
+  const [email, setEmail] = useState(() => params.get("email") ?? "");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError("");
-    const res = await signIn(email.trim(), password);
-    setBusy(false);
-    if (res.error) {
-      setError(res.error.message);
-      return;
+    try {
+      const res = await signIn(email.trim(), password);
+      if (res.error) throw res.error;
+      nav("/employee", { replace: true });
+    } catch (error) {
+      setError(getError(error));
+    } finally {
+      setBusy(false);
     }
-    nav("/employee", { replace: true });
   }
-  if (user) return <NavigateEmployee />;
   return (
     <div
       className={`${shell} portal-grid flex min-h-[100dvh] items-center justify-center p-4`}
@@ -50,6 +52,10 @@ export function EmployeeLogin() {
         <p className="mt-2 text-sm text-muted-foreground">
           Sign in with the email address on your invitation.
         </p>
+        {user && <aside className="mt-4 rounded-xl border border-border p-3 text-sm">
+          <p className="break-words">Currently signed in as {user.email}. Enter the invited account below to switch.</p>
+          <Link className="inline-flex min-h-11 items-center underline" to="/employee">Continue with current account</Link>
+        </aside>}
         <form className="mt-7 space-y-4" onSubmit={submit}>
           <div>
             <Label htmlFor="emp-email">Email address</Label>
@@ -87,6 +93,7 @@ export function EmployeeLogin() {
             {busy ? "Signing in…" : "Sign in"}
           </Button>
         </form>
+        <Link className="mt-4 inline-flex min-h-11 items-center text-sm font-semibold underline" to={`/forgot-password?email=${encodeURIComponent(email.trim())}`}>Forgot your password?</Link>
         <p className="mt-5 text-center text-sm text-muted-foreground">
           Have an invite?{" "}
           <Link

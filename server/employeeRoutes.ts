@@ -11,7 +11,7 @@ import {
 } from './employeeAccess';
 import { defaultPermissions, employeeRoles, localDate, permissionNames, type EmployeeRole } from '../shared/employeePortal';
 import { publicWebOrigin } from '../shared/publicUrls';
-import { resolveInvitationAccount } from './employeeInvitations';
+import { resolveInvitationAccount, assertInvitationAccountEligible, deliverEmployeeInvitation, cleanupRejectedInvitationAccount } from './employeeInvitations';
 import { readSchedule } from './scheduleRead';
 
 const id = z.string().uuid();
@@ -127,7 +127,10 @@ export function createEmployeeRouter() {
       jobIds.length ? portalRows(() => db.from('project_documents').select(safeDocumentColumns).in('project_id', jobIds).eq('purpose', 'employee_photo').order('created_at', { ascending: false })) : [],
       portalRows(() => db.from('employee_audit_events').select('id,action,created_at,actor_id,employee_id,detail,project_id').eq('owner_id', actor.ownerId).order('created_at', { ascending: false })),
     ]);
+    const invitations = employees.length ? await portalRows(() => db.from('employee_invitations')
+      .select('employee_id,created_at,expires_at,accepted_at').in('employee_id', employees.map(e => e.id)).order('created_at', { ascending: false })) : [];
     return {
+      invitations,
       employees: employees.map(e => ({ ...e, hourly_rate: rates.find(r => r.employee_id === e.id)?.hourly_rate ?? null })),
       jobs, appointments, assignments: assignments.flatMap(a => { const ap = appointments.find(p => p.id === a.appointment_id); return ap ? [{ ...a, date: ap.date, start_time: ap.start_time, end_time: ap.end_time, notes: ap.notes, employee_name: employees.find(e => e.id === a.employee_id)?.name }] : []; }),
       entries, submissions: submissions.filter(s => !filterJob || entries.some(e => e.employee_id === s.employee_id && e.work_date >= s.week_start && e.work_date < addDays(s.week_start, 7))).map(s => ({ ...s, employee_name: employees.find(e => e.id === s.employee_id)?.name })),
@@ -173,6 +176,9 @@ export function createEmployeeRouter() {
   router.post('/team/employees/:id/invite', portalHandler(async (req, db, actor) => {
     requireTeam(actor);
     if (!process.env.RESEND_API_KEY) throw new CostApiError(503, 'Invitation email is not configured.');
+    if (!process.env.RESEND_FROM_EMAIL || /onboarding@resend\.dev/i.test(process.env.RESEND_FROM_EMAIL)) {
+      throw new CostApiError(503, 'Invitation email needs a verified sending address. Ask the owner to configure RESEND_FROM_EMAIL before sending.');
+    }
     let base: string;
     try {
       base = publicWebOrigin(process.env.VITE_PUBLIC_BASE_URL || '');
@@ -184,12 +190,12 @@ export function createEmployeeRouter() {
     const invite = await portalMutate(db, actor, 'team_invite', { employee_id: paramsId(req.params.id), token_hash: hash(token) });
     const url = new URL('/employee/accept', base);
     url.searchParams.set('token', token);
-    const result = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' }, body: JSON.stringify({
-      from: process.env.RESEND_FROM_EMAIL || 'ScopeStream <onboarding@resend.dev>', to: [invite.email], subject: 'You are invited to the ScopeStream employee portal',
-      text: `You have been invited to your employer's ScopeStream employee portal.\n\nAccept your invitation: ${url}\n\nThis invitation expires in 7 days. If you were not expecting it, you can ignore this email.`,
-    }) });
-    if (!result.ok) throw new CostApiError(502, 'The invitation was created but the email could not be sent. Check your email sender configuration, then resend.');
-    return { success: true };
+    await deliverEmployeeInvitation({
+      email: invite.email, url: url.href, key: process.env.RESEND_API_KEY,
+      from: process.env.RESEND_FROM_EMAIL || 'ScopeStream <onboarding@resend.dev>',
+      idempotencyKey: `employee-invitation-${hash(token)}`,
+    });
+    return { success: true, delivery: 'accepted', invitation_url: url.href };
   }));
   router.post('/team/assignments', portalHandler(async (req, db, actor) => {
     requireTeam(actor);
@@ -301,19 +307,23 @@ export function createEmployeeRouter() {
   });
   router.post('/employee/invitations/accept', async (req, res) => {
     let createdId: string | null = null;
-    const db = jobCostClient();
+    let definitelyRejected = false;
+    let db: ReturnType<typeof jobCostClient> | null = null;
     try {
+      db = jobCostClient();
       const body = z.object({ token: tokenSchema, password: z.string().min(12).max(128).optional() }).strict().parse(req.body);
       const invite = await validInvitation(db, body.token);
       const account = await resolveInvitationAccount(db, {
         email: invite.employee.email, password: body.password, authorization: req.headers.authorization,
       });
       createdId = account.created ? account.userId : null;
+      await assertInvitationAccountEligible(db, account.userId, invite.employee.owner_id);
       const { data, error } = await db.rpc('portal_accept_invitation', { p_hash: hash(body.token), p_user: account.userId });
+      definitelyRejected = !!error && ['42501', 'P0001', '23505', '23514', '23503', '22P02'].includes(error.code ?? '');
       portalDbCheck(error); createdId = null;
       res.setHeader('Cache-Control', 'no-store'); res.json(data);
     } catch (error) {
-      if (createdId) await db.auth.admin.deleteUser(createdId);
+      if (createdId && db) await cleanupRejectedInvitationAccount(db, createdId, definitelyRejected);
       portalError(res, error);
     }
   });
@@ -337,7 +347,7 @@ async function validInvitation(db: any, token: string) {
   const { data: invite, error } = await db.from('employee_invitations').select('employee_id,expires_at,accepted_at').eq('token_hash', hash(token)).maybeSingle();
   portalDbCheck(error);
   if (!invite || invite.accepted_at || Date.parse(invite.expires_at) <= Date.now()) throw new CostApiError(403, 'Invitation is invalid or expired. Ask your employer to send a new invitation.');
-  const { data: employee, error: ee } = await db.from('employees').select('id,name,email,active').eq('id', invite.employee_id).single();
+  const { data: employee, error: ee } = await db.from('employees').select('id,name,email,active,owner_id').eq('id', invite.employee_id).single();
   portalDbCheck(ee);
   if (!employee?.active) throw new CostApiError(403, 'This invitation is no longer active.');
   return { ...invite, employee };

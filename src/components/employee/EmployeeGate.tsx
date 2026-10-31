@@ -1,4 +1,4 @@
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
 import { usePortalSession } from "@/hooks/useEmployeePortal";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,21 +23,22 @@ export function EmployeeGate({ children }: { children: React.ReactNode }) {
     return (
       <div className={`${shell} min-h-[100dvh] p-6`}>
         <div className="mx-auto mt-12 max-w-lg rounded-2xl border p-6">
-          <h1 className="text-xl font-bold">Portal setup needed</h1>
+          <h1 className="text-xl font-bold">{/database setup is required/i.test(portal.error.message) ? "Portal database setup needed" : "Employee access unavailable"}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {portal.error.message}
           </p>
-          <p className="mt-3 text-sm">
+          {/database setup is required/i.test(portal.error.message) && <p className="mt-3 text-sm">
             Apply{" "}
             <code>supabase/migrations/20261029000000_employee_portal.sql</code>{" "}
             then retry.
-          </p>
+          </p>}
           <Button
             className={`${outline} mt-4`}
             onClick={() => portal.refetch()}
           >
             Retry
           </Button>
+          <Link className={`${outline} mt-3`} to="/employee/login">Sign in with another account</Link>
         </div>
       </div>
     );

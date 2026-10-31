@@ -9,6 +9,9 @@ import {
   Pencil,
   UserPlus,
   Trash2,
+  Copy,
+  Share2,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +44,9 @@ import {
   usePortalSession,
   useRefreshPortal,
   portalRequest,
+  PortalRequestError,
 } from "@/hooks/useEmployeePortal";
+import { useAuth } from "@/hooks/useAuth";
 
 import { PageLayout } from "@/components/PageLayout";
 
@@ -114,6 +119,17 @@ export function TeamHome({
   const [addOpen, setAddOpen] = useState(false);
   const [showRates, setShowRates] = useState(false);
   const [invitedIds, setInvitedIds] = useState<Set<string>>(() => new Set());
+  const { user: authUser } = useAuth();
+  const authActorIdRef = useRef(authUser?.id);
+  authActorIdRef.current = authUser?.id;
+  const [invitationNotice, setInvitationNotice] = useState<{
+    actorId: string;
+    employeeId: string;
+    recipient: string;
+    url: string;
+    delivery: "accepted" | "failed" | "unknown";
+  } | null>(null);
+  const [inviteCopyMessage, setInviteCopyMessage] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [assistNotice, setAssistNotice] = useState("");
   const assistHandled = useRef("");
@@ -136,6 +152,11 @@ export function TeamHome({
   const [comment, setComment] = useState("");
   const [editingAssignment, setEditingAssignment] =
     useState<PortalAssignment | null>(null);
+  useEffect(() => {
+    setInvitationNotice(null);
+    setInviteCopyMessage("");
+    setInvitedIds(new Set());
+  }, [authUser?.id]);
   const removeCancelRef = useRef<HTMLButtonElement | null>(null);
   const isSettings = location === "/team/permissions";
   const isAssignment = location === "/team/assignments";
@@ -232,13 +253,85 @@ export function TeamHome({
   }
   async function invite(id: string) {
     const target = visibleEmployees.find((employee) => employee.id === id);
-    if (!target || !window.confirm(`Send an account invitation to ${target.name} at ${target.email}?`)) return;
-    const ok = await action(`/team/employees/${id}/invite`, {});
-    if (ok) {
+    if (!target || !authUser?.id) return;
+    const actorId = authUser.id;
+    if (!window.confirm(
+      `Create an invitation for ${target.name} at ${target.email}? This replaces any older unaccepted invitation links, which will stop working. Only the latest link can be used.`,
+    )) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    setInvitationNotice(null);
+    setInviteCopyMessage("");
+    try {
+      const result = await portalRequest<{
+        success: true;
+        delivery: "accepted";
+        invitation_url: string;
+      }>(`/team/employees/${id}/invite`, {});
+      if (authActorIdRef.current !== actorId) return;
+      setInvitationNotice({
+        actorId,
+        employeeId: id,
+        recipient: `${target.name} · ${target.email}`,
+        url: result.invitation_url,
+        delivery: result.delivery,
+      });
       setInvitedIds((previous) => new Set(previous).add(id));
-      setMessage(
-        "Invitation sent. The team member will receive an expiring link by email.",
-      );
+      await refresh();
+    } catch (e) {
+      if (authActorIdRef.current !== actorId) return;
+      if (e instanceof PortalRequestError) {
+        const details = e.details;
+        const invitationUrl = details?.invitation_url;
+        const delivery = details?.delivery;
+        if (
+          typeof invitationUrl === "string" &&
+          (delivery === "failed" || delivery === "unknown")
+        ) {
+          setInvitationNotice({
+            actorId,
+            employeeId: id,
+            recipient: `${target.name} · ${target.email}`,
+            url: invitationUrl,
+            delivery,
+          });
+          setInvitedIds((previous) => new Set(previous).add(id));
+          await refresh();
+        }
+      }
+      setError(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function copyInvitationLink() {
+    const notice = invitationNotice;
+    if (!notice || notice.actorId !== authUser?.id) return;
+    try {
+      await navigator.clipboard.writeText(notice.url);
+      setInviteCopyMessage("Invitation link copied.");
+    } catch {
+      setInviteCopyMessage("Could not copy automatically. Select and copy the link below.");
+    }
+  }
+  async function shareInvitationLink() {
+    const notice = invitationNotice;
+    if (!notice || notice.actorId !== authUser?.id) return;
+    if (!navigator.share) {
+      await copyInvitationLink();
+      return;
+    }
+    try {
+      await navigator.share({
+        title: "Team account invitation",
+        text: `Your invitation to join the team. This is the latest invitation link for ${notice.recipient}.`,
+        url: notice.url,
+      });
+      setInviteCopyMessage("Share sheet opened.");
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setInviteCopyMessage("Sharing was unavailable. You can copy the link instead.");
     }
   }
   async function removeStaff() {
@@ -380,14 +473,30 @@ export function TeamHome({
     if (editId) setEditing(editId);
   }, [team, assistId, editId, accountId, assistEmployee]);
   const isTeamIndex = !embedded && !jobId && location === "/team";
-  const employeeStatus = (employee: TeamBootstrap["employees"][number]) =>
-    !employee.active
-      ? "Inactive"
-      : employee.auth_user_id
-        ? "Active"
-        : invitedIds.has(employee.id)
-          ? "Invited"
-          : "Invite status unknown";
+  const invitations = (team as (TeamBootstrap & {
+    invitations?: {
+      employee_id: string;
+      created_at: string;
+      expires_at: string;
+      accepted_at: string | null;
+    }[];
+  }) | undefined)?.invitations;
+  const latestInvitation = (employeeId: string) =>
+    invitations
+      ?.filter((invitation) => invitation.employee_id === employeeId)
+      .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))[0];
+  const employeeStatus = (employee: TeamBootstrap["employees"][number]) => {
+    if (!employee.active) return "Inactive";
+    if (employee.auth_user_id) return "Active";
+    if (invitations !== undefined) {
+      const latest = latestInvitation(employee.id);
+      if (latest?.accepted_at) return "New invitation needed";
+      if (latest && Date.parse(latest.expires_at) <= Date.now()) return "Invitation expired";
+      if (latest) return "Invited";
+      return "Not invited";
+    }
+    return invitedIds.has(employee.id) ? "Invited" : "Not invited";
+  };
   if (legacyJobTimesheets) {
     return <Navigate to={`/team/timesheets?job=${encodeURIComponent(jobId)}`} replace />;
   }
@@ -492,6 +601,73 @@ export function TeamHome({
                 >
                   {message}
                 </p>
+              )}
+              {invitationNotice && invitationNotice.actorId === authUser?.id && (
+                <section
+                  aria-label="Invitation link"
+                  className={`mb-4 rounded-xl border p-4 sm:p-5 ${
+                    invitationNotice.delivery === "accepted"
+                      ? "border-primary/25 bg-primary/5"
+                      : "border-warning/30 bg-warning/10"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {invitationNotice.delivery === "accepted" ? (
+                      <Mail className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+                    ) : (
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold">
+                        {invitationNotice.delivery === "accepted"
+                          ? "Invitation link is ready"
+                          : "Email delivery needs attention"}
+                      </h2>
+                      <p className="mt-1 break-words text-sm text-muted-foreground">
+                        Recipient: <strong className="text-foreground">{invitationNotice.recipient}</strong>
+                      </p>
+                      {invitationNotice.delivery === "accepted" ? (
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          The email provider accepted the message request; this does not confirm delivery or inbox placement. You can share this prepared link directly.
+                        </p>
+                      ) : (
+                        <p className="mt-2 text-sm text-foreground">
+                          {invitationNotice.delivery === "failed"
+                            ? "The email provider reported a delivery failure."
+                            : "The email delivery result is uncertain."}{" "}
+                          Share or copy this prepared link if appropriate. Check the recipient address and mail-provider status before retrying; a retry creates a new link and replaces this one.
+                        </p>
+                      )}
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        Only the latest invitation link remains valid. Creating another invitation replaces older unaccepted links.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <input
+                          aria-label={`Prepared invitation link for ${invitationNotice.recipient}`}
+                          readOnly
+                          value={invitationNotice.url}
+                          onFocus={(event) => event.currentTarget.select()}
+                          className={`${field} min-w-0 flex-1`}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <Button type="button" className={outline} onClick={() => void copyInvitationLink()}>
+                            <Copy className="h-4 w-4" />
+                            Copy link
+                          </Button>
+                          <Button type="button" className={outline} onClick={() => void shareInvitationLink()}>
+                            <Share2 className="h-4 w-4" />
+                            Share
+                          </Button>
+                        </div>
+                      </div>
+                      {inviteCopyMessage && (
+                        <p role="status" className="mt-2 text-sm text-muted-foreground">
+                          {inviteCopyMessage}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </section>
               )}
               {assistId && (
                 <section className={`${card} mb-4 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between`}>
@@ -814,10 +990,6 @@ export function TeamHome({
                       <p className="mt-1 text-sm text-muted-foreground">
                         {visibleEmployees.length} team members
                       </p>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        Accepted accounts show Active. Pending invite history is
-                        not returned by the current team API.
-                      </p>
                     </div>
                     {isAdmin && (
                       <Button
@@ -968,7 +1140,7 @@ export function TeamHome({
                                   {emp.name}
                                 </p>
                                 <span
-                                  className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-sm font-semibold ${employeeStatus(emp) === "Active" ? "border-success/25 bg-success/10 text-success" : employeeStatus(emp) === "Invited" ? "border-warning/25 bg-warning/10 text-warning" : "border-border bg-muted text-muted-foreground"}`}
+                                  className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-sm font-semibold ${employeeStatus(emp) === "Active" ? "border-success/25 bg-success/10 text-success" : ["Invited", "Invitation expired", "New invitation needed"].includes(employeeStatus(emp)) ? "border-warning/25 bg-warning/10 text-warning" : "border-border bg-muted text-muted-foreground"}`}
                                 >
                                   {employeeStatus(emp)}
                                 </span>
@@ -1016,7 +1188,7 @@ export function TeamHome({
                                   onSelect={() => void invite(emp.id)}
                                 >
                                   <Mail className="h-4 w-4" />
-                                  {emp.auth_user_id || invitedIds.has(emp.id)
+                                  {employeeStatus(emp) !== "Not invited"
                                     ? "Resend invite"
                                     : "Invite"}
                                 </DropdownMenuItem>

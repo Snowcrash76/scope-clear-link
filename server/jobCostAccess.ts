@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { ZodError } from 'zod';
 
 export class CostApiError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string, public code?: string, public details?: Record<string, unknown>) { super(message); }
 }
 export function jobCostClient() {
   const url = process.env.VITE_SUPABASE_URL;
