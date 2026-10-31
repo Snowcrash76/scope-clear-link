@@ -12,7 +12,7 @@ export function AppHeader({ actions, onOpenNavigation }: AppHeaderProps) {
   return (
     <header
       data-testid="app-header"
-      className={`relative z-30 flex h-16 w-full shrink-0 items-center gap-3 border-b border-zinc-200 bg-white px-3 shadow-sm sm:px-4 ${
+      className={`relative z-30 flex h-16 w-full shrink-0 items-center gap-3 border-b border-border bg-card px-3 shadow-sm sm:px-4 ${
         hasActions
           ? 'sticky top-0'
           : 'sticky top-0 lg:static lg:hidden'
@@ -22,7 +22,7 @@ export function AppHeader({ actions, onOpenNavigation }: AppHeaderProps) {
         type="button"
         onClick={onOpenNavigation}
         aria-label="Open navigation"
-        className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 ${
+          className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
           hasActions ? 'lg:hidden' : ''
         }`}
         data-testid="button-mobile-menu"

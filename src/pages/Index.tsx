@@ -31,7 +31,7 @@ export default function Index() {
             </Badge>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
               Keep clients on the same page —{' '}
-              <span className="text-accent">every change, every job</span>
+              <span className="text-primary">every change, every job</span>
             </h1>
             <p className="text-lg sm:text-xl text-muted-foreground mb-8 leading-relaxed">
               Stop scope creep. Prevent disputes. The client-facing workspace that turns 
@@ -170,7 +170,7 @@ export default function Index() {
 
               <div className="flex gap-4">
                 <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <Shield className="w-5 h-5 text-accent" />
+                  <Shield className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <h3 className="font-heading font-semibold text-lg mb-1">

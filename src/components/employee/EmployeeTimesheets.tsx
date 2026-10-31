@@ -63,7 +63,7 @@ const statusFor = (value: string | undefined): TimesheetStatus =>
     ? value
     : "draft";
 
-const primary = `${btn} bg-primary text-primary-foreground hover:bg-primary/90`;
+const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))]`;
 
 export function EmployeeTimesheets() {
   const q = usePortal<EmployeeBootstrap>("/employee/bootstrap");

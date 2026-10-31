@@ -7,6 +7,8 @@ import { awaitingQuoteResponse, jobDisplayStatus, type QuoteSummary } from '@/li
 import { awaitingClientApproval, needsTradeResponse } from '@/lib/variationStatus';
 import type { Project } from '@/types/project';
 import { cn } from '@/lib/utils';
+import { BriefcaseBusiness, GitBranch, Hourglass, CircleCheck, Receipt, TriangleAlert } from 'lucide-react';
+import { aud } from '@/hooks/useJobCosts';
 
 interface DashboardStatsProps {
   projects: Project[];
@@ -14,7 +16,7 @@ interface DashboardStatsProps {
 }
 
 function formatMoney(value: number | null) {
-  return value === null ? '—' : new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(value);
+  return value === null ? '—' : aud(value);
 }
 
 function latestQuotes(quotes: QuoteSummary[]) {
@@ -70,6 +72,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
     testId: string;
     highlight?: boolean;
     loading?: boolean;
+    accent: string;
+    iconTone: string;
+    iconBg: string;
+    Icon: typeof BriefcaseBusiness;
   }[] = [
     {
       label: 'Active Jobs', value: active.length,
@@ -77,6 +83,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       href: '/projects?status=in_progress',
       title: 'Jobs currently in progress. Mutually exclusive with jobs awaiting quote response.',
       testId: 'stat-active-projects',
+      accent: 'bg-primary',
+      iconTone: 'text-primary',
+      iconBg: 'bg-[hsl(var(--info-soft))]',
+      Icon: BriefcaseBusiness,
     },
     {
       label: 'Variations awaiting action', value: pendingVariationCount,
@@ -85,6 +95,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       title: 'Includes client requests that need your response and trade variations awaiting client approval.',
       testId: 'stat-pending-approvals',
       highlight: pendingVariationCount > 0,
+      accent: 'bg-warning',
+      iconTone: 'text-warning',
+      iconBg: 'bg-[hsl(var(--warning-soft))]',
+      Icon: GitBranch,
     },
     {
       label: 'Awaiting Response', value: quoteUnavailable ? '—' : awaiting.length,
@@ -94,6 +108,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       testId: 'stat-awaiting-response',
       highlight: awaiting.length > 0,
       loading: quoteQuery.isLoading,
+      accent: 'bg-[hsl(var(--purple))]',
+      iconTone: 'text-[hsl(var(--purple))]',
+      iconBg: 'bg-[hsl(var(--purple-soft))]',
+      Icon: Hourglass,
     },
     {
       label: 'Completed', value: completed.length,
@@ -101,6 +119,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       href: '/projects?status=completed',
       title: 'All jobs marked Completed.',
       testId: 'stat-completed',
+      accent: 'bg-success',
+      iconTone: 'text-success',
+      iconBg: 'bg-[hsl(var(--success-soft))]',
+      Icon: CircleCheck,
     },
     {
       label: 'Unpaid invoices ($)', value: formatMoney(unpaidTotal),
@@ -109,6 +131,10 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       title: 'Recorded totals on sent and overdue invoices. Draft, paid and cancelled invoices are excluded; partial payments are not tracked.',
       testId: 'stat-unpaid-invoices',
       loading: invoiceQuery.isLoading,
+      accent: 'bg-info',
+      iconTone: 'text-info',
+      iconBg: 'bg-[hsl(var(--info-soft))]',
+      Icon: Receipt,
     },
     {
       label: 'Overdue ($)', value: formatMoney(overdueTotal),
@@ -118,11 +144,15 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       testId: 'stat-overdue-invoices',
       highlight: overdueInvoices.length > 0,
       loading: invoiceQuery.isLoading,
+      accent: 'bg-destructive',
+      iconTone: 'text-destructive',
+      iconBg: 'bg-[hsl(var(--danger-soft))]',
+      Icon: TriangleAlert,
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3" aria-label="Dashboard statistics">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Dashboard statistics">
       {cards.map(card => (
         <Link
           key={card.testId}
@@ -131,17 +161,22 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
           aria-label={`${card.label}: ${card.loading || loadingCards ? 'loading' : card.value}`}
           data-testid={card.testId}
           className={cn(
-            'group min-h-[112px] rounded-xl border border-[#D8C3AD] bg-white px-4 py-3.5 shadow-card transition-colors hover:border-amber-500 hover:bg-amber-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700 focus-visible:ring-offset-2',
-            card.highlight && 'border-amber-500/70'
+            'group relative min-h-[150px] overflow-hidden rounded-2xl border border-border bg-card px-5 pb-4 pt-5 shadow-card transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
           )}
         >
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-zinc-600">{card.label}</p>
+          <span className={cn("absolute inset-x-0 top-0 h-[3px]", card.accent)} aria-hidden="true" />
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">{card.label}</p>
+            <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", card.iconBg, card.iconTone)}>
+              <card.Icon className="h-4 w-4" aria-hidden="true" />
+            </span>
+          </div>
           {loadingCards || card.loading ? (
-            <div className="h-8 w-24 animate-pulse rounded bg-amber-100" aria-label="Loading statistic" />
+            <div className="h-9 w-24 animate-pulse rounded-lg bg-muted" aria-label="Loading statistic" />
           ) : (
-            <p className="mb-1 text-xl font-heading font-bold tabular-nums text-zinc-950 sm:text-2xl">{card.value}</p>
+            <p className="mb-1 text-[32px] leading-9 font-heading font-bold tabular-nums tracking-tight text-foreground">{card.value}</p>
           )}
-          <p className={cn('text-xs leading-4', card.highlight ? 'font-medium text-amber-900' : 'text-zinc-600')}>{card.subtitle}</p>
+          <p className={cn('text-sm leading-5', card.highlight ? 'font-medium text-foreground' : 'text-muted-foreground')}>{card.subtitle}</p>
         </Link>
       ))}
     </div>

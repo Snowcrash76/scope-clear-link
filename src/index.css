@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -6,93 +6,75 @@
 
 @layer base {
   :root {
-    /* ScopeClear fixed light theme */
-    --background: 0 0% 100%;
-    --foreground: 30 10% 12%;
-
+    --background: 216 45.4545% 97.8431%;
+    --foreground: 222.2222 47.3684% 11.1765%;
     --card: 0 0% 100%;
-    --card-foreground: 30 10% 12%;
-
+    --card-foreground: var(--foreground);
     --popover: 0 0% 100%;
-    --popover-foreground: 30 10% 12%;
-
-    /* Accessible amber primary */
-    --primary: 40 100% 48%;
-    --primary-foreground: 30 10% 12%;
-
-    /* Warm cream secondary */
-    --secondary: 40 20% 96%;
-    --secondary-foreground: 30 10% 12%;
-
-    /* Muted warm gray */
-    --muted: 40 15% 95%;
-    --muted-foreground: 33 23% 26%;
-
-    /* Bright amber accent for CTAs — #F4A100 */
-    --accent: 40 100% 48%;
-    --accent-foreground: 30 10% 12%;
-
-    /* Status colors */
-    --success: 143 58% 29%;
+    --popover-foreground: var(--foreground);
+    --primary: 221.2121 83.1933% 53.3333%;
+    --primary-hover: 224.2781 76.3265% 48.0392%;
+    --primary-foreground: 0 0% 100%;
+    --primary-soft: 222.8571 100% 95.8824%;
+    --secondary: var(--card);
+    --secondary-foreground: var(--foreground);
+    --muted: var(--background);
+    --muted-foreground: 218.5714 13.3333% 41.1765%;
+    --accent: var(--primary-soft);
+    --accent-foreground: var(--primary);
+    --success: 142.4299 71.8121% 29.2157%;
     --success-foreground: 0 0% 100%;
-
-    --destructive: 0 65% 35%;
+    --destructive: 0 73.7089% 41.7647%;
     --destructive-foreground: 0 0% 100%;
-
-    /* Pending state */
-    --pending: 43 96% 56%;
-    --pending-foreground: 30 10% 12%;
-
-    /* Approved state */
-    --approved: 158 60% 29%;
-    --approved-foreground: 0 0% 100%;
-
-    /* Status text colours are intentionally dark enough for AA contrast on pale surfaces. */
-    --warning: 38 78% 35%;
+    --pending: var(--warning-soft);
+    --pending-foreground: var(--warning);
+    --approved: var(--success);
+    --approved-foreground: var(--success-foreground);
+    --warning: 25.9649 90.4762% 37.0588%;
     --warning-foreground: 0 0% 100%;
-    --info: 210 65% 35%;
+    --info: var(--primary);
     --info-foreground: 0 0% 100%;
-
-    /* Quiet warm-gray boundaries */
-    --border: 30 12% 86%;
-    --input: 30 12% 82%;
-    --ring: 39 100% 26%;
+    --purple: 263.3898 69.9605% 50.3922%;
+    --info-soft: var(--primary-soft);
+    --success-soft: 145.7143 43.75% 93.7255%;
+    --warning-soft: 48 96.4912% 88.8235%;
+    --danger-soft: 0 80.9524% 95.8824%;
+    --purple-soft: 261 90.9091% 95.6863%;
+    --border: 216.9231 30.2326% 91.5686%;
+    --input: var(--border);
+    --ring: var(--primary);
     color-scheme: light;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
     /* Light navigation surfaces */
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 30 10% 18%;
-    --sidebar-primary: 40 100% 48%;
-    --sidebar-primary-foreground: 30 10% 12%;
-    --sidebar-accent: 40 20% 96%;
-    --sidebar-accent-foreground: 30 10% 12%;
-    --sidebar-border: 30 12% 90%;
-    --sidebar-ring: 40 100% 48%;
-
-    /* Compact, warm dashboard typography */
-    --font-heading: "Manrope", sans-serif;
-    --font-body: "DM Sans", sans-serif;
-
-    /* Shadows */
-    --shadow-soft: 0 2px 8px -2px rgba(0, 0, 0, 0.06);
-    --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.04);
-    --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.08);
+    --sidebar-background: var(--card);
+    --sidebar-foreground: var(--foreground);
+    --sidebar-primary: var(--primary);
+    --sidebar-primary-foreground: var(--primary-foreground);
+    --sidebar-accent: var(--primary-soft);
+    --sidebar-accent-foreground: var(--primary);
+    --sidebar-border: var(--border);
+    --sidebar-ring: var(--ring);
+    --font-heading: "Inter", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --shadow-soft: 0 1px 2px rgba(15,23,42,.05), 0 4px 12px rgba(15,23,42,.04);
+    --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 4px 12px rgba(15,23,42,.04);
+    --shadow-elevated: 0 8px 24px rgba(15,23,42,.10);
   }
 }
 
 .portal-shell {
-  background: #fff;
-  color: #25302c;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
   min-height: 100dvh;
-  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
+  font-family: var(--font-body);
 }
 .portal-shell h1,
 .portal-shell h2,
 .portal-shell h3,
 .portal-shell h4 {
-  font-family: "Avenir Next", "Segoe UI", ui-sans-serif, sans-serif;
+  font-family: var(--font-heading);
 }
 .portal-mono {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
@@ -121,34 +103,61 @@
 .team-page [class~="text-xs"],
 .team-page [class~="text-[11px]"],
 .team-page [class~="text-[10px]"] {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
 }
 .team-page .portal-mono {
   font-family: var(--font-body);
 }
 
-/* Main-app metadata is kept at a readable 14px floor; employee portal remains independent. */
+.main-app {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 15px;
+  line-height: 22px;
+}
+.main-app [class~="text-sm"],
+.team-page [class~="text-sm"] {
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+}
+.main-app :where(.rounded-xl, .rounded-2xl) {
+  border-radius: 16px;
+}
+.main-app :where(input, select, textarea) {
+  border-radius: 10px;
+}
+.team-page {
+  --team-surface: hsl(var(--card));
+  --team-line: hsl(var(--border));
+}
+
+/* Compact metadata has a readable 12px minimum in the shared management theme. */
 .main-app [class~="text-xs"],
 .main-app [class~="text-[11px]"],
 .main-app [class~="text-[10px]"],
+.main-app [class~="text-[9px]"],
+.main-app [class~="text-[8px]"],
 body:has(.main-app) [data-radix-portal] [class~="text-xs"],
 body:has(.main-app) [data-radix-portal] [class~="text-[11px]"],
 body:has(.main-app) [data-radix-portal] [class~="text-[10px]"] {
-  font-size: 0.875rem;
-  line-height: 1.25rem;
+  font-size: 0.75rem;
+  line-height: 1.125rem;
 }
 
 /* Keep pointer targets comfortable in management UI and its Radix portals. */
-.main-app button,
+.main-app button:not([class~="h-9"]),
 .team-page button,
-body:has(.main-app) [data-radix-portal] button {
+body:has(.main-app) [data-radix-portal] button:not([class~="h-9"]) {
   min-height: 44px;
 }
 .main-app button[aria-label],
 .team-page button[aria-label],
 body:has(.main-app) [data-radix-portal] button[aria-label] {
   min-width: 44px;
+}
+.main-app button:not([class~="h-9"]) {
+  border-radius: 10px;
 }
 .main-app input,
 .main-app select,
@@ -202,6 +211,8 @@ body:has(.main-app)
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 22px;
   }
 
   h1,

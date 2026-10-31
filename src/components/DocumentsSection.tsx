@@ -460,7 +460,7 @@ export function DocumentsSection({
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
-            className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[hsl(var(--primary-hover))]"
             onClick={() => {
               if (visibilityTarget)
                 void saveEmployeeVisibility(visibilityTarget, true);

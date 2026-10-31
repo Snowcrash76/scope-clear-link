@@ -199,7 +199,7 @@ function ChangeRequestItem({
       <div className="flex flex-wrap gap-3 text-sm">
         <div className={cn(
           'flex items-center gap-1.5 rounded px-2 py-1',
-          request.costImpact > 0 ? 'bg-warning/10 text-warning-foreground' :
+          request.costImpact > 0 ? 'bg-[hsl(var(--warning-soft))] text-warning' :
             request.costImpact < 0 ? 'bg-approved/10 text-approved' :
               'bg-secondary text-muted-foreground',
         )}>
@@ -210,7 +210,7 @@ function ChangeRequestItem({
         </div>
         <div className={cn(
           'flex items-center gap-1.5 rounded px-2 py-1',
-          request.timeImpact > 0 ? 'bg-warning/10 text-warning-foreground' :
+          request.timeImpact > 0 ? 'bg-[hsl(var(--warning-soft))] text-warning' :
             request.timeImpact < 0 ? 'bg-approved/10 text-approved' :
               'bg-secondary text-muted-foreground',
         )}>

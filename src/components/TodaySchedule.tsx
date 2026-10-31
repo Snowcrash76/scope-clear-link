@@ -172,7 +172,7 @@ function AppointmentForm({
           className={cn(
             'flex min-h-11 items-center gap-1 text-sm px-3 rounded font-medium transition-colors',
             canSave && !saving
-              ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+              ? 'bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))]'
               : 'bg-muted text-muted-foreground cursor-not-allowed'
           )}
           data-testid="button-appointment-save"

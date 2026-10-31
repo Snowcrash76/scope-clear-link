@@ -361,7 +361,7 @@ export default function DemoProjectView() {
                       <div className="flex flex-wrap gap-3">
                         <div className={cn(
                           "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm",
-                          request.costImpact > 0 ? "bg-warning/10 text-warning-foreground" : "bg-secondary text-muted-foreground"
+                          request.costImpact > 0 ? "bg-[hsl(var(--warning-soft))] text-warning" : "bg-secondary text-muted-foreground"
                         )}>
                           <DollarSign className="w-4 h-4" />
                           <span className="font-medium">

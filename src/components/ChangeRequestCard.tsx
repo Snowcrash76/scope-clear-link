@@ -179,7 +179,7 @@ export function ChangeRequestCard({
         <div className="flex flex-wrap gap-3 mb-4">
           <div className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm",
-            request.costImpact > 0 ? "bg-warning/10 text-warning-foreground" : 
+            request.costImpact > 0 ? "bg-[hsl(var(--warning-soft))] text-warning" :
             request.costImpact < 0 ? "bg-approved/10 text-approved" : 
             "bg-secondary text-muted-foreground"
           )}>
@@ -192,7 +192,7 @@ export function ChangeRequestCard({
           </div>
           <div className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm",
-            request.timeImpact > 0 ? "bg-warning/10 text-warning-foreground" : 
+            request.timeImpact > 0 ? "bg-[hsl(var(--warning-soft))] text-warning" :
             "bg-secondary text-muted-foreground"
           )}>
             <Clock className="w-4 h-4" />

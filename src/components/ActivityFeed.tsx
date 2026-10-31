@@ -26,8 +26,8 @@ const EVENT_CONFIG: Record<
   },
   quote_sent: {
     icon: Send,
-    iconClass: 'text-blue-500',
-    bgClass: 'bg-blue-500/10',
+    iconClass: 'text-info',
+    bgClass: 'bg-info/10',
   },
   quote_approved: {
     icon: CheckCircle2,
@@ -41,8 +41,8 @@ const EVENT_CONFIG: Record<
   },
   invoice_sent: {
     icon: FileText,
-    iconClass: 'text-blue-500',
-    bgClass: 'bg-blue-500/10',
+    iconClass: 'text-info',
+    bgClass: 'bg-info/10',
   },
   invoice_paid: {
     icon: DollarSign,
@@ -73,17 +73,17 @@ function EventRow({ event }: { event: ActivityEvent }) {
   return (
     <Link
       to={`/manage/${event.projectId}`}
-      className="flex items-start gap-3 px-4 py-3 hover:bg-muted/50 transition-colors rounded-lg group"
+      className="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-accent/30"
       data-testid={`activity-event-${event.id}`}
     >
-      <div className={cn('p-1.5 rounded-lg mt-0.5 flex-shrink-0', config.bgClass)}>
+      <div className={cn('mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl', config.bgClass)}>
         <Icon className={cn('w-3.5 h-3.5', config.iconClass)} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground leading-snug group-hover:text-primary transition-colors">
+        <p className="text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
           {event.description}
         </p>
-        <p className="text-xs text-muted-foreground mt-0.5" title={event.timestamp.toLocaleString('en-AU')}>
+        <p className="mt-0.5 text-xs text-muted-foreground" title={event.timestamp.toLocaleString('en-AU')}>
           {formatDistanceToNow(event.timestamp, { addSuffix: true })}
         </p>
       </div>
@@ -145,12 +145,12 @@ export function ActivityFeed() {
   return (
     <div data-testid="activity-feed">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="font-heading text-base font-semibold">Recent Activity</h2>
+        <h2 className="font-heading text-xl font-semibold leading-7">Recent Activity</h2>
         {!isLoading && !isError && hasMore && (
           <span className="text-xs text-muted-foreground">{events!.length} events — scroll to see all</span>
         )}
       </div>
-      <div className="rounded-xl border bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         {isLoading ? (
           <FeedSkeleton />
         ) : isError ? (

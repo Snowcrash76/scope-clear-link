@@ -37,7 +37,6 @@ import {
   ChevronRight,
   Briefcase,
   GitBranch,
-  User,
   HelpCircle,
   Download,
   MoreHorizontal,
@@ -45,6 +44,7 @@ import {
   Receipt,
   CircleDollarSign,
   RefreshCw,
+  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Project } from "@/types/project";
@@ -54,7 +54,6 @@ import {
   jobDisplayStatus,
   type QuoteSummary,
 } from "@/lib/quoteDisplay";
-import { StatusBadge } from "@/components/StatusBadge";
 import {
   useDashboardInvoices,
   type DashboardInvoice,
@@ -63,6 +62,7 @@ import { useJobProfitability } from "@/hooks/useJobCosts";
 import type { JobProfitability } from "@/hooks/useJobCosts";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
+import { JobCard } from "@/components/JobCard";
 
 interface AttentionItem {
   id: string;
@@ -360,45 +360,14 @@ function NeedsAttention({
   );
 }
 
-function ProjectInitial({ name }: { name: string }) {
-  const colors = [
-    "bg-primary text-primary-foreground",
-    "bg-muted text-muted-foreground",
-    "bg-success text-success-foreground",
-    "bg-warning text-warning-foreground",
-    "bg-info text-info-foreground",
-    "bg-destructive text-destructive-foreground",
-  ];
-  const idx = name.charCodeAt(0) % colors.length;
-  return (
-    <div
-      className={cn(
-        "w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 font-heading font-bold text-lg",
-        colors[idx],
-      )}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-}
-
 function ProjectListItem({
   project,
-  onView,
   quote,
 }: {
   project: Project;
-  onView: (id: string) => void;
   quote?: QuoteSummary;
 }) {
   const navigate = useNavigate();
-  const completedStages = project.stages.filter(
-    (s) => s.status === "completed",
-  ).length;
-  const totalStages = project.stages.length;
-  const stageProgress =
-    totalStages > 0 ? (completedStages / totalStages) * 100 : 0;
-  const currentStage = project.stages.find((stage) => stage.status === "current");
   const pendingVariations = project.changeRequests.filter(
     (cr) => needsTradeResponse(cr) || awaitingClientApproval(cr),
   ).length;
@@ -407,55 +376,25 @@ function ProjectListItem({
   ).length;
 
   return (
-    <div className="grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-    <button
-      type="button"
-      onClick={() => onView(project.id)}
-      aria-label={`Open job ${project.name}`}
-      className="flex w-full items-center gap-4 px-4 py-3.5 text-left transition-colors hover:bg-muted/40 group"
-      data-testid={`project-list-item-${project.id}`}
-    >
-      <ProjectInitial name={project.name} />
-
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
-          <span className="min-w-0 font-semibold text-sm break-words">
-            {project.name}
-          </span>
-          <StatusBadge status={jobDisplayStatus(project, quote)} size="sm" />
-        </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span className="min-w-0 flex items-start gap-1 break-words">
-            <User className="mt-0.5 w-3 h-3 flex-shrink-0" />
-            {project.clientName}
-          </span>
+    <div className="min-w-0">
+    <JobCard project={project} quote={quote} status={jobDisplayStatus(project, quote)} testId={`project-list-item-${project.id}`}>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-sm text-muted-foreground">
           {resolvedVariations > 0 && (
             <span className="flex items-center gap-1">
-              <GitBranch className="w-3 h-3 flex-shrink-0" />
+              <GitBranch className="h-3.5 w-3.5 flex-shrink-0" />
               {resolvedVariations} extra{resolvedVariations > 1 ? "s" : ""} &
               change{resolvedVariations > 1 ? "s" : ""} resolved
             </span>
           )}
           {pendingVariations > 0 && (
             <span className="flex items-center gap-1 text-warning font-medium">
-              <GitBranch className="w-3 h-3 flex-shrink-0" />
+              <GitBranch className="h-3.5 w-3.5 flex-shrink-0" />
               {pendingVariations} pending
             </span>
           )}
         </div>
-        {totalStages > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-2" aria-label={`Stage progress ${completedStages} of ${totalStages}${currentStage ? `, current stage ${currentStage.name}` : ""}`}>
-            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${stageProgress}%` }} />
-            </div>
-            <span className="text-sm text-muted-foreground">{completedStages} / {totalStages} · {currentStage?.name ?? (completedStages === totalStages ? "Complete" : "No current stage")}</span>
-          </div>
-        )}
-      </div>
-
-      <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </button>
-    <div className="px-4 pb-3 sm:px-2 sm:py-2">
+    </JobCard>
+    <div className="border-t border-border bg-background px-4 py-3 sm:pl-[4.5rem]">
       <ClientPageActions project={project} onAddEmail={() => navigate(`/manage/${project.id}?client=edit`)} />
     </div>
     </div>
@@ -573,10 +512,6 @@ export default function TradeDashboard() {
       invoiceQuery.refetch(),
       profitabilityQuery.refetch(),
     ]);
-  };
-
-  const handleViewProject = (id: string) => {
-    navigate(`/manage/${id}`);
   };
 
   if (projectsError) {
@@ -745,10 +680,11 @@ export default function TradeDashboard() {
             retry={retryAttentionChecks}
           />
 
-          {/* Active projects */}
-          <div className="mb-8">
+          {/* Active projects and the live activity stream */}
+          <div className="mb-8 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.85fr)]">
+          <div className="min-w-0">
             <div className="flex items-center justify-between gap-2 mb-3">
-              <h2 className="font-heading text-base font-semibold">
+              <h2 className="font-heading text-xl font-semibold leading-7">
                 Active Jobs
               </h2>
               <button
@@ -760,7 +696,7 @@ export default function TradeDashboard() {
               </button>
             </div>
 
-            <div className="min-w-0 rounded-xl border border-border bg-background overflow-hidden shadow-card">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
               {loading ? (
                 <div className="divide-y">
                   {Array.from({ length: 3 }).map((_, i) => (
@@ -783,23 +719,37 @@ export default function TradeDashboard() {
                       key={project.id}
                       project={project}
                       quote={latestQuoteByProject.get(project.id)}
-                      onView={handleViewProject}
                     />
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-10 px-4">
-                  <Briefcase className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">
-                    No active jobs found at this time.
-                  </p>
-                </div>
+                !quoteQuery.isLoading && !quoteQuery.isError ? (
+                  <div className="mx-3 my-3 flex flex-col gap-4 rounded-2xl border border-dashed border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
+                        <Plus className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="font-semibold text-foreground">Ready to draft your next work order?</p>
+                        <p className="mt-0.5 text-sm text-muted-foreground">Start a quote for the next job and review it before sending.</p>
+                      </div>
+                    </div>
+                    <NewJobButton label="Create Quote" testId="dashboard-create-quote" className="shrink-0" />
+                  </div>
+                ) : (
+                  <div className="px-4 py-8 text-center">
+                    <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">No active jobs found at this time.</p>
+                  </div>
+                )
               )}
             </div>
           </div>
 
-          {/* Activity feed — full width */}
-          <ActivityFeed />
+          <div className="min-w-0">
+            <ActivityFeed />
+          </div>
+          </div>
         </PageLayout>
 
         {/* Discreet support widget — fixed bottom-right */}

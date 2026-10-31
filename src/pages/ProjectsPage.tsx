@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
 import { LoadErrorState } from "@/components/LoadErrorState";
@@ -14,9 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   FolderOpen,
-  User,
   GitBranch,
-  ChevronRight,
   MoreVertical,
   CheckCircle2,
   RotateCcw,
@@ -30,7 +28,7 @@ import {
   quoteDisplayStatus,
   type QuoteSummary,
 } from "@/lib/quoteDisplay";
-import { StatusBadge } from "@/components/StatusBadge";
+import { JobCard } from "@/components/JobCard";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
 
@@ -80,28 +78,6 @@ function nextAction(
   if (quoteStatus === "draft")
     return `Finish draft quote · updated ${dateLabel(quote?.updated_at ?? quote?.created_at)}`;
   return `New lead · created ${dateLabel(project.createdAt)}`;
-}
-
-function ProjectInitial({ name }: { name: string }) {
-  const colors = [
-    "bg-primary text-primary-foreground",
-    "bg-muted text-muted-foreground",
-    "bg-success text-success-foreground",
-    "bg-warning text-warning-foreground",
-    "bg-info text-info-foreground",
-    "bg-destructive text-destructive-foreground",
-  ];
-  const idx = name.charCodeAt(0) % colors.length;
-  return (
-    <div
-      className={cn(
-        "w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 font-heading font-bold",
-        colors[idx],
-      )}
-    >
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
 }
 
 export default function ProjectsPage() {
@@ -243,9 +219,9 @@ export default function ProjectsPage() {
 
   return (
     <AppShell>
-      <PageLayout title="Jobs" description="All your jobs in one place">
+      <PageLayout title="Jobs" description="Your jobs, quotes and next actions in one place.">
         {/* Tabs */}
-        <div className="mb-5 -mx-4 flex items-center gap-1 overflow-x-auto border-b px-4 [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0">
+        <div className="mb-5 -mx-4 flex items-center gap-1 overflow-x-auto border-b border-border px-4 [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -312,7 +288,7 @@ export default function ProjectsPage() {
           </label>
         </div>
 
-        <div className="min-w-0 rounded-xl border border-border bg-background overflow-hidden shadow-card">
+        <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           {loading ? (
             <div className="divide-y">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -359,12 +335,6 @@ export default function ProjectsPage() {
           ) : (
             <div className="divide-y divide-border/50">
               {sortedFiltered.map((project) => {
-                const completed = project.stages.filter(
-                  (s) => s.status === "completed",
-                ).length;
-                const total = project.stages.length;
-                const progress = total > 0 ? (completed / total) * 100 : 0;
-                const currentStage = project.stages.find((stage) => stage.status === "current");
                 const pending = project.changeRequests.filter(
                   (c) => needsTradeResponse(c) || awaitingClientApproval(c),
                 ).length;
@@ -375,141 +345,59 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={project.id}
-                    className="flex min-w-0 items-center gap-2 px-2 py-2 transition-colors hover:bg-muted/40 sm:gap-3 sm:px-3 sm:py-2.5"
+                    className="flex min-w-0 items-start gap-2 px-2 py-3 sm:gap-3 sm:px-4 sm:py-3.5"
                     data-testid={`project-row-${project.id}`}
                   >
-                    <Link
-                      to={`/manage/${project.id}`}
-                      className="group flex min-h-[76px] min-w-0 flex-1 items-center gap-3 rounded-lg px-1 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring sm:gap-4 sm:px-2"
+                    <JobCard
+                      project={project}
+                      quote={latestQuoteByProject.get(project.id)}
+                      status={jobDisplayStatus(project, latestQuoteByProject.get(project.id))}
+                      className="min-w-0 flex-1"
+                      testId={`project-card-${project.id}`}
                     >
-                      <ProjectInitial name={project.name} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5">
-                          <span className="min-w-0 font-semibold text-sm break-words">
-                            {project.name}
+                      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-sm text-muted-foreground">
+                        {pending > 0 && (
+                          <span className="flex items-center gap-1 text-warning font-medium">
+                            <GitBranch className="h-3.5 w-3.5 flex-shrink-0" />
+                            {pending} pending
                           </span>
-                          <StatusBadge
-                            status={jobDisplayStatus(
-                              project,
-                              latestQuoteByProject.get(project.id),
-                            )}
-                            size="sm"
-                          />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          <span className="min-w-0 flex items-start gap-1 break-words">
-                            <User className="mt-0.5 w-3 h-3 flex-shrink-0" />
-                            {project.clientName}
-                          </span>
-                          <span className="inline-flex items-center gap-1 font-medium text-foreground sm:hidden">
-                            Quote{" "}
-                            {latestQuoteByProject.get(project.id)?.subtotal ==
-                            null
-                              ? "—"
-                              : aud(
-                                  latestQuoteByProject.get(project.id)!
-                                    .subtotal!,
-                                )}{" "}
-                            <span className="font-normal text-muted-foreground">
-                              ex GST
-                            </span>
-                          </span>
-                          {pending > 0 && (
-                            <span className="flex items-center gap-1 text-warning font-medium">
-                              <GitBranch className="w-3 h-3 flex-shrink-0" />
-                              {pending} pending
-                            </span>
-                          )}
-                          {resolved > 0 && (
-                            <span className="flex items-center gap-1">
-                              <GitBranch className="w-3 h-3 flex-shrink-0" />
-                              {resolved} resolved
-                            </span>
-                          )}
-                        </div>
-                        {total > 0 && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2" aria-label={`Stage progress ${completed} of ${total}${currentStage ? `, current stage ${currentStage.name}` : ""}`}>
-                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted" aria-hidden="true">
-                              <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-                            </div>
-                            <span className="text-sm text-muted-foreground">{completed} / {total} · {currentStage?.name ?? (completed === total ? "Complete" : "No current stage")}</span>
-                          </div>
                         )}
-                        <div className="mt-2 flex flex-wrap items-center gap-2">
-                          {profitabilityQuery.isLoading ? (
-                            <span
-                              className="h-5 w-24 animate-pulse rounded bg-muted"
-                              aria-label="Loading job profitability"
-                            />
-                          ) : profitabilityQuery.isError ? (
-                            <span className="text-xs text-muted-foreground">
-                              Profitability unavailable
-                            </span>
-                          ) : profitabilityById.has(project.id) ? (
-                            (() => {
-                              const item = profitabilityById.get(project.id)!;
-                              const result = profitability(item, "quoted");
-                              return (
-                                <span
-                                  className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/70 px-2.5 py-1 text-xs font-medium text-foreground"
-                                  data-testid={`profitability-badge-${project.id}`}
-                                >
-                                  {result.profit === null
-                                    ? "Costs so far · quote unavailable"
-                                    : `Costs so far · ${aud(result.profit)} · ${result.margin === null ? "—" : `${result.margin.toFixed(1)}%`}`}
-                                </span>
-                              );
-                            })()
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              Profitability unavailable
-                            </span>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            Margin uses ex-GST revenue less confirmed costs inc
-                            GST. Costs may be incomplete.
+                        {resolved > 0 && (
+                          <span className="flex items-center gap-1">
+                            <GitBranch className="h-3.5 w-3.5 flex-shrink-0" />
+                            {resolved} resolved
                           </span>
-                        </div>
-                        <p className="mt-2 text-sm font-medium text-foreground lg:hidden">
-                          <span className="text-muted-foreground">
-                            Next action ·{" "}
-                          </span>
-                          {nextAction(
-                            project,
-                            latestQuoteByProject.get(project.id),
-                          )}
-                        </p>
+                        )}
                       </div>
-                      <div className="hidden min-w-28 text-right sm:block">
-                        <p className="text-xs text-muted-foreground">
-                          Quote value
-                        </p>
-                        <p className="font-semibold tabular-nums">
-                          {latestQuoteByProject.get(project.id)?.subtotal ==
-                          null
-                            ? "—"
-                            : aud(
-                                latestQuoteByProject.get(project.id)!.subtotal!,
-                              )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">ex GST</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {profitabilityQuery.isLoading ? (
+                          <span className="h-5 w-24 animate-pulse rounded bg-muted" aria-label="Loading job profitability" />
+                        ) : profitabilityQuery.isError ? (
+                          <span className="text-xs text-muted-foreground">Profitability unavailable</span>
+                        ) : profitabilityById.has(project.id) ? (
+                          (() => {
+                            const item = profitabilityById.get(project.id)!;
+                            const result = profitability(item, "quoted");
+                            return (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground" data-testid={`profitability-badge-${project.id}`}>
+                                {result.profit === null
+                                  ? "Costs so far · quote unavailable"
+                                  : `Costs so far · ${aud(result.profit)} · ${result.margin === null ? "—" : `${result.margin.toFixed(1)}%`}`}
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Profitability unavailable</span>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          Margin uses ex-GST revenue less confirmed costs inc GST. Costs may be incomplete.
+                        </span>
                       </div>
-                      <div className="hidden min-w-[16rem] max-w-[20rem] text-right lg:block">
-                        <p className="text-sm font-medium text-foreground">
-                          {nextAction(
-                            project,
-                            latestQuoteByProject.get(project.id),
-                          )}
-                        </p>
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                          Next action
-                        </p>
-                      </div>
-                      <ChevronRight
-                        className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                        aria-hidden="true"
-                      />
-                    </Link>
+                      <p className="mt-2 text-sm font-medium text-foreground">
+                        <span className="text-muted-foreground">Next action · </span>
+                        {nextAction(project, latestQuoteByProject.get(project.id))}
+                      </p>
+                    </JobCard>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button

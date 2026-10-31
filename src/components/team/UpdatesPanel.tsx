@@ -19,7 +19,7 @@ const card =
   "rounded-2xl border border-border bg-card shadow-[0_3px_14px_rgba(33,54,43,.045)]";
 const btn =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
-const primary = `${btn} bg-primary text-primary-foreground hover:bg-primary/90`;
+const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))]`;
 const field =
   "min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring";
 const errorText = (error: unknown) =>
@@ -245,7 +245,7 @@ export function UpdatesPanel({
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
-            className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-[hsl(var(--primary-hover))]"
             onClick={() => {
               if (visibilityTarget) void visibility(visibilityTarget.id, true);
               setVisibilityTarget(null);

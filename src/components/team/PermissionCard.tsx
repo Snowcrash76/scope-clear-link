@@ -10,7 +10,7 @@ import { permissionNames } from "../../../shared/employeePortal";
 const card =
   "rounded-2xl border border-border bg-card shadow-[0_3px_14px_rgba(33,54,43,.045)]";
 const primary =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50";
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-[hsl(var(--primary-hover))] disabled:opacity-50";
 const labels: Record<keyof OperationalPermissions, string> = {
   view_scope: "View job scope",
   view_variations: "View approved variations",

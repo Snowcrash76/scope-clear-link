@@ -1,12 +1,3 @@
-import {
-  Check,
-  Clock,
-  X,
-  Send,
-  CircleDot,
-  Briefcase,
-  CircleCheck,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface StatusBadgeProps {
@@ -18,64 +9,74 @@ interface StatusBadgeProps {
 
 const STATUS_CONFIG = {
   pending: {
-    icon: Clock,
     label: "Pending",
-    className: "bg-warning/10 text-warning border-warning/25",
+    className: "bg-[hsl(var(--warning-soft))] text-warning border-warning/20",
+    dot: "bg-warning",
   },
   awaiting_client: {
-    icon: Send,
     label: null,
-    className: "bg-warning/10 text-warning border-warning/25",
+    className: "bg-[hsl(var(--purple-soft))] text-[hsl(var(--purple))] border-[hsl(var(--purple)/.18)]",
+    dot: "bg-[hsl(var(--purple))]",
   },
   approved: {
-    icon: Check,
     label: "Approved",
-    className: "bg-success/10 text-success border-success/25",
+    className: "bg-[hsl(var(--success-soft))] text-success border-success/25",
+    dot: "bg-success",
   },
   declined: {
-    icon: X,
     label: "Declined",
-    className: "bg-destructive/10 text-destructive border-destructive/25",
+    className: "bg-[hsl(var(--danger-soft))] text-destructive border-destructive/25",
+    dot: "bg-destructive",
   },
   acknowledged: {
-    icon: Check,
     label: "Acknowledged",
-    className: "bg-success/10 text-success border-success/25",
+    className: "bg-[hsl(var(--success-soft))] text-success border-success/25",
+    dot: "bg-success",
   },
   draft: {
-    icon: CircleDot,
     label: "Draft",
     className: "bg-muted text-muted-foreground border-border",
+    dot: "bg-muted-foreground",
   },
   sent: {
-    icon: Send,
     label: "Sent",
-    className: "bg-warning/10 text-warning border-warning/25",
+    className: "bg-[hsl(var(--info-soft))] text-info border-info/20",
+    dot: "bg-info",
   },
   expired: {
-    icon: Clock,
     label: "Expired",
-    className: "bg-muted text-muted-foreground border-border",
+    className: "bg-[hsl(var(--danger-soft))] text-destructive border-destructive/20",
+    dot: "bg-destructive",
   },
   lead: {
-    icon: CircleDot,
     label: "Lead",
     className: "bg-muted text-muted-foreground border-border",
+    dot: "bg-muted-foreground",
   },
   quoted: {
-    icon: Send,
     label: "Quoted",
-    className: "bg-warning/10 text-warning border-warning/25",
+    className: "bg-[hsl(var(--info-soft))] text-info border-info/20",
+    dot: "bg-info",
   },
   in_progress: {
-    icon: Briefcase,
-    label: "In progress",
-    className: "bg-info/10 text-info border-info/25",
+    label: "In Progress",
+    className: "bg-[hsl(var(--warning-soft))] text-warning border-warning/20",
+    dot: "bg-warning",
   },
   completed: {
-    icon: CircleCheck,
     label: "Completed",
-    className: "bg-success/10 text-success border-success/25",
+    className: "bg-[hsl(var(--success-soft))] text-success border-success/25",
+    dot: "bg-success",
+  },
+  overdue: {
+    label: "Overdue",
+    className: "bg-[hsl(var(--danger-soft))] text-destructive border-destructive/25",
+    dot: "bg-destructive",
+  },
+  awaiting_response: {
+    label: "Awaiting Response",
+    className: "bg-[hsl(var(--purple-soft))] text-[hsl(var(--purple))] border-[hsl(var(--purple)/.18)]",
+    dot: "bg-[hsl(var(--purple))]",
   },
 } as const;
 
@@ -86,11 +87,10 @@ export function StatusBadge({
   className,
 }: StatusBadgeProps) {
   const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? {
-    icon: CircleDot,
     label: status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
     className: "bg-muted text-foreground border-border",
+    dot: "bg-muted-foreground",
   };
-  const Icon = config.icon;
   const label =
     status === "awaiting_client"
       ? viewerRole === "client"
@@ -101,14 +101,14 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full border font-medium transition-colors",
+        "inline-flex items-center gap-1.5 rounded-full border font-medium transition-colors",
         config.className,
         className,
-        size === "sm" ? "text-xs px-2 py-0.5" : "text-sm px-2.5 py-1",
+        size === "sm" ? "text-xs px-2 py-1" : "text-[13px] px-2.5 py-1",
       )}
       aria-label={`Status: ${label}`}
     >
-      <Icon className={size === "sm" ? "w-3 h-3 mr-1" : "w-3.5 h-3.5 mr-1.5"} />
+      <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", config.dot)} aria-hidden="true" />
       {label}
     </span>
   );

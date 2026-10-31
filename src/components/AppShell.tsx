@@ -65,9 +65,11 @@ const NewJobActionContext = createContext<(() => void) | null>(null);
 export function NewJobButton({
   className = "",
   testId = "button-new-job",
+  label = "New Job",
 }: {
   className?: string;
   testId?: string;
+  label?: string;
 }) {
   const openNewJob = useContext(NewJobActionContext);
   if (!openNewJob) return null;
@@ -76,10 +78,10 @@ export function NewJobButton({
       type="button"
       onClick={openNewJob}
       data-testid={testId}
-      className={`min-h-11 gap-2 bg-primary font-semibold text-primary-foreground hover:bg-primary/90 ${className}`}
+      className={`min-h-11 gap-2 bg-primary font-semibold text-primary-foreground hover:bg-[hsl(var(--primary-hover))] ${className}`}
     >
       <Plus className="h-4 w-4" />
-      New Job
+      {label}
     </Button>
   );
 }
@@ -245,7 +247,7 @@ function SidebarInner({
       <div className="px-4 pt-5 pb-2">
         <button
           onClick={() => act(onNewJob)}
-          className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-colors active:scale-95"
+          className="w-full min-h-11 flex items-center justify-center gap-2 px-4 py-2.5 rounded-[10px] bg-primary hover:bg-[hsl(var(--primary-hover))] text-primary-foreground font-bold text-sm transition-colors active:scale-95"
           data-testid="button-sidebar-new-job"
         >
           <Plus className="w-4 h-4" />
@@ -269,7 +271,7 @@ function SidebarInner({
                 to={to}
                 onClick={() => onClose?.()}
                 className={cn(
-                  "mx-1 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "mx-1 flex min-h-11 items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors",
                   active
                     ? "bg-accent text-accent-foreground ring-1 ring-inset ring-ring"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -292,7 +294,7 @@ function SidebarInner({
               to="/admin"
               onClick={() => onClose?.()}
               className={cn(
-                "mx-1 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "mx-1 flex min-h-11 items-center gap-3 rounded-[10px] px-3 py-2.5 text-sm font-medium transition-colors",
                 currentPath.startsWith("/admin")
                   ? "bg-accent text-accent-foreground ring-1 ring-inset ring-ring"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -369,6 +371,10 @@ export function AppShell({ children, headerActions }: AppShellProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
+  const searchShortcut =
+    typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
+      ? "⌘ K"
+      : "Ctrl K";
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const globalSearchQuery = useQuery({
@@ -707,7 +713,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
                     Search jobs, quotes or clients…
                   </span>
                   <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-sm text-muted-foreground sm:inline-flex">
-                    Ctrl / ⌘ K
+                    {searchShortcut}
                   </kbd>
                 </Button>
                 {headerActions}

@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Project } from '@/types/project';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/StatusBadge';
 import { 
@@ -134,20 +133,10 @@ export function ProjectCard({ project, onUpdateStatus, onDeleteProject }: Projec
     }
   };
   
-  const statusConfig = {
-    draft: { label: 'Draft', variant: 'secondary' as const },
-    sent: { label: 'Awaiting Response', variant: 'pending' as const },
-    acknowledged: { label: 'Acknowledged', variant: 'success' as const },
-    in_progress: { label: 'In Progress', variant: 'default' as const },
-    completed: { label: 'Completed', variant: 'success' as const },
-  };
-
-  const config = statusConfig[project.status];
-
   return (
     <Card className={cn(
-      "overflow-hidden transition-all duration-200 bg-white border border-[#D8C3AD] shadow-card hover:shadow-elevated",
-      needsAttention && "ring-2 ring-amber-300/50"
+      "overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-200 hover:shadow-elevated",
+      needsAttention && "ring-2 ring-warning/20"
     )}>
       <div className="p-4 sm:p-5">
         {/* Header */}
@@ -159,7 +148,7 @@ export function ProjectCard({ project, onUpdateStatus, onDeleteProject }: Projec
               <span className="truncate">{project.clientName}</span>
             </div>
           </div>
-          <Badge variant={config.variant}>{config.label}</Badge>
+           <StatusBadge status={project.status} />
         </div>
 
         <div className="mb-4 border-t border-border pt-3">

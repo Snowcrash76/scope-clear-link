@@ -9,7 +9,7 @@ export const card =
 export const btn =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
 
-export const primary = `${btn} bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`;
+export const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`;
 
 export const outline = `${btn} border border-input bg-background text-foreground hover:bg-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`;
 
