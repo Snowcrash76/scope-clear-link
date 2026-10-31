@@ -24,7 +24,7 @@ const mapping: Record<
   },
   approved: {
     label: "Approved",
-    styles: "bg-success/15 text-success",
+    styles: "bg-success/15 text-foreground",
     Icon: Check,
   },
   rejected: {
@@ -45,7 +45,7 @@ export function TimesheetStatusBadge({ status }: { status: TimesheetStatus }) {
     <span
       className={`inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold ${styles}`}
     >
-      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      <Icon className={`h-3.5 w-3.5 ${status === "approved" ? "text-success" : ""}`} aria-hidden="true" />
       {label}
     </span>
   );

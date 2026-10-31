@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
+import { KpiCard } from "@/components/KpiCard";
+import { ListPagination } from "@/components/ListPagination";
 import { LoadErrorState } from "@/components/LoadErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -183,8 +185,12 @@ export default function InvoicesPage() {
   const isStatusFiltered = statusFilter.size > 0;
   const isFiltered = isDateFiltered || isStatusFiltered;
 
-  const commitStatusFilter = (next: Set<InvoiceStatus>) => {
+  const commitStatusFilter = (next: Set<InvoiceStatus>, clearDates = false) => {
     setStatusFilter(next);
+    if (clearDates) {
+      setDateFrom("");
+      setDateTo("");
+    }
     const params = new URLSearchParams(searchParams);
     if (next.size) params.set("status", [...next].join(","));
     else params.delete("status");
@@ -250,18 +256,14 @@ export default function InvoicesPage() {
       <PageLayout title="Invoices" eyebrow="BILLING & REVENUE OPERATIONS" description="Track issued invoices and recorded payment status across your jobs.">
         {!isError && (
           <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Invoice overview">
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
-              <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
-              <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Outstanding receivables · inc GST</p>
-              <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{isLoading ? "—" : formatCurrency(outstanding)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Recorded totals on sent and overdue invoices.</p>
-            </div>
-            <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
-              <span className="absolute inset-x-0 top-0 h-[3px] bg-destructive" aria-hidden="true" />
-              <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Overdue · inc GST</p>
-              <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{isLoading ? "—" : formatCurrency(overdueTotal)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{(invoices ?? []).filter((invoice) => invoice.status === "overdue").length} invoices marked overdue.</p>
-            </div>
+            <KpiCard label="Outstanding receivables · inc GST" value={isLoading || isError ? "—" : formatCurrency(outstanding)}
+              description="Recorded totals on sent and overdue invoices."
+              definition="Saved invoice totals including GST for invoices marked sent or overdue. Select to filter the list."
+              onClick={() => commitStatusFilter(new Set<InvoiceStatus>(["sent", "overdue"]), true)} />
+            <KpiCard label="Overdue · inc GST" tone="warning" value={isLoading || isError ? "—" : formatCurrency(overdueTotal)}
+              description={isLoading || isError ? "Invoice totals are not available yet." : `${(invoices ?? []).filter((invoice) => invoice.status === "overdue").length} invoices marked overdue.`}
+              definition="Saved total including GST for invoices explicitly marked overdue. No unrecorded payment dates are assumed."
+              onClick={() => commitStatusFilter(new Set<InvoiceStatus>(["overdue"]), true)} />
           </section>
         )}
         <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border [-webkit-overflow-scrolling:touch]" role="group" aria-label="Invoice status tabs">
@@ -584,14 +586,7 @@ export default function InvoicesPage() {
           )}
         </div>
         {!isLoading && !isError && (
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-            <span>Showing {filtered.length === 0 ? 0 : (currentPage - 1) * 10 + 1}–{Math.min(currentPage * 10, filtered.length)} of {filtered.length} invoices</span>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="min-h-11" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
-              <span aria-label={`Page ${currentPage} of ${pageCount}`} className="tabular-nums">Page {currentPage} of {pageCount}</span>
-              <Button variant="outline" className="min-h-11" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>Next</Button>
-            </div>
-          </div>
+          <ListPagination page={currentPage} pageSize={10} total={filtered.length} onChange={setPage} />
         )}
       </PageLayout>
     </AppShell>

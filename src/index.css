@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -56,8 +56,8 @@
     --sidebar-accent-foreground: var(--primary);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--ring);
-    --font-heading: "Manrope", sans-serif;
-    --font-body: "DM Sans", sans-serif;
+    --font-body: "Inter", sans-serif;
+    --font-heading: var(--font-body);
     --shadow-soft: 0 1px 2px rgba(15,23,42,.04), 0 5px 18px rgba(35,65,110,.045);
     --shadow-card: 0 1px 2px rgba(15,23,42,.04), 0 5px 18px rgba(35,65,110,.045);
     --shadow-elevated: 0 12px 30px rgba(25,52,92,.13);
@@ -77,7 +77,8 @@
   font-family: var(--font-heading);
 }
 .portal-mono {
-  font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
 }
 .portal-grid {
   background-image:

@@ -17,13 +17,15 @@ import { quoteDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
 import { aud } from '@/hooks/useJobCosts';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { KpiCard } from '@/components/KpiCard';
+import { ListPagination } from '@/components/ListPagination';
 
 interface QuoteRow extends QuoteSummary {
   projectName: string;
   clientName: string;
 }
 
-const FILTERS = ['all', 'draft', 'sent', 'approved', 'declined', 'expired'] as const;
+const FILTERS = ['all', 'open', 'draft', 'sent', 'approved', 'declined', 'expired'] as const;
 
 function useAllQuotes() {
   const { user } = useAuth();
@@ -63,7 +65,7 @@ export default function QuotesPage() {
   const quotes = query.data ?? [];
   const visible = quotes.filter(quote => {
     const status = quoteDisplayStatus(quote);
-    const matchesStatus = filter === 'all' || status === filter;
+    const matchesStatus = filter === 'all' || (filter === 'open' ? status === 'draft' || status === 'sent' : status === filter);
     const term = search.trim().toLocaleLowerCase();
     const matchesSearch = !term || [quote.projectName, quote.clientName, quote.quote_number, status ?? '']
       .some(value => value.toLocaleLowerCase().includes(term));
@@ -97,18 +99,14 @@ export default function QuotesPage() {
       actions={<Button className="min-h-11" onClick={() => setNewQuoteOpen(true)} data-testid="button-new-quote"><FileText className="mr-2 h-4 w-4" />New quote</Button>}
     >
       <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Quote overview">
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
-          <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
-          <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Open quote value · ex GST</p>
-          <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{query.isLoading ? "—" : aud(pipelineValue)}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Draft and sent quotes, using saved subtotal values.</p>
-        </div>
-        <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
-          <span className="absolute inset-x-0 top-0 h-[3px] bg-[hsl(var(--purple))]" aria-hidden="true" />
-          <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quotes needing a decision</p>
-          <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{quotes.filter((quote) => quoteDisplayStatus(quote) === "sent").length}</p>
-          <p className="mt-1 text-sm text-muted-foreground">Sent quotes that do not yet have a recorded decision.</p>
-        </div>
+        <KpiCard label="Open quote value · ex GST" value={query.isLoading || query.isError ? "—" : aud(pipelineValue)}
+          description="Draft and sent quotes, using saved subtotals."
+          definition="Sum of stored ex-GST subtotals for draft and sent quotes. This is not collected revenue."
+          onClick={() => { setFilter('open'); setSearch(''); }} />
+        <KpiCard label="Quotes needing a decision" tone="purple" value={query.isLoading || query.isError ? "—" : quotes.filter((quote) => quoteDisplayStatus(quote) === "sent").length}
+          description="Sent quotes with no recorded decision."
+          definition="Quotes currently shown as sent. Select to show only those quotes."
+          onClick={() => { setFilter('sent'); setSearch(''); }} />
       </section>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <label className="relative block w-full sm:max-w-sm">
@@ -129,7 +127,7 @@ export default function QuotesPage() {
       </div>
       <div className="mb-4 flex gap-1 overflow-x-auto border-b [-webkit-overflow-scrolling:touch]">
         {FILTERS.map(status => {
-          const count = status === 'all' ? quotes.length : quotes.filter(q => quoteDisplayStatus(q) === status).length;
+          const count = status === 'all' ? quotes.length : quotes.filter(q => status === 'open' ? ['draft', 'sent'].includes(quoteDisplayStatus(q) ?? '') : quoteDisplayStatus(q) === status).length;
           return <button type="button" key={status} onClick={() => setFilter(status)} aria-pressed={filter === status}
             className={cn('min-h-11 shrink-0 border-b-2 px-3 text-sm font-medium capitalize', filter === status ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground')}>
              {status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1)} <span className="ml-1 text-sm">{count}</span>
@@ -158,14 +156,7 @@ export default function QuotesPage() {
                 </button>;
               })}</div>}
       </div>
-       <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-muted-foreground">
-         <span>Showing {visible.length === 0 ? 0 : (currentPage - 1) * 10 + 1}–{Math.min(currentPage * 10, visible.length)} of {visible.length} quotes</span>
-         <div className="flex items-center gap-2">
-           <Button variant="outline" className="min-h-11" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Previous</Button>
-           <span aria-label={`Page ${currentPage} of ${pageCount}`} className="tabular-nums">Page {currentPage} of {pageCount}</span>
-           <Button variant="outline" className="min-h-11" disabled={currentPage >= pageCount} onClick={() => setPage(currentPage + 1)}>Next</Button>
-         </div>
-       </div>
+       <ListPagination page={currentPage} pageSize={10} total={visible.length} onChange={setPage} />
     </PageLayout>
     <CreateJobModal
       open={newQuoteOpen}

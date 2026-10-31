@@ -42,3 +42,17 @@ mtime_ms = 1793354107009
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/f966d013-1e61-40e2-9a69-402aef16a066/47ca7c15-bae0-467e-a460-752ed4667f5c"
 storage_version_token = "1793355028271842"
 content_type = "text/html"
+
+[[outputs]]
+id = "Dbd2YR9SMRPPdlW4sI8dP"
+uri = "file://generated-artifacts/scopeclear-ui-comparison.html"
+type = "html"
+title = "ScopeClear — before and after"
+description = "82 desktop and phone comparisons of the real app components, rendered with isolated synthetic data. Self-contained HTML file."
+logical_id = "6856dec5-ec74-4cdb-97a6-7b4b2268797b"
+content_hash = "sha256:0904f3033b54830479714073cf960aab132d19f90065126078cbae870f683bfc"
+size = 19334755
+mtime_ms = 1793431728670
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/6856dec5-ec74-4cdb-97a6-7b4b2268797b/396884f4-f0d4-4388-a7cf-e9011e3c829f"
+storage_version_token = "1793431847481807"
+content_type = "text/html"

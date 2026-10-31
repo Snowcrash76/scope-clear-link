@@ -1,5 +1,13 @@
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { ArrowUpRight, CircleCheck, FileText, Layers3, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { StatusBadge } from "@/components/StatusBadge";
+import { KpiCard } from "@/components/KpiCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const swatches = [
   { label: "Ink", color: "bg-foreground" },
@@ -11,6 +19,7 @@ const swatches = [
 ];
 
 export default function DesignPreview() {
+  const [dialogOpen, setDialogOpen] = useState(false);
   return (
     <main className="min-h-[100dvh] bg-background text-foreground">
       <header className="border-b border-border bg-card">
@@ -129,6 +138,42 @@ export default function DesignPreview() {
           </div>
         </section>
 
+        <section className="space-y-6 border-t border-border py-10" aria-labelledby="component-toolbox">
+          <h2 id="component-toolbox" className="text-xl font-semibold">Job Quick Actions &amp; Status Badges</h2>
+          <p className="text-sm text-muted-foreground">Component demonstrations only. These controls do not send, save or delete any customer data.</p>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => setDialogOpen(true)}>Preview action</Button>
+            <Button variant="outline" onClick={() => setDialogOpen(true)}>Secondary action</Button>
+            <Button variant="ghost" onClick={() => setDialogOpen(true)}>Quiet action</Button>
+            <Button variant="destructive" onClick={() => setDialogOpen(true)}>Destructive action</Button>
+            <Button disabled>Disabled</Button>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {["draft", "sent", "approved", "in_progress", "overdue", "paid"].map(status => <StatusBadge key={status} status={status} />)}
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <KpiCard label="KPI demonstration" value="—" description="No business data in this preview." definition="This component displays a caller-provided value and its definition." href="#component-toolbox" />
+            <div className="rounded-2xl border bg-card p-5">
+              <Label htmlFor="preview-field">Form field</Label>
+              <Input id="preview-field" placeholder="Enter a value" className="mt-2" aria-describedby="preview-field-help" />
+              <p id="preview-field-help" className="mt-2 text-sm text-muted-foreground">Visible labels and clear field guidance.</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-2xl border bg-card">
+            <table className="w-full text-left text-sm">
+              <caption className="p-4 text-left font-semibold">Table demonstration</caption>
+              <thead className="bg-muted text-xs uppercase text-muted-foreground"><tr><th className="p-4">Component</th><th className="p-4">State</th></tr></thead>
+              <tbody><tr className="border-t"><td className="p-4">Status badge</td><td className="p-4"><StatusBadge status="draft" /></td></tr></tbody>
+            </table>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="rounded-2xl border bg-card p-6 text-center"><h3 className="font-semibold">No items yet</h3><p className="mt-2 text-sm text-muted-foreground">An honest empty state gives the next step without inventing a record.</p></div>
+            <div className="space-y-3 rounded-2xl border bg-card p-6" aria-label="Loading component demonstration"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-1/2" /></div>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent><DialogHeader><DialogTitle>Component demonstration</DialogTitle><DialogDescription>No customer record is changed by this preview.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDialogOpen(false)}>Close preview</Button></DialogFooter></DialogContent>
+          </Dialog>
+        </section>
         <footer className="flex flex-col justify-between gap-3 border-t border-border pt-6 text-sm text-muted-foreground sm:flex-row sm:items-center">
           <p>ScopeClear interface preview · This page contains no customer or job data.</p>
           <Link to="/login" className="font-semibold text-primary hover:underline">Return to sign in</Link>

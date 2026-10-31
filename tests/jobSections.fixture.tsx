@@ -7,6 +7,7 @@ import { Copy, ExternalLink, MoreVertical, Send } from 'lucide-react';
 import { Tabs, TabsContent } from '../src/components/ui/tabs';
 
 const sections = [
+  ['overview', 'Overview'], ['staff', 'Team'], ['activity', 'Activity'],
   ['quote', 'Quote'], ['invoices', 'Invoices'], ['costs', 'Costs'],
   ['changes', 'Variations'], ['stages', 'Stages'], ['documents', 'Documents'],
 ];
@@ -25,8 +26,8 @@ function Fixture() {
             <button key={String(label)} aria-label={String(label)} className="inline-flex h-11 w-11 shrink-0 items-center justify-center"><Icon className="h-4 w-4" /></button>
           )}
         </div>
-        <JobSectionMenu value={value} onValueChange={setValue} invoiceCount={3} pendingVariationCount={2} documentNotificationCount={1} />
       </div>
+      <JobSectionMenu value={value} onValueChange={setValue} invoiceCount={3} pendingVariationCount={2} documentCount={1} />
     </JobHeader>
     <main className="mx-auto max-w-5xl p-4">
     <Tabs value={value} onValueChange={setValue} className="min-w-0">

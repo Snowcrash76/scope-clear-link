@@ -722,15 +722,15 @@ export function ReviewPanel({
             <button
               type="button"
               aria-label="Clear job filter"
-              className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border border-warning/40 bg-background px-3 text-sm font-semibold"
+              className="inline-flex min-h-11 min-w-0 max-w-full items-center gap-1.5 rounded-full border border-warning/40 bg-background px-3 py-1 text-sm font-semibold"
               onClick={() => {
                 const next = new URLSearchParams(searchParams);
                 next.delete("job");
                 setSearchParams(next, { replace: true });
               }}
             >
-              <span>Job: {team.jobs.find((job) => job.id === selectedJobId)?.name ?? selectedJobId}</span>
-              <X className="h-4 w-4" aria-hidden="true" />
+              <span className="min-w-0 text-left [overflow-wrap:anywhere]">Job: {team.jobs.find((job) => job.id === selectedJobId)?.name ?? selectedJobId}</span>
+              <X className="h-4 w-4 shrink-0" aria-hidden="true" />
             </button>
           </div>
         )}

@@ -13,7 +13,7 @@ Verify semantic colours against the actual rendered background, including opacit
 
 **Why:** A warning token pair met 4.5:1, but using its dark colour as text on a translucent tinted background reduced contrast below that threshold.
 
-**How to apply:** Use complete semantic foreground/background pairs for status badges, or foreground text on tinted notices. Measure rendered contrast rather than assuming that using token names alone guarantees accessibility.
+**How to apply:** Use complete semantic foreground/background pairs for status badges, or foreground text on tinted notices. Measure rendered contrast rather than assuming that using token names alone guarantees accessibility. Green text on the requested soft green or translucent green fills can also fall below 4.5:1; keep the green icon/dot and fill, but use foreground text for readable small labels.
 
 Keep business Schedule in the normal app layout, put job section navigation above the content rather than beside it without an additional “All sections” button, and keep Variations in jobs rather than the main menu.
 

@@ -25,6 +25,14 @@ await build({
   plugins: [{
     name: 'synthetic-receipt-services',
     setup(b) {
+      b.onLoad({ filter: /hooks\/useAuth\.tsx$/ }, () => ({
+        contents: 'export function useAuth() { return { user: {id:"fixture-owner"}, loading:false, isAdmin:true }; }',
+        loader: 'ts',
+      }));
+      b.onLoad({ filter: /hooks\/useEmployeePortal\.ts$/ }, () => ({
+        contents: 'export function usePortalSession(){return {data:{employee:null,canManageTeam:false}};} export function usePortal(){return {data:null,isLoading:false,error:null};}',
+        loader: 'ts',
+      }));
       b.onLoad({ filter: /integrations\/supabase\/client\.ts$/ }, () => ({
         contents: 'export const supabase = {};', loader: 'ts',
       }));

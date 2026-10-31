@@ -93,9 +93,15 @@ export function jobsWithoutBookingInRange(jobs: ScheduleJob[], events: CalendarE
 }
 
 const JOB_COLORS = [
-  ["#e8f0ec", "#355d4c"], ["#f5e9de", "#87552f"], ["#e7edf4", "#3e5c78"],
-  ["#f1e9ef", "#76506b"], ["#eff0df", "#646c37"], ["#f3e5e3", "#9a5044"],
-  ["#e4efef", "#3d6b6c"], ["#f3eddf", "#806c35"], ["#e9e8f3", "#5c5788"],
+  ["hsl(var(--primary-soft))", "hsl(var(--primary))"],
+  ["hsl(var(--warning-soft))", "hsl(var(--warning))"],
+  ["hsl(var(--success-soft))", "hsl(var(--success))"],
+  ["hsl(var(--purple-soft))", "hsl(var(--purple))"],
+  ["hsl(var(--muted))", "hsl(var(--foreground))"],
+  ["hsl(var(--destructive)/.08)", "hsl(var(--destructive))"],
+  ["hsl(var(--primary)/.05)", "hsl(var(--primary))"],
+  ["hsl(var(--purple)/.05)", "hsl(var(--purple))"],
+  ["hsl(var(--success)/.05)", "hsl(var(--success))"],
 ];
 export function jobColor(jobId: string): { background: string; foreground: string } {
   let hash = 0;

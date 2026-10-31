@@ -20,7 +20,7 @@ const STATUS_CONFIG = {
   },
   approved: {
     label: "Approved",
-    className: "bg-[hsl(var(--success-soft))] text-success border-success/25",
+    className: "bg-[hsl(var(--success-soft))] text-foreground border-success/25",
     dot: "bg-success",
   },
   declined: {
@@ -30,7 +30,7 @@ const STATUS_CONFIG = {
   },
   acknowledged: {
     label: "Acknowledged",
-    className: "bg-[hsl(var(--success-soft))] text-success border-success/25",
+    className: "bg-[hsl(var(--success-soft))] text-foreground border-success/25",
     dot: "bg-success",
   },
   draft: {
@@ -65,7 +65,7 @@ const STATUS_CONFIG = {
   },
   completed: {
     label: "Completed",
-    className: "bg-[hsl(var(--success-soft))] text-success border-success/25",
+    className: "bg-[hsl(var(--success-soft))] text-foreground border-success/25",
     dot: "bg-success",
   },
   overdue: {

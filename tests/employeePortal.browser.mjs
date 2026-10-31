@@ -607,6 +607,8 @@ try {
     await dialog.getByRole("button", { name: "Cancel", exact: true }).focus();
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "hidden" });
+    // Radix exit animations finish before the menu trigger can safely reopen.
+    await page.waitForTimeout(250);
     assert.equal(state.calls.length, 1);
     await page
       .getByRole("button", { name: "Actions for Mae Installer" })
@@ -660,13 +662,10 @@ try {
     });
     makeApi(context, { admin: true });
     const { page } = await openFixture(context, "team");
-    await page.getByRole("link", { name: "Back to main app" }).waitFor();
-    assert.equal(
-      await page
-        .getByRole("link", { name: "Back to main app" })
-        .getAttribute("href"),
-      "/employee",
-    );
+    // Team now lives in AppShell. Its global links are covered through the real
+    // App fixture; this isolated TeamHome must retain authorised admin actions.
+    await page.getByRole("heading", { name: "Team", exact: true }).waitFor();
+    await page.getByRole("button", { name: /Invite team member|Add team member/i }).waitFor();
     await context.close();
   }
 
@@ -682,7 +681,7 @@ try {
     const dialog = page.getByRole("dialog", { name: "Edit schedule" });
     await dialog
       .getByText(
-        /Every staff member assigned to it will see the new date, time and notes/,
+        /Every team member assigned to it will see the new date, time and notes/,
       )
       .waitFor();
     await dialog.getByLabel("Date").fill(tomorrow);

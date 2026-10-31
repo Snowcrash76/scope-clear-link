@@ -20,7 +20,7 @@ await build({ entryPoints: ['tests/profitability.fixture.tsx'], bundle: true, pl
       contents: 'export function AppShell({children}) { return <div className="min-w-0 bg-background">{children}</div> }', loader: 'tsx',
     }));
     b.onLoad({ filter: /hooks\/useJobCosts\.ts$/ }, () => ({
-      contents: `export { aud, profitability } from '../../shared/jobCosting';
+      contents: `export { aud, money, profitability } from '../../shared/jobCosting';
         const data = ${JSON.stringify(jobs)};
         export function useJobProfitability() {
           const scenario = new URLSearchParams(location.search).get('scenario');
@@ -44,7 +44,7 @@ try {
     assert.match(await profit.innerText(), /175\.00/);
     assert.match(await margin.innerText(), /17\.5%/);
     assert.match(await page.locator('[data-testid="job-costs-one"]:visible').innerText(), /825\.00/);
-    assert.match(await page.locator('body').innerText(), /Confirmed costs \(inc GST\)/);
+    assert.match(await page.locator('body').innerText(), /Costs so far \(inc GST\)/);
     assert.match(await page.locator('body').innerText(), /Quote value \(ex GST\)/);
     assert.equal(await page.getByText('Portfolio totals', { exact: true }).count(), 0);
     assert.equal(await page.getByTestId('summary-profit').count(), 0);

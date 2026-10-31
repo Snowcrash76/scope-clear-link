@@ -420,8 +420,8 @@ export default function ProjectsPage() {
                             return (
                               <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium text-foreground" data-testid={`profitability-badge-${project.id}`}>
                                 {result.profit === null
-                                  ? "Costs so far · quote unavailable"
-                                  : `Costs so far · ${aud(result.profit)} · ${result.margin === null ? "—" : `${result.margin.toFixed(1)}%`}`}
+                                  ? "Indicative profit · quote unavailable"
+                                  : `Indicative profit · ${aud(result.profit)} · ${result.margin === null ? "—" : `${result.margin.toFixed(1)}%`}`}
                               </span>
                             );
                           })()

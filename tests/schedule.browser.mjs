@@ -70,6 +70,7 @@ try {
     assert.ok(await page.getByRole('link', { name: '1 Main St' }).count());
     assert.ok(await page.getByRole('link', { name: '0400000000' }).count());
     await page.keyboard.press('Escape');
+    await page.waitForFunction(() => /Kitchen booking/.test(document.activeElement?.getAttribute('aria-label') || ''));
     assert.equal(await page.getByRole('dialog').count(), 0);
     assert.match(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || ''), /Kitchen booking/);
     if (!staff) {

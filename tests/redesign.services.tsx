@@ -51,5 +51,5 @@ export const supabase={
  storage:{from:()=>({getPublicUrl:()=>({data:{publicUrl:''}}),createSignedUrl:async()=>({data:{signedUrl:''},error:null})})},
  channel:()=>({on(){return this;},subscribe(){return this;}}),removeChannel:()=>{},
 };
-export function useAuth(){return {user,session:{user,access_token:'synthetic-fixture-only'},profile:tables.profiles[0],loading:false,isAdmin:true,signOut:async()=>{},signIn:async()=>{},signUp:async()=>{}};}
+export function useAuth(){const anonymous=Boolean((window as any).__fixtureAnonymous);return {user:anonymous?null:user,session:anonymous?null:{user,access_token:'synthetic-fixture-only'},profile:anonymous?null:tables.profiles[0],loading:false,isAdmin:!anonymous,signOut:async()=>{},signIn:async()=>({error:null}),signUp:async()=>({error:null})};}
 export function AuthProvider({children}:{children:React.ReactNode}){return <>{children}</>;}

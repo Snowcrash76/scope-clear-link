@@ -32,6 +32,46 @@ These are the example values supplied in the brief, verified with regression fix
 
 No database, authentication or permission changes were made for this redesign. Existing stored quote/receipt values were not rewritten.
 
+## Complete clean-blue redesign
+
+### Design and navigation
+
+- One Inter font family, including tabular financial figures. Headings and body copy share the same family.
+- Semantic CSS variables are the palette source: primary `#2563EB`, background `#F8FAFC`, card `#FFFFFF`, text `#111827`, muted text `#667085`, border `#E3E8F0`, success `#15803D`, warning `#B45309`, danger `#B91C1C`, purple `#7C3AED`, with the requested soft fills.
+- Shared shell, page headers, status badges, buttons, inputs, cards, dialogs, KPI definitions and pagination. Schedule-specific layout remains scoped and uses the shared tokens rather than a second palette.
+- Small green-tinted status labels use foreground text with green icons/dots and fills where green-on-green misses 4.5:1 rendered contrast. This keeps the semantic palette without sacrificing readability.
+- Current navigation retained: horizontal job sections, Variations inside jobs only, manager Schedule in AppShell, and existing employee portal links. No job side rail, “All sections”, header “Add stages”, or new employee bottom navigation.
+
+### Pages and states covered
+
+- Dashboard; Jobs and all nine job sections; Quotes; Invoices; Profitability; Schedule; Clients; Team list, assignments, reviews and permissions; Settings; Admin.
+- Employee Today, Week, job details, timesheets, notifications, login and invite acceptance.
+- Public client project and quote views, client decisions and PDF controls; landing, demo, authentication, recovery and not-found pages.
+- Existing receipt upload/scanning/review, read-only cost detail, team email editing/removal, timesheet approvals and schedule dialogs retain their real handlers.
+- `/design-preview` is development-only. It demonstrates buttons, visible-dot statuses, a KPI definition, a labelled form field, table, empty/loading states and an accessible dialog. The production build omits this route and component.
+
+### Data and scope
+
+- New presentation aggregates only records already loaded by each page. KPI labels state their GST and revenue basis; definitions explain exclusions and incomplete costing.
+- Existing financial calculations, historical quote offers, authentication, role permissions, database schema, storage and backend handlers are unchanged.
+- Indicative profitability is not labelled final profit or “healthy” just because a job currently has low recorded costs. No new configured margin threshold or fictitious budget is introduced.
+- No sample clients, jobs, integration banners, invented budgets or unrecorded cash-collection totals were added to the application. The invoice payment-date field exists, but an actual payment-collection overview is not part of this presentation change.
+- No new company document library, booking-write workflow, payment ledger, accounting integration or notification delivery is implied by the visual references.
+- PDF rendering is deliberately unchanged; existing PDF-specific formatting is outside the application theme.
+
+### Checks and comparison assets
+
+- `npm run build` runs the source placeholder guard first; `npm run check:ui-content` runs it independently.
+- `npm run test:ui` runs unit tests followed by isolated real-component browser suites serially. Authentication and API substitutes are test-only; production auth is never bypassed.
+- `generated-artifacts/before/` and `generated-artifacts/after/` hold phone/desktop comparisons. Public/client baselines can be rebuilt read-only from the original Git source, without checking out or altering the running application.
+- `generated-artifacts/scopeclear-ui-comparison.html` is the self-contained comparison gallery. Larger generated outputs remain ignored by Git and deployment.
+- Final typecheck, production build, source placeholder guard and production-only exclusion check all pass.
+- **146 unit tests across 27 files pass. All 13 browser suites have passing results**, combining the full run with corrective targeted reruns. Earlier stage runs that were interrupted or timed out are not represented as successful full-suite passes.
+- Core manager, employee, public and client layouts were checked at **320, 375, 768, 1280 and 1440px**, alongside the suites’ populated forms, receipt scanning/review, timesheet permissions/approval/edit/delete, calendar, secure-send and document interactions.
+- Corrective checks fixed the 320px job-filter chip and invoice action row, green status text contrast, and a Jobs caption that incorrectly labelled profit as costs. The relevant pages, interaction suites and final Jobs screenshots were rechecked.
+- The gallery contains **82 phone/desktop comparisons**. Browser checks render real components with isolated services and synthetic data; live signed-in accounts, email delivery and a physical Android handset were not exercised.
+- The build still warns about the existing large initial JavaScript bundle; mobile loading improvements are proposed separately rather than mixed into this presentation work.
+
 ## Verification
 
 - Production build passed.

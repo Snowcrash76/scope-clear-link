@@ -461,7 +461,7 @@ export function InvoiceSection({
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 flex-wrap items-center gap-4">
                     <div className="text-right">
                       <p className="text-lg font-bold">
                         ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
@@ -474,7 +474,7 @@ export function InvoiceSection({
                       )}
                     </div>
                     
-                    <div className="flex gap-2">
+                    <div className="flex max-w-full flex-wrap gap-2">
                       {/* View and Download buttons for all views */}
                       <Button 
                         size="sm" 

@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/check-ui-placeholders.mjs && vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
+    "test:ui": "node scripts/test-all-ui.mjs",
+    "check:ui-content": "node scripts/check-ui-placeholders.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

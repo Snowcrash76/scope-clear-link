@@ -4,11 +4,15 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { baselineAssets } from './baselineSources.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const base = process.env.MOBILE_TEST_BASE_URL;
 if (!base) throw new Error('Set MOBILE_TEST_BASE_URL to the development preview');
 await mkdir('generated-artifacts', { recursive: true });
+const baseline=await baselineAssets();
+const phase=process.env.SCREENSHOT_PHASE||'after';
+await mkdir(`generated-artifacts/${phase}`,{recursive:true});
 await build({
   entryPoints: ['tests/redesign.fixture.tsx'], bundle: true, format: 'esm',
   jsx: 'automatic', alias: { '@': resolve('src') }, loader: { '.sql': 'text' },
@@ -27,15 +31,15 @@ await build({
         return { contents, loader: 'tsx', resolveDir: process.cwd() };
       });
     },
-  }],
+  },...baseline.plugins],
 });
 await writeFile('generated-artifacts/client-pages.html',
-  '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/src/index.css"><div id="root"></div><script type="module" src="/generated-artifacts/client-pages.js"></script>');
+  `<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${baseline.css}"><div id="root"></div><script type="module" src="/generated-artifacts/client-pages.js"></script>`);
 const projectId = '20000000-0000-4000-8000-000000000001';
 const routes = [`/project/${projectId}?access=synthetic-test-only`, '/quote/fixture-token'];
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_EXECUTABLE_PATH });
 try {
-  for (const width of [320, 375, 768]) {
+  for (const width of (process.env.CLIENT_WIDTHS||'320,375,768').split(',').map(Number)) {
     for (const path of routes) {
       const page = await browser.newPage({ viewport: { width, height: 812 } });
       const errors = [];
@@ -49,6 +53,7 @@ try {
       assert.match(await page.locator('body').innerText(), /27,100/);
       assert.match(await page.locator('body').innerText(), /GST/);
       await page.screenshot({ path: `generated-artifacts/client-${path.startsWith('/quote') ? 'quote' : 'project'}-${width}.png`, fullPage: true });
+      await page.screenshot({ path: `generated-artifacts/${phase}/client-${path.startsWith('/quote')?'quote':'project'}-${width}.png`, fullPage: true });
       console.log(`PASS ${path} at ${width}px with actual client components`);
       await page.close();
     }

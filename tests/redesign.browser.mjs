@@ -3,17 +3,19 @@ import { mkdir,readFile,writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { createRequire } from 'node:module';
 import assert from 'node:assert/strict';
+import { baselineAssets } from './baselineSources.mjs';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
 const base=process.env.MOBILE_TEST_BASE_URL;if(!base)throw new Error('Set the development preview URL');
 await mkdir('generated-artifacts',{recursive:true});
+const baseline=await baselineAssets();
 await build({entryPoints:['tests/redesign.fixture.tsx'],bundle:true,format:'esm',jsx:'automatic',alias:{'@':resolve('src')},loader:{'.sql':'text'},
  define:{'process.env.NODE_ENV':'"development"'},outfile:'generated-artifacts/redesign.js',logLevel:'error',
  plugins:[{name:'isolated-synthetic-services',setup(b){
   b.onLoad({filter:/(integrations\/supabase\/client\.ts|hooks\/useAuth\.tsx)$/},async()=>({
    contents:await readFile('tests/redesign.services.tsx','utf8'),loader:'tsx',resolveDir:process.cwd()}));
- }}]});
-await writeFile('generated-artifacts/redesign.html','<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/src/index.css"><link rel="stylesheet" href="/generated-artifacts/redesign.css"><div id="root"></div><script type="module" src="/generated-artifacts/redesign.js"></script>');
+ }},...baseline.plugins]});
+await writeFile('generated-artifacts/redesign.html',`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${baseline.css}"><link rel="stylesheet" href="/generated-artifacts/redesign.css"><div id="root"></div><script type="module" src="/generated-artifacts/redesign.js"></script>`);
 const pid='20000000-0000-4000-8000-000000000001';
 const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Sydney'}).format(new Date());
 const profit={jobId:pid,jobName:'Synthetic North Fitzroy job',clientName:'Synthetic client',status:'in_progress',quotedExGst:27100,
@@ -23,8 +25,9 @@ const profit={jobId:pid,jobName:'Synthetic North Fitzroy job',clientName:'Synthe
 const routes=['/dashboard','/projects','/quotes','/invoices','/clients','/profitability','/team','/team/assignments','/team/timesheets','/team/permissions',`/manage/${pid}`,
  ...['costs','timesheets','invoices','changes','activity','documents','stages'].map(tab=>`/manage/${pid}?tab=${tab}`)];
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE_PATH});
+const layoutFailures=[];
 try{
- for(const width of (process.env.REDESIGN_WIDTHS || '375,1280').split(',').map(Number))for(const routePath of routes){
+ for(const width of (process.env.REDESIGN_WIDTHS || '375,1280').split(',').map(Number))for(const routePath of routes.filter(path=>!process.env.REDESIGN_ROUTE||path===process.env.REDESIGN_ROUTE)){
   const page=await browser.newPage({viewport:{width,height:900}}),errors=[];
   page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/**',async route=>{
@@ -41,8 +44,18 @@ try{
   // Wait for asynchronous data, not a network-idle condition (the app has polling).
   await page.getByRole('heading').first().waitFor();await page.waitForTimeout(250);
   assert.deepEqual(errors,[],`${routePath} runtime errors`);
-  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,`${routePath} overflows ${width}px`);
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth)){
+   console.error(await page.evaluate(()=>Array.from(document.querySelectorAll('body *')).map(el=>({tag:el.tagName,cls:el.className,text:el.textContent?.slice(0,65),left:el.getBoundingClientRect().left,right:el.getBoundingClientRect().right})).filter(el=>el.right>innerWidth+1||el.left<0).slice(-30)));
+   await page.screenshot({path:'generated-artifacts/redesign-overflow.png',fullPage:true});
+  }
+  const fits=await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth);
+  if(!fits)layoutFailures.push(`${routePath} overflows ${width}px`);
   assert.doesNotMatch(await page.locator('body').innerText(),/NaN|Infinity|Something went wrong/);
+  if(process.env.REDESIGN_CAPTURE){
+   const name=routePath.replace(pid,'job').replace(/[^a-z0-9]+/gi,'-');
+   await mkdir(`generated-artifacts/${process.env.REDESIGN_CAPTURE}`,{recursive:true});
+   await page.screenshot({path:`generated-artifacts/${process.env.REDESIGN_CAPTURE}/${name}-${width}.png`,fullPage:true});
+  }
   if(routePath==='/projects'||routePath==='/profitability')assert.match(await page.locator('body').innerText(),/26,341\.03/);
   if(routePath==='/quotes')assert.match(await page.locator('body').innerText(),/27,100\.00/);
   if(routePath==='/dashboard'){
@@ -73,7 +86,8 @@ try{
    await page.screenshot({path:`generated-artifacts/clean-blue-dashboard-${width}.png`,fullPage:true});
   }
   if(routePath==='/projects')await page.screenshot({path:`generated-artifacts/clean-blue-jobs-${width}.png`,fullPage:true});
-  console.log(`PASS ${routePath} signed-in synthetic data at ${width}px`);
+  console.log(`${fits?'PASS':'FAIL'} ${routePath} signed-in synthetic data at ${width}px`);
   await page.close();
  }
+ assert.deepEqual(layoutFailures,[],'Responsive layout failures');
 }finally{await browser.close();}

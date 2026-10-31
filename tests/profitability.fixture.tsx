@@ -3,4 +3,5 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import ProfitabilityPage from '../src/components/job-costing/ProfitabilityPage';
-createRoot(document.getElementById('root')!).render(<MemoryRouter><ProfitabilityPage /></MemoryRouter>);
+import { TooltipProvider } from '../src/components/ui/tooltip';
+createRoot(document.getElementById('root')!).render(<MemoryRouter><TooltipProvider><ProfitabilityPage /></TooltipProvider></MemoryRouter>);
