@@ -43,6 +43,8 @@ import { aud } from '@/hooks/useJobCosts';
 import { QuoteHeader } from '@/components/quote/QuoteHeader';
 import { EditableQuoteTotals, QuoteTotalsSummary } from '@/components/quote/QuoteTotals';
 import { QuoteLineItemsTable } from '@/components/quote/QuoteLineItemsTable';
+import { QuoteInvoiceDialog } from '@/components/quote/QuoteInvoiceDialog';
+import { QuoteInvoiceAllocation } from '@/lib/quoteInvoice';
 
 interface QuoteSectionProps {
   quote: Quote | null;
@@ -82,7 +84,7 @@ interface QuoteSectionProps {
   }>) => Promise<boolean>;
   onSendQuote: (quoteId: string) => Promise<boolean>;
   onApproveQuote: (quoteId: string) => Promise<boolean>;
-  onCreateInvoice: (quoteId: string) => Promise<boolean>;
+  onCreateInvoice: (quoteId: string, allocation?: QuoteInvoiceAllocation) => Promise<boolean>;
   onReviseQuote: (quoteId: string) => Promise<boolean>;
   defaultTerms?: string;
   isTradeView?: boolean;
@@ -125,6 +127,7 @@ export function QuoteSection({
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   // Scope item editing (inline from Quote tab)
   const [editingScopeItem, setEditingScopeItem] = useState<ScopeItem | undefined>();
   const [isAddingScopeItem, setIsAddingScopeItem] = useState(false);
@@ -260,7 +263,7 @@ export function QuoteSection({
 
   const handleCreateInvoice = async () => {
     if (!quote) return;
-    await onCreateInvoice(quote.id);
+    setIsInvoiceDialogOpen(true);
   };
 
   const handleExportToXero = () => {
@@ -1044,6 +1047,16 @@ export function QuoteSection({
           changeRequests={changeRequests}
           quoteLineItems={quoteLineItems}
           projectInfo={projectInfo}
+        />
+      )}
+
+      {/* Invoice allocation — only launched from the approved quote action */}
+      {quote && (
+        <QuoteInvoiceDialog
+          quote={quote}
+          open={isInvoiceDialogOpen}
+          onOpenChange={setIsInvoiceDialogOpen}
+          onCreate={(allocation) => onCreateInvoice(quote.id, allocation)}
         />
       )}
 

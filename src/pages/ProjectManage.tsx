@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { QuoteSection } from '@/components/QuoteSection';
+import { buildQuoteInvoice, type QuoteInvoiceAllocation } from '@/lib/quoteInvoice';
 import { InvoiceSection } from '@/components/InvoiceSection';
 import { useProject } from '@/hooks/useProject';
 import { useCreateProject } from '@/hooks/useCreateProject';
@@ -446,7 +447,7 @@ function ProjectManageContent() {
     }
   };
 
-  const handleCreateFinalInvoice = async (quoteId: string) => {
+  const handleCreateQuoteInvoice = async (quoteId: string, allocation?: QuoteInvoiceAllocation) => {
     if (!activeQuote || activeQuote.id !== quoteId) return false;
     const approvedChanges = project.changeRequests.filter(change => change.status === 'approved');
     const approvedChangeCosts = new Set(approvedChanges.map(change => change.costImpact));
@@ -473,18 +474,14 @@ function ProjectManageContent() {
           unitPrice: item.cost,
         })),
     ];
-    if (!lineItems.length) return false;
-
-    const invoiceId = await createInvoice({
-      type: 'final',
-      quoteId: activeQuote.id,
-      taxRate: activeQuote.taxRate,
-      notes: activeQuote.notes,
-      terms: activeQuote.terms,
-      lineItems,
-    });
-    if (invoiceId) setActiveTab('invoices');
-    return !!invoiceId;
+    try {
+      const invoiceId = await createInvoice(buildQuoteInvoice(activeQuote, allocation, lineItems));
+      if (invoiceId) setActiveTab('invoices');
+      return !!invoiceId;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to create the invoice.');
+      return false;
+    }
   };
 
   const handleSaveClientDetails = async (values: ClientEditValues, applyToAll: boolean) => {
@@ -791,7 +788,7 @@ function ProjectManageContent() {
               onUpdateQuote={updateQuote}
               onSendQuote={sendQuote}
               onApproveQuote={approveQuote}
-              onCreateInvoice={handleCreateFinalInvoice}
+              onCreateInvoice={handleCreateQuoteInvoice}
               onReviseQuote={reviseQuote}
               onSaveScopeItem={handleSaveScopeItem}
               onDeleteScopeItem={handleDeleteScopeItem}

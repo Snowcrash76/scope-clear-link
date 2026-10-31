@@ -15,6 +15,17 @@ its price would misrepresent what the client accepted.
 to the project's explicit active quote. Test with multiple quotes whose approval
 dates differ; preserve older quote totals and decisions.
 
+Quote-linked deposits and stage payments are percentages of the saved approved
+quote's ex-GST value, not of the live job scope or automatically of the unpaid
+balance.
+
+**Why:** A client approved the saved offer; subsequent scope edits must not
+silently change a percentage invoice, and a percentage of the remaining balance
+would mean a different amount.
+
+**How to apply:** Keep quote-linked invoice previews and saved amounts on the
+same basis. Treat remaining-balance invoicing as a separate explicit choice.
+
 Do not assume the hosted Supabase schema includes every local migration.
 
 **Why:** The hosted line-item schema lacked optional variation metadata even
