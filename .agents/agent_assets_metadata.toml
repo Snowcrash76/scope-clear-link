@@ -70,3 +70,17 @@ mtime_ms = 1793437000137
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/fba382d4-dfd3-4245-91e7-a1c0111188e4/b32a9d22-ce45-4ac2-8de2-f9c6ada8bf85"
 storage_version_token = "1793437125027498"
 content_type = "text/html"
+
+[[outputs]]
+id = "uZha8tT8Aoq9aZUfSiXtF"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-10-31T14-09-14-337Z.html"
+type = "html"
+title = "Encrypted database backup before admin setup"
+description = "Verified encrypted database archive, including application data, user records and file metadata. Receipt/photo file contents are not included. Keep this file private; it uses the database password that was in effect when the backup was created."
+logical_id = "83cb7b9d-44bd-48c2-a456-ecbf2c01613a"
+content_hash = "sha256:ab2d15f55b95d8f1442d19c9c4ca31c577fe808130afd9bae432b71d3adbe100"
+size = 669440
+mtime_ms = 1793455806761
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/83cb7b9d-44bd-48c2-a456-ecbf2c01613a/2fdd5e41-0128-4f8c-9772-f61e45048094"
+storage_version_token = "1793455900782975"
+content_type = "text/html"
