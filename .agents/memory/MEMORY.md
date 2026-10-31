@@ -8,3 +8,4 @@
 - [Quote history boundaries](quote-history-boundaries.md) — current scope can repair active quote totals, but must not rewrite historical offers or accepted prices.
 - [Local preview verification](local-preview-verification.md) — distinguish stale dev servers and fixture reloads from application regressions.
 - [Invoice approval](invoice-approval.md) — trade approval before sending; edits invalidate it and uncertain email retries must retain the same delivery attempt.
+- [Platform administration scope](platform-administration.md) — the system administrator must oversee all businesses, not just their own account or team.
