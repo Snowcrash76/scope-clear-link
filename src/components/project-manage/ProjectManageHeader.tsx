@@ -56,6 +56,7 @@ export function ProjectManageHeader({
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="min-w-0 flex-1">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[.08em] text-primary">JOB WORKSPACE</p>
             <div className="flex min-w-0 items-start gap-2 sm:gap-3">
               <h1 className="min-w-0 break-words font-heading text-xl font-bold sm:text-2xl">{project.name}</h1>
               <StatusBadge className="mt-0.5 shrink-0" status={jobDisplayStatus(project, activeQuote ? {
@@ -70,7 +71,7 @@ export function ProjectManageHeader({
           <div className="flex min-w-0 shrink-0 items-center gap-0 sm:gap-1">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="h-11 shrink-0 gap-2 border-zinc-400 bg-white px-3 text-sm text-zinc-900" aria-label="Actions" data-testid="button-project-actions-menu">
+                <Button variant="outline" className="h-11 shrink-0 gap-2 border-border bg-card px-3 text-sm text-foreground" aria-label="Actions" data-testid="button-project-actions-menu">
                   <MoreVertical className="w-4 h-4" />
                   <span>Actions</span>
                 </Button>
@@ -113,7 +114,7 @@ export function ProjectManageHeader({
                   <FolderOpen className="mt-0.5 h-4 w-4 text-zinc-500" />
                   <span className="min-w-0">
                     <span className="block font-medium text-zinc-700">Archive unavailable</span>
-                    <span className="mt-0.5 block whitespace-normal text-xs leading-4 text-zinc-600">Jobs have no archive state in the current schema.</span>
+                  <span className="mt-0.5 block whitespace-normal text-sm leading-5 text-muted-foreground">Jobs have no archive state in the current schema.</span>
                   </span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

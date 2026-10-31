@@ -318,7 +318,7 @@ export function InvoiceSection({
               <DollarSign className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Invoiced</p>
+              <p className="text-sm text-muted-foreground">Total Invoiced · inc GST</p>
               <p className="text-lg font-bold">
                 ${totalInvoiced.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
               </p>
@@ -332,7 +332,7 @@ export function InvoiceSection({
               <CheckCircle2 className="w-5 h-5 text-approved" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Paid</p>
+              <p className="text-sm text-muted-foreground">Total Paid · inc GST</p>
               <p className="text-lg font-bold text-approved">
                 ${totalPaid.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
               </p>
@@ -346,7 +346,7 @@ export function InvoiceSection({
               <Clock className="w-5 h-5 text-pending-foreground" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Remaining</p>
+              <p className="text-sm text-muted-foreground">Remaining · inc GST</p>
               <p className="text-lg font-bold">
                 ${remainingAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
               </p>

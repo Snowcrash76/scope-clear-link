@@ -109,7 +109,7 @@ export function JobSectionMenu({
           "flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-3 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
           "justify-start px-3",
           selected
-            ? "bg-primary/15 text-foreground ring-1 ring-inset ring-primary/45"
+            ? "bg-accent text-accent-foreground ring-1 ring-inset ring-primary/20"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
         data-testid={`job-section-${section.value}`}
@@ -153,7 +153,7 @@ export function JobSectionMenu({
           event.preventDefault();
           buttons[(current + direction + buttons.length) % buttons.length]?.focus();
         }}
-        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-background/95 px-1 py-2"
+        className="job-section-scroll flex min-w-0 gap-1 overflow-x-auto border-b border-border bg-card px-1 py-2"
       >
         {groups.map((group, index) => (
           <div key={`${group.label}-${index}`} className="contents">

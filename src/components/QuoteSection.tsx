@@ -572,7 +572,7 @@ export function QuoteSection({
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-sm font-medium break-words [overflow-wrap:anywhere]">{item.title}</span>
                               {item.isVariation && (
-                                <Badge variant="outline" className="text-xs border-amber-400/60 text-amber-600 dark:text-amber-400">
+                                <Badge variant="outline" className="border-warning/30 bg-warning/10 text-warning">
                                   Variation
                                 </Badge>
                               )}
@@ -747,11 +747,11 @@ export function QuoteSection({
     <div className="w-full min-w-0 space-y-6">
       {/* Revised banner — trade view only */}
       {isTradeView && quote!.status === 'revised' && (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800">
-          <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-2xl border border-warning/30 bg-warning/10 p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" />
           <div>
-            <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm">Client re-approval required</p>
-            <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+            <p className="text-sm font-semibold text-warning">Client re-approval required</p>
+            <p className="mt-0.5 text-sm text-foreground">
               This quote has been edited since it was last sent. Notify the client to request their re-approval.
             </p>
           </div>
