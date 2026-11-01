@@ -132,7 +132,7 @@ importers:
         specifier: ^1.4.2
         version: 1.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       jspdf:
-        specifier: ^4.0.0
+        specifier: ^4.2.1
         version: 4.2.1
       jspdf-autotable:
         specifier: ^5.0.7

@@ -1,5 +1,16 @@
 export type StageStatus = "pending" | "complete";
 export type JobStatus = "Lead" | "Quoted" | "Approved" | "In Progress" | "Completed";
+export interface Quote {
+  ref: string;
+  amountExGst: number | null;
+  validTo: string;
+}
+export interface Stage {
+  id: string;
+  name: string;
+  amountExGst: number;
+  status: StageStatus;
+}
 
 export interface Client {
   name: string;
@@ -16,7 +27,7 @@ export interface CostEntry {
 }
 export interface Invoice {
   id: string;
-  amountExGst: number;
+  amountExGst: number | null;
   status: "Draft" | "Sent" | "Paid";
   title: string;
   createdAt: string;
@@ -38,7 +49,7 @@ export interface Activity {
   id: string;
   title: string;
   detail: string;
-  age: string;
+  occurredAt: string;
   kind: "invoice" | "variation";
 }
 export interface Job {
@@ -50,10 +61,10 @@ export interface Job {
   scheduledLabel: string;
   validTo: string;
   targetCompletion: string;
-  quoteExGst: number;
-  costBudget: number;
+  quoteExGst: number | null;
+  costBudget: number | null;
   costs: CostEntry[];
-  stages: { id: string; name: string; amountExGst: number; status: StageStatus }[];
+  stages: Stage[];
   variations: Variation[];
   invoices: Invoice[];
   team: TeamMember[];
@@ -63,9 +74,10 @@ export interface Job {
   specStatus: string;
   updated: string;
   jobNumber: string;
-  signedOffThisMonth?: boolean;
+  signedOffAt?: string;
 }
 
+export const referenceNow = new Date("2026-10-31T12:00:00.000Z");
 export const GST_RATE = 0.1;
 export const seedJobs: Job[] = [
   {
@@ -100,36 +112,36 @@ export const seedJobs: Job[] = [
   {
     id: "smith-project",
     name: "Smith Project",
-    ref: "QT-SMTH614",
+    ref: "",
     status: "Completed",
     client: {
-      name: "Alex Smith",
-      email: "alex.smith@example.com",
-      phone: "0400 000 001",
-      address: "28 Miller Street, Brunswick",
-      projectType: "Residential Project",
+      name: "Smith Project client",
+      email: "",
+      phone: "",
+      address: "",
+      projectType: "Completed Project",
     },
-    scheduledLabel: "Tue 8 Oct",
-    validTo: "21 Nov 2026",
-    targetCompletion: "30 Oct",
-    quoteExGst: 18600,
-    costBudget: 22400,
+    scheduledLabel: "",
+    validTo: "",
+    targetCompletion: "",
+    quoteExGst: null,
+    costBudget: null,
     costs: [],
     stages: [{ id: "complete", name: "Final payment", amountExGst: 930, status: "complete" }],
     variations: [{ id: "var-pavers", title: "Change Pavers to 600mm", amountExGst: 1450, status: "Approved", age: "1d ago" }],
-    invoices: [{ id: "paid-smith", amountExGst: 18600, status: "Paid", title: "Final invoice", createdAt: "14h ago" }],
+    invoices: [{ id: "paid-smith", amountExGst: null, status: "Paid", title: "Final invoice", createdAt: "14h ago" }],
     team: [],
     hoursLogged: 0,
     specName: "Project Scope & Plan",
     specVersion: "V1.0",
     specStatus: "Approved",
     updated: "30 Oct",
-    jobNumber: "FX-8831",
-    signedOffThisMonth: true,
+    jobNumber: "",
+    signedOffAt: "2026-10-30T12:00:00.000Z",
   },
 ];
 
 export const initialActivity: Activity[] = [
-  { id: "activity-invoice", title: "Invoice paid", detail: "Smith Project · Settled via Stripe direct deposit", age: "14h ago", kind: "invoice" },
-  { id: "activity-variation", title: "Variation approved", detail: "Change Pavers to 600mm (Smith Project) · +$1,450.00 adjusted to quote", age: "1d ago", kind: "variation" },
+  { id: "activity-invoice", title: "Invoice paid", detail: "Smith Project · Settled via Stripe direct deposit", occurredAt: "2026-10-30T22:00:00.000Z", kind: "invoice" },
+  { id: "activity-variation", title: "Variation approved", detail: "Change Pavers to 600mm (Smith Project) · +$1,450.00 ex GST adjusted to quote", occurredAt: "2026-10-30T11:00:00.000Z", kind: "variation" },
 ];
