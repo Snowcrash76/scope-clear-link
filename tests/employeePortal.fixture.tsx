@@ -15,7 +15,7 @@ const params = new URLSearchParams(window.location.search);
 const view = params.get('view') ?? 'today';
 
 function Fixture() {
-  const initialPath = view === 'job' ? '/employee/jobs/fixture-job' : view === 'team' ? '/team' : view === 'team-timesheets' ? '/team/timesheets' : view === 'assignments' ? '/team/assignments' : view === 'timesheets' ? '/employee/timesheets' : '/employee';
+  const initialPath = view === 'job' ? '/employee/jobs/fixture-job' : view === 'job-team' ? '/team/jobs/fixture-job/staff' : view === 'team' ? '/team' : view === 'team-timesheets' ? '/team/timesheets' : view === 'assignments' ? '/team/assignments' : view === 'timesheets' ? '/employee/timesheets' : '/employee';
   return <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <MemoryRouter initialEntries={[initialPath]}>

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { assertPlatformAccess, assertPlatformBusinessAccess } from './platformAccess';
 import { z } from 'zod';
+import { createTeamAssignments } from './assignmentWrite';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -207,10 +208,7 @@ export function createEmployeeRouter() {
     return { success: true, delivery: 'accepted', invitation_url: url.href };
   }));
   router.post('/team/assignments', portalHandler(async (req, db, actor) => {
-    requireTeam(actor);
-    const body = z.object({ project_id: id, employee_ids: z.array(id).min(1).max(100), appointment_id: id.optional(), date: date.optional(), start_time: time.optional(), end_time: time.optional(), notes: text.optional() }).strict().parse(req.body);
-    if (!body.appointment_id && (!body.date || !body.start_time || !body.end_time || body.end_time <= body.start_time)) throw new CostApiError(400, 'Enter the date, start and finish, or select an existing job appointment.');
-    return portalMutate(db, actor, 'team_assign', body);
+    return createTeamAssignments(db, actor, req.body);
   }));
   router.delete('/team/assignments/:id', portalHandler(async (req, db, actor) => { requireTeam(actor); return portalMutate(db, actor, 'team_unassign', { id: paramsId(req.params.id) }); }));
   router.patch('/team/assignments/:id', portalHandler(async (req, db, actor) => {

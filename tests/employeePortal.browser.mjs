@@ -350,6 +350,10 @@ function makeApi(page, { owner = false, running = false, admin = false } = {}) {
       state.calls.push({ path: url.pathname, method, body });
       return route.fulfill({ json: { success: true } });
     }
+    if (url.pathname === "/api/team/assignments" && method === "POST") {
+      state.calls.push({ path: url.pathname, method, body: request.postDataJSON() });
+      return route.fulfill({ json: { success: true } });
+    }
     state.calls.push({ path: url.pathname, method });
     return route.fulfill({
       status: 404,
@@ -375,7 +379,8 @@ async function openFixture(context, view = "today", query = "") {
           : view === "timesheets"
             ? "Timesheets"
             : "Today";
-  await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+  if (view === "job-team") await page.locator("#job-assign-date").waitFor();
+  else await page.getByRole("heading", { name: heading, exact: true }).waitFor();
   return { page, errors };
 }
 
@@ -669,6 +674,33 @@ try {
     await context.close();
   }
 
+  // A range is submitted once; hours remain daily rather than an overnight shift.
+  for (const { width, view } of [{ width: 320, view: "assignments" }, { width: 1280, view: "assignments" }, { width: 390, view: "job-team" }]) {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const state = makeApi(context, { owner: true });
+    const { page, errors } = await openFixture(context, view);
+    const prefix = view === "job-team" ? "job-assign" : "assign";
+    if (view === "assignments") await page.locator("#assign-job").selectOption(job.id);
+    await page.getByRole("checkbox").first().check();
+    await page.locator(`#${prefix}-date`).fill("2026-10-02");
+    await page.locator(`#${prefix}-end-date`).fill("2026-10-05");
+    await page.getByText(/4 days selected/).waitFor();
+    await page.locator(`#${prefix}-start`).fill("08:00");
+    await page.locator(`#${prefix}-end`).fill("16:00");
+    await page.getByRole("button", { name: view === "job-team" ? "Save assignment" : "Assign team members", exact: true }).click();
+    await page.getByRole("status").getByText(/4 days/).waitFor();
+    const calls = state.calls.filter(call => call.path === "/api/team/assignments");
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].body.date, "2026-10-02");
+    assert.equal(calls[0].body.end_date, "2026-10-05");
+    assert.equal(calls[0].body.start_time, "08:00");
+    assert.equal(calls[0].body.end_time, "16:00");
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    assert.deepEqual(errors, []);
+    await page.screenshot({ path: `generated-artifacts/multi-day-${width}.png`, fullPage: true });
+    await context.close();
+    console.log(`PASS multi-day crew assignment ${view} ${width}px`);
+  }
   // Rescheduling edits the shared existing appointment and warns all assigned staff.
   {
     const context = await browser.newContext({

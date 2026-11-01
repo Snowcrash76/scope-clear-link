@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,7 +16,8 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { KpiCard } from '@/components/KpiCard';
 import { ListPagination } from '@/components/ListPagination';
-import { SearchFilterButton, SearchOverlay } from '@/components/ui/search-overlay';
+import { ListToolbar, ResultCount } from '@/components/ui/list-toolbar';
+import { useListSearchParams } from '@/hooks/useListSearchParams';
 import { Money } from '@/components/ui/money';
 import { formatFullDate } from '@/lib/dateFormat';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -64,18 +65,21 @@ export default function QuotesPage() {
   const { createProject } = useCreateProject();
   const query = useAllQuotes();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('all');
-  const [search, setSearch] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
+  const { search, debouncedSearch, setSearch } = useListSearchParams();
   const [page, setPage] = useState(1);
   const [newQuoteOpen, setNewQuoteOpen] = useState(false);
+  useEffect(() => setPage(1), [debouncedSearch, filter]);
   const quotes = query.data ?? [];
+  const term = debouncedSearch.trim().toLocaleLowerCase();
+  const matchesSearch = (quote: QuoteRow) => {
+    return !term || [quote.projectName, quote.clientName, quote.quote_number]
+      .some(value => value?.toLocaleLowerCase().includes(term));
+  };
+  const searchedQuotes = quotes.filter(matchesSearch);
   const visible = quotes.filter(quote => {
     const status = quoteDisplayStatus(quote);
     const matchesStatus = filter === 'all' || (filter === 'open' ? status === 'draft' || status === 'sent' : status === filter);
-    const term = search.trim().toLocaleLowerCase();
-    const matchesSearch = !term || [quote.projectName, quote.clientName, quote.quote_number, status ?? '']
-      .some(value => value.toLocaleLowerCase().includes(term));
-    return matchesStatus && matchesSearch;
+    return matchesStatus && matchesSearch(quote);
   });
   const pipelineValue = quotes
     .filter((quote) => ["draft", "sent"].includes(quoteDisplayStatus(quote) ?? ""))
@@ -107,34 +111,41 @@ export default function QuotesPage() {
         <KpiCard label="Open quote value" value={query.isLoading || query.isError ? "—" : <Money value={pipelineValue} basis="ex GST" />}
           description="Draft and sent quotes, using saved subtotals."
           definition="Sum of stored ex-GST subtotals for draft and sent quotes. This is not collected revenue."
-          onClick={() => { setFilter('open'); setSearch(''); }} />
+          onClick={() => setFilter('open')} />
         <KpiCard label="Quotes needing a decision" tone="purple" value={query.isLoading || query.isError ? "—" : quotes.filter((quote) => quoteDisplayStatus(quote) === "sent").length}
           description="Sent quotes with no recorded decision."
           definition="Quotes currently shown as sent. Select to show only those quotes."
-          onClick={() => { setFilter('sent'); setSearch(''); }} />
+          onClick={() => setFilter('sent')} />
       </section>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SearchFilterButton onClick={() => setSearchOpen(true)} />
-        <p className="text-sm text-muted-foreground" aria-live="polite">Showing {visible.length} of {quotes.length} {quotes.length === 1 ? 'quote' : 'quotes'}</p>
-      </div>
+      <ListToolbar
+        name="quote-list-search"
+        testId="input-quote-list-search"
+        value={search}
+        onChange={(value) => { setSearch(value); setPage(1); }}
+        placeholder="Search quotes, clients or references"
+      />
       <FilterTabs
         label="Filter quotes"
         className="mb-4"
         value={filter}
-        onChange={(value) => setFilter(value as (typeof FILTERS)[number])}
+          onChange={(value) => { setFilter(value as (typeof FILTERS)[number]); setPage(1); }}
         options={FILTERS.map((status) => ({
           value: status,
           label: status === 'all' ? 'All' : status[0].toUpperCase() + status.slice(1),
-          count: status === 'all' ? quotes.length : quotes.filter((quote) => status === 'open' ? ['draft', 'sent'].includes(quoteDisplayStatus(quote) ?? '') : quoteDisplayStatus(quote) === status).length,
+          count: status === 'all' ? searchedQuotes.length : searchedQuotes.filter((quote) => status === 'open' ? ['draft', 'sent'].includes(quoteDisplayStatus(quote) ?? '') : quoteDisplayStatus(quote) === status).length,
         }))}
       />
+      <ResultCount count={visible.length} singular="quote" />
        <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
         <div className="hidden grid-cols-[minmax(0,1fr)_minmax(100px,145px)_minmax(85px,110px)_minmax(105px,140px)_minmax(115px,145px)_20px] gap-3 border-b bg-muted/40 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground lg:grid">
           <span>Job / Client</span><span>Quote #</span><span>Status</span><span>Timeline / expiry</span><span className="text-right">Quote value</span><span />
         </div>
         {query.isLoading ? <div className="divide-y">{Array.from({ length: 4 }).map((_, index) => <div key={index} className="flex items-center gap-4 p-4"><div className="flex-1 space-y-2"><Skeleton className="h-4 w-2/5" /><Skeleton className="h-3 w-1/4" /></div><Skeleton className="h-6 w-20" /></div>)}</div>
           : query.isError ? <div className="px-5 py-12 text-center"><p role="alert" className="text-sm text-foreground">Quotes could not be loaded.</p><Button variant="outline" className="mt-3" onClick={() => query.refetch()}>Try again</Button></div>
-              : visible.length === 0 ? <EmptyState className="border-0 shadow-none" icon={<FileText className="h-5 w-5" />} title="No matching quotes" description={quotes.length ? "Try another status or search term." : "Quotes will appear here when they are created."} />
+               : visible.length === 0 ? <EmptyState className="border-0 shadow-none" icon={<FileText className="h-5 w-5" />}
+                 title={!quotes.length ? "No quotes yet" : debouncedSearch.trim() ? "No quotes match your search" : "No matching quotes"}
+                 description={!quotes.length ? "Quotes will appear here when they are created." : debouncedSearch.trim() ? "Try another search term." : "Try another status."}
+                 action={quotes.length > 0 && debouncedSearch.trim() ? <Button variant="outline" onClick={() => setSearch("")}>Clear search</Button> : undefined} />
                : <div className="divide-y divide-border/70">{pageQuotes.map(quote => {
                 const status = quoteDisplayStatus(quote) ?? 'draft';
                  const validUntil = quote.valid_until ? new Date(quote.valid_until) : null;
@@ -156,29 +167,6 @@ export default function QuotesPage() {
       </div>
        <ListPagination page={currentPage} pageSize={10} total={visible.length} onChange={setPage} />
     </PageLayout>
-    <SearchOverlay
-      open={searchOpen}
-      onOpenChange={setSearchOpen}
-      value={search}
-      onValueChange={(value) => { setSearch(value); setPage(1); }}
-      resultSummary={`${visible.length} matching ${visible.length === 1 ? 'quote' : 'quotes'}`}
-    >
-      {visible.slice(0, 12).map((quote) => (
-        <button
-          key={quote.id}
-          type="button"
-          onClick={() => { setSearchOpen(false); navigate(`/manage/${quote.project_id}?tab=quote`); }}
-          className="flex min-h-14 w-full items-center justify-between gap-3 rounded-xl px-3 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          <span className="min-w-0">
-            <span className="block truncate font-medium">{quote.projectName}</span>
-            <span className="block truncate text-sm text-muted-foreground">{quote.clientName} · {quote.quote_number}</span>
-          </span>
-          <StatusBadge status={quoteDisplayStatus(quote) ?? 'draft'} size="sm" />
-        </button>
-      ))}
-      {visible.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">No quotes match this search.</p>}
-    </SearchOverlay>
     <DeleteResourceDialog target={deletingQuote ? { kind: 'quote', id: deletingQuote.id } : null}
       label={deletingQuote?.quote_number ?? ''} onClose={() => setDeletingQuote(null)} />
     <CreateJobModal

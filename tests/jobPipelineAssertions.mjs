@@ -13,16 +13,20 @@ export async function checkJobPipeline(page, route, width, mode) {
     return;
   }
   if (route !== '/projects') return;
-  const labels = ['Active', 'Quoted', 'Approved', 'In Progress', 'Archive'];
-  const keys = ['active', 'quoted', 'approved', 'in_progress', 'completed'];
-  const counts = noQuoted ? [2, 0, 1, 1, 3] : [4, 2, 1, 1, 1];
+  await page.getByTestId('input-job-list-search').fill('');
+  await page.waitForURL(url => !url.searchParams.has('q'));
+  const draftCount = mode === 'default' || mode === 'revised' ? 1 : 0;
+  const labels = ['Active', 'Quoted', 'Drafts', 'Approved', 'In Progress', 'Archive'];
+  const keys = ['active', 'quoted', 'drafts', 'approved', 'in_progress', 'completed'];
+  const counts = noQuoted ? [2, 0, 0, 1, 1, 3] : [4, 2, draftCount, 1, 1, 1];
   for (let i = 0; i < keys.length; i++) {
     const tab = page.getByTestId(`tab-${keys[i]}`);
     await tab.waitFor();
     assert.equal((await tab.innerText()).replace(/\s/g, ''), `${labels[i]}${counts[i]}`.replace(/\s/g, ''));
   }
   const group = page.getByTestId('tab-active').locator('..');
-  assert.equal(await group.getByRole('button').count(), 5);
+  assert.equal(await group.getByRole('button').count(), 6);
+  assert.deepEqual(await group.getByRole('button').evaluateAll(buttons => buttons.map(button => button.getAttribute('data-testid'))), keys.map(key => `tab-${key}`));
   const style = await page.getByTestId('tab-active').evaluate(button => {
     const css = getComputedStyle(button);
     return {
@@ -43,7 +47,21 @@ export async function checkJobPipeline(page, route, width, mode) {
   assert.match(await page.getByText('Active Job Quote Value', { exact: true }).locator('..').innerText(), noQuoted ? /\$700\.00/ : /\$1,000\.00/);
   assert.match(await page.getByText('Quotes Awaiting Response', { exact: true }).locator('..').innerText(),
     new RegExp(`Quotes Awaiting Response\\s*${noQuoted ? 0 : mode === 'nodraft' ? 2 : 1}`, 'i'));
-  assert.equal(await page.getByRole('heading', { name: 'No pending quote drafts', exact: true }).count(), mode === 'default' ? 0 : 1);
+  assert.equal(await page.getByRole('heading', { name: 'No pending quote drafts', exact: true }).count(), 0, 'No standalone drafts box on Active');
+  await page.getByTestId('tab-drafts').click();
+  assert.equal(new URL(page.url()).searchParams.get('status'), 'drafts');
+  assert.equal(await page.getByTestId('tab-drafts').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('[data-testid^="project-row-"]').count(), draftCount);
+  if (draftCount) {
+    await page.getByRole('button', { name: /^Send quote for Synthetic North Fitzroy job/ }).waitFor();
+    const search = page.getByTestId('input-job-list-search');
+    await search.fill('no matching draft');
+    await page.getByText(/^No jobs match your search\.?$/).waitFor();
+    await search.fill('');
+    await page.locator('[data-testid^="project-row-"]').first().waitFor();
+    assert.equal(await page.locator('[data-testid^="project-row-"]').count(), 1);
+  } else await page.getByRole('heading', { name: 'No pending quote drafts', exact: true }).waitFor();
+  assert.match(await page.getByText('Active Job Quote Value', { exact: true }).locator('..').innerText(), noQuoted ? /\$700\.00/ : /\$1,000\.00/, 'Drafts is a list filter, not a change to the active-job quote total');
   await page.getByTestId('tab-quoted').click();
   if (noQuoted) {
     await page.getByRole('heading', { name: 'No quotes yet. Tap New Job to start one.', exact: true }).waitFor();

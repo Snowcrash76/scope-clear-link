@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppShell, NewJobButton } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
@@ -36,7 +36,8 @@ import { JobCard } from "@/components/JobCard";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
 import { Button } from "@/components/ui/button";
-import { SearchInput } from "@/components/ui/search-overlay";
+import { ListToolbar, ResultCount } from "@/components/ui/list-toolbar";
+import { useListSearchParams } from "@/hooks/useListSearchParams";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import { Money } from "@/components/ui/money";
 import { toast } from "sonner";
@@ -94,9 +95,11 @@ export default function ProjectsPage() {
       latestQuoteByProject.set(quote.project_id, quote);
   }
   const [sort, setSort] = useState<SortOrder>("newest");
-  const [search, setSearch] = useState("");
+  const { search, debouncedSearch, setSearch } = useListSearchParams();
   const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [debouncedSearch]);
   const filterParam = searchParams.get("status") ?? "active";
+  const draftsFilter = filterParam === "drafts";
   const specialFilter = [
     "awaiting_response",
     "pending_approval",
@@ -109,8 +112,20 @@ export default function ProjectsPage() {
   const activeProjects = filterJobArchive(projects, false);
   const archivedProjects = filterJobArchive(projects, true);
   const archiveView = !specialFilter && tab === "completed";
+  const draftProjectIds = new Set(
+    activeProjects
+      .filter((project) => {
+        const quote = latestQuoteByProject.get(project.id);
+        return (
+          jobDisplayStatus(project, quote) === "quoted" &&
+          (quote?.status === "draft" || quote?.status === "revised")
+        );
+      })
+      .map((project) => project.id),
+  );
 
   const selectFilter = (filter: string) => {
+    setPage(1);
     const next = new URLSearchParams(searchParams);
     if (filter === "active") next.delete("status");
     else next.set("status", filter);
@@ -124,6 +139,7 @@ export default function ProjectsPage() {
       return awaitingQuoteResponse(project, quote);
     if (filterParam === "pending_approval")
       return project.changeRequests.some((variation) => needsTradeResponse(variation) || awaitingClientApproval(variation));
+    if (draftsFilter) return draftProjectIds.has(project.id);
     if (filterParam === "in_progress")
       return (
         jobDisplayStatus(project, quote) === "in_progress" &&
@@ -141,12 +157,13 @@ export default function ProjectsPage() {
       return !profitabilityById.has(project.id);
     return tab === "active" || jobDisplayStatus(project, quote) === tab;
   });
-  const filtered = filteredByStatus.filter((project) => {
-    const term = search.trim().toLocaleLowerCase();
+  const term = debouncedSearch.trim().toLocaleLowerCase();
+  const matchesSearch = (project: Project) => {
     const quote = latestQuoteByProject.get(project.id);
     return !term || [project.name, project.clientName, quote?.quote_number, quote?.reference]
       .some((value) => value?.toLocaleLowerCase().includes(term));
-  });
+  };
+  const filtered = filteredByStatus.filter(matchesSearch);
   const sortedFiltered = [...filtered].sort((a, b) => {
     if (sort === "name") return a.name.localeCompare(b.name);
     if (sort === "quote")
@@ -162,19 +179,22 @@ export default function ProjectsPage() {
   const currentPage = Math.min(page, pageCount);
   const pageProjects = sortedFiltered.slice((currentPage - 1) * 10, currentPage * 10);
 
+  const searchedActive = activeProjects.filter(matchesSearch);
+  const searchedArchive = archivedProjects.filter(matchesSearch);
   const counts = {
-    active: activeProjects.length,
-    quoted: activeProjects.filter(
+    active: searchedActive.length,
+    quoted: searchedActive.filter(
       (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "quoted",
     ).length,
-    approved: activeProjects.filter(
+    drafts: searchedActive.filter((p) => draftProjectIds.has(p.id)).length,
+    approved: searchedActive.filter(
       (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "approved",
     ).length,
-    in_progress: activeProjects.filter(
+    in_progress: searchedActive.filter(
       (p) =>
         jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "in_progress",
     ).length,
-    completed: archivedProjects.length,
+    completed: searchedArchive.length,
   };
   const pendingVariationTotal = filtered.reduce(
     (total, project) =>
@@ -194,15 +214,6 @@ export default function ProjectsPage() {
   const jobsAwaitingResponse = activeProjects.filter((project) =>
     awaitingQuoteResponse(project, latestQuoteByProject.get(project.id))
   ).length;
-  const hasPendingQuoteDrafts = activeProjects.some((project) =>
-    jobDisplayStatus(project, latestQuoteByProject.get(project.id)) === "quoted" &&
-    (quoteQuery.data ?? []).some(
-      (quote) =>
-        quote.project_id === project.id &&
-        (quote.status === "draft" || quote.status === "revised"),
-    )
-  );
-
   const changeArchiveStatus = async (project: Project, status: "completed" | "in_progress") => {
     const succeeded = await updateProjectStatus(project.id, status);
     if (!succeeded) return;
@@ -278,23 +289,13 @@ export default function ProjectsPage() {
             <p className="mt-1 text-sm text-muted-foreground">Quoted jobs with a sent quote awaiting a client decision.</p>
           </button>
         </section>
-        {!projectsError && !loading && !quoteQuery.isLoading && !quoteQuery.isError && !hasPendingQuoteDrafts && (
-          <EmptyState
-            className="mb-6 border-dashed"
-            icon={<FolderOpen className="h-5 w-5" />}
-            title="No pending quote drafts"
-            description="Draft or revised quotes on quoted jobs will appear here when they need sending."
-          />
-        )}
-        <div className="mb-4 flex min-w-0 items-center gap-2">
-          <SearchInput
-            className="flex-1"
-            name="job-list-search"
-            testId="input-job-list-search"
-            value={search}
-            onChange={setSearch}
-            placeholder="Search jobs, clients or references"
-          />
+        <ListToolbar
+          name="job-list-search"
+          testId="input-job-list-search"
+          value={search}
+          onChange={(value) => { setSearch(value); setPage(1); }}
+          placeholder="Search jobs, clients or references"
+          actions={
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -328,26 +329,38 @@ export default function ProjectsPage() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
+          }
+        />
 
         <FilterTabs
           label="Filter jobs"
           className="mb-4 -mx-4 px-4 touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0"
-          value={specialFilter ? ("__special_filter" as Tab) : tab}
+          value={specialFilter ? "__special_filter" : draftsFilter ? "drafts" : tab}
           onChange={selectFilter}
-          options={TABS.map((item) => ({
+          options={[
+            ...TABS.slice(0, 2).map((item) => ({
+              value: item.key,
+              label: item.label,
+              count: counts[item.key],
+              testId: `tab-${item.key}`,
+            })),
+            {
+              value: "drafts",
+              label: "Drafts",
+              count: counts.drafts,
+              testId: "tab-drafts",
+            },
+            ...TABS.slice(2).map((item) => ({
             value: item.key,
             label: item.label,
             count: counts[item.key],
             testId: `tab-${item.key}`,
-          }))}
+            })),
+          ]}
         />
 
-        <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2">
-          <p className="text-sm text-muted-foreground" aria-live="polite">
-            {sortedFiltered.length} {sortedFiltered.length === 1 ? "job" : "jobs"}
-            {specialFilter && ` · ${filterLabel[filterParam]}`}
-          </p>
+        <ResultCount count={sortedFiltered.length} singular="job">
+          {specialFilter && ` · ${filterLabel[filterParam]}`}
           {specialFilter && (
             <button
               type="button"
@@ -357,7 +370,7 @@ export default function ProjectsPage() {
               Clear dashboard filter
             </button>
           )}
-        </div>
+        </ResultCount>
 
         <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
           {loading ? (
@@ -397,7 +410,14 @@ export default function ProjectsPage() {
               </button>
             </div>
           ) : sortedFiltered.length === 0 ? (
-            filterParam === "quoted" && !search.trim() ? (
+            draftsFilter && !debouncedSearch.trim() ? (
+              <EmptyState
+                className="border-0 shadow-none"
+                icon={<FolderOpen className="h-5 w-5" />}
+                title="No pending quote drafts"
+                description="Draft or revised quotes on quoted jobs will appear here when they need sending."
+              />
+            ) : filterParam === "quoted" && (!debouncedSearch.trim() || projects.length === 0) ? (
               <EmptyState
                 className="border-0 shadow-none"
                 icon={<FolderOpen className="h-5 w-5" />}
@@ -406,12 +426,16 @@ export default function ProjectsPage() {
                 action={<NewJobButton />}
               />
             ) : (
-              <div className="text-center py-12 px-4">
+              debouncedSearch.trim() && projects.length > 0 ? <EmptyState
+                className="border-0 shadow-none"
+                icon={<FolderOpen className="h-5 w-5" />}
+                title="No jobs match your search"
+                description="Try another search term."
+                action={<Button variant="outline" onClick={() => setSearch("")}>Clear search</Button>}
+              /> : <div className="text-center py-12 px-4">
                 <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm font-medium text-foreground">
-                  {search.trim()
-                    ? "No jobs match your search."
-                    : archiveView
+                  {archiveView
                       ? "No archived jobs yet."
                       : specialFilter
                         ? "No jobs match this dashboard filter."
@@ -420,7 +444,7 @@ export default function ProjectsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {archiveView
                     ? "Jobs marked completed appear here. Reopen one any time to return it to active jobs."
-                    : !specialFilter && !search.trim()
+                    : !specialFilter
                       ? "New jobs and quotes will appear here as your work comes in."
                       : "Try changing your search or selecting another view."}
                 </p>

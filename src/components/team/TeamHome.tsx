@@ -79,6 +79,8 @@ import { ReviewDialog } from "./ReviewDialog";
 import { UpdatesPanel } from "./UpdatesPanelView";
 import { TimesheetSkeleton } from "@/components/timesheets/TimesheetSkeleton";
 import { JobHoursSummary } from "@/components/team/JobHoursSummary";
+import { assignmentDates } from "../../../shared/assignmentDates";
+import { AssignmentDateRange } from "./AssignmentDateRange";
 
 export function TeamHome({
   panel,
@@ -141,6 +143,7 @@ export function TeamHome({
     project_id: jobId ?? "",
     employee_ids: [] as string[],
     date: "",
+    end_date: "",
     start_time: "07:00",
     end_time: "15:30",
     notes: "",
@@ -360,31 +363,31 @@ export function TeamHome({
   async function assignCrew(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setMessage("");
+    if (busy) return;
     setBusy(true);
     try {
       if (!assign.project_id || !assign.employee_ids.length || !assign.date)
         throw new Error("Choose a job, one or more team members and a date.");
+      const dates = assignmentDates(assign.date, assign.end_date || undefined);
       const tz = team?.timezone || "Australia/Sydney";
-      const startUtc = localDateTimeToUtc(
-        `${assign.date}T${assign.start_time}`,
-        tz,
-      );
-      const endUtc = localDateTimeToUtc(
-        `${assign.date}T${assign.end_time}`,
-        tz,
-      );
-      if (Date.parse(endUtc) <= Date.parse(startUtc))
-        throw new Error("Finish time must be after start time.");
+      for (const date of dates) {
+        const startUtc = localDateTimeToUtc(`${date}T${assign.start_time}`, tz);
+        const endUtc = localDateTimeToUtc(`${date}T${assign.end_time}`, tz);
+        if (Date.parse(endUtc) <= Date.parse(startUtc))
+          throw new Error(`Finish time must be after start time on ${date}.`);
+      }
       await portalRequest("/team/assignments", {
         project_id: assign.project_id,
         employee_ids: assign.employee_ids,
         date: assign.date,
+        ...(assign.end_date ? { end_date: assign.end_date } : {}),
         start_time: assign.start_time,
         end_time: assign.end_time,
         notes: assign.notes || undefined,
       });
       await refresh();
-      setMessage("Team assignment saved.");
+      setMessage(`Team assignment saved for ${dates.length} ${dates.length === 1 ? "day" : "days"}.`);
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -767,18 +770,14 @@ export function TeamHome({
                             ))}
                         </div>
                       </fieldset>
-                      <div>
-                        <Label htmlFor="assign-date">Date</Label>
-                        <Input
-                          id="assign-date"
-                          type="date"
-                          className={`${field} mt-1.5`}
-                          value={assign.date}
-                          onChange={(e) =>
-                            setAssign((s) => ({ ...s, date: e.target.value }))
-                          }
-                        />
-                      </div>
+                      <AssignmentDateRange
+                        startDate={assign.date}
+                        endDate={assign.end_date}
+                        startId="assign-date"
+                        endId="assign-end-date"
+                        onStartDateChange={(date) => setAssign((s) => ({ ...s, date }))}
+                        onEndDateChange={(end_date) => setAssign((s) => ({ ...s, end_date }))}
+                      />
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <Label htmlFor="assign-start">Start</Label>
@@ -902,22 +901,18 @@ export function TeamHome({
                       </div>
                     </fieldset>
                     <div className="mt-4 space-y-3">
-                      <div>
-                        <Label htmlFor="job-assign-date">Date</Label>
-                        <Input
-                          id="job-assign-date"
-                          type="date"
-                          className={`${field} mt-1.5`}
-                          value={assign.date}
-                          onChange={(e) =>
-                            setAssign((s) => ({
-                              ...s,
-                              date: e.target.value,
-                              project_id: jobId ?? "",
-                            }))
-                          }
-                        />
-                      </div>
+                      <AssignmentDateRange
+                        startDate={assign.date}
+                        endDate={assign.end_date}
+                        startId="job-assign-date"
+                        endId="job-assign-end-date"
+                        onStartDateChange={(date) =>
+                          setAssign((s) => ({ ...s, date, project_id: jobId ?? "" }))
+                        }
+                        onEndDateChange={(end_date) =>
+                          setAssign((s) => ({ ...s, end_date, project_id: jobId ?? "" }))
+                        }
+                      />
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <Label htmlFor="job-assign-start">Start</Label>

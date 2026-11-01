@@ -3,6 +3,12 @@ name: Employee portal boundaries
 description: User-required employee portal phase gates, access boundaries and reuse constraints.
 ---
 
+Multi-day crew assignments are separate daily shifts, not one continuous overnight booking. The end date is inclusive and the same local hours apply each day, including weekends.
+
+**Why:** Daily schedules and timesheet access must continue to match the existing appointment model; treating a range as one continuous booking would incorrectly cover overnight hours.
+
+**How to apply:** Save the whole range atomically and retain per-day editing/removal. Use calendar dates in the business timezone so daylight-saving changes do not move the daily start time.
+
 Build the employee portal in phases. Complete and confirm each phase works before starting the next; after Phase 1, summarise the work and wait for the user's explicit go-ahead before Phase 2.
 
 **Why:** The user explicitly requested this release sequence in the employee portal brief.

@@ -11,7 +11,6 @@ import { LoadErrorState } from "@/components/LoadErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Popover,
   PopoverContent,
@@ -23,7 +22,6 @@ import {
   Download,
   CalendarRange,
   X,
-  ListFilter,
 } from "lucide-react";
 import { invoiceDisplayStatus } from "@/lib/invoiceWorkflow";
 import { Money } from "@/components/ui/money";
@@ -33,6 +31,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { FilterTabs } from "@/components/ui/filter-tabs";
 import { DeleteResourceDialog } from "@/components/DeleteResourceDialog";
 import { Trash2 } from "lucide-react";
+import { ListToolbar, ResultCount } from "@/components/ui/list-toolbar";
+import { useListSearchParams } from "@/hooks/useListSearchParams";
 import {
   format,
   isWithinInterval,
@@ -159,6 +159,7 @@ export default function InvoicesPage() {
   const [deletingInvoice, setDeletingInvoice] = useState<InvoiceRow | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { search, debouncedSearch, setSearch } = useListSearchParams();
   const invoiceQuery = useAllInvoices();
   const { data: invoices, isLoading, isError, refetch } = invoiceQuery;
 
@@ -167,23 +168,17 @@ export default function InvoicesPage() {
   const [dateTo, setDateTo] = useState("");
   const [dateFilterOpen, setDateFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
+  useEffect(() => setPage(1), [debouncedSearch, dateFrom, dateTo]);
 
   // Status filter — empty set means "show all"
   const statusParam = searchParams.get("status");
-  const [statusFilter, setStatusFilter] = useState<Set<InvoiceStatus>>(() =>
-    parseInvoiceStatusParam(statusParam),
-  );
-  const [statusFilterOpen, setStatusFilterOpen] = useState(false);
-  useEffect(() => {
-    setStatusFilter(parseInvoiceStatusParam(statusParam));
-  }, [statusParam]);
+  const statusFilter = parseInvoiceStatusParam(statusParam);
 
   const isDateFiltered = !!dateFrom || !!dateTo;
   const isStatusFiltered = statusFilter.size > 0;
   const isFiltered = isDateFiltered || isStatusFiltered;
 
   const commitStatusFilter = (next: Set<InvoiceStatus>, clearDates = false) => {
-    setStatusFilter(next);
     if (clearDates) {
       setDateFrom("");
       setDateTo("");
@@ -194,15 +189,11 @@ export default function InvoicesPage() {
     setSearchParams(params, { replace: true });
   };
 
-  const toggleStatus = (s: InvoiceStatus) => {
-    const next = new Set(statusFilter);
-    if (next.has(s)) next.delete(s);
-    else next.add(s);
-    commitStatusFilter(next);
-  };
-
-  const filtered = (invoices ?? []).filter((inv) => {
-    if (isStatusFiltered && !statusFilter.has(inv.status)) return false;
+  const term = debouncedSearch.trim().toLocaleLowerCase();
+  const matchesSearch = (inv: InvoiceRow) =>
+    !term || [inv.projectName, inv.clientName, inv.invoice_number]
+      .some((value) => value?.toLocaleLowerCase().includes(term));
+  const dateAndSearchFiltered = (invoices ?? []).filter((inv) => {
     if (isDateFiltered) {
       const created = parseISO(inv.created_at);
       if (dateFrom && dateTo) {
@@ -215,7 +206,10 @@ export default function InvoicesPage() {
       if (dateTo) return created <= endOfDay(parseISO(dateTo));
     }
     return true;
-  });
+  }).filter(matchesSearch);
+  const filtered = dateAndSearchFiltered.filter((inv) =>
+    !isStatusFiltered || statusFilter.has(inv.status)
+  );
   const pageCount = Math.max(1, Math.ceil(filtered.length / 10));
   const currentPage = Math.min(page, pageCount);
   const pageInvoices = filtered.slice((currentPage - 1) * 10, currentPage * 10);
@@ -230,22 +224,6 @@ export default function InvoicesPage() {
     setDateFrom("");
     setDateTo("");
     setDateFilterOpen(false);
-  };
-
-  const clearStatusFilter = () => {
-    commitStatusFilter(new Set());
-    setStatusFilterOpen(false);
-  };
-
-  const clearAll = () => {
-    clearDateFilter();
-    clearStatusFilter();
-  };
-
-  const statusFilterLabel = () => {
-    if (statusFilter.size === 0) return "Status";
-    if (statusFilter.size === 1) return STATUS_LABELS[[...statusFilter][0]];
-    return `${statusFilter.size} statuses`;
   };
 
   return (
@@ -263,176 +241,78 @@ export default function InvoicesPage() {
               onClick={() => commitStatusFilter(new Set<InvoiceStatus>(["overdue"]), true)} />
           </section>
         )}
+        <ListToolbar
+          name="invoice-list-search"
+          testId="input-invoice-list-search"
+          value={search}
+          onChange={(value) => { setSearch(value); setPage(1); }}
+          placeholder="Search invoices, clients or references"
+          actions={
+            <>
+              <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={isDateFiltered ? "default" : "outline"}
+                    size="sm"
+                    className="min-h-11 gap-2"
+                    data-testid="button-invoice-filter"
+                  >
+                    <CalendarRange className="h-4 w-4" />
+                    {isDateFiltered ? (
+                      <span>
+                        {dateFrom && dateTo
+                          ? `${format(parseISO(dateFrom), "d MMM")} – ${format(parseISO(dateTo), "d MMM yyyy")}`
+                          : dateFrom
+                            ? `From ${format(parseISO(dateFrom), "d MMM yyyy")}`
+                            : `Until ${format(parseISO(dateTo), "d MMM yyyy")}`}
+                      </span>
+                    ) : "Date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 space-y-4 p-4" align="end">
+                  <p className="text-sm font-semibold">Filter by created date</p>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="inv-date-from" className="text-xs">From</Label>
+                      <input id="inv-date-from" type="date" value={dateFrom} max={dateTo || undefined}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        data-testid="input-invoice-date-from" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="inv-date-to" className="text-xs">To</Label>
+                      <input id="inv-date-to" type="date" value={dateTo} min={dateFrom || undefined}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        data-testid="input-invoice-date-to" />
+                    </div>
+                  </div>
+                  {isDateFiltered && <Button variant="ghost" size="sm" className="w-full gap-2"
+                    onClick={clearDateFilter} data-testid="button-invoice-filter-clear">
+                    <X className="h-3.5 w-3.5" />Clear dates
+                  </Button>}
+                </PopoverContent>
+              </Popover>
+              <Button variant="outline" size="sm" className="min-h-11 gap-2"
+                disabled={isLoading || filtered.length === 0}
+                onClick={() => exportInvoicesCSV(filtered)} data-testid="button-invoice-export-csv">
+                <Download className="h-4 w-4" />Export CSV
+              </Button>
+            </>
+          }
+        />
         <FilterTabs
           label="Filter invoices by status"
           className="mb-4"
           value={!isStatusFiltered ? "all" : statusFilter.size === 1 ? [...statusFilter][0] : "__multiple__"}
-          onChange={(tab) => commitStatusFilter(tab === "all" ? new Set() : new Set([tab as InvoiceStatus]))}
-          options={(["all", "draft", "approved", "sent", "paid", "overdue"] as const).map((tab) => ({
+          onChange={(tab) => { commitStatusFilter(tab === "all" ? new Set() : new Set([tab as InvoiceStatus])); setPage(1); }}
+          options={(["all", "draft", "approved", "sent", "paid", "overdue", "cancelled"] as const).map((tab) => ({
             value: tab,
             label: tab === "sent" ? "Awaiting payment" : tab === "all" ? "All" : STATUS_LABELS[tab],
-            count: tab === "all" ? (invoices ?? []).length : (invoices ?? []).filter((invoice) => invoice.status === tab).length,
+            count: tab === "all" ? dateAndSearchFiltered.length : dateAndSearchFiltered.filter((invoice) => invoice.status === tab).length,
           }))}
         />
-        <div className="mb-5 flex w-full items-center gap-2 flex-wrap sm:justify-end">
-          {/* Status filter */}
-          <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={isStatusFiltered ? "default" : "outline"}
-                size="sm"
-                className="min-h-11 flex-1 gap-2 sm:flex-none"
-                data-testid="button-invoice-status-filter"
-              >
-                <ListFilter className="w-4 h-4" />
-                {statusFilterLabel()}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-52 p-3 space-y-2" align="end">
-              <p className="text-sm font-semibold mb-1">Filter by status</p>
-              {ALL_STATUSES.map((s) => (
-                <div key={s} className="flex items-center gap-2.5">
-                  <Checkbox
-                    id={`status-filter-${s}`}
-                    checked={statusFilter.has(s)}
-                    onCheckedChange={() => toggleStatus(s)}
-                    data-testid={`checkbox-status-${s}`}
-                  />
-                  <label
-                    htmlFor={`status-filter-${s}`}
-                    className="flex items-center gap-2 cursor-pointer select-none text-sm"
-                  >
-                    <StatusBadge status={s} size="sm" />
-                  </label>
-                </div>
-              ))}
-              {isStatusFiltered && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full gap-2 mt-1"
-                  onClick={clearStatusFilter}
-                  data-testid="button-status-filter-clear"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Clear
-                </Button>
-              )}
-            </PopoverContent>
-          </Popover>
-
-          {/* Date filter */}
-          <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant={isDateFiltered ? "default" : "outline"}
-                size="sm"
-                className="min-h-11 flex-1 gap-2 sm:flex-none"
-                data-testid="button-invoice-filter"
-              >
-                <CalendarRange className="w-4 h-4" />
-                {isDateFiltered ? (
-                  <span>
-                    {dateFrom && dateTo
-                      ? `${format(parseISO(dateFrom), "d MMM")} – ${format(parseISO(dateTo), "d MMM yyyy")}`
-                      : dateFrom
-                        ? `From ${format(parseISO(dateFrom), "d MMM yyyy")}`
-                        : `Until ${format(parseISO(dateTo), "d MMM yyyy")}`}
-                  </span>
-                ) : (
-                  "Date"
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-4 space-y-4" align="end">
-              <p className="text-sm font-semibold">Filter by created date</p>
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="inv-date-from" className="text-xs">
-                    From
-                  </Label>
-                  <input
-                    id="inv-date-from"
-                    type="date"
-                    value={dateFrom}
-                    max={dateTo || undefined}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    data-testid="input-invoice-date-from"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="inv-date-to" className="text-xs">
-                    To
-                  </Label>
-                  <input
-                    id="inv-date-to"
-                    type="date"
-                    value={dateTo}
-                    min={dateFrom || undefined}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                    data-testid="input-invoice-date-to"
-                  />
-                </div>
-              </div>
-              {isDateFiltered && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full gap-2"
-                  onClick={clearDateFilter}
-                  data-testid="button-invoice-filter-clear"
-                >
-                  <X className="w-3.5 h-3.5" />
-                  Clear dates
-                </Button>
-              )}
-            </PopoverContent>
-          </Popover>
-
-          {/* Clear all badge */}
-          {isFiltered && (
-            <button
-              onClick={clearAll}
-              className="inline-flex h-11 w-11 items-center justify-center rounded hover:bg-muted transition-colors"
-              title="Clear all filters"
-              data-testid="button-invoice-filter-clear-badge"
-            >
-              <X className="w-3.5 h-3.5 text-muted-foreground" />
-            </button>
-          )}
-
-          {/* Export CSV */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="min-h-11 w-full gap-2 sm:w-auto"
-            disabled={isLoading || filtered.length === 0}
-            onClick={() => exportInvoicesCSV(filtered)}
-            data-testid="button-invoice-export-csv"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
-        </div>
-
-        {/* Active filter summary */}
-        {isFiltered && !isLoading && !isError && (
-          <p className="text-sm text-muted-foreground mb-4">
-            Showing{" "}
-            <span className="font-medium text-foreground">
-              {filtered.length}
-            </span>{" "}
-            of {invoices?.length ?? 0} invoices
-            {isStatusFiltered && (
-              <span>
-                {" "}
-                · {[...statusFilter].map((s) => STATUS_LABELS[s]).join(", ")}
-              </span>
-            )}
-          </p>
-        )}
+        <ResultCount count={filtered.length} singular="invoice" />
 
         <div className="min-w-0 rounded-2xl border border-border bg-card overflow-hidden shadow-card">
           {/* Table header — desktop only */}
@@ -480,9 +360,11 @@ export default function InvoicesPage() {
             <EmptyState
               className="border-0 shadow-none"
               icon={<Receipt className="h-5 w-5" />}
-              title={isFiltered ? "No invoices match these filters" : "No invoices yet"}
-              description={isFiltered ? "Clear filters to see all recorded invoices." : "Invoices are created from within a job."}
-              action={isFiltered ? <Button variant="outline" onClick={clearAll}>Clear filters</Button> : undefined}
+              title={!invoices?.length ? "No invoices yet" : debouncedSearch.trim() ? "No invoices match your search" : isFiltered ? "No invoices match these filters" : "No invoices yet"}
+              description={!invoices?.length ? "Invoices are created from within a job." : debouncedSearch.trim() ? "Try another search term." : isFiltered ? "Adjust the date or status filters to see more invoices." : "Invoices are created from within a job."}
+              action={!!invoices?.length && debouncedSearch.trim()
+                ? <Button variant="outline" onClick={() => setSearch("")}>Clear search</Button>
+                : undefined}
             />
           ) : (
             <div className="divide-y divide-border/50">

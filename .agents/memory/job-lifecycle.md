@@ -21,6 +21,12 @@ The Jobs summary's Active Job Quote Value includes saved ex-GST quote values for
 
 **How to apply:** Keep this monetary total independent of quote-delivery status and the selected list tab; do not change saved quote amounts or job statuses to make them count.
 
+Draft attention belongs in a compact Drafts filter/count alongside the Jobs tabs, not in an always-visible empty-drafts card. Drafts is a utility filter, not an additional job status.
+
+**Why:** The user said the pending quote drafts box used too much space and asked to put it with the existing filter tabs.
+
+**How to apply:** Count active Quoted jobs with a current draft/revised quote, not superseded historical drafts. Show the normal empty-list state only when the user selects an empty Drafts filter.
+
 Job deletion must be one atomic, owner-scoped database operation, never a series of child deletions followed by deleting the job.
 
 **Why:** Invoice-retention triggers, staff-history foreign keys and assignment guards may reject deletion. Deleting children first can erase records even when deleting the job fails.

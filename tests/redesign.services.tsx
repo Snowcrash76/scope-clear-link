@@ -20,6 +20,28 @@ const tables:Record<string,any[]>={
  change_requests:[{id:'variation-one',project_id:pid,type:'addition',title:'Additional trim',description:'Requested additional work',
   status:'pending',cost_impact:120,created_at:created}],activity_logs:[],user_roles:[{user_id:uid,role:'admin'}],
 };
+// Opt-in search/pagination matrix. Never imported by production entrypoints.
+if ((window as any).__listToolbarFixture) {
+ tables.projects = Array.from({length: 13}, (_, index) => ({
+  ...project, id:`20000000-0000-4000-8000-${String(index + 1).padStart(12,'0')}`,
+  name: index === 0 ? project.name : `Other job ${index + 1}`,
+  client_name: index === 0 ? project.client_name : `Other client ${index + 1}`,
+  status: ['sent','approved','in_progress'][index % 3],
+  active_quote_id:`30000000-0000-4000-8000-${String(index + 1).padStart(12,'0')}`,
+ }));
+ tables.quotes = tables.projects.map((row,index) => ({
+  ...quote, id:row.active_quote_id, project_id:row.id, quote_number:`QT-${String(index + 1).padStart(3,'0')}`,
+  status:['sent','approved','draft'][index % 3], reference:index === 0 ? quote.reference : `Other reference ${index + 1}`,
+ }));
+ tables.invoices = tables.projects.map((row,index) => ({
+  ...invoice, id:`40000000-0000-4000-8000-${String(index + 1).padStart(12,'0')}`,
+  project_id:row.id, invoice_number:`INV-${String(index + 1).padStart(3,'0')}`,
+  status:['overdue','paid','sent'][index % 3],
+ }));
+ if ((window as any).__listToolbarEmpty) {
+  tables.projects=[]; tables.quotes=[]; tables.invoices=[]; tables.change_requests=[];
+ }
+}
 // Opt-in synthetic pipeline matrix; production entrypoints never import this module.
 if ((window as any).__pipelineFixture) {
  const rows = [
@@ -39,10 +61,17 @@ if ((window as any).__pipelineFixture) {
   subtotal: value, total: Number(value) * 1.1, tax_amount: Number(value) * .1,
  }));
  if ((window as any).__pipelineNoDraft) tables.quotes[0].status = 'sent';
+  if ((window as any).__pipelineRevised) tables.quotes[0].status = 'revised';
  if ((window as any).__pipelineNoQuoted) {
   tables.projects[0].status = 'completed';
   tables.projects[1].status = 'completed';
  }
+  // A superseded draft on a job with a current sent quote must not count.
+  tables.quotes.push({
+   ...tables.quotes[1], id: 'historical-draft', quote_number: 'OLD-DRAFT', status: 'draft',
+   created_at: '2000-01-01T00:00:00.000Z', updated_at: '2000-01-01T00:00:00.000Z',
+   subtotal: 9999, total: 10998.9, tax_amount: 999.9,
+  });
  tables.project_stages = tables.projects.map(row => ({
   id: `stage-${row.id}`, project_id: row.id, name: 'deposit', status: 'current',
   description: '', invoice_percentage: 10, invoice_amount: 10, sort_order: 0,

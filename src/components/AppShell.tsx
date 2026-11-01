@@ -49,11 +49,9 @@ import {
   ContactRound,
   UsersRound,
   CalendarDays,
-  HelpCircle,
   Search,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PasswordInput } from "@/components/PasswordInput";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -336,24 +334,6 @@ function SidebarInner({
           <Settings className="w-4 h-4 flex-shrink-0" />
           Settings
         </button>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              data-testid="button-workspace-help"
-            >
-              <HelpCircle className="h-4 w-4 shrink-0" />
-              Workspace help
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="start" side="top" className="w-72">
-            <p className="font-semibold text-foreground">Workspace help</p>
-            <p className="mt-1 text-sm leading-5 text-muted-foreground">
-              A support contact is not configured here. Please contact your workspace administrator.
-            </p>
-          </PopoverContent>
-        </Popover>
         {(contactName || email) && (
           <div className="flex items-center gap-3 px-4 py-2.5 mt-1">
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">

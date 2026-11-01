@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import { X } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   Dialog,
@@ -93,11 +94,28 @@ export function SearchInput({
         autoComplete="off"
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape" && value) {
+            event.preventDefault();
+            onChange("");
+          }
+        }}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="min-h-11 pl-9"
+        className={`list-search-input h-11 min-h-11 rounded-xl pl-9 ${value ? "pr-10" : ""}`}
         data-testid={testId}
       />
+      {value && (
+        <button
+          type="button"
+          onClick={() => onChange("")}
+          aria-label="Clear search"
+          className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          data-testid={testId ? `${testId}-clear` : undefined}
+        >
+          <X className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
     </label>
   );
 }

@@ -176,6 +176,11 @@ body:has(.main-app) [data-radix-portal] input,
 body:has(.main-app) [data-radix-portal] select {
   min-height: 44px;
 }
+.main-app input.list-search-input {
+  height: 44px;
+  min-height: 44px;
+  border-radius: 12px;
+}
 
 .main-app
   :where(

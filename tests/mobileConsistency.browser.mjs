@@ -47,10 +47,15 @@ const browser = await chromium.launch({ headless: true, executablePath: process.
 try {
   for (const width of widths) {
     const page = await browser.newPage({ viewport: { width, height: 850 } });
+    if (process.env.CONSISTENCY_LIST_TOOLBAR) await page.addInitScript(() => {
+      window.__listToolbarFixture = true;
+      window.__listToolbarEmpty = new URLSearchParams(location.search).has('empty');
+    });
     if (process.env.CONSISTENCY_PIPELINE_MODE) await page.addInitScript(mode => {
       window.__pipelineFixture = true;
       window.__pipelineNoDraft = mode === 'nodraft';
       window.__pipelineNoQuoted = mode === 'noquoted';
+      window.__pipelineRevised = mode === 'revised';
     }, process.env.CONSISTENCY_PIPELINE_MODE);
     const errors = [];
     let allowDeletion = false;
@@ -216,10 +221,11 @@ try {
         await settings.waitFor({ state: 'hidden' });
         await page.setViewportSize({ width, height: 850 });
       }
+      assert.equal(await page.getByTestId('button-workspace-help').count(), 0, 'Unrequested Workspace help stays out of shared navigation');
       if (routePath === '/projects') {
         const localSearch = page.getByRole('textbox', { name: 'Search jobs, clients or references' });
         await localSearch.fill('no matching job');
-        await page.getByText('No jobs match your search.', { exact: true }).waitFor();
+        await page.getByText(/^No jobs match your search\.?$/).waitFor();
         await page.keyboard.press('Control+k');
         await dialog.waitFor();
         await dialog.getByRole('textbox').fill('Fixture reference');
@@ -237,7 +243,7 @@ try {
         await page.waitForURL(`**/manage/${pid}`);
         if (!desktop) await page.getByTestId('button-job-back').click();
         else await page.goBack();
-        await page.waitForURL('**/projects');
+        await page.waitForURL(url => url.pathname === '/projects');
         await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
       }
       if (process.env.CONSISTENCY_DELETE_CHECKS && ['/quotes', '/invoices', '/clients'].includes(routePath)) {
@@ -278,6 +284,10 @@ try {
       if (process.env.CONSISTENCY_PIPELINE_MODE) {
         const { checkJobPipeline } = await import('./jobPipelineAssertions.mjs');
         await checkJobPipeline(page, routePath, width, process.env.CONSISTENCY_PIPELINE_MODE);
+      }
+      if (process.env.CONSISTENCY_LIST_TOOLBAR && ['/projects', '/quotes', '/invoices'].includes(routePath)) {
+        const { checkListToolbar } = await import('./listToolbarAssertions.mjs');
+        await checkListToolbar(page, routePath, width, base);
       }
       results.push({ width, route: routePath, pageWidth: bounds.page, headerControls: bounds.buttons.length });
       console.log(`PASS ${width}px ${routePath}`);
