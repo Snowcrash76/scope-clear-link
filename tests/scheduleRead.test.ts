@@ -26,7 +26,8 @@ function database() {
     ],
     employees: [
       { id: 'e1', owner_id: 'owner', name: 'One', hourly_rate: 50, email: 'private@example.invalid' },
-      { id: 'e2', owner_id: 'owner', name: 'Two', hourly_rate: 60 },
+      { id: 'e2', owner_id: 'owner', name: 'Two', active: false, hourly_rate: 60 },
+      { id: 'removed', owner_id: 'owner', name: 'Removed member', active: false, archived_at: '2026-10-01T00:00:00Z' },
       { id: 'e3', owner_id: 'other', name: 'Other' },
     ],
   };
@@ -36,6 +37,7 @@ function database() {
     const query = {
       select(value: string) { columns = value; return query; },
       eq(key: string, value: unknown) { filters.push(row => row[key] === value); return query; },
+      is(key: string, value: unknown) { filters.push(row => value === null ? row[key] == null : row[key] === value); return query; },
       in(key: string, values: unknown[]) { filters.push(row => values.includes(row[key])); return query; },
       gte(key: string, value: string) { filters.push(row => row[key] >= value); return query; },
       lte(key: string, value: string) { filters.push(row => row[key] <= value); return query; },
@@ -57,6 +59,12 @@ test('schedule owner reads only business bookings in range and previous overnigh
   assert.equal(result.timezone, 'Australia/Sydney');
   assert.deepEqual(Object.keys(result.employees[0]), ['id', 'name', 'active']);
   assert.ok(result.jobs.every(job => !('total' in job)));
+});
+
+test('removed members are absent from schedule rows and booking crew options, without hiding unremoved inactive members', async () => {
+  const result = await readSchedule(database(), owner, { from: '2026-10-04', to: '2026-10-04' });
+  assert.deepEqual(result.employees.map(row => row.id), ['e1', 'e2']);
+  assert.equal(result.employees.find(row => row.id === 'e2')?.active, false);
 });
 
 test('schedule employees get only their own bookings, safe jobs and their own name, never coworker assignments', async () => {
