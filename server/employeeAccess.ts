@@ -108,7 +108,7 @@ export async function portalPermissions(db: SupabaseClient, ownerId: string, rol
 export async function assignedJobs(db: SupabaseClient, actor: PortalActor): Promise<string[]> {
   const employee = requireEmployee(actor);
   const assignments = await portalRows(() => db.from('employee_assignments').select('project_id').eq('employee_id', employee.id).eq('owner_id', actor.ownerId));
-  return [...new Set(assignments.map(a => a.project_id))];
+  return [...new Set(assignments.map(a => a.project_id).filter((id): id is string => typeof id === 'string'))];
 }
 export async function requireAssigned(db: SupabaseClient, actor: PortalActor, jobId: string) {
   const { data, error } = await db.rpc('portal_assigned', { p_employee: requireEmployee(actor).id, p_job: jobId });

@@ -231,8 +231,8 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
                     key={a.id}
                     assignment={a}
                     job={data?.jobs.find((j) => j.id === a.project_id)}
-                    onOpen={() => nav(assistance.href(`/employee/jobs/${a.project_id}`))}
-                    onClock={!readOnly && !running ? () => clockIn(a.project_id) : undefined}
+                    onOpen={() => nav(assistance.href(a.project_id ? `/employee/jobs/${a.project_id}` : "/schedule"))}
+                    onClock={!readOnly && !running && a.project_id ? () => clockIn(a.project_id!) : undefined}
                     busy={busy === a.project_id}
                   />
                 ))}

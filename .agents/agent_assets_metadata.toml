@@ -112,3 +112,17 @@ mtime_ms = 1793491197502
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/d80a0699-af00-4921-b0b8-f25d78e7a914/0f6b98ee-4579-4de0-8a34-7f14215345de"
 storage_version_token = "1793491244694518"
 content_type = "text/html"
+
+[[outputs]]
+id = "JzHb1bD1tpheaofJyEFDi"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-11-01T01-40-19-819Z.html"
+type = "html"
+title = "Backup before calendar update"
+description = "Encrypted recovery backup taken before the interactive calendar database setup. Existing data was verified unchanged during setup."
+logical_id = "04091064-6089-493a-907c-e2116e63ee7c"
+content_hash = "sha256:03f59c64f3289ef3fded607ec119aacf1ff5a7d14b877a07f4614641d1a67355"
+size = 727272
+mtime_ms = 1793497274737
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/04091064-6089-493a-907c-e2116e63ee7c/1ce0baad-cb52-4cea-90bb-dca05a16ca14"
+storage_version_token = "1793497628846251"
+content_type = "text/html"

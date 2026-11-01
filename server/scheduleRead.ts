@@ -56,9 +56,9 @@ export async function readSchedule(db: SupabaseClient, actor: PortalActor, input
     : ownAssignments.filter(row => appointmentIds.has(row.appointment_id));
   const jobs = actor.canManageTeam
     ? await portalRows(() => db.from('projects').select(safeJobColumns).eq('user_id', actor.ownerId))
-    : await byIds(db, 'projects', safeJobColumns, 'id', [...new Set(ownAssignments.map(row => row.project_id))], 'user_id', actor.ownerId);
+    : await byIds(db, 'projects', safeJobColumns, 'id', [...new Set(ownAssignments.map(row => row.project_id).filter((id): id is string => typeof id === 'string'))], 'user_id', actor.ownerId);
   const employees = actor.canManageTeam
-    ? await portalRows(() => db.from('employees').select('id,name').eq('owner_id', actor.ownerId))
+    ? await portalRows(() => db.from('employees').select('id,name,active').eq('owner_id', actor.ownerId))
     : [{ id: actor.employee.id, name: actor.employee.name }];
   return {
     timezone: 'Australia/Sydney', canManage: actor.canManageTeam, jobs, employees, appointments,

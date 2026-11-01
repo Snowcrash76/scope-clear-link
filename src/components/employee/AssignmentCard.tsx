@@ -33,7 +33,7 @@ export function AssignmentCard({
         <div className="min-w-0 flex-1 text-left">
           <button type="button" className="block min-h-11 w-full text-left" onClick={onOpen}>
             <span className="block truncate text-base font-bold">
-              {job?.name ?? "Scheduled job"}
+              {job?.name ?? assignment.title ?? "Scheduled appointment"}
             </span>
             <span className="mt-1 block truncate text-sm text-muted-foreground">
               {job?.client_name ?? ""}

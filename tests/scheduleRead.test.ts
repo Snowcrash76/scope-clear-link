@@ -55,7 +55,7 @@ test('schedule owner reads only business bookings in range and previous overnigh
   assert.equal(result.assignments.length, 3);
   assert.equal(result.jobs.length, 2);
   assert.equal(result.timezone, 'Australia/Sydney');
-  assert.deepEqual(Object.keys(result.employees[0]), ['id', 'name']);
+  assert.deepEqual(Object.keys(result.employees[0]), ['id', 'name', 'active']);
   assert.ok(result.jobs.every(job => !('total' in job)));
 });
 

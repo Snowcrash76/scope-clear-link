@@ -20,6 +20,7 @@ try {
   sql(readFileSync('tests/platformAdministration.sql', 'utf8'), 'Platform controls');
   sql(readFileSync('tests/jobLifecycle.sql', 'utf8'), 'Atomic job deletion and archive');
   sql(readFileSync('tests/platformDeletion.sql', 'utf8'), 'History-preserving identity deletion');
+  sql(readFileSync('tests/scheduleBooking.sql', 'utf8'), 'Interactive booking transactions');
   console.log('Isolated PostgreSQL: migrations, real restrictive RLS, current-session access, storage, tenant isolation, membership removal, confirmations and audit passed.');
 } finally {
   if (started) execFileSync('pg_ctl', ['-D', data, '-m', 'immediate', '-w', 'stop'], { stdio: 'pipe' });

@@ -14,3 +14,9 @@ Verify live security functions against the tested migration before replacing or 
 **Why:** This external database is also managed through Supabase, outside workspace version control.
 
 **How to apply:** Resolve genuine schema drift and preserve unrelated live behaviour rather than blindly overwriting functions.
+
+Normalize CRLF/LF line endings before comparing live PostgreSQL function bodies with repository SQL.
+
+**Why:** SQL pasted into the Supabase editor retained CRLF endings, which made an unchanged guard look like external schema drift.
+
+**How to apply:** Normalize line endings only, not substantive SQL differences; continue to stop on genuinely different live security logic.

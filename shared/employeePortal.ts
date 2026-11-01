@@ -25,7 +25,7 @@ export interface PortalJob {
   client_phone: string | null; employee_notes: string | null;
 }
 export interface PortalAssignment {
-  id: string; employee_id: string; project_id: string; appointment_id: string;
+  id: string; employee_id: string; project_id: string | null; appointment_id: string; title?: string;
   date: string; start_time: string; end_time: string; notes: string | null; employee_name?: string;
 }
 export interface PortalTimeEntry {

@@ -75,8 +75,8 @@ Timesheet review belongs under Team by person/week, with jobs as a display filte
 
 **How to apply:** Preserve old job timesheet links with the job filter. Do not let a job display filter silently narrow whole-week submission, approval, denial or reopening, or alter approved labour posting.
 
-The Schedule calendar may read existing appointments and assignments without a new schema, but scheduling schema, permission and heavy dependency changes require a written proposal and approval.
+The user approved an interactive Schedule calendar: date-click creation, job-linked or standalone bookings, crew selection, editing/rescheduling, confirmed cancellation, and overlap warnings. Managers manage bookings; employees view their own assignments.
 
-**Why:** The user explicitly approved immediate read-only calendar work while requiring review before those changes.
+**Why:** The user explicitly approved the written interactive-calendar proposal after the initial read-only phase.
 
-**How to apply:** Do not treat the read-only calendar as approval for booking types, recurrence, cancellation semantics or a new scheduling-intent model. Keep existing assignment notifications and employee-only access boundaries.
+**How to apply:** Planned bookings are not hours worked: never create timesheets or pay automatically from bookings, and standalone appointments must not grant job access or offer job clock-in. Keep existing assignment notifications and employee-only access boundaries. Recurrence, external calendar sync and heavy dependency changes still require approval.

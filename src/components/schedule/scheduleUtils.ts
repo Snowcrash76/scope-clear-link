@@ -14,7 +14,7 @@ export type ScheduleAppointment = {
 export type ScheduleAssignment = {
   id: string;
   employee_id: string;
-  project_id: string;
+  project_id: string | null;
   appointment_id: string;
   date: string;
   start_time: string;
@@ -33,7 +33,7 @@ export type ScheduleData = {
   timezone: string;
   canManage: boolean;
   jobs: ScheduleJob[];
-  employees: { id: string; name: string }[];
+  employees: { id: string; name: string; active?: boolean }[];
   appointments: ScheduleAppointment[];
   assignments: ScheduleAssignment[];
 };

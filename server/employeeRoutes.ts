@@ -14,6 +14,7 @@ import { defaultPermissions, employeeRoles, localDate, permissionNames, type Emp
 import { publicWebOrigin } from '../shared/publicUrls';
 import { resolveInvitationAccount, assertInvitationAccountEligible, deliverEmployeeInvitation, cleanupRejectedInvitationAccount } from './employeeInvitations';
 import { readSchedule } from './scheduleRead';
+import { writeSchedule } from './scheduleWrite';
 
 const id = z.string().uuid();
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -60,6 +61,12 @@ export function createEmployeeRouter() {
   const router = Router();
   router.get('/schedule', portalHandler(async (req, db, actor) =>
     readSchedule(db, actor, { from: req.query.from, to: req.query.to })));
+  router.post('/schedule/bookings', portalHandler(async (req, db, actor) =>
+    writeSchedule(db, actor, 'create', req.body)));
+  router.patch('/schedule/bookings/:id', portalHandler(async (req, db, actor) =>
+    writeSchedule(db, actor, 'update', req.body, paramsId(req.params.id))));
+  router.delete('/schedule/bookings/:id', portalHandler(async (req, db, actor) =>
+    writeSchedule(db, actor, 'delete', {}, paramsId(req.params.id))));
   router.get('/team/setup', portalHandler(async (_req, db, actor) => {
     if (actor.employee) throw new CostApiError(403, 'Database setup is available to the business owner only.');
     return {
@@ -85,7 +92,7 @@ export function createEmployeeRouter() {
     const appointmentIds = assignments.map(a => a.appointment_id);
     const [safeJobs, appointments, entries, submissions, documents, notes, notifications] = await Promise.all([
       jobs.length ? portalRows(() => db.from('projects').select(safeJobColumns).in('id', jobs).eq('user_id', actor.ownerId)) : [],
-      appointmentIds.length ? portalRows(() => db.from('appointments').select('id,date,start_time,end_time,notes').in('id', appointmentIds).eq('user_id', actor.ownerId)) : [],
+      appointmentIds.length ? portalRows(() => db.from('appointments').select('id,title,date,start_time,end_time,notes').in('id', appointmentIds).eq('user_id', actor.ownerId)) : [],
       portalRows(() => db.from('employee_time_entries').select(`${safeEntryColumns},rate_snapshot`).eq('employee_id', employee.id).eq('owner_id', actor.ownerId).order('started_at', { ascending: false })),
       portalRows(() => db.from('employee_week_submissions').select('id,employee_id,week_start,status,review_comment,submitted_at').eq('employee_id', employee.id).order('week_start', { ascending: false })),
       permissions.view_documents && jobs.length ? portalRows(() => db.from('project_documents').select(safeDocumentColumns).in('project_id', jobs).eq('employee_visible', true).order('created_at', { ascending: false })) : [],
@@ -94,7 +101,7 @@ export function createEmployeeRouter() {
     ]);
     return {
       employee: publicEmployee(employee), hourly_rate: hourlyRate, permissions, timezone: 'Australia/Sydney', today: localDate(),
-      jobs: safeJobs, assignments: assignments.flatMap(a => { const ap = appointments.find(p => p.id === a.appointment_id); return ap ? [{ ...a, date: ap.date, start_time: ap.start_time, end_time: ap.end_time, notes: ap.notes }] : []; }),
+      jobs: safeJobs, assignments: assignments.flatMap(a => { const ap = appointments.find(p => p.id === a.appointment_id); return ap ? [{ ...a, title: ap.title, date: ap.date, start_time: ap.start_time, end_time: ap.end_time, notes: ap.notes }] : []; }),
       entries, submissions, documents, notes, notifications,
     };
   }));
