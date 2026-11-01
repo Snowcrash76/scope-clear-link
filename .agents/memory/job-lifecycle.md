@@ -15,6 +15,12 @@ The canonical job pipeline is Quoted, Approved, In Progress, Completed. Jobs sta
 
 **How to apply:** Use the shared job-status projection consistently. Preserve separate quote draft/sent states and compatible legacy storage values rather than migrating financial history merely to change a job's display label. Dashboard counts and job filters must use the same Active definition; scheduling backlog remains limited to Approved/In Progress.
 
+The Jobs summary's Active Job Quote Value includes saved ex-GST quote values for every active job, not only jobs in Quoted status. Completed/archived jobs are excluded.
+
+**Why:** The user explicitly chose all active jobs so approved quotes remain counted while work is in progress.
+
+**How to apply:** Keep this monetary total independent of quote-delivery status and the selected list tab; do not change saved quote amounts or job statuses to make them count.
+
 Job deletion must be one atomic, owner-scoped database operation, never a series of child deletions followed by deleting the job.
 
 **Why:** Invoice-retention triggers, staff-history foreign keys and assignment guards may reject deletion. Deleting children first can erase records even when deleting the job fails.

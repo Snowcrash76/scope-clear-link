@@ -40,7 +40,7 @@ export async function checkJobPipeline(page, route, width, mode) {
     assert.ok(Math.abs(style.difference) <= 1, `Underline must be flush: ${style.difference}px`);
   } else assert.ok(parseFloat(style.radius) > 20, 'Mobile uses pills');
   assert.equal(await page.getByTestId('tab-quoted').evaluate(button => getComputedStyle(button).color), 'rgb(100, 116, 139)');
-  assert.match(await page.getByText('Open Quote Value', { exact: true }).locator('..').innerText(), noQuoted ? /\$0\.00/ : /\$300\.00/);
+  assert.match(await page.getByText('Active Job Quote Value', { exact: true }).locator('..').innerText(), noQuoted ? /\$700\.00/ : /\$1,000\.00/);
   assert.match(await page.getByText('Quotes Awaiting Response', { exact: true }).locator('..').innerText(),
     new RegExp(`Quotes Awaiting Response\\s*${noQuoted ? 0 : mode === 'nodraft' ? 2 : 1}`, 'i'));
   assert.equal(await page.getByRole('heading', { name: 'No pending quote drafts', exact: true }).count(), mode === 'default' ? 0 : 1);
@@ -58,6 +58,7 @@ export async function checkJobPipeline(page, route, width, mode) {
   await page.getByRole('button', { name: /^Log costs for / }).waitFor();
   await page.getByTestId('tab-completed').click();
   assert.equal(await page.locator('[data-testid^="project-row-"]').count(), noQuoted ? 3 : 1);
+  assert.match(await page.getByText('Active Job Quote Value', { exact: true }).locator('..').innerText(), noQuoted ? /\$700\.00/ : /\$1,000\.00/, 'The active-job total excludes archived quotes and does not follow the selected tab');
   await page.getByTestId('tab-active').click();
   await page.screenshot({ path: `generated-artifacts/mobile-consistency/pipeline-${mode}-${width}.png`, animations: 'disabled', fullPage: true });
   if (mode === 'default' && width === 1280) {

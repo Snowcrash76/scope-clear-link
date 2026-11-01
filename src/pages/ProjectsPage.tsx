@@ -187,12 +187,10 @@ export default function ProjectsPage() {
     no_costs: "Jobs with no costs logged",
     missing_cost_data: "Jobs with unavailable cost data",
   };
-  const openQuoteValue = activeProjects.reduce((total, project) => {
-    const quote = latestQuoteByProject.get(project.id);
-    return jobDisplayStatus(project, quote) === "quoted"
-      ? total + (quote?.subtotal ?? 0)
-      : total;
-  }, 0);
+  const activeJobQuoteValue = activeProjects.reduce(
+    (total, project) => total + (latestQuoteByProject.get(project.id)?.subtotal ?? 0),
+    0,
+  );
   const jobsAwaitingResponse = activeProjects.filter((project) =>
     awaitingQuoteResponse(project, latestQuoteByProject.get(project.id))
   ).length;
@@ -269,9 +267,9 @@ export default function ProjectsPage() {
         <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Jobs overview">
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
             <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
-            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Open Quote Value</p>
-            <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight"><Money value={openQuoteValue} basis="ex GST" /></p>
-            <p className="mt-1 text-sm text-muted-foreground">Ex-GST subtotals for quoted jobs only.</p>
+            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Active Job Quote Value</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight"><Money value={activeJobQuoteValue} basis="ex GST" /></p>
+            <p className="mt-1 text-sm text-muted-foreground">Ex-GST quote values for Quoted, Approved and In Progress jobs.</p>
           </div>
           <button type="button" onClick={() => selectFilter("awaiting_response")} className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 text-left shadow-card transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span className="absolute inset-x-0 top-0 h-[3px] bg-warning" aria-hidden="true" />
