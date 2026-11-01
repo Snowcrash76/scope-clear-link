@@ -98,3 +98,17 @@ mtime_ms = 1793457249161
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/e6c78b71-6b4e-4fb6-a0d4-ad480f127c5d/b21573bb-d167-410b-91dd-8857ba0df0fb"
 storage_version_token = "1793458044614802"
 content_type = "text/html"
+
+[[outputs]]
+id = "HC8Ojal0aE8i79JHlSVIW"
+uri = "file://generated-artifacts/backups/scopeclear-encrypted-backup-2026-10-31T23-59-02-416Z.html"
+type = "html"
+title = "Backup before quote correction"
+description = "Encrypted database backup taken before correcting North Fitzroy’s saved quote total. Use the database password from the time of backup to decrypt locally."
+logical_id = "d80a0699-af00-4921-b0b8-f25d78e7a914"
+content_hash = "sha256:c70bf7463a260786c60283f4293945b37e62f69d762e606b3ba72ce840b666b9"
+size = 726232
+mtime_ms = 1793491197502
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb60443a-da23-4481-aa12-acffd8d6fd4b/d80a0699-af00-4921-b0b8-f25d78e7a914/0f6b98ee-4579-4de0-8a34-7f14215345de"
+storage_version_token = "1793491244694518"
+content_type = "text/html"
