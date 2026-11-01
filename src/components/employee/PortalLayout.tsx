@@ -7,9 +7,9 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 import { EmployeeAssistanceBanner } from "./EmployeeAssistanceBanner";
 
-import { roleLabels } from "../../../shared/employeePortal";
 import { shell, outline } from "./portalShared";
 import { UnreadDot } from "./UnreadDot";
+import { RoleBadge } from "./RoleBadge";
 
 export function PortalLayout({
   children,
@@ -157,9 +157,7 @@ export function PortalLayout({
               <p className="text-xs text-muted-foreground">Signed in as</p>
               <p className="text-sm font-semibold">{employee.name}</p>
             </div>
-            <span className="rounded-full bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-              {roleLabels[employee.role]}
-            </span>
+            <RoleBadge role={employee.role} />
           </div>
         )}
         {children}

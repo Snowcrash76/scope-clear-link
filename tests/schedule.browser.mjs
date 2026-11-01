@@ -22,15 +22,32 @@ const browser = await chromium.launch({ headless: true, executablePath: process.
 try {
   for (const width of (process.env.SCHEDULE_WIDTHS || '375,768,1280').split(',').map(Number)) for (const staff of (process.env.SCHEDULE_ROLES || 'owner,staff').split(',').map(role => role === 'staff')) {
     const page = await browser.newPage({ viewport: { width, height: 900 }, timezoneId: 'America/Los_Angeles' });
-    const errors = [], requests = [];
+    const errors = [], requests = [], unscheduledRequests = [], createdBookings = [];
     page.on('pageerror', error => errors.push(error.message));
     let fail = false;
+    let backlogMode = 'jobs';
+    await page.route('https://fonts.googleapis.com/**', route => route.abort());
+    await page.route('https://fonts.gstatic.com/**', route => route.abort());
     await page.route('**/api/**', async route => {
       const url = new URL(route.request().url());
       if (url.pathname === '/api/employee/session') return route.fulfill({ json: {
         canManageTeam: !staff, employee: staff ? { id: 'e1', name: 'Alex', role: 'labourer', active: true } : null,
       } });
       if (url.pathname === '/api/employee/bootstrap') return route.fulfill({ json: { notifications: [] } });
+      if (url.pathname === '/api/schedule/unscheduled') {
+        unscheduledRequests.push(url.search);
+        if (backlogMode === 'error') return route.fulfill({ status: 503, json: { error: 'Synthetic backlog unavailable' } });
+        return route.fulfill({ json: {
+          today: new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney' }).format(new Date()),
+          timezone: 'Australia/Sydney',
+          jobs: backlogMode === 'empty' ? [] : [{ id: 'j2', name: 'Deck', client_name: 'Casey Client', client_address: null, client_phone: null }],
+        } });
+      }
+      if (url.pathname === '/api/schedule/bookings' && route.request().method() === 'POST') {
+        createdBookings.push(route.request().postDataJSON());
+        backlogMode = 'empty';
+        return route.fulfill({ json: { id: 'created-booking' } });
+      }
       if (url.pathname === '/api/schedule') {
         requests.push([url.searchParams.get('from'), url.searchParams.get('to')]);
         if (fail) return route.fulfill({ status: 503, json: { error: 'Synthetic unavailable' } });
@@ -46,7 +63,7 @@ try {
       }
       return route.fulfill({ json: {} });
     });
-    await page.goto(`${base}/generated-artifacts/schedule-fixture.html?view=/schedule`);
+    await page.goto(`${base}/generated-artifacts/schedule-fixture.html?view=/schedule`, { waitUntil: 'domcontentloaded' });
     const booking = page.getByRole('button', { name: /^Kitchen booking,/ }).first();
     await booking.waitFor({ timeout: 15000 }).catch(async error => {
       console.error({ width, staff, errors, body: (await page.locator('body').innerText()).slice(0, 2500) });
@@ -58,11 +75,11 @@ try {
     }
     else assert.notEqual(requests.at(-1)[0], requests.at(-1)[1], 'desktop defaults to Week');
     if (!staff) {
-      if (width >= 1024) {
+      if (width >= 768) {
         await page.getByTestId('nav-schedule').waitFor();
         assert.equal(await page.getByTestId('nav-dashboard').count(), 1, 'Business Schedule uses the normal app navigation');
       } else {
-        await page.getByRole('button', { name: 'Open navigation', exact: true }).waitFor();
+        await page.getByTestId('button-account').waitFor();
       }
       assert.equal(await page.getByTestId('nav-variations').count(), 0, 'Global Variations navigation is removed');
     }
@@ -92,6 +109,43 @@ try {
     await page.locator('.sc-list-row').first().waitFor();
     assert.equal(await page.getByRole('button', { name: 'Toggle list view', exact: true }).getAttribute('aria-pressed'), 'true');
     assert.ok(requests.at(-1)[0] < requests.at(-1)[1]);
+    if (!staff) {
+      assert.ok(unscheduledRequests.length > 0);
+      assert.ok(unscheduledRequests.every(search => search === ''), 'Backlog never receives calendar date ranges');
+      assert.equal(await page.getByText('Jobs without a booking in this view', { exact: true }).count(), 0);
+      const sheetTrigger = page.getByRole('button', { name: /1 jobs to schedule/ });
+      if (width < 768) {
+        await sheetTrigger.click();
+        await page.getByRole('dialog', { name: 'Unscheduled jobs', exact: true }).waitFor();
+        await page.getByRole('dialog', { name: 'Unscheduled jobs', exact: true }).getByText('Casey Client', { exact: true }).waitFor();
+      } else {
+        await page.getByRole('heading', { name: 'Unscheduled jobs', exact: true }).waitFor();
+        assert.equal(await sheetTrigger.count(), 0, 'Desktop does not show the mobile bar');
+      }
+      await page.screenshot({ path: `generated-artifacts/schedule-unscheduled-${width}.png`, animations: 'disabled' });
+      await page.getByRole('button', { name: 'Add booking', exact: true }).last().click();
+      const editor = page.getByRole('dialog', { name: 'Add booking', exact: true });
+      await editor.waitFor();
+      assert.equal(await editor.getByLabel('Job', { exact: true }).inputValue(), 'j2', 'Job is pre-linked');
+      assert.equal(await page.getByRole('dialog').count(), 1, 'Sheet closes before booking editor opens');
+      if (width === 375) {
+        await editor.getByLabel('Booking title', { exact: true }).fill('Deck visit');
+        await editor.getByLabel('Start time', { exact: true }).fill('09:00');
+        await editor.getByLabel('End time', { exact: true }).fill('10:00');
+        await editor.getByRole('button', { name: /Create booking|Save booking/ }).click();
+        await editor.waitFor({ state: 'hidden' });
+        assert.equal(createdBookings[0].project_id, 'j2');
+        await page.getByRole('button', { name: /0 jobs to schedule/ }).click();
+        await page.getByRole('heading', { name: 'All active jobs are scheduled.', exact: true }).waitFor();
+        await page.keyboard.press('Escape');
+      } else {
+        await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
+        await editor.waitFor({ state: 'hidden' });
+      }
+    } else {
+      assert.equal(unscheduledRequests.length, 0, 'Employees never request the owner backlog');
+      assert.equal(await page.getByRole('button', { name: /jobs to schedule/ }).count(), 0);
+    }
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: `generated-artifacts/schedule-${staff ? 'employee' : 'owner'}-${width}.png` });
     if (width === 375 && !staff) {
@@ -101,6 +155,17 @@ try {
       fail = false;
       await page.getByRole('button', { name: 'Retry', exact: true }).click();
       await page.getByRole('button', { name: /^Kitchen booking,/ }).first().waitFor();
+      backlogMode = 'error';
+      await page.goto(`${base}/generated-artifacts/schedule-fixture.html?view=/schedule`, { waitUntil: 'domcontentloaded' });
+      await page.getByRole('button', { name: /Jobs to schedule unavailable/ }).waitFor({ timeout: 20000 });
+      await page.getByRole('button', { name: /Jobs to schedule unavailable/ }).click();
+      const sheet = page.getByRole('dialog', { name: 'Unscheduled jobs', exact: true });
+      await sheet.getByText('Unscheduled jobs could not load.', { exact: true }).waitFor();
+      assert.equal(await sheet.getByText('All active jobs are scheduled.', { exact: true }).count(), 0, 'Errors are not presented as empty');
+      backlogMode = 'empty';
+      await sheet.getByRole('button', { name: 'Retry', exact: true }).click();
+      await sheet.getByRole('heading', { name: 'All active jobs are scheduled.', exact: true }).waitFor();
+      await page.keyboard.press('Escape');
     }
     assert.deepEqual(errors, []);
     await page.close();

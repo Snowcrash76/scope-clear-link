@@ -1,8 +1,5 @@
 import type { ReactNode } from "react";
+import { Card } from "@/components/ui/card";
 export function EntryCard({ children }: { children: ReactNode }) {
-  return (
-    <article className="rounded-xl border border-border bg-card p-4 shadow-soft">
-      {children}
-    </article>
-  );
+  return <Card className="p-4">{children}</Card>;
 }

@@ -83,8 +83,10 @@ const browser = await chromium.launch({ headless: true, executablePath: process.
 const base = process.env.MOBILE_TEST_BASE_URL || `https://${process.env.REPLIT_DEV_DOMAIN}`;
 const results = [];
 try {
-  for (const width of [320, 360, 390, 768, 1280]) {
+  for (const width of (process.env.RECEIPT_WIDTHS || '320,360,390,430,768,1280').split(',').map(Number)) {
     const page = await browser.newPage({ viewport: { width, height: 850 } });
+    await page.route('https://fonts.googleapis.com/**', route => route.abort());
+    await page.route('https://fonts.gstatic.com/**', route => route.abort());
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     async function check(label) {
@@ -169,6 +171,7 @@ try {
     assert.equal(await readOnly.getByAltText(/Original receipt from/).evaluate(image => image.complete && image.naturalWidth > 0), true);
     await check('saved receipt details modal');
     await readOnly.getByRole('button', { name: 'Close', exact: true }).last().click();
+    await readOnly.waitFor({ state: 'hidden' });
     assert.equal(await page.evaluate(() => window.__costSaveCalls), 1, 'Viewing and closing must not save');
     if (width === 360) {
       await page.evaluate(() => { window.__failReceiptLink = true; });
@@ -187,7 +190,9 @@ try {
   // Public routes are checked separately from the synthetic signed-in receipt component.
   for (const route of ['/', '/login', '/signup', '/forgot-password', '/reset-password', '/demo', '/not-a-route']) {
     const page = await browser.newPage({ viewport: { width: 320, height: 850 } });
-    await page.goto(`${base}${route}`); await page.waitForTimeout(500);
+    await page.route('https://fonts.googleapis.com/**', r => r.abort());
+    await page.route('https://fonts.gstatic.com/**', r => r.abort());
+    await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded' }); await page.waitForTimeout(500);
     const actual = await page.evaluate(() => document.documentElement.scrollWidth);
     assert.ok(actual <= 321, `${route}: public page overflow ${actual}px`);
     results.push({ route, width: 320, page: actual }); await page.close();

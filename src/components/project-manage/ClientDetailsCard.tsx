@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Mail, MapPin, Pencil, Phone, User } from "lucide-react";
 import type { Project } from "@/types/project";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -87,8 +88,8 @@ export function ClientDetailsCard({
     : undefined;
   return (
     <>
-      <section
-        className={compact ? "min-w-0" : "rounded-xl border border-border bg-card p-4 shadow-soft"}
+      <Card
+        className={compact ? "min-w-0" : "p-4 shadow-soft"}
         aria-labelledby={compact ? undefined : "job-client-title"}
         aria-label={compact ? "Client details" : undefined}
       >
@@ -144,7 +145,7 @@ export function ClientDetailsCard({
         </div>
           </>
         )}
-      </section>
+      </Card>
       <Dialog open={open} onOpenChange={(next) => !busy && setOpen(next)}>
         <DialogContent className="w-[calc(100vw-1rem)] max-w-lg">
           <DialogHeader>

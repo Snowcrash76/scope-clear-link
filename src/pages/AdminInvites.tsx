@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { SectionHeader } from '@/components/ui/section-header';
 import { toast } from 'sonner';
 import { Copy, Plus, Loader2, Trash2, ArrowLeft } from 'lucide-react';
 
@@ -103,8 +105,8 @@ export default function AdminInvites() {
   const used = codes.filter(c => c.used_at);
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-[100dvh] bg-background p-4 sm:p-6">
+      <div className="mx-auto max-w-3xl space-y-6">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="w-4 h-4" />
@@ -152,13 +154,13 @@ export default function AdminInvites() {
         ) : (
           <div className="space-y-5">
             <div>
-              <h2 className="font-semibold mb-3">Available <Badge variant="secondary">{unused.length}</Badge></h2>
+              <SectionHeader title="Available" count={unused.length} className="mb-3" />
               {unused.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No unused codes. Generate some above.</p>
+                <EmptyState title="No unused codes" description="Generate an invite code above." />
               ) : (
                 <div className="space-y-2">
                   {unused.map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border bg-card gap-3">
+                    <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-3">
                       <div className="min-w-0">
                         <span className="font-mono font-bold tracking-widest text-primary">{c.code}</span>
                         {c.label && <span className="ml-3 text-sm text-muted-foreground">{c.label}</span>}
@@ -171,7 +173,7 @@ export default function AdminInvites() {
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </Button>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
@@ -179,10 +181,10 @@ export default function AdminInvites() {
 
             {used.length > 0 && (
               <div>
-                <h2 className="font-semibold mb-3 text-muted-foreground">Used <Badge variant="outline">{used.length}</Badge></h2>
+                <SectionHeader title="Used" count={used.length} className="mb-3" />
                 <div className="space-y-2">
                   {used.map(c => (
-                    <div key={c.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/40 gap-3 opacity-70">
+                    <Card key={c.id} className="flex flex-wrap items-center justify-between gap-3 p-3 opacity-70">
                       <div className="min-w-0">
                         <span className="font-mono font-bold tracking-widest line-through text-muted-foreground">{c.code}</span>
                         {c.label && <span className="ml-3 text-sm text-muted-foreground">{c.label}</span>}
@@ -191,7 +193,7 @@ export default function AdminInvites() {
                         )}
                       </div>
                       <Badge variant="outline" className="flex-shrink-0">Used</Badge>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </div>

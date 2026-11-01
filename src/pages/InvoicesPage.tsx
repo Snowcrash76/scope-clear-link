@@ -25,8 +25,14 @@ import {
   X,
   ListFilter,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { invoiceDisplayStatus } from "@/lib/invoiceWorkflow";
+import { Money } from "@/components/ui/money";
+import { formatFullDate } from "@/lib/dateFormat";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { FilterTabs } from "@/components/ui/filter-tabs";
+import { DeleteResourceDialog } from "@/components/DeleteResourceDialog";
+import { Trash2 } from "lucide-react";
 import {
   format,
   isWithinInterval,
@@ -45,15 +51,6 @@ const ALL_STATUSES: InvoiceStatus[] = [
   "overdue",
   "cancelled",
 ];
-
-const STATUS_VARIANTS: Record<InvoiceStatus, string> = {
-  draft: "bg-muted text-muted-foreground",
-  approved: "bg-success/10 text-success",
-  sent: "bg-warning/10 text-warning",
-  paid: "bg-success/10 text-success",
-  overdue: "bg-destructive/10 text-destructive",
-  cancelled: "bg-muted text-muted-foreground",
-};
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
   draft: "Pending approval",
@@ -112,11 +109,6 @@ function useAllInvoices() {
   });
 }
 
-const formatCurrency = (n: number | null) =>
-  n == null
-    ? "—"
-    : `$${n.toLocaleString("en-AU", { minimumFractionDigits: 0 })}`;
-
 function exportInvoicesCSV(rows: InvoiceRow[]) {
   const headers = [
     "Invoice #",
@@ -164,6 +156,7 @@ function parseInvoiceStatusParam(value: string | null): Set<InvoiceStatus> {
 }
 
 export default function InvoicesPage() {
+  const [deletingInvoice, setDeletingInvoice] = useState<InvoiceRow | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const invoiceQuery = useAllInvoices();
@@ -260,27 +253,27 @@ export default function InvoicesPage() {
       <PageLayout title="Invoices" eyebrow="BILLING & REVENUE OPERATIONS" description="Track issued invoices and recorded payment status across your jobs.">
         {!isError && (
           <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Invoice overview">
-            <KpiCard label="Outstanding receivables · inc GST" value={isLoading || isError ? "—" : formatCurrency(outstanding)}
+            <KpiCard label="Outstanding receivables" value={isLoading || isError ? "—" : <Money value={outstanding} basis="inc GST" />}
               description="Recorded totals on sent and overdue invoices."
               definition="Saved invoice totals including GST for invoices marked sent or overdue. Select to filter the list."
               onClick={() => commitStatusFilter(new Set<InvoiceStatus>(["sent", "overdue"]), true)} />
-            <KpiCard label="Overdue · inc GST" tone="warning" value={isLoading || isError ? "—" : formatCurrency(overdueTotal)}
+            <KpiCard label="Overdue" tone="warning" value={isLoading || isError ? "—" : <Money value={overdueTotal} basis="inc GST" />}
               description={isLoading || isError ? "Invoice totals are not available yet." : `${(invoices ?? []).filter((invoice) => invoice.status === "overdue").length} invoices marked overdue.`}
               definition="Saved total including GST for invoices explicitly marked overdue. No unrecorded payment dates are assumed."
               onClick={() => commitStatusFilter(new Set<InvoiceStatus>(["overdue"]), true)} />
           </section>
         )}
-        <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border [-webkit-overflow-scrolling:touch]" role="group" aria-label="Invoice status tabs">
-          {(["all", "draft", "approved", "sent", "paid", "overdue"] as const).map((tab) => {
-            const count = tab === "all" ? (invoices ?? []).length : (invoices ?? []).filter((invoice) => invoice.status === tab).length;
-            const active = tab === "all" ? !isStatusFiltered : statusFilter.size === 1 && statusFilter.has(tab);
-            return <button key={tab} type="button" aria-pressed={active}
-              onClick={() => commitStatusFilter(tab === "all" ? new Set() : new Set([tab]))}
-              className={cn("min-h-11 shrink-0 border-b-2 px-3 text-sm font-medium capitalize transition-colors", active ? "border-primary text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
-              {tab === "sent" ? "Awaiting payment" : tab === "all" ? "All" : STATUS_LABELS[tab]} <span className="ml-1 tabular-nums text-muted-foreground">{count}</span>
-            </button>;
-          })}
-        </div>
+        <FilterTabs
+          label="Filter invoices by status"
+          className="mb-4"
+          value={!isStatusFiltered ? "all" : statusFilter.size === 1 ? [...statusFilter][0] : "__multiple__"}
+          onChange={(tab) => commitStatusFilter(tab === "all" ? new Set() : new Set([tab as InvoiceStatus]))}
+          options={(["all", "draft", "approved", "sent", "paid", "overdue"] as const).map((tab) => ({
+            value: tab,
+            label: tab === "sent" ? "Awaiting payment" : tab === "all" ? "All" : STATUS_LABELS[tab],
+            count: tab === "all" ? (invoices ?? []).length : (invoices ?? []).filter((invoice) => invoice.status === tab).length,
+          }))}
+        />
         <div className="mb-5 flex w-full items-center gap-2 flex-wrap sm:justify-end">
           {/* Status filter */}
           <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
@@ -309,14 +302,7 @@ export default function InvoicesPage() {
                     htmlFor={`status-filter-${s}`}
                     className="flex items-center gap-2 cursor-pointer select-none text-sm"
                   >
-                    <span
-                      className={cn(
-                        "inline-flex px-1.5 py-0.5 rounded text-xs font-semibold",
-                        STATUS_VARIANTS[s],
-                      )}
-                    >
-                      {STATUS_LABELS[s]}
-                    </span>
+                    <StatusBadge status={s} size="sm" />
                   </label>
                 </div>
               ))}
@@ -491,33 +477,24 @@ export default function InvoicesPage() {
               />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 px-4">
-              <Receipt className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                {isFiltered
-                  ? "No invoices match the selected filters."
-                  : "No invoices yet. Invoices are created from within a project."}
-              </p>
-              {isFiltered && (
-                <button
-                  onClick={clearAll}
-                  className="text-sm text-primary font-medium mt-2 hover:opacity-70 transition-opacity"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
+            <EmptyState
+              className="border-0 shadow-none"
+              icon={<Receipt className="h-5 w-5" />}
+              title={isFiltered ? "No invoices match these filters" : "No invoices yet"}
+              description={isFiltered ? "Clear filters to see all recorded invoices." : "Invoices are created from within a job."}
+              action={isFiltered ? <Button variant="outline" onClick={clearAll}>Clear filters</Button> : undefined}
+            />
           ) : (
             <div className="divide-y divide-border/50">
               {pageInvoices.map((inv) => (
+                <div key={inv.id} className="flex min-w-0 items-center">
                 <button
                   type="button"
-                  key={inv.id}
                   onClick={() =>
                     navigate(`/manage/${inv.project_id}?tab=invoices&invoice=${encodeURIComponent(inv.id)}`)
                   }
                   aria-label={`Open invoice ${inv.invoice_number} for ${inv.projectName}`}
-                  className="block w-full cursor-pointer text-left transition-colors hover:bg-muted/40 group"
+                  className="block min-w-0 flex-1 cursor-pointer text-left transition-colors hover:bg-muted/40 group"
                   data-testid={`invoice-row-${inv.id}`}
                 >
                   {/* Mobile layout */}
@@ -528,23 +505,16 @@ export default function InvoicesPage() {
                       </p>
                       <p className="text-xs text-muted-foreground break-words">
                         {inv.clientName} ·{" "}
-                        {format(parseISO(inv.created_at), "d MMM yyyy")}
+                        {formatFullDate(inv.created_at)}
                       </p>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
-                        <span
-                          className={cn(
-                            "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-semibold capitalize",
-                            STATUS_VARIANTS[inv.status],
-                          )}
-                        >
-                          {inv.status}
-                        </span>
+                        <StatusBadge status={inv.status} size="sm" />
                         <span className="text-xs font-semibold text-muted-foreground">
-                          {formatCurrency(inv.total)} inc GST
+                          <Money value={inv.total} basis="inc GST" />
                         </span>
                         {inv.due_date && (
                           <span className="text-xs text-muted-foreground">
-                            · Due {format(parseISO(inv.due_date), "d MMM")}
+                            · Due {formatFullDate(inv.due_date)}
                           </span>
                         )}
                       </div>
@@ -560,31 +530,27 @@ export default function InvoicesPage() {
                       </p>
                       <p className="text-xs text-muted-foreground break-words [overflow-wrap:anywhere]">
                         {inv.clientName} ·{" "}
-                        {format(parseISO(inv.created_at), "d MMM yyyy")}
+                        {formatFullDate(inv.created_at)}
                       </p>
                     </div>
                     <span className="min-w-0 break-words [overflow-wrap:anywhere] text-sm text-muted-foreground font-mono">
                       {inv.invoice_number}
                     </span>
-                    <span
-                      className={cn(
-                        "inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold capitalize w-fit",
-                        STATUS_VARIANTS[inv.status],
-                      )}
-                    >
-                      {inv.status}
-                    </span>
+                    <StatusBadge status={inv.status} size="sm" className="w-fit" />
                       <span className="text-sm font-semibold text-right tabular-nums">
-                       {formatCurrency(inv.total)}<span className="mt-0.5 block text-xs font-normal text-muted-foreground">inc GST</span>
+                       <Money value={inv.total} basis="inc GST" className="justify-end" />
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {inv.due_date
-                        ? format(parseISO(inv.due_date), "d MMM yyyy")
+                        ? formatFullDate(inv.due_date)
                         : "—"}
                     </span>
                     <ChevronRight className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </button>
+                <Button variant="ghost" size="icon" className="mr-2 shrink-0 text-destructive" aria-label={`Delete invoice ${inv.invoice_number}`}
+                  onClick={() => setDeletingInvoice(inv)}><Trash2 /></Button>
+                </div>
               ))}
             </div>
           )}
@@ -593,6 +559,8 @@ export default function InvoicesPage() {
           <ListPagination page={currentPage} pageSize={10} total={filtered.length} onChange={setPage} />
         )}
       </PageLayout>
+      <DeleteResourceDialog target={deletingInvoice ? { kind: 'invoice', id: deletingInvoice.id } : null}
+        label={deletingInvoice?.invoice_number ?? ''} onClose={() => setDeletingInvoice(null)} />
     </AppShell>
   );
 }

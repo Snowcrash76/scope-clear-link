@@ -1,9 +1,10 @@
 import { cn } from "@/lib/utils";
 
-interface StatusBadgeProps {
+export interface StatusBadgeProps {
   status: string;
   size?: "sm" | "default";
   viewerRole?: "client" | "trade";
+  labelOverride?: string;
   className?: string;
 }
 
@@ -48,11 +49,6 @@ const STATUS_CONFIG = {
     className: "bg-[hsl(var(--danger-soft))] text-destructive border-destructive/20",
     dot: "bg-destructive",
   },
-  lead: {
-    label: "Lead",
-    className: "bg-muted text-muted-foreground border-border",
-    dot: "bg-muted-foreground",
-  },
   quoted: {
     label: "Quoted",
     className: "bg-[hsl(var(--purple-soft))] text-[hsl(var(--purple))] border-[hsl(var(--purple)/.18)]",
@@ -73,6 +69,16 @@ const STATUS_CONFIG = {
     className: "bg-[hsl(var(--danger-soft))] text-destructive border-destructive/25",
     dot: "bg-destructive",
   },
+  paid: {
+    label: "Paid",
+    className: "bg-[hsl(var(--success-soft))] text-foreground border-success/25",
+    dot: "bg-success",
+  },
+  cancelled: {
+    label: "Cancelled",
+    className: "bg-muted text-muted-foreground border-border",
+    dot: "bg-muted-foreground",
+  },
   awaiting_response: {
     label: "Awaiting Response",
     className: "bg-[hsl(var(--purple-soft))] text-[hsl(var(--purple))] border-[hsl(var(--purple)/.18)]",
@@ -84,6 +90,7 @@ export function StatusBadge({
   status,
   size = "default",
   viewerRole,
+  labelOverride,
   className,
 }: StatusBadgeProps) {
   const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? {
@@ -91,12 +98,13 @@ export function StatusBadge({
     className: "bg-muted text-foreground border-border",
     dot: "bg-muted-foreground",
   };
-  const label =
+  const label = labelOverride ?? (
     status === "awaiting_client"
       ? viewerRole === "client"
         ? "Awaiting Your Approval"
         : "Sent to Client"
-      : config.label;
+      : config.label
+  );
 
   return (
     <span

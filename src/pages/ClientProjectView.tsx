@@ -15,6 +15,7 @@ import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { Money, formatAUD } from '@/components/ui/money';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -360,15 +361,15 @@ export default function ClientProjectView() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="rounded-xl bg-muted/40 p-3">
                   <p className="text-sm text-muted-foreground">Subtotal (ex GST)</p>
-                  <p className="mt-1 break-words font-semibold tabular-nums">{`$${(activeQuote.subtotal ?? 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`}</p>
+                  <p className="mt-1 break-words font-semibold tabular-nums"><Money value={activeQuote.subtotal ?? 0} basis="ex GST" /></p>
                 </div>
                 <div className="rounded-xl bg-muted/40 p-3">
                   <p className="text-sm text-muted-foreground">GST ({activeQuote.taxRate ?? 0}%)</p>
-                  <p className="mt-1 break-words font-semibold tabular-nums">{`$${(activeQuote.taxAmount ?? 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`}</p>
+                  <p className="mt-1 break-words font-semibold tabular-nums">{formatAUD(activeQuote.taxAmount ?? 0)}</p>
                 </div>
                 <div className="col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-1">
                   <p className="text-sm font-medium text-muted-foreground">Total (inc GST)</p>
-                  <p className="mt-1 break-words font-heading text-xl font-bold tabular-nums">{`$${(activeQuote.total ?? 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}`}</p>
+                  <p className="mt-1 break-words font-heading text-xl font-bold tabular-nums"><Money value={activeQuote.total ?? 0} basis="inc GST" /></p>
                 </div>
               </div>
               {activeQuote.validUntil && (
@@ -687,17 +688,17 @@ export default function ClientProjectView() {
                 <div className="space-y-1.5 p-4 rounded-lg bg-muted/50">
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>Subtotal (ex GST)</span>
-                    <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                    <Money value={subtotal} basis="ex GST" />
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>GST ({taxRate}%)</span>
-                    <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                    <span>{formatAUD(taxAmount)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total (inc GST)</span>
                     <span className="text-foreground">
-                      ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      <Money value={liveTotal} basis="inc GST" />
                     </span>
                   </div>
                 </div>
@@ -962,9 +963,8 @@ export default function ClientProjectView() {
                         
                         <div className="text-right shrink-0">
                           <p className="text-xl font-bold">
-                            ${(invoice.total || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                            <Money value={invoice.total || 0} basis="inc GST" />
                           </p>
-                          <p className="text-xs text-muted-foreground">inc. GST</p>
                         </div>
                       </div>
                       

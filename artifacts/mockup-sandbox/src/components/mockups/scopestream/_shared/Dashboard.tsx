@@ -8,7 +8,7 @@ import { JobCard, Metric, SectionHead, TenantChip } from "./components";
 export default function Dashboard() {
   const { jobs, activity, dismissedAttention, setDismissedAttention, toast, openCostModal } = useScope();
   const navigate = useNavigate();
-  const activeJobs = useMemo(() => jobs.filter((job) => job.status === "In Progress"), [jobs]);
+  const activeJobs = useMemo(() => jobs.filter((job) => job.status !== "Completed"), [jobs]);
   const variationPending = jobs.reduce((sum, job) => sum + job.variations.filter((variation) => variation.status === "Pending").length, 0);
   const completedThisMonth = jobs.filter((job) => isInReferenceMonth(job.signedOffAt)).length;
   const unpaid = jobs.reduce((sum, job) => sum + job.invoices.filter((invoice) => invoice.status === "Sent").reduce((invoiceSum, invoice) => invoiceSum + (quoteIncGst(invoice.amountExGst) ?? 0), 0), 0);

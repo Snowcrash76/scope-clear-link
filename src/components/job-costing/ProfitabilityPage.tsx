@@ -26,6 +26,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Money, type GSTBasis } from "@/components/ui/money";
 
 type SortKey = "name" | "revenue" | "costs" | "profit" | "margin";
 type ProfitabilityJob = NonNullable<
@@ -292,7 +293,7 @@ export default function ProfitabilityPage() {
                             <MissingQuote jobId={job.jobId} />
                           ) : (
                             <>
-                              <Value amount={result.revenue} />
+                              <Value amount={result.revenue} basis="ex GST" />
                               {estimated && (
                                 <span className="ml-2 inline-flex rounded-full border border-warning/25 bg-warning/10 px-2 py-0.5 text-sm font-semibold text-warning">
                                   Estimated
@@ -316,6 +317,7 @@ export default function ProfitabilityPage() {
                           >
                             <Value
                               amount={job.confirmedCostsIncGst}
+                              basis="inc GST"
                               testId={`job-costs-${job.jobId}`}
                             />
                           </Link>
@@ -391,7 +393,7 @@ export default function ProfitabilityPage() {
                       {totals.knownRevenue === null ? (
                         "—"
                       ) : (
-                        <Value amount={totals.knownRevenue} prominent />
+                        <Value amount={totals.knownRevenue} basis="ex GST" prominent />
                       )}
                       <p className="mt-1 text-sm text-muted-foreground">
                         {totals.knownJobs} of {rows.length} jobs with known
@@ -399,7 +401,7 @@ export default function ProfitabilityPage() {
                       </p>
                     </td>
                     <td className="px-4 py-4">
-                      <Value amount={totals.allCosts} prominent />
+                      <Value amount={totals.allCosts} basis="inc GST" prominent />
                       <p className="mt-1 text-sm text-muted-foreground">
                         All jobs · known-revenue jobs: {aud(totals.knownCosts)}
                       </p>
@@ -457,11 +459,11 @@ export default function ProfitabilityPage() {
                   {totals.knownRevenue === null ? (
                     "—"
                   ) : (
-                    <Value amount={totals.knownRevenue} prominent />
+                          <Value amount={totals.knownRevenue} basis="ex GST" prominent />
                   )}
                 </Metric>
                 <Metric label="Costs so far (all jobs, inc GST)" strong>
-                  <Value amount={totals.allCosts} prominent />
+                  <Value amount={totals.allCosts} basis="inc GST" prominent />
                 </Metric>
                 <Metric label="Profit (known revenue jobs)" strong>
                   {totals.profit === null ? (
@@ -526,7 +528,7 @@ export default function ProfitabilityPage() {
                           <MissingQuote jobId={job.jobId} compact />
                         ) : (
                           <>
-                            <Value amount={result.revenue} />
+                            <Value amount={result.revenue} basis="ex GST" />
                             {estimated && (
                               <span className="mt-1 inline-flex rounded-full border border-warning/25 bg-warning/10 px-2 py-0.5 text-sm font-semibold text-warning">
                                 Estimated
@@ -550,6 +552,7 @@ export default function ProfitabilityPage() {
                         >
                           <Value
                             amount={job.confirmedCostsIncGst}
+                            basis="inc GST"
                             testId={`job-costs-${job.jobId}`}
                           />
                         </Link>
@@ -630,10 +633,12 @@ function Value({
   amount,
   testId,
   prominent = false,
+  basis,
 }: {
   amount: number;
   testId?: string;
   prominent?: boolean;
+  basis?: GSTBasis;
 }) {
   return (
     <span
@@ -644,7 +649,7 @@ function Value({
         prominent && amount < 0 && "text-rose-700",
       )}
     >
-      {aud(amount)}
+      {basis ? <Money value={amount} basis={basis} /> : aud(amount)}
     </span>
   );
 }

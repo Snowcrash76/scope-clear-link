@@ -17,9 +17,10 @@ import {
   FolderOpen,
   GitBranch,
   MoreVertical,
+  ArrowRight,
   CheckCircle2,
   RotateCcw,
-  Search,
+  SlidersHorizontal,
   Trash2,
   AlertTriangle,
 } from "lucide-react";
@@ -29,14 +30,17 @@ import { useQuoteSummaries } from "@/hooks/useQuoteSummaries";
 import {
   awaitingQuoteResponse,
   jobDisplayStatus,
-  quoteDisplayStatus,
   type QuoteSummary,
 } from "@/lib/quoteDisplay";
 import { JobCard } from "@/components/JobCard";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { ClientPageActions } from "@/components/project-manage/ClientPageActions";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { SearchInput } from "@/components/ui/search-overlay";
+import { FilterTabs } from "@/components/ui/filter-tabs";
+import { Money } from "@/components/ui/money";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,52 +54,15 @@ import {
 import { filterJobArchive, isArchivedJob } from "@/lib/jobLifecycle";
 
 const TABS = [
-  { key: "all", label: "Active jobs" },
-  { key: "lead", label: "Lead" },
+  { key: "active", label: "Active" },
   { key: "quoted", label: "Quoted" },
   { key: "approved", label: "Approved" },
-  { key: "in_progress", label: "In progress" },
+  { key: "in_progress", label: "In Progress" },
   { key: "completed", label: "Archive" },
 ] as const;
 
 type Tab = (typeof TABS)[number]["key"];
 type SortOrder = "newest" | "oldest" | "name" | "quote";
-
-function dateLabel(value: string | Date | undefined) {
-  if (!value) return "date unavailable";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "date unavailable"
-    : new Intl.DateTimeFormat("en-AU", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      }).format(date);
-}
-
-function nextAction(
-  project: { status: string; createdAt: Date; updatedAt: Date },
-  quote?: QuoteSummary,
-) {
-  const quoteStatus = quoteDisplayStatus(quote);
-  if (project.status === "completed")
-    return `Completed · updated ${dateLabel(project.updatedAt)}`;
-  if (project.status === "in_progress")
-    return `In progress · updated ${dateLabel(project.updatedAt)}`;
-  if (project.status === "acknowledged")
-    return `Approved · ${dateLabel(quote?.approved_at ?? project.updatedAt)}`;
-  if (quoteStatus === "sent")
-    return `Waiting on client since ${dateLabel(quote?.updated_at ?? quote?.created_at)}`;
-  if (quoteStatus === "expired")
-    return `Follow up on expired quote · expired ${dateLabel(quote?.valid_until ?? quote?.updated_at)}`;
-  if (quoteStatus === "approved")
-    return `Approved · ${dateLabel(quote?.approved_at ?? quote?.updated_at)}`;
-  if (quoteStatus === "declined")
-    return `Revise declined quote · ${dateLabel(quote?.declined_at ?? quote?.updated_at)}`;
-  if (quoteStatus === "draft")
-    return `Finish draft quote · updated ${dateLabel(quote?.updated_at ?? quote?.created_at)}`;
-  return `New lead · created ${dateLabel(project.createdAt)}`;
-}
 
 export default function ProjectsPage() {
   const navigate = useNavigate();
@@ -129,7 +96,7 @@ export default function ProjectsPage() {
   const [sort, setSort] = useState<SortOrder>("newest");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const filterParam = searchParams.get("status") ?? "all";
+  const filterParam = searchParams.get("status") ?? "active";
   const specialFilter = [
     "awaiting_response",
     "pending_approval",
@@ -138,14 +105,14 @@ export default function ProjectsPage() {
   ].includes(filterParam);
   const tab: Tab = TABS.some((item) => item.key === filterParam)
     ? (filterParam as Tab)
-    : "all";
+    : "active";
   const activeProjects = filterJobArchive(projects, false);
   const archivedProjects = filterJobArchive(projects, true);
   const archiveView = !specialFilter && tab === "completed";
 
   const selectFilter = (filter: string) => {
     const next = new URLSearchParams(searchParams);
-    if (filter === "all") next.delete("status");
+    if (filter === "active") next.delete("status");
     else next.set("status", filter);
     setSearchParams(next);
   };
@@ -172,11 +139,12 @@ export default function ProjectsPage() {
     }
     if (filterParam === "missing_cost_data")
       return !profitabilityById.has(project.id);
-    return tab === "all" || jobDisplayStatus(project, quote) === tab;
+    return tab === "active" || jobDisplayStatus(project, quote) === tab;
   });
   const filtered = filteredByStatus.filter((project) => {
     const term = search.trim().toLocaleLowerCase();
-    return !term || [project.name, project.clientName, latestQuoteByProject.get(project.id)?.quote_number]
+    const quote = latestQuoteByProject.get(project.id);
+    return !term || [project.name, project.clientName, quote?.quote_number, quote?.reference]
       .some((value) => value?.toLocaleLowerCase().includes(term));
   });
   const sortedFiltered = [...filtered].sort((a, b) => {
@@ -195,10 +163,7 @@ export default function ProjectsPage() {
   const pageProjects = sortedFiltered.slice((currentPage - 1) * 10, currentPage * 10);
 
   const counts = {
-    all: activeProjects.length,
-    lead: activeProjects.filter(
-      (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "lead",
-    ).length,
+    active: activeProjects.length,
     quoted: activeProjects.filter(
       (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "quoted",
     ).length,
@@ -224,13 +189,21 @@ export default function ProjectsPage() {
   };
   const openQuoteValue = activeProjects.reduce((total, project) => {
     const quote = latestQuoteByProject.get(project.id);
-    return ["draft", "sent"].includes(quoteDisplayStatus(quote) ?? "")
+    return jobDisplayStatus(project, quote) === "quoted"
       ? total + (quote?.subtotal ?? 0)
       : total;
   }, 0);
   const jobsAwaitingResponse = activeProjects.filter((project) =>
     awaitingQuoteResponse(project, latestQuoteByProject.get(project.id))
   ).length;
+  const hasPendingQuoteDrafts = activeProjects.some((project) =>
+    jobDisplayStatus(project, latestQuoteByProject.get(project.id)) === "quoted" &&
+    (quoteQuery.data ?? []).some(
+      (quote) =>
+        quote.project_id === project.id &&
+        (quote.status === "draft" || quote.status === "revised"),
+    )
+  );
 
   const changeArchiveStatus = async (project: Project, status: "completed" | "in_progress") => {
     const succeeded = await updateProjectStatus(project.id, status);
@@ -266,7 +239,7 @@ export default function ProjectsPage() {
   if (projectsError) {
     return (
       <AppShell>
-        <PageLayout title="Jobs" description="All your jobs in one place.">
+        <PageLayout title="Job Pipeline" description="All your jobs in one place.">
           <LoadErrorState
             title="Jobs could not be loaded"
             description="A failed jobs request is not an empty job list. Retry to fetch the saved jobs."
@@ -279,7 +252,7 @@ export default function ProjectsPage() {
   if (quoteQuery.isError) {
     return (
       <AppShell>
-        <PageLayout title="Jobs" description="All your jobs in one place.">
+        <PageLayout title="Job Pipeline" description="All your jobs in one place.">
           <LoadErrorState
             title="Quote statuses could not be loaded"
             description="Job lifecycle filters depend on saved quote status. Retry before treating a filtered list as empty."
@@ -292,91 +265,100 @@ export default function ProjectsPage() {
 
   return (
     <AppShell>
-        <PageLayout title="Jobs" eyebrow="FIELD OPERATIONS" description="Your jobs, quotes and next actions in one place." actions={<NewJobButton />}>
+        <PageLayout title="Job Pipeline" eyebrow="FIELD OPERATIONS" description="Your jobs, quotes and next actions in one place." actions={<NewJobButton />}>
         <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Jobs overview">
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
             <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />
-            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Open quote value · ex GST</p>
-            <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{aud(openQuoteValue)}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Latest draft and sent quote subtotals.</p>
+            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Open Quote Value</p>
+            <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight"><Money value={openQuoteValue} basis="ex GST" /></p>
+            <p className="mt-1 text-sm text-muted-foreground">Ex-GST subtotals for quoted jobs only.</p>
           </div>
           <button type="button" onClick={() => selectFilter("awaiting_response")} className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 text-left shadow-card transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <span className="absolute inset-x-0 top-0 h-[3px] bg-warning" aria-hidden="true" />
-            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quotes awaiting response</p>
+            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quotes Awaiting Response</p>
             <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight">{jobsAwaitingResponse}</p>
-            <p className="mt-1 text-sm text-muted-foreground">Open to review jobs awaiting a client decision.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Quoted jobs with a sent quote awaiting a client decision.</p>
           </button>
         </section>
-        {/* Tabs */}
-        <div className="mb-5 -mx-4 flex items-center gap-1 overflow-x-auto border-b border-border px-4 [-webkit-overflow-scrolling:touch] touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => selectFilter(t.key)}
-              className={cn(
-                "flex min-h-11 shrink-0 items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-                !specialFilter && tab === t.key
-                  ? "border-primary text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-              aria-pressed={!specialFilter && tab === t.key}
-              data-testid={`tab-${t.key}`}
-            >
-              {t.label}
-              <span
-                className={cn(
-                  "text-xs rounded-full px-1.5 py-0.5 font-medium",
-                  tab === t.key
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground",
-                )}
+        {!projectsError && !loading && !quoteQuery.isLoading && !quoteQuery.isError && !hasPendingQuoteDrafts && (
+          <EmptyState
+            className="mb-6 border-dashed"
+            icon={<FolderOpen className="h-5 w-5" />}
+            title="No pending quote drafts"
+            description="Draft or revised quotes on quoted jobs will appear here when they need sending."
+          />
+        )}
+        <div className="mb-4 flex min-w-0 items-center gap-2">
+          <SearchInput
+            className="flex-1"
+            name="job-list-search"
+            testId="input-job-list-search"
+            value={search}
+            onChange={setSearch}
+            placeholder="Search jobs, clients or references"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label="Sort jobs"
+                title="Sort jobs"
+                data-testid="button-job-sort"
               >
-                {counts[t.key]}
-              </span>
-            </button>
-          ))}
+                <SlidersHorizontal aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {([
+                ["newest", "Newest first"],
+                ["oldest", "Oldest first"],
+                ["name", "Job name A–Z"],
+                ["quote", "Quote value — high to low"],
+              ] as const).map(([value, label]) => (
+                <DropdownMenuItem
+                  key={value}
+                  onSelect={() => setSort(value)}
+                  aria-checked={sort === value}
+                  role="menuitemradio"
+                  className="min-h-11"
+                >
+                  <span className="flex-1">{label}</span>
+                  {sort === value && <span aria-hidden="true">Selected</span>}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {sortedFiltered.length}{" "}
-              {sortedFiltered.length === 1 ? "job" : "jobs"}
-            </p>
-            {specialFilter && (
-              <p className="mt-0.5 text-sm font-medium text-foreground">
-                {filterLabel[filterParam]}
-              </p>
-            )}
-          </div>
+        <FilterTabs
+          label="Filter jobs"
+          className="mb-4 -mx-4 px-4 touch-pan-x overscroll-x-contain sm:mx-0 sm:px-0"
+          value={specialFilter ? ("__special_filter" as Tab) : tab}
+          onChange={selectFilter}
+          options={TABS.map((item) => ({
+            value: item.key,
+            label: item.label,
+            count: counts[item.key],
+            testId: `tab-${item.key}`,
+          }))}
+        />
+
+        <div className="mb-4 flex min-w-0 flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {sortedFiltered.length} {sortedFiltered.length === 1 ? "job" : "jobs"}
+            {specialFilter && ` · ${filterLabel[filterParam]}`}
+          </p>
           {specialFilter && (
             <button
               type="button"
-              onClick={() => selectFilter("all")}
-              className="min-h-11 rounded-lg px-3 text-sm font-semibold text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => selectFilter("active")}
+              className="min-h-11 rounded-xl px-3 text-sm font-semibold text-foreground underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               Clear dashboard filter
             </button>
           )}
-          <label className="relative flex min-h-11 min-w-[min(100%,20rem)] flex-1 items-center sm:max-w-sm">
-            <Search className="pointer-events-none absolute left-3 h-4 w-4 text-muted-foreground" aria-hidden="true" />
-            <Input name="job-list-search" autoComplete="off" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search jobs, clients or references" aria-label="Search jobs, clients or references" className="pl-9" />
-          </label>
-          <label className="flex min-h-11 items-center gap-2 text-sm font-medium text-foreground">
-            <span>Sort:</span>
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortOrder)}
-              className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Sort jobs"
-              name="job-sort"
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="name">Job name A–Z</option>
-              <option value="quote">Quote value — high to low</option>
-            </select>
-          </label>
         </div>
 
         <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
@@ -417,25 +399,35 @@ export default function ProjectsPage() {
               </button>
             </div>
           ) : sortedFiltered.length === 0 ? (
-            <div className="text-center py-12 px-4">
-              <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm font-medium text-foreground">
-                {search.trim()
-                  ? "No jobs match your search."
-                  : archiveView
-                    ? "No archived jobs yet."
-                    : specialFilter
-                      ? "No jobs match this dashboard filter."
-                      : "No active jobs yet."}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {archiveView
-                  ? "Jobs marked completed appear here. Reopen one any time to return it to active jobs."
-                  : !specialFilter && !search.trim()
-                    ? "New jobs and quotes will appear here as your work comes in."
-                    : "Try changing your search or selecting another view."}
-              </p>
-            </div>
+            filterParam === "quoted" && !search.trim() ? (
+              <EmptyState
+                className="border-0 shadow-none"
+                icon={<FolderOpen className="h-5 w-5" />}
+                title="No quotes yet. Tap New Job to start one."
+                description=""
+                action={<NewJobButton />}
+              />
+            ) : (
+              <div className="text-center py-12 px-4">
+                <FolderOpen className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                <p className="text-sm font-medium text-foreground">
+                  {search.trim()
+                    ? "No jobs match your search."
+                    : archiveView
+                      ? "No archived jobs yet."
+                      : specialFilter
+                        ? "No jobs match this dashboard filter."
+                        : "No active jobs yet."}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {archiveView
+                    ? "Jobs marked completed appear here. Reopen one any time to return it to active jobs."
+                    : !specialFilter && !search.trim()
+                      ? "New jobs and quotes will appear here as your work comes in."
+                      : "Try changing your search or selecting another view."}
+                </p>
+              </div>
+            )
           ) : (
             <div className="divide-y divide-border/50">
                {pageProjects.map((project) => {
@@ -449,14 +441,14 @@ export default function ProjectsPage() {
                 return (
                   <div
                     key={project.id}
-                    className="flex min-w-0 items-start gap-2 px-2 py-3 sm:gap-3 sm:px-4 sm:py-3.5"
+                    className="flex min-w-0 flex-col gap-2 px-2 py-3 sm:px-4 sm:py-3.5"
                     data-testid={`project-row-${project.id}`}
                   >
                     <JobCard
                       project={project}
                       quote={latestQuoteByProject.get(project.id)}
                       status={jobDisplayStatus(project, latestQuoteByProject.get(project.id))}
-                      className="min-w-0 flex-1"
+                      className="min-w-0"
                       testId={`project-card-${project.id}`}
                     >
                       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-sm text-muted-foreground">
@@ -497,11 +489,35 @@ export default function ProjectsPage() {
                           Margin uses ex-GST revenue less confirmed costs inc GST. Costs may be incomplete.
                         </span>
                       </div>
-                      <p className="mt-2 text-sm font-medium text-foreground">
-                        <span className="text-muted-foreground">Next action · </span>
-                        {nextAction(project, latestQuoteByProject.get(project.id))}
-                      </p>
                     </JobCard>
+                    <div className="flex min-w-0 items-center justify-end gap-2">
+                      {jobDisplayStatus(project, latestQuoteByProject.get(project.id)) !== "completed" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-1 min-h-10 shrink-0 gap-1.5 px-2 text-xs sm:px-3 sm:text-sm"
+                        onClick={() => {
+                          const status = jobDisplayStatus(project, latestQuoteByProject.get(project.id));
+                          const tab = status === "in_progress" ? "costs" : status === "approved" ? "stages" : "quote";
+                          navigate(`/manage/${project.id}?tab=${tab}`);
+                        }}
+                        aria-label={
+                          jobDisplayStatus(project, latestQuoteByProject.get(project.id)) === "in_progress"
+                            ? `Log costs for ${project.name}`
+                            : jobDisplayStatus(project, latestQuoteByProject.get(project.id)) === "approved"
+                              ? `Send deposit invoice for ${project.name}`
+                              : `Send quote for ${project.name}`
+                        }
+                      >
+                        {jobDisplayStatus(project, latestQuoteByProject.get(project.id)) === "in_progress"
+                          ? "Log costs"
+                          : jobDisplayStatus(project, latestQuoteByProject.get(project.id)) === "approved"
+                            ? "Send deposit invoice"
+                            : "Send quote"}
+                        <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    )}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
@@ -553,6 +569,7 @@ export default function ProjectsPage() {
                         />
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    </div>
                   </div>
                 );
               })}

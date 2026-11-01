@@ -1,5 +1,4 @@
-import { Check, Circle, Clock3, RotateCcw, Send } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export type TimesheetStatus =
   | "draft"
@@ -8,45 +7,13 @@ export type TimesheetStatus =
   | "rejected"
   | "running";
 
-const mapping: Record<
-  TimesheetStatus,
-  { label: string; styles: string; Icon: LucideIcon }
-> = {
-  draft: {
-    label: "Draft",
-    styles: "bg-muted text-muted-foreground",
-    Icon: Circle,
-  },
-  submitted: {
-    label: "Submitted",
-    styles: "bg-warning text-warning-foreground",
-    Icon: Send,
-  },
-  approved: {
-    label: "Approved",
-    styles: "bg-success/15 text-foreground",
-    Icon: Check,
-  },
-  rejected: {
-    label: "Rejected",
-    styles: "bg-destructive/10 text-destructive",
-    Icon: RotateCcw,
-  },
-  running: {
-    label: "Running",
-    styles: "bg-warning text-warning-foreground",
-    Icon: Clock3,
-  },
-};
-
 export function TimesheetStatusBadge({ status }: { status: TimesheetStatus }) {
-  const { label, styles, Icon } = mapping[status];
-  return (
-    <span
-      className={`inline-flex min-h-7 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold ${styles}`}
-    >
-      <Icon className={`h-3.5 w-3.5 ${status === "approved" ? "text-success" : ""}`} aria-hidden="true" />
-      {label}
-    </span>
-  );
+  const label = status === "running" ? "Running" : status[0].toUpperCase() + status.slice(1);
+  const centralStatus =
+    status === "running" || status === "submitted"
+      ? "pending"
+      : status === "rejected"
+        ? "declined"
+        : status;
+  return <StatusBadge status={centralStatus} labelOverride={label} size="sm" />;
 }

@@ -1,6 +1,7 @@
 import { JobHeader } from '@/components/JobHeader';
 import { StatusBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +14,7 @@ import { jobDisplayStatus } from '@/lib/quoteDisplay';
 import type { Project, Quote } from '@/types/project';
 import { ClientDetailsCard, type ClientEditValues } from './ClientDetailsCard';
 import { ClientPageActions } from './ClientPageActions';
-import { ArrowLeft, CheckCircle2, Copy, FolderOpen, Loader2, MoreVertical, RotateCcw } from 'lucide-react';
+import { CheckCircle2, Copy, FolderOpen, Loader2, MoreVertical, RotateCcw } from 'lucide-react';
 
 type ProjectManageHeaderProps = {
   project: Project;
@@ -21,7 +22,6 @@ type ProjectManageHeaderProps = {
   onTabChange: (tab: string) => void;
   pendingVariationCount: number;
   isDuplicating: boolean;
-  onBack: () => void;
   onAddVariation: () => void;
   onDuplicateProject: () => void | Promise<void>;
   onSaveClient: (values: ClientEditValues, applyToAll: boolean) => Promise<boolean>;
@@ -36,7 +36,6 @@ export function ProjectManageHeader({
   project,
   activeQuote,
   isDuplicating,
-  onBack,
   onAddVariation,
   onDuplicateProject,
   onSaveClient,
@@ -48,13 +47,10 @@ export function ProjectManageHeader({
 }: ProjectManageHeaderProps) {
   return (
     <JobHeader>
-      <section className="relative min-w-0 rounded-xl border border-border bg-card px-4 py-3 shadow-soft sm:px-5" aria-label="Job header">
+      <Card className="relative min-w-0 px-4 py-3 shadow-soft sm:px-5" aria-label="Job header">
         <div className="grid min-w-0 gap-y-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:gap-x-4">
-          <div className="order-1 flex min-w-0 items-center gap-2.5 pr-10 md:pr-0">
-            <Button type="button" variant="link" className="h-8 min-h-8 shrink-0 gap-1 px-0 text-xs font-medium text-muted-foreground" aria-label="Back to Jobs" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" /> Jobs
-            </Button>
-            <h1 className="min-w-0 break-words font-heading text-xl font-bold leading-tight sm:text-2xl">{project.name}</h1>
+          <div className="order-1 flex min-w-0 flex-wrap items-center gap-2.5 pr-10 md:pr-0">
+            <h1 className="min-w-0 break-words font-heading text-2xl font-bold leading-tight">{project.name}</h1>
             <StatusBadge className="shrink-0" status={jobDisplayStatus(project, activeQuote ? {
               status: activeQuote.status,
               valid_until: activeQuote.validUntil?.toISOString() ?? null,
@@ -98,7 +94,7 @@ export function ProjectManageHeader({
             <ClientDetailsCard project={project} onSave={onSaveClient} open={clientEditOpen} onOpenChange={onClientEditOpenChange} compact />
           </div>
         </div>
-      </section>
+      </Card>
     </JobHeader>
   );
 }

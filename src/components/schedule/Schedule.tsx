@@ -10,13 +10,20 @@ import { useEmployeeAssistance } from "@/hooks/useEmployeeAssistance";
 import { PortalLayout } from "@/components/employee/PortalLayout";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Card, CardContent } from "@/components/ui/card";
+import { SectionHeader } from "@/components/ui/section-header";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { BookingEditor } from "./BookingEditor";
 import {
-  appointmentConflicts, dateKey, jobColor, jobsWithoutBookingInRange, rangeTitle, shiftDate, timeLabel, toCalendarEvents,
+  appointmentConflicts, dateKey, jobColor, rangeTitle, shiftDate, timeLabel, toCalendarEvents,
   visibleDateRange, type CalendarEvent, type ScheduleData, type ScheduleLayout, type ScheduleView,
 } from "./scheduleUtils";
 import "./schedule.css";
+
+type UnscheduledJob = { id: string; name: string; client_name?: string | null };
+type UnscheduledData = { today: string; timezone: string; jobs: UnscheduledJob[] };
 
 function initials(name: string) {
   return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
@@ -76,6 +83,32 @@ function EventCard({ event, data, onOpen, compact = false }: {
   </button>;
 }
 
+function UnscheduledJobsList({
+  query,
+  onAdd,
+  fromSheet = false,
+}: {
+  query: ReturnType<typeof usePortal<UnscheduledData>>;
+  onAdd: (jobId: string, trigger: HTMLElement) => void;
+  fromSheet?: boolean;
+}) {
+  const jobs = query.data?.jobs ?? [];
+  return <Card className={`sc-unscheduled${fromSheet ? " sc-unscheduled-sheet-list" : ""}`}>
+    <CardContent className="sc-unscheduled-content">
+      <SectionHeader title="Unscheduled jobs" count={query.isLoading || query.error ? undefined : jobs.length} />
+      {query.isLoading ? <div className="sc-unscheduled-loading" aria-label="Loading unscheduled jobs"><i /><i /><i /></div>
+        : query.error ? <div className="sc-unscheduled-error" role="alert"><p>Unscheduled jobs could not load.</p><Button variant="outline" onClick={() => query.refetch()}>Retry</Button></div>
+        : jobs.length ? <ul>{jobs.map((job) => <li key={job.id}>
+          <span className="sc-job-dot" style={{ background: jobColor(job.id).foreground }} />
+          <div><b>{job.name}</b>{job.client_name && <small>{job.client_name}</small>}
+            <Button variant="outline" className="sc-job-add" onClick={(event) => onAdd(job.id, event.currentTarget)}>Add booking</Button>
+          </div>
+        </li>)}</ul>
+        : <EmptyState title="All active jobs are scheduled." description="" className="sc-unscheduled-empty" />}
+    </CardContent>
+  </Card>;
+}
+
 export default function Schedule() {
   const queryClient = useQueryClient();
   const { user, loading: authLoading } = useAuth();
@@ -96,10 +129,15 @@ export default function Schedule() {
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
   const [cancelError, setCancelError] = useState("");
+  const [unscheduledSheetOpen, setUnscheduledSheetOpen] = useState(false);
+  const [pendingUnscheduledBooking, setPendingUnscheduledBooking] = useState<{ jobId: string; trigger: HTMLElement } | null>(null);
   const bookingTriggerRef = useRef<HTMLElement | null>(null);
+  const unscheduledMobileTriggerRef = useRef<HTMLButtonElement | null>(null);
   const jobFilter = searchParams.get("job");
   const range = useMemo(() => visibleDateRange(selectedDate, view), [selectedDate, view]);
   const query = usePortal<ScheduleData>(`/schedule?from=${range.from}&to=${range.to}`, !!user && !session.isLoading && !session.error && !!(session.data?.employee || session.data?.canManageTeam));
+  const canRequestUnscheduled = !!user && !session.isLoading && !session.error && !!session.data?.canManageTeam && !preview;
+  const unscheduledQuery = usePortal<UnscheduledData>("/schedule/unscheduled", canRequestUnscheduled);
 
   useEffect(() => { localStorage.setItem("schedule-layout", layout); }, [layout]);
   const data = query.data;
@@ -110,9 +148,7 @@ export default function Schedule() {
   const dates = range.dates;
   const todayKey = data ? new Intl.DateTimeFormat("en-CA", { timeZone: data.timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()) : dateKey(new Date());
   const selectedDayEvents = visibleEvents.filter((event) => event.appointment.date === dateKey(selectedDate) || (event.appointment.date < dateKey(selectedDate) && event.endDate >= dateKey(selectedDate)));
-  // The endpoint is range-scoped: this is only a view-local list, never a claim
-  // that a job has no booking outside the dates currently loaded.
-  const jobsWithoutBookingInView = data ? jobsWithoutBookingInRange(data.jobs, visibleEvents).filter((job) => isManager || Boolean(ownEmployeeId && data.assignments.some((assignment) => assignment.employee_id === ownEmployeeId && assignment.project_id === job.id))) : [];
+  const unscheduledJobs = canRequestUnscheduled ? unscheduledQuery.data?.jobs ?? [] : [];
 
   const openEvent = (event: CalendarEvent, trigger?: HTMLElement) => {
     if (trigger) bookingTriggerRef.current = trigger;
@@ -128,6 +164,22 @@ export default function Schedule() {
     setEditorJobId(options.jobId ?? null);
     setEditorEmployeeId(options.employeeId ?? null);
     setEditorOpen(true);
+  };
+  const openEditorRef = useRef(openEditor);
+  openEditorRef.current = openEditor;
+  useEffect(() => {
+    if (unscheduledSheetOpen || !pendingUnscheduledBooking) return;
+    const pending = pendingUnscheduledBooking;
+    setPendingUnscheduledBooking(null);
+    openEditorRef.current(unscheduledMobileTriggerRef.current ?? pending.trigger, { date: dateKey(selectedDate), jobId: pending.jobId });
+  }, [unscheduledSheetOpen, pendingUnscheduledBooking, selectedDate]);
+  const addUnscheduledBooking = (jobId: string, trigger: HTMLElement, fromSheet = false) => {
+    if (fromSheet) {
+      setPendingUnscheduledBooking({ jobId, trigger });
+      setUnscheduledSheetOpen(false);
+      return;
+    }
+    openEditor(trigger, { date: dateKey(selectedDate), jobId });
   };
   const refreshSchedule = async () => {
     await Promise.all([
@@ -181,7 +233,7 @@ export default function Schedule() {
     <section className="sc-kpi-strip" aria-label="Schedule overview">
       <article><span>Appointments in this view</span><b>{query.isLoading ? "—" : query.error ? "Unavailable" : visibleEvents.length}</b><small>Scheduled items in the selected date range</small></article>
       <article><span>Team members scheduled</span><b>{query.isLoading ? "—" : query.error ? "Unavailable" : new Set(visibleEvents.flatMap((event) => event.assignments.map((assignment) => assignment.employee_id))).size}</b><small>Distinct assigned team members in this view</small></article>
-      <article><span>Jobs without a booking in this view</span><b>{query.isLoading ? "—" : query.error ? "Unavailable" : jobsWithoutBookingInView.length}</b><small>View-local list only · other dates are not included</small></article>
+      <article><span>Unscheduled jobs</span><b>{!canRequestUnscheduled || unscheduledQuery.isLoading ? "—" : unscheduledQuery.error ? "Unavailable" : unscheduledJobs.length}</b><small>Approved and in-progress jobs without bookings today onward</small></article>
     </section>
     <section className="sc-toolbar" aria-label="Schedule controls">
       <div className="sc-date-controls">
@@ -202,14 +254,33 @@ export default function Schedule() {
     </section>
 
     {query.isLoading ? <ScheduleSkeleton /> : query.error ? <section className="sc-error" role="alert"><CalendarDays /><h2>Schedule could not load</h2><p>{query.error.message}</p><Button onClick={() => query.refetch()}>Retry</Button></section> : data && <>
+      {isManager && <div className="sc-unscheduled-mobile">
+        <Sheet open={unscheduledSheetOpen} onOpenChange={setUnscheduledSheetOpen}>
+          <SheetTrigger asChild>
+            <Button ref={unscheduledMobileTriggerRef} variant="outline" type="button" className="sc-unscheduled-mobile-trigger" aria-expanded={unscheduledSheetOpen}>
+              <span>{unscheduledQuery.isLoading ? "Loading jobs to schedule" : unscheduledQuery.error ? "Jobs to schedule unavailable" : `${unscheduledJobs.length} jobs to schedule`}</span>
+              <span>{unscheduledSheetOpen ? "Close" : "View jobs"}</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="sc-unscheduled-sheet">
+            <SheetHeader className="sr-only">
+              <SheetTitle>Unscheduled jobs</SheetTitle>
+              <SheetDescription>Approved and in-progress jobs without a booking today onward.</SheetDescription>
+            </SheetHeader>
+            <div className="sc-unscheduled-sheet-body">
+              <UnscheduledJobsList query={unscheduledQuery} fromSheet onAdd={(jobId, trigger) => addUnscheduledBooking(jobId, trigger, true)} />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>}
       <div className="sc-content-grid">
         <section className="sc-calendar" aria-label={`${rangeTitle(selectedDate, view)} calendar`}>
           {view === "day" && <nav className="sc-day-strip" aria-label="Choose a day">{Array.from({ length: 9 }, (_, i) => addDays(selectedDate, i - 4)).map((day) => <button key={dateKey(day)} className={dateKey(day) === dateKey(selectedDate) ? "is-selected" : ""} onClick={() => setSelectedDate(day)} aria-label={`${format(day, "EEEE d MMMM")}, ${dateKey(day) === dateKey(selectedDate) ? `${allByDate(day).length} bookings` : "load bookings"}`}>{dateHeader(day)}<small>{dateKey(day) === dateKey(selectedDate) ? allByDate(day).length : "View"}</small></button>)}</nav>}
           {listMode ? <div className="sc-list-view">{dates.flatMap((day) => {
             const dayEvents = allByDate(day);
             return dayEvents.map((event) => <div className="sc-list-row" key={`${dateKey(day)}-${event.appointment.id}`}><span>{format(day, "EEE d MMM")}</span><EventCard event={event} data={data} onOpen={(trigger) => openEvent(event, trigger)} /></div>);
-          })}{visibleEvents.length === 0 && <div className="sc-empty">Nothing scheduled in this range.</div>}</div>
-             : view === "day" ? <section className="sc-day-view"><div className="sc-day-title">{format(selectedDate, "EEEE, d MMMM")} <span>{selectedDayEvents.length} {selectedDayEvents.length === 1 ? "booking" : "bookings"}</span></div>{selectedDayEvents.length ? selectedDayEvents.map((event) => <EventCard key={event.appointment.id} event={event} data={data} onOpen={(trigger) => openEvent(event, trigger)} />) : <div className="sc-empty"><CalendarDays /><b>A clear day.</b><span>No bookings are scheduled.</span>{isManager && <Button onClick={(event) => openEditor(event.currentTarget, { date: dateKey(selectedDate), jobId: jobFilter })}><Plus />Add booking</Button>}</div>}</section>
+           })}{visibleEvents.length === 0 && <div className="p-4"><EmptyState icon={<CalendarDays className="h-5 w-5" />} title="Nothing scheduled in this range" description="Bookings will appear here when they are added." /></div>}</div>
+              : view === "day" ? <section className="sc-day-view"><div className="sc-day-title">{format(selectedDate, "EEEE, d MMMM")} <span>{selectedDayEvents.length} {selectedDayEvents.length === 1 ? "booking" : "bookings"}</span></div>{selectedDayEvents.length ? selectedDayEvents.map((event) => <EventCard key={event.appointment.id} event={event} data={data} onOpen={(trigger) => openEvent(event, trigger)} />) : <div className="p-4"><EmptyState icon={<CalendarDays className="h-5 w-5" />} title="A clear day" description="No bookings are scheduled." action={isManager ? <Button onClick={(event) => openEditor(event.currentTarget, { date: dateKey(selectedDate), jobId: jobFilter })}><Plus />Add booking</Button> : undefined} /></div>}</section>
             : view === "month" ? <div className="sc-month-grid" role="grid" aria-label={`${rangeTitle(selectedDate, view)} month`}>
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => <div className="sc-month-weekday" key={label}>{label}</div>)}
                {dates.map((day) => <div className={`sc-month-cell${format(day, "M") !== format(selectedDate, "M") ? " is-outside" : ""}`} key={dateKey(day)} role="gridcell" tabIndex={0} aria-label={`${format(day, "EEEE d MMMM")}, ${allByDate(day).length} bookings`} onClick={(event) => { if (isManager && event.target === event.currentTarget) openEditor(event.currentTarget, { date: dateKey(day), jobId: jobFilter }); }} onKeyDown={(event) => { if (isManager && event.key === "Enter" && allByDate(day).length === 0) { event.preventDefault(); openEditor(event.currentTarget, { date: dateKey(day), jobId: jobFilter }); return; } onCellKey(event, allByDate(day)); }}>
@@ -227,13 +298,10 @@ export default function Schedule() {
                   {!cellEvents.length && <span className="sc-cell-empty">—</span>}
                 </div>;
               })}</div>)}
-              {data.employees.length === 0 && layout === "team" && <div className="sc-empty">No team members are available for this schedule.</div>}
+               {data.employees.length === 0 && layout === "team" && <div className="p-4"><EmptyState icon={<Users className="h-5 w-5" />} title="No team members available" description="Team members will appear here when they have access to the schedule." /></div>}
             </div>}
         </section>
-        <aside className="sc-unscheduled"><div className="sc-panel-heading"><div><span className="sc-eyebrow">CURRENT DATE RANGE</span><h2>Jobs without a booking in this view</h2></div><span>{jobsWithoutBookingInView.length}</span></div><p className="sc-panel-intro">A read-only job list for this date range. Jobs may have bookings outside the dates shown.</p>
-           {jobsWithoutBookingInView.length ? <ul>{jobsWithoutBookingInView.map((job) => <li key={job.id}><span className="sc-job-dot" style={{ background: jobColor(job.id).foreground }} /><div><b>{job.name}</b>{job.client_name && <small>{job.client_name}</small>}{isManager ? <button type="button" className="sc-job-add" onClick={(event) => openEditor(event.currentTarget, { date: dateKey(selectedDate), jobId: job.id })}>Add booking for this job <ArrowRight /></button> : <Link to={assistance.href(`/employee/jobs/${job.id}`)}>Open job assignment details <ArrowRight /></Link>}</div></li>)}</ul> : <div className="sc-empty-small">Each listed job has a booking in this range.</div>}
-           <p className="sc-panel-foot">{isManager ? "Select a job to start a booking with it already linked." : "Your schedule shows only your own assignments."}</p>
-        </aside>
+         {isManager && <aside><UnscheduledJobsList query={unscheduledQuery} onAdd={(jobId, trigger) => addUnscheduledBooking(jobId, trigger)} /></aside>}
       </div>
        <div className="sc-mobile-management">{isManager ? <><span>Manage the team schedule</span><Button onClick={(event) => openEditor(event.currentTarget, { date: dateKey(selectedDate), jobId: jobFilter })}><Plus />Add booking</Button></> : <><span>Your assignments</span><Link to={assistance.href("/employee")}>Back to employee home <ArrowRight /></Link></>}</div>
       <footer className="sc-legend"><span className="sc-legend-mark" />Stable job colour · “BOOKING” label · crew initials when available</footer>

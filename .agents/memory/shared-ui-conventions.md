@@ -1,6 +1,6 @@
 ---
 name: Shared UI conventions
-description: User's standing instruction for future consistency-refactor phase prompts.
+description: Shared-component instructions and the desktop/mobile workspace layout contract.
 ---
 
 End every future phase prompt with:
@@ -10,3 +10,11 @@ End every future phase prompt with:
 **Why:** The user explicitly supplied this as the rule to paste at the end of every future phase prompt.
 
 **How to apply:** Preserve this wording in future phase prompts for this project's UI work. Extend existing shared presentation components rather than introducing competing one-off versions.
+
+At md and above, the sidebar is the only workspace branding/navigation surface; there is no top header. Global search belongs below the tenant identity in the sidebar and supports Ctrl/Cmd+K. The Jobs inline search remains list-local.
+
+Below md, hide the persistent sidebar and keep the bottom tabs. The shared mobile header contains the brand, search and avatar without a section label or hamburger. Job Details replaces the brand with a back arrow.
+
+**Why:** The user explicitly requested one brand presentation, no duplicate desktop header, and these breakpoint-specific shared layouts.
+
+**How to apply:** Keep the breakpoint at md, not lg. Use shared layout components, never per-screen copies. The mobile avatar preserves access to the existing workspace navigation/account controls; do not duplicate the brand inside that drawer. The back-arrow replacement is the explicit exception to displaying a logo on mobile Job Details.

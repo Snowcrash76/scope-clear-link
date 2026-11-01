@@ -2,7 +2,9 @@ import { createContext, useContext, useState, useRef, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CreateJobModal } from "@/components/CreateJobModal";
-import { AppHeader } from "@/components/AppHeader";
+import { AppHeader } from "@/components/ui/app-header";
+import { BottomTabBar } from "@/components/ui/bottom-tab-bar";
+import { SearchOverlay } from "@/components/ui/search-overlay";
 import { BrandLogo } from "@/components/BrandLogo";
 import {
   useCreateProject,
@@ -44,11 +46,11 @@ import {
   KeyRound,
   ShieldCheck,
   ChartNoAxesCombined,
-  Search,
   ContactRound,
   UsersRound,
   CalendarDays,
   HelpCircle,
+  Search,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -123,10 +125,12 @@ function getInitials(name: string) {
 
 interface SidebarInnerProps {
   onNewJob: () => void;
+  onOpenSearch: () => void;
   onOpenSettings: () => void;
   onSignOut: () => void;
   currentPath: string;
   onClose?: () => void;
+  showBrand?: boolean;
   businessName?: string;
   contactName?: string;
   email?: string;
@@ -134,10 +138,12 @@ interface SidebarInnerProps {
 
 function SidebarInner({
   onNewJob,
+  onOpenSearch,
   onOpenSettings,
   onSignOut,
   currentPath,
   onClose,
+  showBrand = true,
   businessName,
   contactName,
   email,
@@ -232,14 +238,28 @@ function SidebarInner({
   return (
     <div className="flex flex-col h-full bg-background text-foreground border-r border-border">
       {/* Brand */}
-      <div className="border-b border-border px-5 pb-4 pt-5">
-        <BrandLogo variant="horizontal" className="w-44 max-w-full" />
-        {businessName && (
-          <p className="text-sm text-muted-foreground mt-1 truncate">
-            {businessName}
-          </p>
-        )}
-      </div>
+      {showBrand && (
+        <div className="border-b border-border px-5 pb-4 pt-5">
+          <BrandLogo variant="horizontal" className="w-44 max-w-full" />
+          {businessName && (
+            <p className="text-sm text-muted-foreground mt-1 truncate">
+              {businessName}
+            </p>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => act(onOpenSearch)}
+            className="mt-4 min-h-11 w-full justify-start gap-3 rounded-lg px-3 text-muted-foreground"
+            aria-label="Search jobs, quotes or clients"
+            data-testid="button-global-search-sidebar"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="flex-1 text-left">Search</span>
+            <span className="text-xs text-muted-foreground/75">⌘ K</span>
+          </Button>
+        </div>
+      )}
 
       {/* New Job CTA */}
       <div className="px-4 pt-5 pb-2">
@@ -316,14 +336,32 @@ function SidebarInner({
           <Settings className="w-4 h-4 flex-shrink-0" />
           Settings
         </button>
-        {contactName && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="flex min-h-11 w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              data-testid="button-workspace-help"
+            >
+              <HelpCircle className="h-4 w-4 shrink-0" />
+              Workspace help
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" side="top" className="w-72">
+            <p className="font-semibold text-foreground">Workspace help</p>
+            <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              A support contact is not configured here. Please contact your workspace administrator.
+            </p>
+          </PopoverContent>
+        </Popover>
+        {(contactName || email) && (
           <div className="flex items-center gap-3 px-4 py-2.5 mt-1">
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold flex-shrink-0">
-              {getInitials(contactName)}
+              {getInitials(contactName || email || "U")}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium truncate text-foreground">
-                {contactName}
+                {contactName || email}
               </p>
               {email && (
                 <p className="text-xs text-muted-foreground truncate">
@@ -369,10 +407,6 @@ export function AppShell({ children, headerActions }: AppShellProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
   const [globalSearchTerm, setGlobalSearchTerm] = useState("");
-  const searchShortcut =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform)
-      ? "⌘ K"
-      : "Ctrl K";
   const [saving, setSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const globalSearchQuery = useQuery({
@@ -388,12 +422,6 @@ export function AppShell({ children, headerActions }: AppShellProps) {
       const rows = projects ?? [];
       if (!rows.length) return [];
       const projectById = new Map(rows.map((row) => [row.id, row]));
-      const projectResults: GlobalSearchResult[] = rows.map((row) => ({
-        type: "Job",
-        title: row.name,
-        detail: row.client_name || "No client name",
-        href: `/manage/${row.id}`,
-      }));
       const clientByKey = new Map<string, (typeof rows)[number]>();
       for (const row of rows) {
         const key = (
@@ -413,17 +441,36 @@ export function AppShell({ children, headerActions }: AppShellProps) {
       );
       const { data: quotes, error: quoteError } = await supabase
         .from("quotes")
-        .select("id, project_id, quote_number")
+        .select("id, project_id, quote_number, reference")
         .in(
           "project_id",
           rows.map((row) => row.id),
         );
       if (quoteError) throw quoteError;
+      const referencesByProject = new Map<string, string[]>();
+      for (const quote of quotes ?? []) {
+        if (!quote.reference) continue;
+        const refs = referencesByProject.get(quote.project_id) ?? [];
+        if (!refs.includes(quote.reference)) refs.push(quote.reference);
+        referencesByProject.set(quote.project_id, refs);
+      }
+      const projectResults: GlobalSearchResult[] = rows.map((row) => ({
+        type: "Job",
+        title: row.name,
+        detail: [
+          row.client_name || "No client name",
+          ...(referencesByProject.get(row.id) ?? []).map((reference) => `Ref ${reference}`),
+        ].join(" · "),
+        href: `/manage/${row.id}`,
+      }));
       const quoteResults: GlobalSearchResult[] = (quotes ?? []).map(
         (quote) => ({
           type: "Quote",
           title: quote.quote_number,
-          detail: projectById.get(quote.project_id)?.name ?? "Job quote",
+          detail: [
+            projectById.get(quote.project_id)?.name ?? "Job quote",
+            quote.reference ? `Ref ${quote.reference}` : "",
+          ].filter(Boolean).join(" · "),
           href: `/manage/${quote.project_id}?tab=quote`,
         }),
       );
@@ -441,11 +488,15 @@ export function AppShell({ children, headerActions }: AppShellProps) {
       );
     })
     .slice(0, 10);
+  // AppShell is the owner workspace. Employee and client portals use their
+  // own shells, so every route here can retain the same primary navigation.
+  const showBottomTabs = true;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
+        setMobileOpen(false);
         setGlobalSearchOpen(true);
       }
       if (event.key === "Escape") setGlobalSearchOpen(false);
@@ -661,6 +712,10 @@ export function AppShell({ children, headerActions }: AppShellProps) {
 
   const sidebarProps: SidebarInnerProps = {
     onNewJob: openCreateJob,
+    onOpenSearch: () => {
+      setGlobalSearchTerm("");
+      setGlobalSearchOpen(true);
+    },
     onOpenSettings: openSettings,
     onSignOut: handleSignOut,
     currentPath: pathname,
@@ -673,7 +728,10 @@ export function AppShell({ children, headerActions }: AppShellProps) {
     <NewJobActionContext.Provider value={openCreateJob}>
       <div className="min-h-[100dvh] flex bg-background">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:z-40">
+        <aside
+          className="hidden md:fixed md:inset-y-0 md:z-40 md:flex md:w-64 md:flex-col"
+          data-testid="app-sidebar"
+        >
           <SidebarInner {...sidebarProps} />
         </aside>
 
@@ -687,77 +745,34 @@ export function AppShell({ children, headerActions }: AppShellProps) {
             <SidebarInner
               {...sidebarProps}
               onClose={() => setMobileOpen(false)}
+              showBrand={false}
             />
           </SheetContent>
         </Sheet>
 
         {/* Page content */}
-        <div className="main-app flex-1 lg:pl-64 min-w-0 flex flex-col">
+        <div className="main-app flex-1 min-w-0 flex flex-col md:pl-64">
           <AppHeader
-            actions={
-              <div className="flex min-w-0 items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="min-h-11 max-w-[min(62vw,22rem)] justify-start gap-2 px-3 text-sm text-muted-foreground"
-                  onClick={() => {
-                    setGlobalSearchTerm("");
-                    setGlobalSearchOpen(true);
-                  }}
-                  aria-label="Search jobs, quotes or clients"
-                >
-                  <Search className="h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    Search jobs, quotes or clients…
-                  </span>
-                  <kbd className="hidden rounded border bg-muted px-1.5 py-0.5 text-sm text-muted-foreground sm:inline-flex">
-                    {searchShortcut}
-                  </kbd>
-                </Button>
-                {headerActions}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Workspace help" className="h-11 w-11 shrink-0">
-                      <HelpCircle className="h-5 w-5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="end" className="w-72">
-                    <p className="font-semibold text-foreground">Workspace help</p>
-                    <p className="mt-1 text-sm leading-5 text-muted-foreground">
-                      A support contact is not configured here. Please contact your workspace administrator.
-                    </p>
-                  </PopoverContent>
-                </Popover>
-              </div>
-            }
             onOpenNavigation={() => setMobileOpen(true)}
+            onOpenSearch={sidebarProps.onOpenSearch}
+            backTo={pathname.startsWith("/manage/") || pathname.startsWith("/jobs/") ? "/projects" : undefined}
+            onBack={() => navigate("/projects")}
+            accountInitials={getInitials(profile?.contact_name || user?.email || "U")}
           />
-
-          {children}
+          {headerActions && <div className="relative z-10 px-4 pt-2 md:px-6">{headerActions}</div>}
+          <div className={`min-w-0 flex-1 ${showBottomTabs ? "app-shell-owner-content md:!pb-0" : ""}`}>
+            {children}
+          </div>
         </div>
 
-        <Dialog open={globalSearchOpen} onOpenChange={setGlobalSearchOpen}>
-          <DialogContent className="top-[12vh] translate-y-0 gap-0 p-0 sm:max-w-xl">
-            <DialogHeader className="border-b px-5 py-4">
-              <DialogTitle>Search jobs, quotes or clients</DialogTitle>
-              <DialogDescription>
-                Search the records in your workspace.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="p-4">
-              <Input
-                autoFocus
-                value={globalSearchTerm}
-                onChange={(event) => setGlobalSearchTerm(event.target.value)}
-                placeholder="Search jobs, quotes or clients…"
-                aria-label="Search jobs, quotes or clients"
-                name="workspace-search"
-                autoComplete="off"
-                className="min-h-12"
-              />
-              <div
-                className="mt-3 max-h-[50dvh] overflow-y-auto"
-                aria-live="polite"
-              >
+        {showBottomTabs && <BottomTabBar />}
+        <SearchOverlay
+          open={globalSearchOpen}
+          onOpenChange={setGlobalSearchOpen}
+          value={globalSearchTerm}
+          onValueChange={setGlobalSearchTerm}
+          description="Search jobs by name, client or reference; also find quotes and clients."
+        >
                 {globalSearchQuery.isLoading ? (
                   <div className="space-y-2 p-2" aria-label="Searching">
                     <div className="h-12 animate-pulse rounded-lg bg-muted" />
@@ -798,10 +813,7 @@ export function AppShell({ children, headerActions }: AppShellProps) {
                       : "Type to find a job, quote or client."}
                   </p>
                 )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        </SearchOverlay>
 
         {/* New Job Modal */}
         <CreateJobModal

@@ -9,7 +9,7 @@ The trade approves an invoice before sending it; approval is not requested from 
 
 **How to apply:** Keep invoice approval separate from client quote or variation approval. Approval alone must not email the client.
 
-Approval applies to the exact invoice reviewed. Editing an approved but unsent invoice requires approval again. Sent, paid, overdue and cancelled invoices must be retained rather than deleted or overwritten; corrections need a separate workflow.
+Approval applies to the exact invoice reviewed. Editing an approved but unsent invoice requires approval again. Ordinary editing/sending workflows must retain sent, paid, overdue and cancelled invoices rather than delete or overwrite them; corrections need a separate workflow. Explicit owner-confirmed permanent deletion is a separate exception: see [Client deletion scope](client-deletion-scope.md).
 
 **Why:** Approving an earlier version does not authorise sending later financial changes, and historical invoices must remain reliable.
 

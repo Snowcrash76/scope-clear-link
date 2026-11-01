@@ -72,7 +72,7 @@
 .ss-status { display: inline-flex; align-items: center; justify-content: center; min-height: 22px; padding: 3px 8px; border-radius: 99px; border: 1px solid transparent; font-size: 9px; white-space: nowrap; font-weight: 700; }
 .ss-status-progress { color: #a25200; background: #fff4dc; border-color: #f4cf83; }
 .ss-status-complete, .ss-status-paid, .ss-status-approved { color: #087646; background: #e5f8ee; }
-.ss-status-quoted, .ss-status-lead { color: #1d4ed8; background: #eaf1ff; }
+.ss-status-quoted { color: #1d4ed8; background: #eaf1ff; }
 .ss-status-attention { color: #b42332; background: #fff0f1; }
 .ss-ref { display: inline-flex; padding: 4px 7px; background: #f1f4fa; border-radius: 7px; color: #526078; font: 9px ui-monospace, SFMono-Regular, Menlo, monospace; }
 .ss-client-line { display: flex; align-items: center; gap: 6px; color: #576479; margin: 7px 0 10px; font-size: 10px; }

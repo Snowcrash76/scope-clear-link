@@ -20,6 +20,36 @@ const tables:Record<string,any[]>={
  change_requests:[{id:'variation-one',project_id:pid,type:'addition',title:'Additional trim',description:'Requested additional work',
   status:'pending',cost_impact:120,created_at:created}],activity_logs:[],user_roles:[{user_id:uid,role:'admin'}],
 };
+// Opt-in synthetic pipeline matrix; production entrypoints never import this module.
+if ((window as any).__pipelineFixture) {
+ const rows = [
+  ['Synthetic North Fitzroy job', 'draft', 'draft', 100],
+  ['Sent quote job', 'sent', 'sent', 200],
+  ['Approved job', 'draft', 'approved', 300],
+  ['In progress job', 'in_progress', 'sent', 400],
+  ['Completed job', 'completed', 'draft', 500],
+ ];
+ tables.projects = rows.map(([name, status, , value], index) => ({
+  ...project, id: `20000000-0000-4000-8000-00000000000${index + 1}`, name, status, total_value: value,
+  active_quote_id: `30000000-0000-4000-8000-00000000000${index + 1}`,
+ }));
+ tables.quotes = rows.map(([, , status, value], index) => ({
+  ...quote, id: `30000000-0000-4000-8000-00000000000${index + 1}`,
+  project_id: tables.projects[index].id, quote_number: `QT-00${index + 1}`, status,
+  subtotal: value, total: Number(value) * 1.1, tax_amount: Number(value) * .1,
+ }));
+ if ((window as any).__pipelineNoDraft) tables.quotes[0].status = 'sent';
+ if ((window as any).__pipelineNoQuoted) {
+  tables.projects[0].status = 'completed';
+  tables.projects[1].status = 'completed';
+ }
+ tables.project_stages = tables.projects.map(row => ({
+  id: `stage-${row.id}`, project_id: row.id, name: 'deposit', status: 'current',
+  description: '', invoice_percentage: 10, invoice_amount: 10, sort_order: 0,
+ }));
+ tables.invoices = [];
+ tables.change_requests = [];
+}
 if ((window as any).__quietJobFixture) {
  tables.change_requests = [];
  tables.invoices = [];

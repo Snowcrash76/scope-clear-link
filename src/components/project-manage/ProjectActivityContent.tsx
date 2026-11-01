@@ -3,6 +3,8 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { Clock } from 'lucide-react';
+import { EmptyState } from '@/components/ui/empty-state';
+import { formatFullDate } from '@/lib/dateFormat';
 
 export type ProjectActivityEvent = {
   id: string;
@@ -45,11 +47,7 @@ export function ProjectActivityContent({
           <LoadErrorState title="Job activity could not be loaded" description="A failed activity request is not evidence that no saved activity exists." onRetry={onRetry} />
         </div>
       ) : activityEvents.length === 0 ? (
-        <div className="px-5 py-12 text-center">
-          <Clock className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
-          <p className="font-medium">No activity recorded yet</p>
-          <p className="mt-1 text-sm text-muted-foreground">Saved job events will appear here.</p>
-        </div>
+        <div className="p-4"><EmptyState icon={<Clock className="h-5 w-5" />} title="No activity recorded yet" description="Saved job events will appear here." /></div>
       ) : (
         <ol className="divide-y divide-border">
           {activityEvents.map(event => (
@@ -62,7 +60,7 @@ export function ProjectActivityContent({
                 <p className="mt-0.5 break-words text-sm text-muted-foreground">{event.detail}</p>
               </div>
               <time className="shrink-0 pt-0.5 text-right text-sm text-muted-foreground" dateTime={event.timestamp.toISOString()}>
-                {format(event.timestamp, 'd MMM yyyy · h:mm a')}
+                {formatFullDate(event.timestamp)} · {format(event.timestamp, 'h:mm a')}
               </time>
             </li>
           ))}

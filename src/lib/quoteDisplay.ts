@@ -1,12 +1,14 @@
 import type { Project } from '@/types/project';
 
 export type QuoteDisplayStatus = 'draft' | 'sent' | 'approved' | 'declined' | 'expired';
-export type JobDisplayStatus = 'lead' | 'quoted' | 'approved' | 'in_progress' | 'completed';
+export const JOB_PIPELINE_STATUSES = ['quoted', 'approved', 'in_progress', 'completed'] as const;
+export type JobDisplayStatus = typeof JOB_PIPELINE_STATUSES[number];
 
 export interface QuoteSummary {
   id: string;
   project_id: string;
   quote_number: string;
+  reference?: string | null;
   status: string;
   subtotal: number | null;
   total: number | null;
@@ -32,14 +34,17 @@ export function jobDisplayStatus(project: Pick<Project, 'status'>, quote?: Pick<
   if (project.status === 'acknowledged') return 'approved';
   const quoteStatus = quoteDisplayStatus(quote);
   if (quoteStatus === 'approved') return 'approved';
-  if (quoteStatus === 'sent' || quoteStatus === 'expired') return 'quoted';
-  if (quoteStatus) return 'lead';
-  if (project.status === 'sent') return 'quoted';
-  return 'lead';
+  // Quoted is a job pipeline state, not a quote delivery/approval state.
+  // Draft, revised, sent, expired, declined and not-yet-created quotes all start here.
+  return 'quoted';
 }
 
-/** A job already in progress/completed is not also awaiting its quote response. */
+export function isActiveJob(project: Pick<Project, 'status'>, quote?: Pick<QuoteSummary, 'status' | 'valid_until'> | null): boolean {
+  return jobDisplayStatus(project, quote) !== 'completed';
+}
+
+/** A sent quote remains awaiting response after expiry, until its status changes. */
 export function awaitingQuoteResponse(project: Pick<Project, 'status'>, quote?: Pick<QuoteSummary, 'status' | 'valid_until'> | null): boolean {
-  return jobDisplayStatus(project, quote) === 'quoted' && quoteDisplayStatus(quote) === 'sent';
+  return jobDisplayStatus(project, quote) === 'quoted' && quote?.status === 'sent';
 }
 

@@ -265,6 +265,16 @@ body:has(.main-app)
   }
 }
 
+.app-shell-owner-content {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  .app-shell-owner-content {
+    padding-bottom: 0;
+  }
+}
+
 .auth-shell {
   display: grid;
   min-height: 100dvh;

@@ -7,9 +7,13 @@ import { usePortal, usePortalSession } from "@/hooks/useEmployeePortal";
 import { Button } from "@/components/ui/button";
 import { awaitingClientApproval, needsTradeResponse } from "@/lib/variationStatus";
 import { JobHoursSummary } from "@/components/team/JobHoursSummary";
-import { aud } from "@/hooks/useJobCosts";
 import { useJobProfitability } from "@/hooks/useJobCosts";
 import { KpiCard } from "@/components/KpiCard";
+import { Card } from "@/components/ui/card";
+import { SectionHeader } from "@/components/ui/section-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Money } from "@/components/ui/money";
+import { formatShortDate } from "@/lib/dateFormat";
 
 type DocumentItem = {
   id: string;
@@ -75,14 +79,14 @@ export function ProjectOverview({
     : quoteError
       ? "Unavailable"
       : quoteExists && quoteTotal !== null
-        ? aud(quoteTotal)
+        ? <Money value={quoteTotal} basis="inc GST" />
         : "No quote";
   const costValue = profitabilityQuery.isLoading
     ? "Loading…"
     : profitabilityQuery.error
       ? "Unavailable"
       : jobProfitability
-        ? aud(jobProfitability.confirmedCostsIncGst)
+        ? <Money value={jobProfitability.confirmedCostsIncGst} basis="inc GST" />
         : "Unavailable";
 
   return (
@@ -91,7 +95,7 @@ export function ProjectOverview({
         <KpiCard
           label="Quote total"
           value={quoteValue}
-          description={quoteError ? "Quote could not be loaded" : quoteExists ? "Saved quote · inc GST" : "No saved quote"}
+          description={quoteError ? "Quote could not be loaded" : quoteExists ? "Saved quote total" : "No saved quote"}
           definition="The active saved quote total including GST. Approved variations already included in the saved quote are not added a second time."
           onClick={() => onChangeTab("quote")}
           tone="primary"
@@ -99,7 +103,7 @@ export function ProjectOverview({
         <KpiCard
           label="Costs so far"
           value={costValue}
-          description={profitabilityQuery.error ? "Cost data could not be loaded" : "Confirmed costs · inc GST"}
+          description={profitabilityQuery.error ? "Cost data could not be loaded" : "Confirmed costs so far"}
           definition="Confirmed costs only, using the existing job profitability data. Draft costs are excluded."
           onClick={() => onChangeTab("costs")}
           tone="neutral"
@@ -136,22 +140,19 @@ export function ProjectOverview({
       )}
 
       <div className="grid min-w-0 gap-3 lg:grid-cols-2">
-        <article className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-card">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-semibold">Variations</h2>
-            <span className="text-sm tabular-nums text-muted-foreground">{project.changeRequests.length}</span>
-          </div>
+        <Card className="min-w-0 p-4">
+          <SectionHeader title="Variations" count={project.changeRequests.length} />
           <p className="mt-1 text-sm text-muted-foreground">{pendingForTrade.length} need your response · {awaitingClient.length} awaiting client</p>
           {variations.length ? (
             <ul className="mt-3 space-y-2">
               {variations.map((variation) => <li key={variation.id} className="flex min-w-0 justify-between gap-3 text-sm"><span className="truncate">{variation.title}</span><span className="shrink-0 text-muted-foreground">{variation.status.replace(/_/g, " ")}</span></li>)}
             </ul>
-          ) : <p className="mt-3 text-sm text-muted-foreground">No variations yet.</p>}
+          ) : <EmptyState title="No variations yet" description="Changes to the job will appear here." className="mt-3 py-5" />}
           <Button type="button" variant="link" className="mt-2 min-h-11 gap-1 px-0" onClick={() => onChangeTab("changes")}>View all variations <ArrowRight className="h-4 w-4" /></Button>
-        </article>
+        </Card>
 
-        <article className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-card">
-          <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Stages</h2><CalendarDays className="h-4 w-4 text-muted-foreground" /></div>
+        <Card className="min-w-0 p-4">
+          <SectionHeader title="Stages" action={<CalendarDays className="h-4 w-4 text-muted-foreground" aria-hidden="true" />} />
           {stages.length ? (
             <>
               <p className="mt-2 text-sm font-medium">{currentIndex >= 0 ? stages[currentIndex].name : completedStages === stages.length ? "All stages complete" : "No current stage"}</p>
@@ -160,19 +161,19 @@ export function ProjectOverview({
                 <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
               </div>
             </>
-          ) : <p className="mt-2 text-sm text-muted-foreground">No stages set up yet.</p>}
+          ) : <EmptyState icon={<CalendarDays className="h-5 w-5" />} title="No stages set up yet" description="Add stages to track this job's progress." className="mt-3 py-5" />}
           <Button type="button" variant="link" className="mt-2 min-h-11 gap-1 px-0" onClick={() => onChangeTab("stages")}>{stages.length ? "View all stages" : "Add stages"} <ArrowRight className="h-4 w-4" /></Button>
-        </article>
+        </Card>
 
-        <article className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-card">
-          <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Documents</h2><FileText className="h-4 w-4 text-muted-foreground" /></div>
+        <Card className="min-w-0 p-4">
+          <SectionHeader title="Documents" count={documents.length} action={<FileText className="h-4 w-4 text-muted-foreground" aria-hidden="true" />} />
           <p className="mt-1 text-sm text-muted-foreground">{documents.length} saved document{documents.length === 1 ? "" : "s"}</p>
-          {recentDocuments.length ? <ul className="mt-2 space-y-1 text-sm text-muted-foreground">{recentDocuments.map((doc) => <li key={doc.id} className="truncate">{doc.display_name || doc.file_name}</li>)}</ul> : <p className="mt-2 text-sm text-muted-foreground">No documents added yet.</p>}
+          {recentDocuments.length ? <ul className="mt-2 space-y-1 text-sm text-muted-foreground">{recentDocuments.map((doc) => <li key={doc.id} className="truncate">{doc.display_name || doc.file_name}</li>)}</ul> : <EmptyState icon={<FileText className="h-5 w-5" />} title="No documents yet" description="Documents added to this job will appear here." className="mt-3 py-5" />}
           <Button type="button" variant="link" className="mt-2 min-h-11 gap-1 px-0" onClick={() => onChangeTab("documents")}>{documents.length ? "View all documents" : "Add a document"} <ArrowRight className="h-4 w-4" /></Button>
-        </article>
+        </Card>
 
-        <article className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-card">
-          <div className="flex items-center justify-between gap-3"><h2 className="font-semibold">Team & schedule</h2><Users className="h-4 w-4 text-muted-foreground" /></div>
+        <Card className="min-w-0 p-4">
+          <SectionHeader title="Team & schedule" action={<Users className="h-4 w-4 text-muted-foreground" aria-hidden="true" />} />
           {portalSession.isLoading || teamQuery.isLoading ? (
             <div className="mt-3 h-12 animate-pulse rounded-lg bg-muted" aria-label="Loading the team schedule" />
           ) : portalSession.error ? (
@@ -185,7 +186,7 @@ export function ProjectOverview({
             <ul className="mt-2 space-y-2">
               {upcomingAssignments.map((assignment) => {
                 const employee = teamQuery.data?.employees.find((item) => item.id === assignment.employee_id);
-                return <li key={assignment.id} className="flex min-w-0 justify-between gap-3 text-sm"><span className="truncate font-medium">{employee?.name ?? "Team member"}</span><span className="shrink-0 text-muted-foreground">{new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short" }).format(new Date(`${assignment.date}T12:00:00`))} · {assignment.start_time}</span></li>;
+                return <li key={assignment.id} className="flex min-w-0 justify-between gap-3 text-sm"><span className="truncate font-medium">{employee?.name ?? "Team member"}</span><span className="shrink-0 text-muted-foreground">{formatShortDate(assignment.date)} · {assignment.start_time}</span></li>;
               })}
             </ul>
           ) : <p className="mt-2 text-sm text-muted-foreground">No upcoming assignments scheduled.</p>}
@@ -198,7 +199,7 @@ export function ProjectOverview({
             <Button type="button" variant="link" className="min-h-11 gap-1 px-0" onClick={() => onChangeTab("staff")}>View all team <ArrowRight className="h-4 w-4" /></Button>
             <Link to={`/schedule?job=${encodeURIComponent(project.id)}`} className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-primary hover:underline">Open schedule <ArrowRight className="h-4 w-4" /></Link>
           </div>
-        </article>
+        </Card>
       </div>
     </section>
   );

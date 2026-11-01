@@ -39,6 +39,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Money } from "@/components/ui/money";
+import { formatShortDate } from "@/lib/dateFormat";
 import {
   Dialog,
   DialogContent,
@@ -876,27 +880,12 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
           <div className="h-12 rounded bg-muted/70" />
         </Card>
       ) : filtered.length === 0 && !error ? (
-        <Card className="border-dashed px-5 py-10 text-center">
-          <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-warning/10 text-warning">
-            <FileText className="h-5 w-5" />
-          </div>
-          <p className="font-semibold">
-            {costs.length
-              ? "No costs match this filter"
-              : "Nothing logged against this job yet"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {costs.length
-              ? "Choose another category or status."
-              : "Add receipts and actual expenses as they come in."}
-          </p>
-          {!costs.length && (
-            <Button className="mt-4" variant="outline" onClick={startNew}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add first cost
-            </Button>
-          )}
-        </Card>
+        <EmptyState
+          icon={<FileText className="h-5 w-5" />}
+          title={costs.length ? "No costs match this filter" : "Nothing logged against this job yet"}
+          description={costs.length ? "Choose another category or status." : "Add receipts and actual expenses as they come in."}
+          action={!costs.length ? <Button variant="outline" onClick={startNew}><Plus className="mr-2 h-4 w-4" />Add first cost</Button> : undefined}
+        />
       ) : (
         <div className="space-y-2">
           {filtered
@@ -914,13 +903,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                       <h3 className="truncate font-semibold">
                         {cost.supplier}
                       </h3>
-                      <Badge
-                        variant={
-                          cost.status === "confirmed" ? "success" : "secondary"
-                        }
-                      >
-                        {cost.status === "confirmed" ? "Confirmed" : "Draft"}
-                      </Badge>
+                      <StatusBadge status={cost.status} labelOverride={cost.status === "confirmed" ? "Confirmed" : "Draft"} size="sm" />
                       <Badge variant="outline">{cost.category}</Badge>
                       {hasStoredScanData(cost) && (
                         <Badge variant="outline">
@@ -933,9 +916,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     </p>
                     <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                       <span>
-                        {new Date(
-                          `${cost.cost_date}T00:00:00`,
-                        ).toLocaleDateString("en-AU")}
+                        {formatShortDate(cost.cost_date)}
                       </span>
                       {cost.reference_number && (
                         <span>Ref {cost.reference_number}</span>
@@ -967,13 +948,13 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                     ) : (
                       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm tabular-nums">
                         <span>
-                          Ex GST <b>{aud(cost.amount_ex_gst)}</b>
+                          <Money value={cost.amount_ex_gst} basis="ex GST" />
                         </span>
                         <span>
                           GST <b>{aud(cost.gst_amount)}</b>
                         </span>
                         <span>
-                          Inc GST <b>{aud(cost.amount_inc_gst)}</b>
+                          <Money value={cost.amount_inc_gst} basis="inc GST" />
                         </span>
                       </div>
                     )}
@@ -1063,13 +1044,13 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
           </span>
           <div className="flex flex-wrap gap-x-4 gap-y-1 tabular-nums">
             <span>
-              Ex GST <b>{aud(totals.ex)}</b>
+              <Money value={totals.ex} basis="ex GST" />
             </span>
             <span>
               GST <b>{aud(totals.gst)}</b>
             </span>
             <span>
-              Inc GST <b>{aud(totals.inc)}</b>
+              <Money value={totals.inc} basis="inc GST" />
             </span>
           </div>
           <p className="w-full text-sm text-muted-foreground">
@@ -1583,10 +1564,7 @@ export function JobCostsTab({ jobId }: { jobId: string }) {
                   {duplicates.map((item) => (
                     <li key={item.id} className="text-xs text-warning">
                       <span className="font-semibold">{item.job_name}</span> ·{" "}
-                      {new Date(
-                        `${item.cost_date}T00:00:00`,
-                      ).toLocaleDateString("en-AU")}{" "}
-                      · {aud(item.amount_inc_gst)}
+                      {formatShortDate(item.cost_date)} · <Money value={item.amount_inc_gst} basis="inc GST" />
                       {item.reference_number
                         ? ` · Ref ${item.reference_number}`
                         : ""}

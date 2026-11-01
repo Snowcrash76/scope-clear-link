@@ -12,7 +12,7 @@ export function ReceiptReviewFields({
   abn, currency, disabled = false, onAbnChange,
 }: ReceiptReviewFieldsProps) {
   return (
-    <div className="space-y-3 rounded-md border bg-background p-3">
+    <div className="space-y-3 rounded-xl border border-border bg-card p-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="receipt-abn">Supplier ABN</Label>

@@ -2,7 +2,10 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, User } from "lucide-react";
 import { StatusBadge } from "@/components/StatusBadge";
-import { aud } from "@/hooks/useJobCosts";
+import { Money } from "@/components/ui/money";
+import { formatFullDate } from "@/lib/dateFormat";
+import { Progress } from "@/components/ui/progress";
+import { Card } from "@/components/ui/card";
 import type { Project } from "@/types/project";
 import type { QuoteSummary } from "@/lib/quoteDisplay";
 import { cn } from "@/lib/utils";
@@ -34,14 +37,14 @@ export function JobCard({
   const hasQuoteDetails = hasQuoteValue || hasValidUntil;
 
   return (
-    <Link
-      to={`/manage/${project.id}`}
+    <Card
+      asChild
       className={cn(
-        "group block min-w-0 rounded-2xl border border-border bg-card transition-colors hover:border-primary/30 hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring",
+        "group block min-w-0 transition-colors hover:border-primary/30 hover:bg-accent/10 focus-within:ring-2 focus-within:ring-inset focus-within:ring-ring",
         className,
       )}
-      data-testid={testId}
     >
+    <Link to={`/manage/${project.id}`} data-testid={testId} className="block min-w-0 rounded-[inherit] focus-visible:outline-none">
       <div className="flex min-w-0 items-start gap-3 p-4 sm:gap-4 sm:p-5">
         <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary text-lg font-heading font-bold text-primary-foreground" aria-hidden="true">
           {project.name.charAt(0).toUpperCase()}
@@ -56,7 +59,7 @@ export function JobCard({
               Open Job <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </span>
           </div>
-          {(project.clientName || quote?.quote_number) && (
+          {(project.clientName || quote?.quote_number || quote?.reference) && (
             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               {project.clientName && (
                 <span className="inline-flex min-w-0 items-center gap-1 break-words">
@@ -64,7 +67,8 @@ export function JobCard({
                   {project.clientName}
                 </span>
               )}
-              {quote?.quote_number && <span>Ref. {quote.quote_number}</span>}
+              {quote?.reference && <span>Ref {quote.reference}</span>}
+              {quote?.quote_number && <span>Quote #{quote.quote_number}</span>}
             </div>
           )}
 
@@ -72,15 +76,15 @@ export function JobCard({
             <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-border pt-3 sm:grid-cols-2">
               {hasQuoteValue && quote && (
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quote value · ex GST</p>
-                  <p className="mt-0.5 font-semibold tabular-nums text-foreground">{aud(quote.subtotal)}</p>
+                  <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quote value</p>
+                  <p className="mt-0.5 font-semibold tabular-nums text-foreground"><Money value={quote.subtotal} basis="ex GST" /></p>
                 </div>
               )}
               {hasValidUntil && validUntil && (
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">Quote valid until</p>
                   <p className="mt-0.5 font-semibold text-foreground">
-                    {new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(validUntil)}
+                    {formatFullDate(validUntil)}
                   </p>
                 </div>
               )}
@@ -91,12 +95,10 @@ export function JobCard({
             <div className={cn("flex flex-wrap items-center gap-3", hasQuoteDetails ? "mt-3 border-t border-border pt-3" : "mt-4 border-t border-border pt-3")}>
               <div className="min-w-0 flex-1">
                 <div className="mb-1.5 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                  <span className="truncate">{currentStage?.name ?? (completed === total ? "All stages complete" : "Stage progress")}</span>
+                  <span className="truncate">{currentStage?.name.replace(/^deposit\b/i, "Deposit") ?? (completed === total ? "All stages complete" : "Stage progress")}</span>
                   <span className="shrink-0 font-semibold tabular-nums text-foreground">{progress}%</span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="progressbar" aria-label="Stage progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
-                </div>
+                <Progress value={progress} className="h-1.5 bg-muted" aria-label="Stage progress" />
               </div>
               <span className="shrink-0 text-xs text-muted-foreground">{completed} of {total} stages</span>
             </div>
@@ -105,5 +107,6 @@ export function JobCard({
         </div>
       </div>
     </Link>
+    </Card>
   );
 }

@@ -2,12 +2,13 @@ import type {
   TeamBootstrap,
   EmployeeRole,
 } from "../../../shared/employeePortal";
+import { formatFullDate } from "@/lib/dateFormat";
 
 export const card =
   "rounded-2xl border border-border bg-card shadow-card";
 
 export const btn =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
+  "inline-flex h-11 min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
 
 export const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`;
 
@@ -19,12 +20,7 @@ export const field =
 export const errorText = (e: unknown) =>
   e instanceof Error ? e.message : "Something went wrong. Please retry.";
 
-export const showDate = (s: string) =>
-  new Intl.DateTimeFormat("en-AU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(new Date(`${s.slice(0, 10)}T12:00:00`));
+export const showDate = (s: string) => formatFullDate(s);
 
 export const showTime = (s: string | null, timezone = "Australia/Sydney") =>
   s

@@ -51,7 +51,7 @@ try {
     assert.equal(await archivedCard().count(), 0);
     await page.getByTestId('tab-completed').click(); await archivedCard().waitFor();
     assert.equal(await activeCard().count(), 0);
-    await page.getByTestId('tab-all').click(); await activeCard().click();
+    await page.getByTestId('tab-active').click(); await activeCard().click();
     await page.getByTestId(`menu-mark-completed-${pid}`).click();
     await activeCard().waitFor({ state: 'hidden' });
     await page.getByTestId('tab-completed').click(); await activeCard().waitFor();
@@ -59,7 +59,7 @@ try {
     await page.screenshot({ path: `generated-artifacts/job-archive-${width}.png`, fullPage: true });
     await activeCard().click(); await page.getByTestId(`menu-mark-in-progress-${pid}`).click();
     await activeCard().waitFor({ state: 'hidden' });
-    await page.getByTestId('tab-all').click(); await activeCard().waitFor();
+    await page.getByTestId('tab-active').click(); await activeCard().waitFor();
     await activeCard().click(); await page.getByTestId(`menu-delete-job-${pid}`).click();
     const dialog = page.getByRole('alertdialog');
     await dialog.waitFor();

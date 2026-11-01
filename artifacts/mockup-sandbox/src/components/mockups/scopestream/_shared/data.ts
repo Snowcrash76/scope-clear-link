@@ -1,5 +1,6 @@
 export type StageStatus = "pending" | "complete";
-export type JobStatus = "Lead" | "Quoted" | "Approved" | "In Progress" | "Completed";
+export type JobStatus = "Quoted" | "Approved" | "In Progress" | "Completed";
+export type QuoteStatus = "draft" | "revised" | "sent" | "expired";
 export interface Quote {
   ref: string;
   amountExGst: number | null;
@@ -57,6 +58,7 @@ export interface Job {
   name: string;
   ref: string;
   status: JobStatus;
+  quoteStatus?: QuoteStatus;
   client: Client;
   scheduledLabel: string;
   validTo: string;

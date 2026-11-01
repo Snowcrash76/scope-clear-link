@@ -50,7 +50,7 @@ export function StatusBadge({ status }: { status: JobStatus | string }) {
   let className = "ss-status";
   if (status === "In Progress") className += " ss-status-progress";
   else if (status === "Completed" || status === "Paid" || status === "Approved") className += " ss-status-complete";
-  else if (status === "Quoted" || status === "Lead" || status === "Draft") className += " ss-status-quoted";
+  else if (status === "Quoted" || status === "Draft") className += " ss-status-quoted";
   else className += " ss-status-attention";
   return <span className={className}>{status}</span>;
 }
@@ -64,7 +64,7 @@ export function ProgressBar({ value, label, detail }: { value: number; label: st
   return <><div className="ss-progress-label"><span>{label}</span><span>{detail}</span></div><div className="ss-progress" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}><span style={{ width: `${Math.max(0, Math.min(value, 100))}%` }} /></div></>;
 }
 export function JobCard({ job, pipeline = false }: { job: Job; pipeline?: boolean }) {
-  const { toast, setJobs } = useScope();
+  const { toast, setJobs, openCostModal } = useScope();
   const [menuOpen, setMenuOpen] = useState(false);
   const navigate = useNavigate();
   const margin = estimatedMargin(job);
@@ -83,8 +83,13 @@ export function JobCard({ job, pipeline = false }: { job: Job; pipeline?: boolea
     {pipeline ? <div className="ss-quote-panel"><div><div className="ss-label">Quote value (ex GST)</div><div className="ss-value">{formatKnownMoney(job.quoteExGst)}</div><div className="ss-small-muted">{job.validTo ? `Valid to ${job.validTo}` : "Quote amount not supplied"}</div></div><div style={{ textAlign: "right" }}><div className="ss-label">Est. profit (ex GST)</div><div className="ss-value">{formatKnownMoney(marginAmount(job))}</div><div className="ss-small-muted">{margin === null ? "indicative · pending data" : <><span className="ss-badge">{(margin * 100).toFixed(1)}%</span> indicative</>}</div></div></div> :
       <div className="ss-quote-panel"><div><div className="ss-label">Quote value</div><div className="ss-value">{formatKnownMoney(job.quoteExGst)} <span className="ss-amount-sub">(Ex GST)</span></div></div><div style={{ textAlign: "right" }}><div className="ss-label">Target completion</div><div className="ss-value">{job.targetCompletion || "—"}</div></div></div>}
     <ProgressBar value={job.stages.length ? job.stages.filter((stage) => stage.status === "complete").length / job.stages.length * 100 : 0} label={`Stage: ${job.stages[0]?.name ?? "Not set"}`} detail={`${job.stages.length ? Math.round(job.stages.filter((stage) => stage.status === "complete").length / job.stages.length * 100) : 0}% of ${job.stages.length} stages`} />
-    {pipeline ? <div className="ss-job-row" style={{ marginTop: 7 }}><span className="ss-small-muted">{job.status === "In Progress" ? "In progress" : job.status} · updated {job.updated}</span><Link className="ss-link" to={`/jobs/${job.id}`}>Open details <ChevronRight size={13} /></Link></div> :
+    {pipeline ? <div className="ss-job-row" style={{ marginTop: 7 }}><span className="ss-small-muted">Updated {job.updated}</span><Link className="ss-link" to={`/jobs/${job.id}`}>Open details <ChevronRight size={13} /></Link></div> :
       <div className="ss-job-buttons"><button className="ss-btn ss-btn-white" onClick={() => navigate(`/jobs/${job.id}`)}>View Job</button><button className="ss-btn ss-btn-primary" onClick={() => toast("Link copied · prototype only")}><ArrowRight size={14} />Send to Client</button></div>}
+    {pipeline && job.status !== "Completed" && <div className="ss-job-buttons" style={{ marginTop: 9 }}>
+      {job.status === "Quoted" && <button className="ss-btn ss-btn-tonal" onClick={() => navigate(`/jobs/${job.id}#quote`)}>Send quote <ArrowRight size={13} /></button>}
+      {job.status === "Approved" && <button className="ss-btn ss-btn-tonal" onClick={() => navigate(`/jobs/${job.id}#stages`)}>Send deposit invoice <ArrowRight size={13} /></button>}
+      {job.status === "In Progress" && <button className="ss-btn ss-btn-tonal" onClick={() => openCostModal(job.id)}>Log costs <ArrowRight size={13} /></button>}
+    </div>}
   </article>;
 }
 export function EmptyState({ title, copy, action }: { title: string; copy: string; action?: ReactNode }) {

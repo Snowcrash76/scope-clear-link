@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,13 +22,13 @@ type DeletionInfo = { deletedAt?: string | null; deletionState?: "pending" | "fa
 const PAGE_SIZE = 8;
 const date = (value?: string | null) => value ? new Date(value).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" }) : "Not recorded";
 const controlLabel = (status: string) => status === "active" ? "Active" : status === "suspended" ? "Suspended" : "Archived";
-const StateBadge = ({ status }: { status: string }) => <Badge variant={status === "active" ? "secondary" : "outline"} className={status === "active" ? "bg-emerald-50 text-emerald-800 border-emerald-200" : status === "suspended" ? "bg-amber-50 text-amber-900 border-amber-200" : "bg-slate-100 text-slate-700"}>{controlLabel(status)}</Badge>;
+const StateBadge = ({ status }: { status: string }) => <StatusBadge status={status} labelOverride={controlLabel(status)} size="sm" />;
 const recordDeletion = (row: { control: PlatformAccount["control"] }) => row.control as PlatformAccount["control"] & DeletionInfo;
 function DeletionBadge({ row }: { row: { control: PlatformAccount["control"] } }) {
   const info = recordDeletion(row);
-  if (info.deletionState === "pending") return <Badge className="border-amber-300 bg-amber-50 text-amber-900" variant="outline">Deletion pending</Badge>;
-  if (info.deletionState === "failed") return <Badge className="border-red-300 bg-red-50 text-red-800" variant="outline">Deletion failed</Badge>;
-  if (info.deletionState === "completed" || info.deletedAt) return <Badge variant="outline">Deleted · history retained</Badge>;
+  if (info.deletionState === "pending") return <StatusBadge status="pending" labelOverride="Deletion pending" size="sm" />;
+  if (info.deletionState === "failed") return <StatusBadge status="rejected" labelOverride="Deletion failed" size="sm" />;
+  if (info.deletionState === "completed" || info.deletedAt) return <StatusBadge status="completed" labelOverride="Deleted · history retained" size="sm" />;
   return null;
 }
 
@@ -185,7 +187,7 @@ export function PlatformAdminPortal({ children }: { children?: React.ReactNode }
 }
 
 function SearchBox({value,onChange,placeholder}:{value:string;onChange:(v:string)=>void;placeholder:string}) { return <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"/><Input className="pl-9" value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}/></div>; }
-function Empty({title,detail}:{title:string;detail:string}) { return <Card className="border-dashed p-8 text-center"><p className="font-medium">{title}</p><p className="mt-1 text-sm text-muted-foreground">{detail}</p></Card>; }
+function Empty({title,detail}:{title:string;detail:string}) { return <EmptyState title={title} description={detail}/>; }
 function ErrorPanel({message,retry}:{message:string;retry:()=>void}) { return <Card className="p-5"><p role="alert" className="text-sm text-destructive">{message}</p><Button className="mt-3" variant="outline" onClick={retry}>Retry</Button></Card>; }
 
 function DirectoryBusinesses({rows,onSelect,detailed=false}:{rows:PlatformBusiness[];onSelect:(b:PlatformBusiness)=>void;detailed?:boolean}) {

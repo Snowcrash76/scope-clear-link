@@ -8,6 +8,7 @@ import { QuoteViewModal } from '@/components/QuoteViewModal';
 import { InvoiceViewModal } from '@/components/InvoiceViewModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
+import { Money, formatAUD } from '@/components/ui/money';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -200,17 +201,17 @@ export default function DemoProjectView() {
               <div className="space-y-1.5 p-4 rounded-lg bg-muted/50">
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>${subtotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                  <Money value={subtotal} basis="ex GST" />
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>GST ({taxRate}%)</span>
-                  <span>${taxAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</span>
+                  <span>{formatAUD(taxAmount)}</span>
                 </div>
                 <Separator className="my-2" />
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span className="text-primary">
-                    ${liveTotal.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                    <Money value={liveTotal} basis="inc GST" />
                   </span>
                 </div>
               </div>
@@ -279,9 +280,8 @@ export default function DemoProjectView() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xl font-bold">
-                          ${invoice.total.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                          <Money value={invoice.total} basis="inc GST" />
                         </p>
-                        <p className="text-xs text-muted-foreground">inc. GST</p>
                       </div>
                     </div>
                     <div className="flex gap-2 mt-4 pt-3 border-t">

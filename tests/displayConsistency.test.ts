@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { aud, profitability, type JobProfitability } from '../shared/jobCosting';
-import { awaitingQuoteResponse, jobDisplayStatus, quoteDisplayStatus } from '../src/lib/quoteDisplay';
+import { awaitingQuoteResponse, isActiveJob, JOB_PIPELINE_STATUSES, jobDisplayStatus, quoteDisplayStatus } from '../src/lib/quoteDisplay';
 
 const job:JobProfitability={
   jobId:'one',jobName:'Example',clientName:'Client',status:'sent',quotedExGst:27100,
@@ -29,7 +29,7 @@ test('missing and zero revenues remain distinct and never produce nonfinite marg
   assert.equal(profitability({...job,quotedExGst:0},'quoted').margin,null);
 });
 test('job and quote lifecycles are distinct, with completed and in-progress jobs taking priority',()=>{
-  assert.equal(jobDisplayStatus({status:'sent'},{status:'draft'}),'lead');
+  assert.equal(jobDisplayStatus({status:'sent'},{status:'draft'}),'quoted');
   assert.equal(jobDisplayStatus({status:'draft'},{status:'sent'}),'quoted');
   assert.equal(jobDisplayStatus({status:'sent'},{status:'approved'}),'approved');
   assert.equal(jobDisplayStatus({status:'in_progress'},{status:'sent'}),'in_progress');
@@ -37,11 +37,27 @@ test('job and quote lifecycles are distinct, with completed and in-progress jobs
   assert.equal(quoteDisplayStatus({status:'revised'}),'draft');
   assert.equal(quoteDisplayStatus({status:'sent',valid_until:'2000-01-01T00:00:00Z'}),'expired');
 });
+test('the four-state job pipeline starts new and draft jobs as Quoted', () => {
+  assert.deepEqual(JOB_PIPELINE_STATUSES, ['quoted', 'approved', 'in_progress', 'completed']);
+  assert.equal(jobDisplayStatus({ status: 'draft' }), 'quoted');
+  for (const status of ['draft', 'revised', 'sent', 'declined']) {
+    assert.equal(jobDisplayStatus({ status: 'draft' }, { status }), 'quoted');
+  }
+  assert.equal(jobDisplayStatus({ status: 'draft' }, { status: 'sent', valid_until: '2000-01-01' }), 'quoted');
+});
+test('Active includes Quoted, Approved and In Progress, while Completed is archived', () => {
+  assert.equal(isActiveJob({ status: 'draft' }), true);
+  assert.equal(isActiveJob({ status: 'sent' }, { status: 'sent' }), true);
+  assert.equal(isActiveJob({ status: 'draft' }, { status: 'approved' }), true);
+  assert.equal(isActiveJob({ status: 'acknowledged' }), true);
+  assert.equal(isActiveJob({ status: 'in_progress' }), true);
+  assert.equal(isActiveJob({ status: 'completed' }), false);
+});
 test('a sent quote on an active or completed job is not counted again as awaiting response',()=>{
   const sent={status:'sent'};
   assert.equal(awaitingQuoteResponse({status:'sent'},sent),true);
   for(const status of ['in_progress','completed','acknowledged'] as const)
     assert.equal(awaitingQuoteResponse({status},sent),false);
   assert.equal(awaitingQuoteResponse({status:'draft'},{status:'draft'}),false);
-  assert.equal(awaitingQuoteResponse({status:'sent'},{status:'sent',valid_until:'2000-01-01T00:00:00Z'}),false);
+  assert.equal(awaitingQuoteResponse({status:'sent'},{status:'sent',valid_until:'2000-01-01T00:00:00Z'}),true);
 });

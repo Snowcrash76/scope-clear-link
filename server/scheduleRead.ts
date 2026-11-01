@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
 import { CostApiError } from './jobCostAccess';
 import { portalRows, requireEmployee, requireTeam, safeJobColumns, type PortalActor } from './employeeAccess';
+import { localDate } from '../shared/employeePortal';
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(value => {
   const date = new Date(`${value}T12:00:00Z`);
@@ -20,6 +21,40 @@ export function scheduleRange(input: unknown) {
 
 const appointmentColumns = 'id,project_id,title,date,start_time,end_time,notes';
 const assignmentColumns = 'id,employee_id,project_id,appointment_id';
+
+/** Owner-only operational backlog. Deliberately has no calendar-range input. */
+export async function readUnscheduledJobs(db: SupabaseClient, actor: PortalActor, now = new Date()) {
+  requireTeam(actor);
+  const timezone = 'Australia/Sydney';
+  const today = localDate(now, timezone);
+  const jobs = await portalRows(() => db.from('projects')
+    .select('id,name,client_name,status').eq('user_id', actor.ownerId).order('name').order('id'));
+  const quotes: { project_id: string; status: string; created_at: string }[] = [];
+  for (let index = 0; index < jobs.length; index += 100) {
+    quotes.push(...await portalRows(() => db.from('quotes')
+      .select('project_id,status,created_at')
+      .in('project_id', jobs.slice(index, index + 100).map(job => job.id))));
+  }
+  // Match the job list's displayed lifecycle: acknowledged means Approved;
+  // otherwise its latest non-declined quote can establish approval.
+  quotes.sort((a, b) => Number(a.status === 'declined') - Number(b.status === 'declined') ||
+    b.created_at.localeCompare(a.created_at));
+  const currentQuotes = new Map<string, string>();
+  for (const quote of quotes) if (!currentQuotes.has(quote.project_id)) currentQuotes.set(quote.project_id, quote.status);
+  const activeJobs = jobs.filter(job => job.status === 'in_progress' || job.status === 'acknowledged' ||
+    job.status === 'approved' || (job.status !== 'completed' && currentQuotes.get(job.id) === 'approved'));
+  if (!activeJobs.length) return { today, timezone, jobs: [] };
+  const bookings = await portalRows(() => db.from('appointments').select('project_id')
+    .eq('user_id', actor.ownerId).gte('date', today).order('id'));
+  const booked = new Set(bookings.map(booking => booking.project_id).filter(Boolean));
+  return {
+    today, timezone,
+    jobs: activeJobs.filter(job => !booked.has(job.id)).map(job => ({
+      id: job.id, name: job.name, client_name: job.client_name,
+      client_address: null, client_phone: null,
+    })),
+  };
+}
 
 async function byIds(db: SupabaseClient, table: string, columns: string, field: string, ids: string[], ownerField: string, owner: string) {
   const rows: any[] = [];

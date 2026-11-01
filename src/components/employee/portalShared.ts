@@ -3,6 +3,7 @@ import { portalRequest } from "@/hooks/useEmployeePortal";
 import { toast } from "sonner";
 
 import { localDate } from "../../../shared/employeePortal";
+import { formatShortDate } from "@/lib/dateFormat";
 
 export const shell = "portal-shell";
 
@@ -10,7 +11,7 @@ export const card =
   "rounded-2xl border border-border bg-card shadow-card";
 
 export const btn =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
+  "inline-flex h-11 min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition-colors disabled:opacity-50";
 
 export const primary = `${btn} bg-primary text-primary-foreground hover:bg-[hsl(var(--primary-hover))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring`;
 
@@ -21,14 +22,7 @@ export const field =
 
 export const today = () => localDate(new Date(), "Australia/Sydney");
 
-export const fmtDate = (s?: string) =>
-  s
-    ? new Intl.DateTimeFormat("en-AU", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-      }).format(new Date(`${s.slice(0, 10)}T12:00:00`))
-    : "";
+export const fmtDate = (s?: string) => s ? formatShortDate(s) : "";
 
 export const fmtTime = (s?: string | null, timezone = "Australia/Sydney") =>
   s

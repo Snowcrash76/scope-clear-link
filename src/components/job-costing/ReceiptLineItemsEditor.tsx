@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ReceiptLineItem } from '@/hooks/useJobCosts';
+import { EmptyState } from '@/components/ui/empty-state';
+import { ReceiptText } from 'lucide-react';
 
 type ReceiptLineItemsEditorProps = {
   items: ReceiptLineItem[];
@@ -40,15 +42,15 @@ export function ReceiptLineItemsEditor({ items, onChange, disabled = false }: Re
         </Button>
       </div>
       {items.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-border bg-muted/20 p-3 text-sm leading-relaxed text-muted-foreground" data-testid="receipt-line-items-empty">
-          No line items were read. Add rows if they are useful for this record.
-        </p>
+        <div data-testid="receipt-line-items-empty">
+          <EmptyState icon={<ReceiptText className="h-5 w-5" />} title="No line items were read" description="Add rows if they are useful for this record." className="py-5" />
+        </div>
       ) : (
         <ol className="min-w-0 space-y-2" aria-label="Editable receipt line items">
           {items.map((item, index) => (
             <li
               key={index}
-              className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-3 rounded-lg border border-border bg-background p-3 shadow-sm shadow-foreground/[0.025] sm:grid-cols-[minmax(0,1fr)_auto]"
+          className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-3 rounded-xl border border-border bg-card p-3 shadow-card sm:grid-cols-[minmax(0,1fr)_auto]"
               data-testid={`receipt-line-item-${index}`}
             >
               <div className="col-span-2 flex min-w-0 items-start gap-2 sm:col-span-1">

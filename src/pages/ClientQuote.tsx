@@ -25,7 +25,8 @@ import { format } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import { isVariationItem, stripVariationMeta, cleanVariationTitle } from '@/lib/utils';
 import { RichTextContent } from '@/components/RichTextEditor';
-import { aud } from '@/hooks/useJobCosts';
+import { Money, formatAUD as aud } from '@/components/ui/money';
+import { formatFullDate } from '@/lib/dateFormat';
 import { ClientPortalHeader } from '@/components/client/ClientPortalHeader';
 import { downloadQuotePDF } from '@/lib/quotePdf';
 import type { ChangeRequest, Quote as ProjectQuote, QuoteLineItem, ScopeItem } from '@/types/project';
@@ -397,7 +398,7 @@ export default function ClientQuote() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="rounded-xl bg-muted/40 p-3">
                 <p className="text-sm text-muted-foreground">Subtotal (ex GST)</p>
-                <p className="mt-1 break-words font-semibold tabular-nums text-foreground">{aud(subtotal)}</p>
+                <p className="mt-1 break-words font-semibold tabular-nums text-foreground"><Money value={subtotal} basis="ex GST" /></p>
               </div>
               <div className="rounded-xl bg-muted/40 p-3">
                 <p className="text-sm text-muted-foreground">GST ({taxRate}%)</p>
@@ -405,14 +406,14 @@ export default function ClientQuote() {
               </div>
               <div className="col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3 sm:col-span-1">
                 <p className="text-sm font-medium text-muted-foreground">Total (inc GST)</p>
-                <p className="mt-1 break-words font-heading text-xl font-bold tabular-nums text-foreground">{aud(total)}</p>
+                <p className="mt-1 break-words font-heading text-xl font-bold tabular-nums text-foreground"><Money value={total} basis="inc GST" /></p>
               </div>
             </div>
             {validityDate && (
               <div className="flex items-start gap-2 rounded-lg border border-border px-3 py-2.5 text-sm">
                 <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <div>
-                  <p className="font-medium text-foreground">Listed validity: {format(validityDate, 'dd MMM yyyy')}</p>
+                  <p className="font-medium text-foreground">Listed validity: {formatFullDate(validityDate)}</p>
                   {validityPassed && (
                     <p className="mt-0.5 text-muted-foreground">
                       This date has passed, but the quote is still marked pending. This page does not block a response based on the date; contact the business to confirm pricing is current.

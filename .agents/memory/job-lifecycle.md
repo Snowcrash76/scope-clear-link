@@ -9,6 +9,12 @@ Completed jobs belong in an Archive view, not in the active job list or its coun
 
 **How to apply:** Completion is the archive boundary; do not introduce a second independent archived state without a reason. Keep historical financial/detail screens accessible.
 
+The canonical job pipeline is Quoted, Approved, In Progress, Completed. Jobs start as Quoted, including both draft and sent quotes. Active includes the first three states; Archive contains Completed.
+
+**Why:** The user explicitly requested that jobs start as a quote, without a preceding prospect stage. Quote delivery/approval and job progress are different lifecycles.
+
+**How to apply:** Use the shared job-status projection consistently. Preserve separate quote draft/sent states and compatible legacy storage values rather than migrating financial history merely to change a job's display label. Dashboard counts and job filters must use the same Active definition; scheduling backlog remains limited to Approved/In Progress.
+
 Job deletion must be one atomic, owner-scoped database operation, never a series of child deletions followed by deleting the job.
 
 **Why:** Invoice-retention triggers, staff-history foreign keys and assignment guards may reject deletion. Deleting children first can erase records even when deleting the job fails.

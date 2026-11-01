@@ -1,22 +1,17 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { useQuoteSummaries } from '@/hooks/useQuoteSummaries';
 import { useDashboardInvoices } from '@/hooks/useDashboardInvoices';
-import { awaitingQuoteResponse, jobDisplayStatus, type QuoteSummary } from '@/lib/quoteDisplay';
+import { awaitingQuoteResponse, isActiveJob, type QuoteSummary } from '@/lib/quoteDisplay';
 import { awaitingClientApproval, needsTradeResponse } from '@/lib/variationStatus';
 import type { Project } from '@/types/project';
-import { cn } from '@/lib/utils';
 import { BriefcaseBusiness, GitBranch, Hourglass, CircleCheck, Receipt, TriangleAlert } from 'lucide-react';
-import { aud } from '@/hooks/useJobCosts';
+import { Money, formatAUD } from '@/components/ui/money';
+import { MetricCard } from '@/components/ui/metric-card';
 
 interface DashboardStatsProps {
   projects: Project[];
   loading?: boolean;
-}
-
-function formatMoney(value: number | null) {
-  return value === null ? '—' : aud(value);
 }
 
 function latestQuotes(quotes: QuoteSummary[]) {
@@ -33,11 +28,8 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
   const invoiceQuery = useDashboardInvoices(projects.map(project => project.id));
   const quotesByProject = latestQuotes(quoteQuery.data ?? []);
   const awaiting = projects.filter(project => awaitingQuoteResponse(project, quotesByProject.get(project.id)));
-  const active = projects.filter(project =>
-    jobDisplayStatus(project, quotesByProject.get(project.id)) === 'in_progress' &&
-    !awaitingQuoteResponse(project, quotesByProject.get(project.id))
-  );
-  const completed = projects.filter(project => jobDisplayStatus(project, quotesByProject.get(project.id)) === 'completed');
+  const active = projects.filter(project => isActiveJob(project, quotesByProject.get(project.id)));
+  const completed = projects.filter(project => !isActiveJob(project, quotesByProject.get(project.id)));
   const pendingVariationCount = projects.reduce((total, project) =>
     total + project.changeRequests.filter(variation => needsTradeResponse(variation) || awaitingClientApproval(variation)).length, 0);
   const needsTradeResponseCount = projects.reduce((total, project) =>
@@ -72,6 +64,7 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
     testId: string;
     highlight?: boolean;
     loading?: boolean;
+    accessibleValue?: string;
     accent: string;
     iconTone: string;
     iconBg: string;
@@ -80,8 +73,8 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
     {
       label: 'Active Jobs', value: active.length,
       subtitle: recentUpdate ? `Updated ${formatDistanceToNow(recentUpdate, { addSuffix: true })}` : 'No active jobs yet',
-      href: '/projects?status=in_progress',
-      title: 'Jobs currently in progress. Mutually exclusive with jobs awaiting quote response.',
+      href: '/projects',
+      title: 'Quoted, Approved and In Progress jobs. Completed jobs are in Archive.',
       testId: 'stat-active-projects',
       accent: 'bg-primary',
       iconTone: 'text-primary',
@@ -104,7 +97,7 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       label: 'Awaiting Response', value: quoteUnavailable ? '—' : awaiting.length,
       subtitle: quoteUnavailable ? 'Quote data unavailable' : awaiting.length ? 'Latest sent quote, no decision' : 'No unanswered quotes',
       href: '/projects?status=awaiting_response',
-      title: 'Jobs with a latest sent quote awaiting a response. Excludes active and completed jobs.',
+      title: 'Quoted jobs with a latest sent quote awaiting a response. Excludes Approved, In Progress and Completed jobs.',
       testId: 'stat-awaiting-response',
       highlight: awaiting.length > 0,
       loading: quoteQuery.isLoading,
@@ -125,7 +118,7 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       Icon: CircleCheck,
     },
     {
-      label: 'Unpaid invoices ($)', value: formatMoney(unpaidTotal),
+      label: 'Unpaid invoices', value: unpaidTotal === null ? '—' : <Money value={unpaidTotal} basis="inc GST" />, accessibleValue: `${formatAUD(unpaidTotal)} inc GST`,
       subtitle: unpaidSubtitle,
       href: '/invoices?status=unpaid',
       title: 'Recorded totals on sent and overdue invoices. Draft, paid and cancelled invoices are excluded; partial payments are not tracked.',
@@ -137,7 +130,7 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
       Icon: Receipt,
     },
     {
-      label: 'Overdue ($)', value: formatMoney(overdueTotal),
+      label: 'Overdue', value: overdueTotal === null ? '—' : <Money value={overdueTotal} basis="inc GST" />, accessibleValue: `${formatAUD(overdueTotal)} inc GST`,
       subtitle: overdueSubtitle,
       href: '/invoices?status=overdue',
       title: 'Recorded totals on invoices marked Overdue; partial payments are not tracked.',
@@ -152,32 +145,24 @@ export function DashboardStats({ projects, loading = false }: DashboardStatsProp
   ];
 
   return (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Dashboard statistics">
-      {cards.map(card => (
-        <Link
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-label="Dashboard statistics">
+      {cards.map((card) => (
+        <MetricCard
           key={card.testId}
-          to={card.href}
+          label={card.label}
+          value={card.value}
+          description={card.subtitle}
+          href={card.href}
           title={card.title}
-          aria-label={`${card.label}: ${card.loading || loadingCards ? 'loading' : card.value}`}
-          data-testid={card.testId}
-          className={cn(
-            'group relative min-h-[150px] overflow-hidden rounded-2xl border border-border bg-card px-5 pb-4 pt-5 shadow-card transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
-          )}
-        >
-          <span className={cn("absolute inset-x-0 top-0 h-[3px]", card.accent)} aria-hidden="true" />
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[.06em] text-muted-foreground">{card.label}</p>
-            <span className={cn("grid h-9 w-9 shrink-0 place-items-center rounded-xl", card.iconBg, card.iconTone)}>
-              <card.Icon className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </div>
-          {loadingCards || card.loading ? (
-            <div className="h-9 w-24 animate-pulse rounded-lg bg-muted" aria-label="Loading statistic" />
-          ) : (
-            <p className="mb-1 text-[32px] leading-9 font-heading font-bold tabular-nums tracking-tight text-foreground">{card.value}</p>
-          )}
-          <p className={cn('text-sm leading-5', card.highlight ? 'font-medium text-foreground' : 'text-muted-foreground')}>{card.subtitle}</p>
-        </Link>
+          testId={card.testId}
+          icon={card.Icon}
+          iconTone={card.iconTone}
+          iconBackground={card.iconBg}
+          accent={card.accent}
+          highlight={card.highlight}
+          loading={loadingCards || card.loading}
+          accessibleValue={card.accessibleValue}
+        />
       ))}
     </div>
   );

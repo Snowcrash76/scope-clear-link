@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label";
 import { DashboardStats } from "@/components/DashboardStats";
 import { AppShell, NewJobButton } from "@/components/AppShell";
 import { PageLayout } from "@/components/PageLayout";
+import { SectionHeader } from "@/components/ui/section-header";
+import { EmptyState } from "@/components/ui/empty-state";
 import { LoadErrorState } from "@/components/LoadErrorState";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { useProjects } from "@/hooks/useProjects";
@@ -460,9 +462,7 @@ export default function TradeDashboard() {
   };
 
   const activeProjects = projects.filter(
-    (p) =>
-      jobDisplayStatus(p, latestQuoteByProject.get(p.id)) === "in_progress" &&
-      !awaitingQuoteResponse(p, latestQuoteByProject.get(p.id)),
+    (p) => jobDisplayStatus(p, latestQuoteByProject.get(p.id)) !== "completed",
   );
 
   const filteredActive = activeProjects;
@@ -478,7 +478,7 @@ export default function TradeDashboard() {
     return (
       <AppShell>
         <PageLayout
-          title="Dashboard Overview"
+          title="Dashboard"
           eyebrow="FIELD OPERATIONS"
           description="Your workspace overview."
         >
@@ -586,12 +586,12 @@ export default function TradeDashboard() {
       </Dialog>
       <AppShell>
         <PageLayout
-          title="Dashboard Overview"
+          title="Dashboard"
           description="Welcome back. Here's what's happening across your jobs today."
           actions={
-            <div className="flex flex-wrap items-center gap-2">
-              <NewJobButton testId="dashboard-new-job" />
-              <Link to="/schedule" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground" data-testid="link-dashboard-schedule">
+            <div className="flex w-full flex-nowrap items-center gap-2 sm:w-auto">
+              <NewJobButton testId="dashboard-new-job" className="flex-1 sm:flex-none" />
+              <Link to="/schedule" className="hidden min-h-11 items-center justify-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground sm:inline-flex" data-testid="link-dashboard-schedule">
                 <Clock3 className="h-4 w-4" />
                 Open Schedule
               </Link>
@@ -600,7 +600,7 @@ export default function TradeDashboard() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="min-h-11 gap-2"
+                    className="min-h-11 shrink-0 gap-2"
                     aria-label="More dashboard actions"
                     data-testid="button-dashboard-more"
                   >
@@ -644,18 +644,20 @@ export default function TradeDashboard() {
           {/* Active projects and the live activity stream */}
           <div className="mb-8 grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,.85fr)]">
           <div className="min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <h2 className="font-heading text-xl font-semibold leading-7">
-                Active Jobs
-              </h2>
-              <button
-                onClick={() => navigate("/projects?status=in_progress")}
-                className="min-h-11 text-sm text-primary font-medium flex items-center gap-0.5 hover:opacity-70 transition-opacity"
-                data-testid="button-view-all-projects"
-              >
-                VIEW ALL <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+            <SectionHeader
+              title="Active Jobs"
+              className="mb-3"
+              action={
+                <button
+                  type="button"
+                  onClick={() => navigate("/projects?status=in_progress")}
+                  className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-2 text-sm font-medium text-primary hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  data-testid="button-view-all-projects"
+                >
+                  View all <ChevronRight className="h-4 w-4" />
+                </button>
+              }
+            />
 
             <div className="min-w-0 overflow-hidden rounded-2xl border border-border bg-card shadow-card">
               {loading ? (
@@ -685,18 +687,13 @@ export default function TradeDashboard() {
                 </div>
               ) : (
                 !quoteQuery.isLoading && !quoteQuery.isError ? (
-                  <div className="mx-3 my-3 flex flex-col gap-4 rounded-2xl border border-dashed border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-accent text-primary">
-                        <Plus className="h-5 w-5" aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0">
-                         <p className="font-semibold text-foreground">Ready to prepare your next quote?</p>
-                        <p className="mt-0.5 text-sm text-muted-foreground">Start a quote for the next job and review it before sending.</p>
-                      </div>
-                    </div>
-                    <NewJobButton label="Create Quote" testId="dashboard-create-quote" className="shrink-0" />
-                  </div>
+                  <EmptyState
+                    className="m-3"
+                    title="Ready to prepare your next quote?"
+                    description="Start a quote for the next job and review it before sending."
+                    icon={<Plus className="h-5 w-5" aria-hidden="true" />}
+                    action={<NewJobButton label="Create Quote" testId="dashboard-create-quote" className="shrink-0" />}
+                  />
                 ) : (
                   <div className="px-4 py-8 text-center">
                     <Briefcase className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />

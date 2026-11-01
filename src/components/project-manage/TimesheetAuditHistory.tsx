@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   auditActorName,
   auditBusinessDate,
@@ -111,11 +112,7 @@ export function TimesheetAuditHistory({
             })}
           </ol>
         ) : (
-          <div className="rounded-xl border border-dashed border-border p-8 text-center">
-            <Search className="mx-auto h-5 w-5 text-muted-foreground" />
-            <p className="mt-2 font-semibold">No review activity for this week yet.</p>
-            {!isFocusedWeek && <p className="mt-1 text-sm text-muted-foreground">Try a different person or date range.</p>}
-          </div>
+          <EmptyState icon={<Search className="h-5 w-5" />} title="No review activity for this week yet" description={isFocusedWeek ? "Saved timesheet changes for this week will appear here." : "Try a different person or date range."} />
         )}
         <p className="text-xs text-muted-foreground">History is limited to the audit records loaded for this view.</p>
         {hasMore && isFocusedWeek && <Button type="button" variant="outline" className="min-h-11 w-full" onClick={() => setShowAllWeek(true)}>Show more</Button>}

@@ -19,4 +19,10 @@ Integration-test dependencies must share one authoritative fixture state.
 
 **Why:** Independently mocked authentication and data modules can instantiate separate stores, producing apparent application regressions when the test mutates a different store from the rendered component.
 
-**How to apply:** Keep state ownership coherent across mocked dependencies and rule out disagreement between fixture stores before changing application logic.
+**How to apply:** Keep state ownership coherent across mocked dependencies and rule out disagreement between fixture stores before changing application logic. Reuse complete, API-shaped service fixtures when checking navigation: a generic empty response can work on the initial list but crash a destination that loads additional structured data. Diagnose that fixture mismatch before changing production code.
+
+Re-enter the explicit fixture URL when resetting a routed browser fixture; do not assume a page reload still loads the fixture.
+
+**Why:** The synthetic app updates browser history to its real route. Reloading that route loads the real application's authentication instead of the synthetic fixture, producing misleading timeouts.
+
+**How to apply:** Navigate back to the generated fixture entry URL for reset/error-state checks. For animated sheets, disable animations during screenshots or wait for the transition to finish; a visible locator alone can still be outside the viewport during slide-in.

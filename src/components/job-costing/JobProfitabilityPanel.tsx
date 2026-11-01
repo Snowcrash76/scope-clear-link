@@ -4,6 +4,7 @@ import { useJobProfitability, aud, profitability, type RevenueBasis, COST_CATEGO
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Money } from '@/components/ui/money';
 import { JobCostSetupHelp, isJobCostSetupError } from '@/components/job-costing/JobCostSetupHelp';
 
 export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
@@ -52,16 +53,16 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
         <div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="rounded-lg border bg-background p-3">
-              <p className="text-xs text-muted-foreground">{job.quoteIsEstimate ? 'Quote value (estimate)' : 'Accepted quote'}</p>
-              <p className="mt-1 text-lg font-bold tabular-nums">{job.quotedExGst === null ? 'Unavailable' : aud(job.quotedExGst)}</p>
+              <p className="text-xs text-muted-foreground">{job.quoteIsEstimate ? 'Quote value (estimate)' : 'Accepted quote'} · ex GST</p>
+              <p className="mt-1 text-lg font-bold tabular-nums">{job.quotedExGst === null ? 'Unavailable' : <Money value={job.quotedExGst} basis="ex GST" />}</p>
             </div>
             <div className="rounded-lg border bg-background p-3">
               <p className="text-xs text-muted-foreground">Issued invoices</p>
-              <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.invoicedExGst)}</p>
+              <p className="mt-1 text-lg font-bold tabular-nums"><Money value={job.invoicedExGst} basis="ex GST" /></p>
             </div>
             <div className="rounded-lg border bg-background p-3 sm:col-span-2">
-              <p className="text-xs text-muted-foreground">Confirmed costs (inc GST)</p>
-              <p className="mt-1 text-lg font-bold tabular-nums">{aud(job.confirmedCostsIncGst)}</p>
+              <p className="text-xs text-muted-foreground">Confirmed costs</p>
+              <p className="mt-1 text-lg font-bold tabular-nums"><Money value={job.confirmedCostsIncGst} basis="inc GST" /></p>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/60 px-3 py-3 text-foreground">
@@ -88,19 +89,19 @@ export function JobProfitabilityPanel({ jobId }: { jobId: string }) {
         <div className="rounded-lg border bg-background p-3 sm:p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-sm font-semibold">Confirmed cost breakdown</h3>
-            {job.draftCostsExGst > 0 && <span className="text-xs text-muted-foreground">{aud(job.draftCostsExGst)} draft excluded</span>}
+            {job.draftCostsExGst > 0 && <span className="text-xs text-muted-foreground"><Money value={job.draftCostsExGst} basis="ex GST" /> draft excluded</span>}
           </div>
           <div className="space-y-2.5">
             {COST_CATEGORIES.map(category => {
               const value = job.costsByCategory?.[category] ?? 0;
               return <div key={category} className="flex items-center justify-between gap-3">
                 <span className="truncate text-xs text-muted-foreground">{category}</span>
-                <span className="text-xs font-medium tabular-nums">{aud(value)}</span>
+                <span className="text-xs font-medium tabular-nums"><Money value={value} basis="inc GST" /></span>
               </div>;
             })}
           </div>
           <p className="mt-3 border-t pt-2 text-xs leading-relaxed text-muted-foreground">
-            Approved variations: {aud(job.approvedVariationsExGst)} — already included in the quote subtotal; not added again.
+            Approved variations: <Money value={job.approvedVariationsExGst} basis="ex GST" /> — already included in the quote subtotal; not added again.
           </p>
           {basis === 'invoiced' && result.revenue === 0 && <p className="mt-2 text-xs text-muted-foreground">No issued invoice revenue is recorded yet.</p>}
         </div>

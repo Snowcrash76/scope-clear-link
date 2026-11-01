@@ -1,4 +1,6 @@
 import type { ReceiptLineItem } from '@/hooks/useJobCosts';
+import { formatAUD, Money } from '@/components/ui/money';
+import { EmptyState } from '@/components/ui/empty-state';
 
 type ReceiptItemsSummaryProps = {
   items: ReceiptLineItem[];
@@ -8,12 +10,7 @@ type ReceiptItemsSummaryProps = {
   compact?: boolean;
 };
 
-const aud = new Intl.NumberFormat('en-AU', {
-  style: 'currency',
-  currency: 'AUD',
-});
-
-const amountText = (value: number | null) => value === null ? 'Not read' : aud.format(value);
+const amountText = (value: number | null) => value === null ? 'Not read' : formatAUD(value);
 const detailText = (value: number | null) => value === null ? 'Not read' : String(value);
 
 export function ReceiptItemsSummary({
@@ -33,7 +30,7 @@ export function ReceiptItemsSummary({
         <h3 className="font-semibold text-foreground">Line items</h3>
       </div>
       {items.length === 0 ? (
-        <p className="px-3 py-3 text-muted-foreground" data-testid="receipt-summary-empty">No item details recorded.</p>
+        <div className="px-3 py-2" data-testid="receipt-summary-empty"><EmptyState title="No item details recorded" description="Receipt line items were not saved for this cost." className="py-4" /></div>
       ) : (
         <ol className="divide-y divide-border" aria-label="Receipt line items">
           {items.map((item, index) => (
@@ -57,16 +54,16 @@ export function ReceiptItemsSummary({
       )}
       <dl className="space-y-0 border-t border-border bg-muted/20 px-3 py-2">
         <div className="flex min-w-0 items-baseline justify-between gap-3 py-1">
-          <dt className="text-muted-foreground">Ex GST</dt>
-          <dd className="shrink-0 text-right tabular-nums text-foreground" data-testid="receipt-summary-subtotal">{amountText(subtotal)}</dd>
+          <dt className="text-muted-foreground">Subtotal</dt>
+          <dd className="shrink-0 text-right tabular-nums text-foreground" data-testid="receipt-summary-subtotal">{subtotal === null ? 'Not read' : <Money value={subtotal} basis="ex GST" />}</dd>
         </div>
         <div className="flex min-w-0 items-baseline justify-between gap-3 py-1">
           <dt className="text-muted-foreground">GST</dt>
           <dd className="shrink-0 text-right tabular-nums text-foreground" data-testid="receipt-summary-gst">{amountText(gst)}</dd>
         </div>
         <div className="mt-1 flex min-w-0 items-baseline justify-between gap-3 border-t border-border pt-2">
-          <dt className="font-semibold text-foreground">Total AUD</dt>
-          <dd className="shrink-0 text-right font-semibold tabular-nums text-foreground" data-testid="receipt-summary-total">{amountText(total)}</dd>
+          <dt className="font-semibold text-foreground">Total</dt>
+          <dd className="shrink-0 text-right font-semibold tabular-nums text-foreground" data-testid="receipt-summary-total">{total === null ? 'Not read' : <Money value={total} basis="inc GST" />}</dd>
         </div>
       </dl>
     </section>

@@ -13,7 +13,7 @@ import {
 import { defaultPermissions, employeeRoles, localDate, permissionNames, type EmployeeRole } from '../shared/employeePortal';
 import { publicWebOrigin } from '../shared/publicUrls';
 import { resolveInvitationAccount, assertInvitationAccountEligible, deliverEmployeeInvitation, cleanupRejectedInvitationAccount } from './employeeInvitations';
-import { readSchedule } from './scheduleRead';
+import { readSchedule, readUnscheduledJobs } from './scheduleRead';
 import { writeSchedule } from './scheduleWrite';
 
 const id = z.string().uuid();
@@ -59,6 +59,7 @@ function objectPath(doc: any, ownerId: string) {
 
 export function createEmployeeRouter() {
   const router = Router();
+  router.get('/schedule/unscheduled', portalHandler(async (_req, db, actor) => readUnscheduledJobs(db, actor)));
   router.get('/schedule', portalHandler(async (req, db, actor) =>
     readSchedule(db, actor, { from: req.query.from, to: req.query.to })));
   router.post('/schedule/bookings', portalHandler(async (req, db, actor) =>

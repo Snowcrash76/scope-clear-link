@@ -21,6 +21,7 @@ import { JobHeader } from '@/components/JobHeader';
 import { PageLayout } from '@/components/PageLayout';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import { ApprovalModal } from '@/components/ApprovalModal';
 import {
   Dialog,
@@ -52,7 +53,6 @@ import { variationItemTitle } from '@/lib/variationItems';
 import { ScopeItem, ChangeRequest, ProjectStage, Invoice } from '@/types/project';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  ArrowLeft, 
   ExternalLink, 
   Send, 
   Plus,
@@ -339,10 +339,12 @@ function ProjectManageContent() {
     return (
       <AppShell>
         <PageLayout title="Job not found" description="This job may have been removed or the link may be incorrect.">
-          <div className="rounded-xl border border-dashed border-zinc-300 bg-white p-8 text-center">
-            <p className="text-sm text-zinc-800">No saved job exists at this address.</p>
-            <Button variant="outline" className="mt-4 min-h-11" onClick={() => navigate('/projects')}>Return to Jobs</Button>
-          </div>
+          <EmptyState
+            icon={<FolderOpen className="h-5 w-5" />}
+            title="Job not found"
+            description="No saved job exists at this address. It may have been removed or the link may be incorrect."
+            action={<Button variant="outline" onClick={() => navigate('/projects')}>Return to Jobs</Button>}
+          />
         </PageLayout>
       </AppShell>
     );
@@ -641,7 +643,6 @@ function ProjectManageContent() {
         onTabChange={setActiveTab}
         pendingVariationCount={pendingClientRequests.length + project.changeRequests.filter(awaitingClientApproval).length}
         isDuplicating={isDuplicating}
-        onBack={() => navigate('/projects')}
         onAddVariation={() => setIsSendingChangeRequest(true)}
         onDuplicateProject={handleDuplicateProject}
         onSaveClient={handleSaveClientDetails}
@@ -652,7 +653,7 @@ function ProjectManageContent() {
         onUpdateProjectStatus={updateProjectStatus}
       />
 
-      <PageLayout headerless className="!pt-0 !pb-6">
+      <PageLayout headerless className="!pt-0 !pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
         <div className="grid min-w-0 grid-cols-1 gap-5">
           <JobSectionMenu
             value={activeTab}

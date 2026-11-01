@@ -22,8 +22,8 @@ type ScopeState = {
   setModal: (node: ReactNode) => void;
   pipelineSearch: string;
   setPipelineSearch: (value: string) => void;
-  pipelineFilter: "Active" | "Lead" | "Quoted" | "Approved" | "In Progress" | "Archive";
-  setPipelineFilter: (value: "Active" | "Lead" | "Quoted" | "Approved" | "In Progress" | "Archive") => void;
+  pipelineFilter: "Active" | "Quoted" | "Approved" | "In Progress" | "Archive";
+  setPipelineFilter: (value: "Active" | "Quoted" | "Approved" | "In Progress" | "Archive") => void;
   pipelineSort: "Updated" | "Quote value" | "Name";
   setPipelineSort: (value: "Updated" | "Quote value" | "Name") => void;
 };
