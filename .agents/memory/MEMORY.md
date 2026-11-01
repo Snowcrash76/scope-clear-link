@@ -10,3 +10,4 @@
 - [Invoice approval](invoice-approval.md) — trade approval before sending; edits invalidate it and uncertain email retries must retain the same delivery attempt.
 - [Platform administration scope](platform-administration.md) — all-business controls, history-preserving deletion, protected root access and preview/published enforcement.
 - [Job lifecycle](job-lifecycle.md) — completed jobs belong in Archive; deletion must be atomic and respect protected invoice/staff history.
+- [Shared UI conventions](shared-ui-conventions.md) — standing shared-component rule to include in future UI phase prompts.
