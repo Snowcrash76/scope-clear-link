@@ -40,8 +40,7 @@ export default function DesignPreview() {
       <div className="mx-auto max-w-7xl px-5 py-9 sm:px-8 sm:py-14">
         <section className="grid gap-7 border-b border-border pb-10 lg:grid-cols-[1.1fr_.9fr] lg:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.15em] text-primary">Visual system / field notes</p>
-            <h1 className="mt-4 max-w-3xl font-heading text-4xl font-extrabold leading-[1.04] tracking-[-.06em] sm:text-6xl">
+            <h1 className="max-w-3xl font-heading text-4xl font-extrabold leading-[1.04] tracking-[-.06em] sm:text-6xl">
               Clear work. Clear records.
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-muted-foreground">

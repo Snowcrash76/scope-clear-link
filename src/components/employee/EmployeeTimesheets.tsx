@@ -335,7 +335,6 @@ export function EmployeeTimesheets() {
   return (
     <PortalLayout>
       <PageTitle
-        eyebrow="Hours / your record"
         title="Timesheets"
         description="Record site hours, check your week and submit for review."
         action={

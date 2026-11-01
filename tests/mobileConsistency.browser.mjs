@@ -104,6 +104,25 @@ try {
       await (desktop ? mobileHeader : sidebar).waitFor({ state: 'hidden' });
       await page.waitForTimeout(200);
       assert.deepEqual(errors, [], `${routePath} at ${width}: runtime errors`);
+      const titleContract = await page.getByRole('heading', { level: 1 }).first().evaluate(el => {
+        const previous = el.previousElementSibling;
+        const subtitle = el.nextElementSibling?.tagName === 'P' ? el.nextElementSibling : null;
+        return {
+          previous: previous?.textContent.trim() ?? '',
+          previousTag: previous?.tagName ?? '',
+          fontSize: getComputedStyle(el).fontSize,
+          weight: getComputedStyle(el).fontWeight,
+          subtitleSize: subtitle && getComputedStyle(subtitle).fontSize,
+          subtitleColor: subtitle && getComputedStyle(subtitle).color,
+        };
+      });
+      assert.ok(!titleContract.previous || titleContract.previousTag === 'BUTTON', `${routePath}: no text above the title ${JSON.stringify(titleContract)}`);
+      assert.equal(titleContract.fontSize, '24px', `${routePath}: page title is text-2xl`);
+      assert.equal(titleContract.weight, '700', `${routePath}: page title is bold`);
+      if (titleContract.subtitleSize) {
+        assert.equal(titleContract.subtitleSize, '14px', `${routePath}: subtitle is text-sm`);
+        assert.equal(titleContract.subtitleColor, 'rgb(100, 116, 139)', `${routePath}: subtitle is slate-500`);
+      }
       const bounds = await header.evaluate(el => {
         const box = e => { const r = e.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, width: r.width, height: r.height }; };
         const visible = e => e.getClientRects().length && getComputedStyle(e).display !== 'none' && getComputedStyle(e).visibility !== 'hidden';
@@ -219,7 +238,7 @@ try {
         if (!desktop) await page.getByTestId('button-job-back').click();
         else await page.goBack();
         await page.waitForURL('**/projects');
-        await page.getByRole('heading', { name: 'Job Pipeline', exact: true }).waitFor();
+        await page.getByRole('heading', { name: 'Jobs', exact: true }).waitFor();
       }
       if (process.env.CONSISTENCY_DELETE_CHECKS && ['/quotes', '/invoices', '/clients'].includes(routePath)) {
         const kind = routePath === '/quotes' ? 'quote' : routePath === '/invoices' ? 'invoice' : 'client';

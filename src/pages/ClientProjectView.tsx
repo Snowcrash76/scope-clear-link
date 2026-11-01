@@ -107,8 +107,7 @@ export default function ClientProjectView() {
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-warning/10 text-warning">
             <FileText className="h-6 w-6" aria-hidden="true" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Client link unavailable</p>
-          <h1 className="mt-2 font-heading text-2xl font-bold text-foreground">We couldn’t open this project</h1>
+          <h1 className="font-heading text-2xl font-bold text-foreground">We couldn’t open this project</h1>
           <p role="alert" className="mt-3 text-sm leading-relaxed text-muted-foreground">This link may have been replaced or is no longer available.</p>
           <p className="mt-3 text-sm leading-relaxed text-muted-foreground">Reply to the original project email to contact your trade and request a fresh secure link. Contact details aren’t available until the project loads.</p>
         </Card>

@@ -2,7 +2,6 @@ import type { ReactNode } from 'react';
 
 interface PageLayoutProps {
   title?: string;
-  eyebrow?: string;
   description?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
@@ -13,7 +12,6 @@ interface PageLayoutProps {
 
 export function PageLayout({
   title,
-  eyebrow,
   description,
   actions,
   children,
@@ -26,9 +24,8 @@ export function PageLayout({
       {!headerless && title && (
         <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
-            <p className="mb-1.5 text-xs font-semibold uppercase tracking-[.08em] text-primary">{eyebrow ?? "WORKSPACE"}</p>
             <h1 className="font-heading text-2xl leading-8 font-bold tracking-tight text-foreground">{title}</h1>
-            {description && <p className="mt-1 text-sm leading-5 text-muted-foreground">{description}</p>}
+            {description && <p className="mt-1 !text-sm !leading-5 text-slate-500">{description}</p>}
           </div>
           {actions && <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:shrink-0 [&>button]:min-h-11">{actions}</div>}
         </header>

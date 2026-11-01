@@ -10,7 +10,6 @@ export function AuthShell({ children }: PropsWithChildren) {
           <BrandLogo variant="horizontal" inverse className="w-48 max-w-[65vw]" />
         </Link>
         <div className="auth-art-copy">
-          <p className="auth-art-kicker">For the work that matters</p>
           <h2>Clarity from quote to site.</h2>
           <p>
             Keep the agreed scope, client decisions and field updates in one

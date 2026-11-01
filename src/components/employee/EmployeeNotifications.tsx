@@ -34,7 +34,6 @@ export function EmployeeNotifications() {
   return (
     <PortalLayout>
       <PageTitle
-        eyebrow="Field portal / updates"
         title="Notifications"
         description="Schedule changes, timesheet reviews and job updates."
       />

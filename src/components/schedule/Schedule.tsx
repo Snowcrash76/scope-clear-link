@@ -48,7 +48,7 @@ function DetailDialog({ event, data, events, onClose, triggerRef, previewMemberI
       if (triggerRef.current?.isConnected) triggerRef.current.focus();
       else document.getElementById("schedule-heading")?.focus();
     }}>
-      <header className="sc-dialog-head"><div><span className="sc-eyebrow">SCHEDULE DETAIL</span><DialogTitle className="sc-modal-title">{event.appointment.title}</DialogTitle><DialogDescription className="sr-only">Booking details for {format(parseISO(event.appointment.date), "EEEE, d MMMM yyyy")}.</DialogDescription></div></header>
+      <header className="sc-dialog-head"><div><DialogTitle className="sc-modal-title">{event.appointment.title}</DialogTitle><DialogDescription className="sr-only">Booking details for {format(parseISO(event.appointment.date), "EEEE, d MMMM yyyy")}.</DialogDescription></div></header>
       <div className="sc-dialog-body">
         <p className="sc-detail-line"><CalendarDays />{format(parseISO(event.appointment.date), "EEEE, d MMMM yyyy")}</p>
         <p className="sc-detail-line"><Clock3 />{timeLabel(event.appointment.start_time)} – {timeLabel(event.appointment.end_time)}{event.endDate !== event.appointment.date ? " (next day)" : ""}</p>
@@ -227,7 +227,7 @@ export default function Schedule() {
 
   const calendar = <main className="sc-page">
     <header className="sc-page-heading">
-      <div><div className="sc-eyebrow">FIELD OPERATIONS</div><h1 id="schedule-heading" tabIndex={-1}>Schedule</h1><p>One clear view of the work ahead.</p></div>
+      <div><h1 id="schedule-heading" tabIndex={-1}>Schedule</h1><p>One clear view of the work ahead.</p></div>
       {isManager ? <Button className="sc-add-booking" onClick={(event) => openEditor(event.currentTarget, { date: dateKey(selectedDate), jobId: jobFilter })}><Plus />Add booking</Button> : <div className="sc-readonly-badge"><span />Your assignments</div>}
     </header>
     <section className="sc-kpi-strip" aria-label="Schedule overview">

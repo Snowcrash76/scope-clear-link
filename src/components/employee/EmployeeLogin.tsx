@@ -45,10 +45,7 @@ export function EmployeeLogin() {
         >
           <BrandLogo variant="horizontal" className="w-40" />
         </Link>
-        <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
-          Employee sign in
-        </p>
-        <h1 className="mt-2 text-3xl font-bold">Welcome to site.</h1>
+        <h1 className="mt-8 text-3xl font-bold">Welcome to site.</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           Sign in with the email address on your invitation.
         </p>

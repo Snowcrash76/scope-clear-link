@@ -479,7 +479,6 @@ export default function TradeDashboard() {
       <AppShell>
         <PageLayout
           title="Dashboard"
-          eyebrow="FIELD OPERATIONS"
           description="Your workspace overview."
         >
           <LoadErrorState

@@ -137,7 +137,6 @@ export default function ClientsPage() {
     <AppShell>
       <PageLayout
         title="Clients"
-        eyebrow="PEOPLE"
         description={`${clients.length} client${clients.length !== 1 ? 's' : ''} from existing jobs.`}
         actions={<Button className="min-h-11" onClick={() => setShowAddClientHelp(true)} data-testid="button-add-client"><UserPlus className="mr-2 h-4 w-4" />Add client</Button>}
       >

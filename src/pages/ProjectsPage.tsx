@@ -239,7 +239,7 @@ export default function ProjectsPage() {
   if (projectsError) {
     return (
       <AppShell>
-        <PageLayout title="Job Pipeline" description="All your jobs in one place.">
+        <PageLayout title="Jobs" description="All your jobs in one place.">
           <LoadErrorState
             title="Jobs could not be loaded"
             description="A failed jobs request is not an empty job list. Retry to fetch the saved jobs."
@@ -252,7 +252,7 @@ export default function ProjectsPage() {
   if (quoteQuery.isError) {
     return (
       <AppShell>
-        <PageLayout title="Job Pipeline" description="All your jobs in one place.">
+        <PageLayout title="Jobs" description="All your jobs in one place.">
           <LoadErrorState
             title="Quote statuses could not be loaded"
             description="Job lifecycle filters depend on saved quote status. Retry before treating a filtered list as empty."
@@ -265,7 +265,7 @@ export default function ProjectsPage() {
 
   return (
     <AppShell>
-        <PageLayout title="Job Pipeline" eyebrow="FIELD OPERATIONS" description="Your jobs, quotes and next actions in one place." actions={<NewJobButton />}>
+        <PageLayout title="Jobs" description="Your jobs, quotes and next actions in one place." actions={<NewJobButton />}>
         <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Jobs overview">
           <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-card">
             <span className="absolute inset-x-0 top-0 h-[3px] bg-primary" aria-hidden="true" />

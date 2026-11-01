@@ -73,11 +73,8 @@ export function EmployeeAccept() {
         <Link to="/" className="inline-flex min-h-11 items-center">
           <BrandLogo variant="horizontal" className="w-40" />
         </Link>
-        <p className="portal-mono mt-8 text-xs uppercase tracking-[.16em] text-muted-foreground">
-          Team invitation
-        </p>
         {acceptedEmail ? (
-          <section className="mt-5 space-y-4">
+          <section className="mt-8 space-y-4">
             <h1 className="text-2xl font-bold">Invitation accepted</h1>
             <p>Your employee access is connected to <strong className="break-words">{acceptedEmail}</strong>.</p>
             {error && <p role="alert" className="rounded-xl bg-muted p-3 text-sm">{error}</p>}
@@ -85,7 +82,7 @@ export function EmployeeAccept() {
             <Link className="inline-flex min-h-11 items-center text-sm underline" to={`/forgot-password?email=${encodeURIComponent(acceptedEmail)}`}>Reset password</Link>
           </section>
         ) : !token ? (
-          <div className="mt-5">
+          <div className="mt-8">
             <h1 className="text-2xl font-bold">Invitation link missing</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               Open the full link from your invitation email.

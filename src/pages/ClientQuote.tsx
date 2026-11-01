@@ -241,8 +241,7 @@ export default function ClientQuote() {
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-warning/10 text-warning">
             <AlertCircle className="h-6 w-6" aria-hidden="true" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Quote link unavailable</p>
-          <h1 className="mt-2 font-heading text-2xl font-bold text-foreground">We couldn’t open this quote</h1>
+          <h1 className="font-heading text-2xl font-bold text-foreground">We couldn’t open this quote</h1>
           <p role="alert" className="mt-3 text-sm leading-relaxed text-muted-foreground">
             {error ?? 'The link may be invalid or no longer active.'}
           </p>

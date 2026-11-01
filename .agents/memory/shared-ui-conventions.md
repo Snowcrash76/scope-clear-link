@@ -18,3 +18,9 @@ Below md, hide the persistent sidebar and keep the bottom tabs. The shared mobil
 **Why:** The user explicitly requested one brand presentation, no duplicate desktop header, and these breakpoint-specific shared layouts.
 
 **How to apply:** Keep the breakpoint at md, not lg. Use shared layout components, never per-screen copies. The mobile avatar preserves access to the existing workspace navigation/account controls; do not duplicate the brand inside that drawer. The back-arrow replacement is the explicit exception to displaying a logo on mobile Job Details.
+
+Shared page title blocks start with a text-2xl bold title, a text-sm slate-500 subtitle and an optional primary action on the right. No fixed category eyebrow/kicker belongs above a page or panel title, and shared title/panel components must not expose an eyebrow prop.
+
+**Why:** The user explicitly removed all fixed above-title category labels across the app.
+
+**How to apply:** Include employee, auth, error/loading and dialog views when checking consistency. Preserve metric/stat labels, form field labels and sidebar group headings. Above-title context is only appropriate when its information changes, such as a status, job reference or date range.

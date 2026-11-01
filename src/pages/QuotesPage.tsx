@@ -100,7 +100,6 @@ export default function QuotesPage() {
   return <AppShell>
     <PageLayout
       title="Quotes"
-      eyebrow="COMMERCIAL & RESIDENTIAL ESTIMATION"
       description="Every quote, with the client-facing status and ex-GST value. New quote starts a new job; open a job to manage its existing quote."
       actions={<Button className="min-h-11" onClick={() => setNewQuoteOpen(true)} data-testid="button-new-quote"><FileText className="mr-2 h-4 w-4" />New quote</Button>}
     >

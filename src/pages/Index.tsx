@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { BrandLogo } from '@/components/BrandLogo';
 import { 
@@ -13,7 +12,6 @@ import {
   Package,
   RefreshCw,
   Users,
-  Sparkles
 } from 'lucide-react';
 
 export default function Index() {
@@ -31,10 +29,6 @@ export default function Index() {
         </div>
         <div className="relative max-w-6xl mx-auto px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-12">
           <div className="text-center max-w-3xl mx-auto">
-            <Badge variant="secondary" className="mb-4 px-4 py-1.5">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Built for Trades
-            </Badge>
             <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-foreground mb-6">
               Keep clients on the same page —{' '}
               <span className="text-primary">every change, every job</span>

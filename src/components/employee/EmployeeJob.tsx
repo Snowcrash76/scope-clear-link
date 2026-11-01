@@ -92,7 +92,6 @@ export function EmployeeJob() {
         q.data && (
           <>
             <PageTitle
-              eyebrow="Assigned job"
               title={q.data.job.name}
               description={`${q.data.job.client_name}${q.data.job.client_address ? ` · ${q.data.job.client_address}` : ""}`}
             />

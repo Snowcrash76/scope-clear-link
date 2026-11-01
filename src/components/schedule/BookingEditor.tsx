@@ -111,8 +111,7 @@ export function BookingEditor({ data, event, initialDate, initialJobId, initialE
       else document.getElementById("schedule-heading")?.focus();
     }}>
       <header className="sc-dialog-head">
-        <div><span className="sc-eyebrow">{editing ? "UPDATE SCHEDULE" : "NEW SCHEDULE ITEM"}</span>
-          <DialogTitle className="sc-modal-title">{editing ? "Edit booking" : "Add booking"}</DialogTitle>
+        <div><DialogTitle className="sc-modal-title">{editing ? "Edit booking" : "Add booking"}</DialogTitle>
           <DialogDescription>{editing ? "Change the booking details, crew, or timing." : "Give the team a clear plan for the work ahead."}</DialogDescription>
         </div>
       </header>

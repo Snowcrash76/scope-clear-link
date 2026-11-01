@@ -142,7 +142,6 @@ export function EmployeeHome({ week = false }: { week?: boolean }) {
     <>
       <PortalLayout>
         <PageTitle
-          eyebrow={week ? "Planning / next up" : "Field portal / today"}
           title={week ? "This week" : "Today"}
           description={
             week

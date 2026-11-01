@@ -140,7 +140,6 @@ export default function ProfitabilityPage() {
     <AppShell>
       <PageLayout
         title="Profitability"
-        eyebrow="FINANCIAL INTELLIGENCE"
         description="See what confirmed expenses leave behind across your jobs."
         className="[overflow-wrap:anywhere]"
         actions={

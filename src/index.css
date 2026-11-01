@@ -353,14 +353,6 @@ body:has(.main-app)
   margin: auto 0;
   padding: 64px 0 48px;
 }
-.auth-art-kicker {
-  margin-bottom: 18px;
-  color: #b9d5f8;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
 .auth-art-copy h2 {
   max-width: 460px;
   margin: 0;

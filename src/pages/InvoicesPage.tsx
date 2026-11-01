@@ -250,7 +250,7 @@ export default function InvoicesPage() {
 
   return (
     <AppShell>
-      <PageLayout title="Invoices" eyebrow="BILLING & REVENUE OPERATIONS" description="Track issued invoices and recorded payment status across your jobs.">
+      <PageLayout title="Invoices" description="Track issued invoices and recorded payment status across your jobs.">
         {!isError && (
           <section className="mb-6 grid gap-3 sm:grid-cols-2" aria-label="Invoice overview">
             <KpiCard label="Outstanding receivables" value={isLoading || isError ? "—" : <Money value={outstanding} basis="inc GST" />}
